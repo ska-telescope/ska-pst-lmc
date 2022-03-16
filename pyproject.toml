@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "ska-pst-lmc"
+version = "0.1.0"
+description = "PST-LMC Tango device package"
+authors = ["Team PST"]
+license = "BSD-3-Clause"
+
+[[tool.poetry.source]]
+name = 'ska-nexus'
+url = 'https://artefact.skao.int/repository/pypi-internal/simple'
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
