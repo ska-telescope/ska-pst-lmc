@@ -22,7 +22,7 @@
         "davidanson.vscode-markdownlint",
         "alexkrechik.cucumberautocomplete",
     ],
-    // "postCreateCommand": "python3 -m pip install -e /workspaces/ska-pst-lmc --extra-index-url https://artefact.skao.int/repository/pypi/simple",
+    "postCreateCommand": "poetry config virtualenvs.create false && sudo poetry install",
     "remoteUser": "tango",
     "remoteEnv": {
         "PATH": "/home/tango/.local/bin:${containerEnv:PATH}",
