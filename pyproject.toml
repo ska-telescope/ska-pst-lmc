@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "PST-LMC Tango device package"
 authors = ["Team PST"]
 license = "BSD-3-Clause"
+repository = "https://gitlab.com/ska-telescope/ska-pst-lmc.git"
 
 [[tool.poetry.source]]
 name = 'ska-nexus'
@@ -38,3 +39,6 @@ Sphinx = "^4.0.2"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+Hello = "ska_pst_lmc.hello:main"
