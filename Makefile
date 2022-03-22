@@ -4,7 +4,6 @@
 PROJECT = ska-pst-lmc
 
 # E203 and W503 conflict with black
-PYTHON_RUNNER = poetry run
 PYTHON_SWITCHES_FOR_FLAKE8 = --extend-ignore=BLK,T --enable=DAR104 --ignore=E203,FS003,W503,N802 --max-complexity=10 \
     --max-line-length=110 --rst-roles=py:attr,py:class,py:const,py:exc,py:func,py:meth,py:mod
 PYTHON_SWITCHES_FOR_BLACK = --line-length=110
