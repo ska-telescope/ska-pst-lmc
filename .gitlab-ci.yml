@@ -47,24 +47,6 @@ join_linting_reports:
       - build/
     when: always
 
-docs-pages:
-  stage: pages
-  image: $SKA_K8S_TOOLS_DEPLOY_IMAGE
-  tags:
-    - k8srunner
-  script:
-    - make docs-build html
-    - |
-      if [[ -d docs/build/html/ ]]; then
-        mv docs/build/html/ public;
-      else
-        echo "WARNING: no docs/build/html/";
-      fi;
-  when: always
-  artifacts:
-    paths:
-      - public
-
 # Standardised included jobs
 variables:
   GIT_SUBMODULE_STRATEGY: recursive

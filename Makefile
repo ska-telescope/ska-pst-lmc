@@ -21,9 +21,6 @@ include .make/oci.mk
 include .make/python.mk
 
 # include core make support
-include .make/docs.mk
-
-# include core make support
 include .make/base.mk
 
 # define private overrides for above variables in here

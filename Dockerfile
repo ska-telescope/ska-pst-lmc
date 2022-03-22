@@ -7,11 +7,13 @@ RUN apt-get update && \
     cd /usr/bin && \
     ln -sf python3 python
 
-USER tango
-
 COPY . /app/
 
 RUN poetry config virtualenvs.create false && \
-    sudo poetry install
+    poetry install
+
+USER tango
+
+RUN poetry config virtualenvs.create
 
 ENTRYPOINT [ "poetry", "run", "Hello" ]
