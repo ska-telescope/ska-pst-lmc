@@ -1,17 +1,25 @@
-FROM artefact.skao.int/ska-tango-images-pytango-builder:9.3.10 AS buildenv
+ARG BUILD_IMAGE="artefact.skao.int/ska-tango-images-pytango-builder:9.3.10"
+ARG BASE_IMAGE="artefact.skao.int/ska-tango-images-pytango-runtime:9.3.10"
+FROM $BUILD_IMAGE AS buildenv 
 
-RUN apt-get update && \
-    apt-get install gnupg2 python3-venv -y && \
-    python3 -m pip install poetry && \
-    poetry config virtualenvs.create false && \
-    cd /usr/bin && \
-    ln -sf python3 python
+FROM $BASE_IMAGE
+
+# Install Poetry
+USER root 
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_HOME=/opt/poetry python - && \
+    chmod a+x /opt/poetry/bin/poetry && \
+    /opt/poetry/bin/poetry config virtualenvs.create false
+
+# Copy poetry.lock* in case it doesn't exist in the repo
+WORKDIR /app
+
+COPY pyproject.toml poetry.lock* ./
+
+# Install runtime dependencies and the app
+RUN /opt/poetry/bin/poetry install --no-dev
 
 USER tango
 
-COPY . /app/
-
-RUN poetry config virtualenvs.create false && \
-    sudo poetry install
-
-ENTRYPOINT [ "poetry", "run", "Hello" ]
+ENTRYPOINT [ "python3", "-m", "ska_pst_lmc.hello" ]

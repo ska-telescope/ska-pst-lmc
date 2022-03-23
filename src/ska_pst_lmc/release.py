@@ -2,8 +2,9 @@
 #
 # This file is part of the SKA PST LMC project
 #
-"""Release information for SKA PST LMC Python Package"""
+"""Release information for SKA PST LMC Python Package."""
 import sys
+from typing import Union
 
 NAME = """ska_pst_lmc"""
 VERSION = "0.1.0"
@@ -16,7 +17,7 @@ LICENSE = """BSD-3-Clause"""
 COPYRIGHT = "Swinburne University of Technology"
 
 
-def get_release_info(clsname=None):
+def get_release_info(clsname: Union[str, None] = None) -> str:
     """Return a formated release info string.
 
     :param clsname: optional name of class to add to the info
