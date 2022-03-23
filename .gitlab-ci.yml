@@ -84,6 +84,3 @@ include:
   # changelog release page
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/changelog.gitlab-ci.yml'
-
-  - project: 'ska-telescope/templates-repository'
-    file: 'gitlab-ci/includes/post_step.yml'
