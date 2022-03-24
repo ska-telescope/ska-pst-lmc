@@ -5,7 +5,7 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
 
-"""This package is the top level project for the ska-pst-lmc project."""
+"""This package is the top level project for the SKA PST LMC subsystem."""
 
 __all__ = ["Hello"]
 
