@@ -5,10 +5,10 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE.txt for more info.
 
-"""This subpackage implements BEAM component for PST.LMC."""
+"""This subpackage implements DSP component for PST.LMC."""
 
 __all__ = [
-    "PstBeam",
+    "PstDsp",
 ]
 
-from .beam_device import PstBeam
+from .dsp import PstDsp

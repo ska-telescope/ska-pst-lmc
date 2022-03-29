@@ -7,6 +7,14 @@
 
 """This package is the top level project for the SKA PST LMC subsystem."""
 
-__all__ = ["Hello"]
+__all__ = [
+    "Hello",
+    "PstMaster",
+    "PstBeam",
+    "PstDsp",
+]
 
 from .hello import Hello
+from .master import PstMaster
+from .beam import PstBeam
+from .dsp import PstDsp
