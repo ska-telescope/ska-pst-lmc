@@ -11,4 +11,4 @@ __all__ = [
     "PstDsp",
 ]
 
-from .dsp import PstDsp
+from .dsp_device import PstDsp
