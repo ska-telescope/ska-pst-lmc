@@ -45,6 +45,19 @@ class PstDsp(CspSubElementSubarray):
         self.set_change_event("longRunningCommandProgress", True, True)
         self.set_change_event("longRunningCommandResult", True, True)
 
+    def always_executed_hook(self: PstDsp) -> None:
+        """Execute call before any TANGO command is executed."""
+        pass
+
+    def delete_device(self: PstDsp) -> None:
+        """Delete resources allocated in init_device.
+
+        This method allows for any memory or other resources allocated in the
+        init_device method to be released.  This method is called by the device
+        destructor and by the device Init command.
+        """
+        pass
+
     # ----------
     # Attributes
     # ----------

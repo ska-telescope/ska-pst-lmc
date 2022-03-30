@@ -41,13 +41,10 @@ class PstMaster(CspSubElementController):
     BeamFQDN = device_property(
         dtype="DevString",
     )
+
     BeamServerFQDN = device_property(
         dtype="DevString",
     )
-
-    # ----------
-    # Attributes
-    # ----------
 
     # ---------------
     # General methods
@@ -66,9 +63,22 @@ class PstMaster(CspSubElementController):
         self.set_change_event("longRunningCommandProgress", True, True)
         self.set_change_event("longRunningCommandResult", True, True)
 
-    # ------------------
-    # Attributes methods
-    # ------------------
+    def always_executed_hook(self: PstMaster) -> None:
+        """Execute call before any TANGO command is executed."""
+        pass
+
+    def delete_device(self: PstMaster) -> None:
+        """Delete resources allocated in init_device.
+
+        This method allows for any memory or other resources allocated in the
+        init_device method to be released.  This method is called by the device
+        destructor and by the device Init command.
+        """
+        pass
+
+    # ----------
+    # Attributes
+    # ----------
 
     # --------
     # Commands

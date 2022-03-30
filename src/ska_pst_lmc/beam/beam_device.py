@@ -63,10 +63,6 @@ class PstBeam(CspSubElementSubarray):
         dtype="DevString",
     )
 
-    # ----------
-    # Attributes
-    # ----------
-
     # ---------------
     # General methods
     # ---------------
@@ -86,9 +82,22 @@ class PstBeam(CspSubElementSubarray):
         self.set_change_event("longRunningCommandProgress", True, True)
         self.set_change_event("longRunningCommandResult", True, True)
 
-    # ------------------
-    # Attributes methods
-    # ------------------
+    def always_executed_hook(self: PstBeam) -> None:
+        """Execute call before any TANGO command is executed."""
+        pass
+
+    def delete_device(self: PstBeam) -> None:
+        """Delete resources allocated in init_device.
+
+        This method allows for any memory or other resources allocated in the
+        init_device method to be released.  This method is called by the device
+        destructor and by the device Init command.
+        """
+        pass
+
+    # ----------
+    # Attributes
+    # ----------
 
     # --------
     # Commands
