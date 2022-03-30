@@ -16,4 +16,8 @@ the Pulsar Timing Sub-element (PST) within the Central Signal Processor
 (CSP) Element of the Square Kilometre Array (SKA) Low and Mid telescopes.
 
 .. automodule:: ska_pst_lmc
-   :members:
+
+.. toctree::
+  :maxdepth: 1
+
+  API<api/index>
