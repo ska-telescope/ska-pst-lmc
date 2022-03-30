@@ -85,14 +85,14 @@ class PstSmrb(CspSubElementSubarray):
 
     @attribute(
         dtype="DevULong64",
-        label="Capacity",
+        label="Ring Buffer Size",
         unit="Bytes",
         standard_unit="Bytes",
         display_unit="B",
         polling_period=5000,
         doc="Capacity of ring buffer in bytes",
     )
-    def capacity(self: PstSmrb) -> int:
+    def ring_buffer_size(self: PstSmrb) -> int:
         """Get the capacity of the ring buffer, in bytes.
 
         :returns: the capacity of the ring buffer, in bytes.

@@ -400,13 +400,13 @@
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Percentage of the ring buffer elements that are full of data" label="Utilisation" unit="Percentage" standardUnit="" displayUnit="%" format="" maxValue="100" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
-    <attributes name="capacity" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="5000" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="ring_buffer_size" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="5000" maxX="" maxY="" allocReadMember="true" isDynamic="false">
       <dataType xsi:type="pogoDsl:ULongType"/>
       <changeEvent fire="false" libCheckCriteria="false"/>
       <archiveEvent fire="false" libCheckCriteria="false"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-      <properties description="Capacity of ring buffer in bytes" label="Capacity" unit="Bytes" standardUnit="Bytes" displayUnit="B" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <properties description="Capacity of ring buffer in bytes" label="Ring Buffer Size" unit="Bytes" standardUnit="Bytes" displayUnit="B" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
     <attributes name="number_subbands" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="5000" maxX="" maxY="" allocReadMember="true" isDynamic="false">
       <dataType xsi:type="pogoDsl:UShortType"/>
