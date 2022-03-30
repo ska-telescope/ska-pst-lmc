@@ -11,7 +11,7 @@ __all__ = [
     "Hello",
     "PstBeam",
     "PstDsp",
-    "PstMaster",
+    "PstManagement",
     "PstReceive",
     "PstSmrb",
 ]
@@ -19,6 +19,6 @@ __all__ = [
 from .beam import PstBeam
 from .dsp import PstDsp
 from .hello import Hello
-from .master import PstMaster
+from .management import PstManagement
 from .receive import PstReceive
 from .smrb import PstSmrb

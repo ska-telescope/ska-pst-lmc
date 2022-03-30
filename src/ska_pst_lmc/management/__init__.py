@@ -5,10 +5,10 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE.txt for more info.
 
-"""This subpackage implements master component for PST.LMC."""
+"""This subpackage implements management component for PST.LMC."""
 
 __all__ = [
-    "PstMaster",
+    "PstManagement",
 ]
 
-from .master_device import PstMaster
+from .management_device import PstManagement

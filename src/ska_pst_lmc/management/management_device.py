@@ -5,7 +5,7 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
 
-"""This module implements the PstMaster device."""
+"""This module implements the PstManagement device."""
 
 from __future__ import annotations
 
@@ -18,10 +18,10 @@ from tango.server import device_property, run
 # from tango import AttrQuality, AttrWriteType, DebugIt, DevState, DispLevel, PipeWriteType
 # from tango.server import Device, attribute, command, device_property, run
 
-__all__ = ["PstMaster", "main"]
+__all__ = ["PstManagement", "main"]
 
 
-class PstMaster(CspSubElementController):
+class PstManagement(CspSubElementController):
     """An implementation of a Maser Tango device for PST.LMC.
 
     **Properties:**
@@ -50,8 +50,8 @@ class PstMaster(CspSubElementController):
     # General methods
     # ---------------
 
-    def init_device(self: PstMaster) -> None:
-        """Intialise the attributes and properties of the PstMaster device.
+    def init_device(self: PstManagement) -> None:
+        """Intialise the attributes and properties of the PstManagement device.
 
         This overrides the :py:class::`CspSubElementController`.
         """
@@ -63,11 +63,11 @@ class PstMaster(CspSubElementController):
         self.set_change_event("longRunningCommandProgress", True, True)
         self.set_change_event("longRunningCommandResult", True, True)
 
-    def always_executed_hook(self: PstMaster) -> None:
+    def always_executed_hook(self: PstManagement) -> None:
         """Execute call before any TANGO command is executed."""
         pass
 
-    def delete_device(self: PstMaster) -> None:
+    def delete_device(self: PstManagement) -> None:
         """Delete resources allocated in init_device.
 
         This method allows for any memory or other resources allocated in the
@@ -100,7 +100,7 @@ def main(args: Optional[list] = None, **kwargs: dict) -> int:
     :return: exit code
     :rtype: int
     """
-    return run((PstMaster,), args=args, **kwargs)
+    return run((PstManagement,), args=args, **kwargs)
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ LMC TANGO Devices
 .. automodule:: ska_pst_lmc.dsp
    :members:
 
-.. automodule:: ska_pst_lmc.master
+.. automodule:: ska_pst_lmc.management
    :members:
 
 .. automodule:: ska_pst_lmc.receive

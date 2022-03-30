@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ASCII"?>
 <pogoDsl:PogoSystem xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.esrf.fr/tango/pogo/PogoDsl">
-  <classes name="PstMaster" pogoRevision="9.6">
+  <classes name="PstManagement" pogoRevision="9.6">
     <description description="" title="" sourcePath="/home/tango/src/ska-pst-lmc/src/ska_pst_lmc/master" language="PythonHL" filestogenerate="XMI   file,Code files,Protected Regions" license="BSD3" copyright="" hasMandatoryProperty="false" hasConcreteProperty="true" hasAbstractCommand="false" hasAbstractAttribute="false">
       <inheritances classname="Device_Impl" sourcePath=""/>
       <inheritances classname="SKABaseDevice" sourcePath="/home/tango/src/ska-tango-base/pogo"/>
