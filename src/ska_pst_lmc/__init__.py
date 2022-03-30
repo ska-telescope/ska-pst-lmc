@@ -13,6 +13,7 @@ __all__ = [
     "PstDsp",
     "PstMaster",
     "PstReceive",
+    "PstSmrb",
 ]
 
 from .beam import PstBeam
@@ -20,3 +21,4 @@ from .dsp import PstDsp
 from .hello import Hello
 from .master import PstMaster
 from .receive import PstReceive
+from .smrb import PstSmrb
