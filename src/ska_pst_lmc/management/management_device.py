@@ -53,7 +53,7 @@ class PstManagement(CspSubElementController):
     def init_device(self: PstManagement) -> None:
         """Intialise the attributes and properties of the PstManagement device.
 
-        This overrides the :py:class::`CspSubElementController`.
+        This overrides the :class:`CspSubElementController`.
         """
         CspSubElementController.init_device(self)
         self.set_change_event("adminMode", True, True)

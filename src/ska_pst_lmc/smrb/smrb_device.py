@@ -37,7 +37,7 @@ class PstSmrb(CspSubElementSubarray):
     def init_device(self: PstSmrb) -> None:
         """Initialise the attributes and properties of the PstReceive.
 
-        This overrides the :py:class::`CspSubElementSubarray`.
+        This overrides the :class:`CspSubElementSubarray`.
         """
         CspSubElementSubarray.init_device(self)
         self.set_change_event("adminMode", True, True)

@@ -11,8 +11,5 @@ LMC TANGO Devices
 .. automodule:: ska_pst_lmc.management
    :members:
 
-.. automodule:: ska_pst_lmc.receive
-   :members:
-
 .. automodule:: ska_pst_lmc.smrb
    :members:

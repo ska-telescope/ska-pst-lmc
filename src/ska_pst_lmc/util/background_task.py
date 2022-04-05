@@ -20,7 +20,7 @@ from readerwriterlock import rwlock
 
 
 class RunState(IntEnum):
-    """Enum to represent run state of :py:class::`BackgroundTask`."""
+    """Enum to represent run state of :class:`BackgroundTask`."""
 
     STOPPED = (1,)
     """Background task is stopped and not running.
@@ -30,7 +30,7 @@ class RunState(IntEnum):
     STARTING = (2,)
     """The state the task is put into when the task is started.
 
-    This is an intermediate state. When the method :py:meth::`BackgroundTask.run`
+    This is an intermediate state. When the method :meth:`BackgroundTask.run`
     is called the task goes into a STARTING state. If the task starts successfully
     then the state goes into RUNNING.
     """
@@ -45,7 +45,7 @@ class RunState(IntEnum):
     """The state the task is put into when asked to stop.
 
     This is an intermediate state, used to avoid calling stop mulitple times.
-    When the method :py:meth::`BackgroundTask.stop` is called the task will
+    When the method :meth:`BackgroundTask.stop` is called the task will
     go in to the STOPPING state.
     """
 

@@ -39,15 +39,15 @@ class Strictness(IntEnum):
 
 
 def validate(config: dict, strictness: Strictness = Strictness.Strict) -> dict:
-    """Validate a :py:class::`dict` against the CSP config schema.
+    """Validate a :class:`dict` against the CSP config schema.
 
     :param config: the object that needs to be validated.
     :type config: dict
     :param strictness: used to handle level of Schema strictness.
-    :type strictness: :py:class:`Strictness`
-    :returns: an updated dictionary based on :py:meth:`schema.validate`,
+    :type strictness: :class:`Strictness`
+    :returns: an updated dictionary based on :meth:`schema.validate`,
         which includes the default values.
-    :raises: `ValueError` exception if there is an exception in validation.
+    :raises: :class:`ValueError` exception if there is an exception in validation.
     """
     from schema import Schema, SchemaError
     from ska_telmodel.csp import get_csp_config_schema
