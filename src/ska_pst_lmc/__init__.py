@@ -8,7 +8,6 @@
 """This package is the top level project for the SKA PST LMC subsystem."""
 
 __all__ = [
-    "Hello",
     "PstBeam",
     "PstDsp",
     "PstManagement",
@@ -21,7 +20,6 @@ __all__ = [
 
 from .beam import PstBeam
 from .dsp import PstDsp
-from .hello import Hello
 from .management import PstManagement
 from .receive import PstReceive, PstReceiveComponentManager, PstReceiveSimulator, ReceiveData
 from .smrb import PstSmrb
