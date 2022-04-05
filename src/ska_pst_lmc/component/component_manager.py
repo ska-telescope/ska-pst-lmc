@@ -5,16 +5,17 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
 
-"""This module provides the base Component Manager fror PST.LMC"""
+"""This module provides the base Component Manager fror PST.LMC."""
 
-__all__ = [
-    'PstComponentManager'
-]
+from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Optional
-from ska_tango_base.control_model import CommunicationStatus
+from typing import Any, Callable
+
 from ska_tango_base.base import BaseComponentManager, check_communicating
+from ska_tango_base.control_model import CommunicationStatus, SimulationMode
+
+__all__ = ["PstComponentManager"]
 
 
 class PstComponentManager(BaseComponentManager):
@@ -29,16 +30,32 @@ class PstComponentManager(BaseComponentManager):
     using a simulated process or a real subprocess.
     """
 
-    def __init__(self,
+    _simuation_mode: SimulationMode = SimulationMode.TRUE
+
+    def __init__(
+        self: PstComponentManager,
+        simulation_mode: SimulationMode,
         logger: logging.Logger,
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable[[bool], None],
         *args: Any,
-        **kwargs: Any
+        **kwargs: Any,
     ):
-        super().__init__(logger, communication_state_callback, component_state_callback, **args)
+        """Initialise instance of the component manager.
 
-    def start_communicating(self):
+        :param simulation_mode: enum to track if component should be
+            in simulation mode or not.
+        :param logger: a logger for this object to use
+        :param communication_status_changed_callback: callback to be
+            called when the status of the communications channel between
+            the component manager and its component changes
+        :param component_fault_callback: callback to be called when the
+            component faults (or stops faulting)
+        """
+        self._simuation_mode = simulation_mode
+        super().__init__(logger, communication_state_callback, component_state_callback, *args, **kwargs)
+
+    def start_communicating(self: PstComponentManager) -> None:
         """
         Establish communication with the component, then start monitoring.
 
@@ -52,7 +69,7 @@ class PstComponentManager(BaseComponentManager):
         """
         raise NotImplementedError("PstComponentManager is abstract.")
 
-    def stop_communicating(self):
+    def stop_communicating(self: PstComponentManager) -> None:
         """
         Cease monitoring the component, and break off all communication with it.
 
@@ -65,7 +82,7 @@ class PstComponentManager(BaseComponentManager):
         raise NotImplementedError("PstComponentManager is abstract.")
 
     @check_communicating
-    def off(self, task_callback: Callable):
+    def off(self: PstComponentManager, task_callback: Callable) -> None:
         """
         Turn the component off.
 
@@ -75,7 +92,7 @@ class PstComponentManager(BaseComponentManager):
         raise NotImplementedError("PstComponentManager is abstract.")
 
     @check_communicating
-    def standby(self, task_callback: Callable):
+    def standby(self: PstComponentManager, task_callback: Callable) -> None:
         """
         Put the component into low-power standby mode.
 
@@ -85,7 +102,7 @@ class PstComponentManager(BaseComponentManager):
         raise NotImplementedError("PstComponentManager is abstract.")
 
     @check_communicating
-    def on(self, task_callback: Callable):
+    def on(self: PstComponentManager, task_callback: Callable) -> None:
         """
         Turn the component on.
 
@@ -95,7 +112,7 @@ class PstComponentManager(BaseComponentManager):
         raise NotImplementedError("PstComponentManager is abstract.")
 
     @check_communicating
-    def reset(self, task_callback: Callable):
+    def reset(self: PstComponentManager, task_callback: Callable) -> None:
         """
         Reset the component (from fault state).
 

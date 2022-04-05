@@ -7,8 +7,9 @@
 
 """This subpackage implements RECV component for PST.LMC."""
 
-__all__ = ["PstReceive", "ReceiveData", "PstReceiveSimulator"]
+__all__ = ["PstReceive", "PstReceiveComponentManager", "ReceiveData", "PstReceiveSimulator"]
 
 from .receive_device import PstReceive
+from .receive_component_manager import PstReceiveComponentManager
 from .receive_model import ReceiveData
 from .receive_simulator import PstReceiveSimulator

@@ -51,7 +51,6 @@ class PstSmrb(CspSubElementSubarray):
 
     def always_executed_hook(self: PstSmrb) -> None:
         """Execute call before any TANGO command is executed."""
-        pass
 
     def delete_device(self: PstSmrb) -> None:
         """Delete resources allocated in init_device.
@@ -60,7 +59,6 @@ class PstSmrb(CspSubElementSubarray):
         init_device method to be released.  This method is called by the device
         destructor and by the device Init command.
         """
-        pass
 
     # ------------------
     # Attributes

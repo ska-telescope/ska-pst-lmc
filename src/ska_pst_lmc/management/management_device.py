@@ -65,7 +65,6 @@ class PstManagement(CspSubElementController):
 
     def always_executed_hook(self: PstManagement) -> None:
         """Execute call before any TANGO command is executed."""
-        pass
 
     def delete_device(self: PstManagement) -> None:
         """Delete resources allocated in init_device.
@@ -74,7 +73,6 @@ class PstManagement(CspSubElementController):
         init_device method to be released.  This method is called by the device
         destructor and by the device Init command.
         """
-        pass
 
     # ----------
     # Attributes

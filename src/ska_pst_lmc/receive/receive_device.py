@@ -13,8 +13,11 @@ from __future__ import annotations
 
 from typing import List, Optional
 
+from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 from ska_tango_base.csp.subarray import CspSubElementSubarray
 from tango.server import attribute, run
+
+from ska_pst_lmc.receive.receive_component_manager import PstReceiveComponentManager
 
 __all__ = ["PstReceive", "main"]
 
@@ -45,9 +48,29 @@ class PstReceive(CspSubElementSubarray):
         self.set_change_event("longRunningCommandProgress", True, True)
         self.set_change_event("longRunningCommandResult", True, True)
 
+    def create_component_manager(
+        self: PstReceive,
+    ) -> PstReceiveComponentManager:
+        """
+        Create and return a component manager for this device.
+
+        :return: a component manager for this device.
+        """
+        return PstReceiveComponentManager(
+            simulation_mode=SimulationMode.TRUE,
+            logger=self.logger,
+            communication_state_callback=self._communication_state_callback,
+            component_state_callback=self._component_state_callback,
+        )
+
+    def _communication_state_callback(self: PstReceive, status: CommunicationStatus) -> None:
+        pass
+
+    def _component_state_callback(self: PstReceive, flag: bool) -> None:
+        pass
+
     def always_executed_hook(self: PstReceive) -> None:
         """Execute call before any TANGO command is executed."""
-        pass
 
     def delete_device(self: PstReceive) -> None:
         """Delete resources allocated in init_device.
@@ -56,7 +79,6 @@ class PstReceive(CspSubElementSubarray):
         init_device method to be released.  This method is called by the device
         destructor and by the device Init command.
         """
-        pass
 
     # ----------
     # Attributes
@@ -78,7 +100,7 @@ class PstReceive(CspSubElementSubarray):
         :returns: current data receive rate from the CBF interface in Gb/s.
         :rtype: float
         """
-        return 0.0
+        return self.component_manager.received_rate
 
     @attribute(
         dtype="DevULong64",
@@ -94,7 +116,7 @@ class PstReceive(CspSubElementSubarray):
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
         """
-        return 0
+        return self.component_manager.received_data
 
     @attribute(
         dtype="DevFloat",
@@ -117,7 +139,7 @@ class PstReceive(CspSubElementSubarray):
         :returns: current rate of CBF ingest data being dropped or lost in MB/s.
         :rtype: float
         """
-        return 0.0
+        return self.component_manager.dropped_rate
 
     @attribute(
         dtype="DevULong64",
@@ -134,7 +156,7 @@ class PstReceive(CspSubElementSubarray):
         :returns: total number of bytes dropped in the current scan in Bytes.
         :rtype: int
         """
-        return 0
+        return self.component_manager.dropped_data
 
     @attribute(
         dtype="DevULong64",
@@ -148,7 +170,7 @@ class PstReceive(CspSubElementSubarray):
         :returns: total number of packets received out of order in the current scan.
         :rtype: int
         """
-        return 0
+        return self.component_manager.misordered_packets
 
     @attribute(
         dtype="DevULong64",
@@ -161,7 +183,7 @@ class PstReceive(CspSubElementSubarray):
         :returns: total number of malformed packets received during the current scan.
         :rtype: int
         """
-        return 0
+        return self.component_manager.malformed_packets
 
     @attribute(
         dtype="DevFloat",
@@ -174,7 +196,7 @@ class PstReceive(CspSubElementSubarray):
         :returns: time average of all relative weights for the current scan.
         :rtype: float
         """
-        return 0.0
+        return self.component_manager.relative_weight
 
     @attribute(
         dtype=("DevFloat",),
@@ -189,7 +211,7 @@ class PstReceive(CspSubElementSubarray):
         :returns: time average of relative weights for each channel in the current scan.
         :rtype: list(float)
         """
-        return [0.0]
+        return self.component_manager.relative_weights
 
     # --------
     # Commands
