@@ -6,7 +6,10 @@ __all__ = [
     "validate",
     "Strictness",
     "Configuration",
+    "BackgroundTask",
+    "RunState",
 ]
 
 from .configuration import Configuration
 from .validation import validate, Strictness
+from .background_task import BackgroundTask, RunState
