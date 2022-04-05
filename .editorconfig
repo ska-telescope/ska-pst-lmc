@@ -22,6 +22,9 @@ insert_final_newline = ignore
 [Makefile]
 indent_style = tab
 
+[*.mak]
+indent_style = tab
+
 [*.md]
 trim_trailing_whitespace = false
 
