@@ -64,7 +64,7 @@ class PstReceiveSimulator:
         Updates the current simulated data and returns the latest data.
 
         :returns: current simulated RECV data.
-        :rtype: :class:`ReceiveData`
+        :rtype: :py:class:`ReceiveData`
         """
         self._update()
         return ReceiveData(

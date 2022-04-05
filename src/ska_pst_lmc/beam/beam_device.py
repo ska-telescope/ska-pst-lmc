@@ -70,7 +70,7 @@ class PstBeam(CspSubElementSubarray):
     def init_device(self: PstBeam) -> None:
         """Intialise the attributes and properties of the PstBeam device.
 
-        This overrides the :class:`CspSubElementSubarray`.
+        This overrides the :py:class:`CspSubElementSubarray`.
         """
         CspSubElementSubarray.init_device(self)
         self.set_change_event("adminMode", True, True)

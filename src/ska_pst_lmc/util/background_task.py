@@ -20,7 +20,7 @@ from readerwriterlock import rwlock
 
 
 class RunState(IntEnum):
-    """Enum to represent run state of :class:`BackgroundTask`."""
+    """Enum to represent run state of :py:class:`BackgroundTask`."""
 
     STOPPED = (1,)
     """Background task is stopped and not running.
