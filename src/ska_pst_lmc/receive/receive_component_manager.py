@@ -15,7 +15,10 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, List, Optional
 
-from ska_tango_base.control_model import CommunicationStatus, SimulationMode
+from ska_tango_base.base import check_communicating
+from ska_tango_base.commands import ResultCode
+from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
+from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component import PstComponentManager
 from ska_pst_lmc.receive.receive_simulator import PstReceiveSimulator
@@ -43,7 +46,7 @@ class PstReceiveComponentManager(PstComponentManager):
         simulation_mode: SimulationMode,
         logger: logging.Logger,
         communication_state_callback: Callable[[CommunicationStatus], None],
-        component_state_callback: Callable[[bool], None],
+        component_state_callback: Callable[[bool, PowerState], None],
         *args: Any,
         **kwargs: Any,
     ):
@@ -58,7 +61,6 @@ class PstReceiveComponentManager(PstComponentManager):
         :param component_fault_callback: callback to be called when the
             component faults (or stops faulting)
         """
-        self._simuation_mode = simulation_mode
         self._simulator = PstReceiveSimulator()
         super().__init__(
             simulation_mode,
@@ -66,38 +68,60 @@ class PstReceiveComponentManager(PstComponentManager):
             communication_state_callback,
             component_state_callback,
             *args,
+            power=PowerState.UNKNOWN,
+            fault=None,
             **kwargs,
         )
 
-    def __del__(self: PstReceiveComponentManager) -> None:
-        """Deconstruct object.
+    # def __del__(self: PstReceiveComponentManager) -> None:
+    #     """Deconstruct object.
 
-        This will make sure that if there is a background task running
-        that it is stopped.
-        """
-        print("In __del__")
-        if self._communication_task is not None:
-            print("Communication task is not none. Stopping")
-            self._communication_task.stop()
+    #     This will make sure that if there is a background task running
+    #     that it is stopped.
+    #     """
+    #     if self._communication_task is not None:
+    #         print("Communication task is not none. Stopping")
+    #         self._communication_task.stop()
 
-    def start_communicating(self: PstReceiveComponentManager) -> None:
-        """Establish communication with the RECV software."""
-        self._connect_to_receive()
+    def update_communication_state(
+        self: PstReceiveComponentManager, communication_state: CommunicationStatus
+    ) -> None:
+        if communication_state == CommunicationStatus.NOT_ESTABLISHED:
+            self._connect_to_receive()
+        elif communication_state == CommunicationStatus.DISABLED:
+            self._disconnect_from_receive()
 
     def _connect_to_receive(self: PstReceiveComponentManager) -> None:
         """Establish connection to RECV component."""
+        self.logger.info("Connecting to RECV")
+        self._update_communication_state(CommunicationStatus.NOT_ESTABLISHED)
         if self._simuation_mode == SimulationMode.TRUE:
+            self.logger.info("Starting background task to update RECV data")
             self._communication_task = BackgroundTask(
                 action_fn=self._monitor_action,
                 logger=self.logger,
                 frequency=1.0,
             )
             self._communication_task.run()
-        else:
-            raise NotImplementedError()
+        self.logger.info("Connected to RECV")
+        self._update_communication_state(CommunicationStatus.ESTABLISHED)
+        self._component_state_callback(fault=None, power=PowerState.OFF)
+
+    def _disconnect_from_receive(self: PstReceiveComponentManager) -> None:
+        self.logger.info("Disconnecting from RECV")
+        if self._communication_task is not None:
+            try:
+                self._communication_task.stop()
+            except Exception as e:
+                self.logger.warning("Error while shutting down communication", e)
+
+        self.logger.info("Disconnected from RECV")
+        self._update_communication_state(CommunicationStatus.DISABLED)
+        self._component_state_callback(fault=None, power=PowerState.OFF)
 
     def _monitor_action(self: PstReceiveComponentManager) -> None:
         """Monitor RECV process to get the telemetry information."""
+        self.logger.info("Performing monitor action")
         data = self._simulator.get_data()
 
         self._received_data = data.received_data
@@ -108,14 +132,6 @@ class PstReceiveComponentManager(PstComponentManager):
         self._misordered_packets = data.misordeded_packets
         self._relative_weight = data.relative_weight
         self._relative_weights = data.relative_weights
-
-    def stop_communicating(self: PstReceiveComponentManager) -> None:
-        """Stop communicating with subprocess."""
-        if self._communication_task is not None:
-            try:
-                self._communication_task.stop()
-            except Exception as e:
-                self.logger.warning("Error while shutting down communication", e)
 
     @property
     def received_rate(self: PstReceiveComponentManager) -> float:
@@ -188,3 +204,34 @@ class PstReceiveComponentManager(PstComponentManager):
         :rtype: list(float)
         """
         return self._relative_weights
+
+    @check_communicating
+    def off(self, task_callback=None):
+        """Turn the component off."""
+        # return self.submit_task(self._component.off, task_callback=task_callback)
+        self.logger.off("on requested")
+        if task_callback is not None:
+            task_callback(status=TaskStatus.COMPLETED, result=(ResultCode.OK, f"off command completed OK"))
+
+    @check_communicating
+    def standby(self, task_callback=None):
+        """Put the component into low-power standby mode."""
+        self.logger.standby("on requested")
+        if task_callback is not None:
+            task_callback(
+                status=TaskStatus.COMPLETED, result=(ResultCode.OK, f"standby command completed OK")
+            )
+
+    @check_communicating
+    def on(self, task_callback=None):
+        """Turn the component on."""
+        self.logger.info("on requested")
+        if task_callback is not None:
+            task_callback(status=TaskStatus.COMPLETED, result=(ResultCode.OK, f"on command completed OK"))
+
+    @check_communicating
+    def reset(self, task_callback=None):
+        """Reset the component (from fault state)."""
+        self.logger.reset("on requested")
+        if task_callback is not None:
+            task_callback(status=TaskStatus.COMPLETED, result=(ResultCode.OK, f"reset command completed OK"))

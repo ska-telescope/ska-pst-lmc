@@ -13,16 +13,19 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from ska_tango_base.control_model import CommunicationStatus, SimulationMode
-from ska_tango_base.csp.subarray import CspSubElementSubarray
-from tango.server import attribute, run
+import tango
+from ska_tango_base import SKABaseDevice
+from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
+from tango import DebugIt
+from tango.server import attribute, command, run
 
+import ska_pst_lmc.release as release
 from ska_pst_lmc.receive.receive_component_manager import PstReceiveComponentManager
 
 __all__ = ["PstReceive", "main"]
 
 
-class PstReceive(CspSubElementSubarray):
+class PstReceive(SKABaseDevice):
     """A software TANGO device for managing the RECV component of the PST.LMC subsystem."""
 
     # -----------------
@@ -36,17 +39,13 @@ class PstReceive(CspSubElementSubarray):
     def init_device(self: PstReceive) -> None:
         """Initialise the attributes and properties of the PstReceive.
 
-        This overrides the :py:class:`CspSubElementSubarray`.
+        This overrides the :py:class:`SKABaseDevice`.
         """
-        CspSubElementSubarray.init_device(self)
-        self.set_change_event("adminMode", True, True)
-        self.set_archive_event("adminMode", True, True)
-        self.set_change_event("obsState", True, True)
-        self.set_archive_event("obsState", True, True)
-        self.set_change_event("longRunningCommandsInQueue", True, True)
-        self.set_change_event("longRunningCommandStatus", True, True)
-        self.set_change_event("longRunningCommandProgress", True, True)
-        self.set_change_event("longRunningCommandResult", True, True)
+        util = tango.Util.instance()
+        util.set_serial_model(tango.SerialModel.NO_SYNC)
+        super().init_device()
+        self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
+        self._version_id = release.VERSION
 
     def create_component_manager(
         self: PstReceive,
@@ -59,15 +58,43 @@ class PstReceive(CspSubElementSubarray):
         return PstReceiveComponentManager(
             simulation_mode=SimulationMode.TRUE,
             logger=self.logger,
-            communication_state_callback=self._communication_state_callback,
-            component_state_callback=self._component_state_callback,
+            communication_state_callback=self._communication_state_changed,
+            component_state_callback=self._component_state_changed,
         )
 
-    def _communication_state_callback(self: PstReceive, status: CommunicationStatus) -> None:
-        pass
+    def _communication_state_changed(self, communication_state):
+        self.logger.info(f"Received communication state changed: {communication_state}")
+        action_map = {
+            CommunicationStatus.DISABLED: "component_disconnected",
+            CommunicationStatus.NOT_ESTABLISHED: "component_unknown",
+            CommunicationStatus.ESTABLISHED: None,  # wait for a component state update
+        }
+        action = action_map[communication_state]
+        if action is not None:
+            self.logger.info(f"Calling op_state_model.perform_action('{action})")
+            self.op_state_model.perform_action(action)
 
-    def _component_state_callback(self: PstReceive, flag: bool) -> None:
-        pass
+    def _component_state_changed(self, fault=None, power=None):
+        self.logger.info(f"Component state changed. Fault = {fault}, Power = {power}")
+        if power is not None:
+            action_map = {
+                PowerState.UNKNOWN: None,
+                PowerState.OFF: "component_off",
+                PowerState.STANDBY: "component_standby",
+                PowerState.ON: "component_on",
+            }
+            action = action_map[power]
+            self.logger.info(f"Power action is: '{action}'")
+            if action is not None:
+                self.op_state_model.perform_action(action_map[power])
+
+        if fault is not None:
+            if fault:
+                self.logger.info(f"Setting component to fault")
+                self.op_state_model.perform_action("component_fault")
+            else:
+                self.logger.info(f"Setting component to no_fault")
+                self.op_state_model.perform_action("component_no_fault")
 
     def always_executed_hook(self: PstReceive) -> None:
         """Execute call before any TANGO command is executed."""
@@ -150,7 +177,7 @@ class PstReceive(CspSubElementSubarray):
         polling_period=5000,
         doc="Total number of bytes dropped in the current scan",
     )
-    def dropped(self: PstReceive) -> int:
+    def dropped_data(self: PstReceive) -> int:
         """Get the total number of bytes dropped in the current scan.
 
         :returns: total number of bytes dropped in the current scan in Bytes.
@@ -212,6 +239,44 @@ class PstReceive(CspSubElementSubarray):
         :rtype: list(float)
         """
         return self.component_manager.relative_weights
+
+    @attribute(
+        dtype=SimulationMode,
+        memorized=True,
+        hw_memorized=True,
+    )
+    def simulationMode(self: PstReceive) -> SimulationMode:
+        """
+        Report the simulation mode of the device.
+
+        :return: the current simulation mode
+        """
+        return self.component_manager.simulation_mode
+
+    @simulationMode.write  # type: ignore[no-redef]
+    def simulationMode(self: PstReceive, value: SimulationMode) -> None:
+        """
+        Set the simulation mode.
+
+        :param value: The simulation mode, as a SimulationMode value
+        """
+        self.component_manager.simulation_mode = value
+
+    @command(
+        dtype_out=("str",),
+        doc_out="Version strings",
+    )
+    @DebugIt()
+    def GetVersionInfo(self):
+        """
+        Return the version information of the device.
+
+        To modify behaviour for this command, modify the do() method of
+        the command class.
+
+        :return: The result code and the command unique ID
+        """
+        return [f"{self.__class__.__name__}, {self.read_buildState()}"]
 
     # --------
     # Commands

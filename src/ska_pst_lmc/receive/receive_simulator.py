@@ -17,6 +17,37 @@ from typing import List
 from ska_pst_lmc.receive.receive_model import ReceiveData
 
 
+def generate_random_update(nchan: int = 128) -> ReceiveData:
+    """Generate a random update of ReceivedData.
+
+    :param nchans: number of channels for relative weights.
+    :type nchans: int
+    :returns: a randomly generated receive data.
+    """
+
+    received_rate: float = 1.0 * randint(0, 90)
+    received_data: int = int(received_rate * 1e9 / 8)
+    dropped_rate: float = received_rate / 1000.0 * random()
+    dropped_data: int = int(dropped_rate * 1e9 / 8)
+    misordered_packets: int = randint(0, 3)
+    malformed_packets: int = randint(0, 3)
+    relative_weights: List[float] = nchan * [0.0]
+    for i in range(nchan):
+        relative_weights[i] = 1.0 * randint(0, 128)
+    relative_weight = sum(relative_weights) / nchan
+
+    return ReceiveData(
+        received_data=received_data,
+        received_rate=received_rate,
+        dropped_data=dropped_data,
+        dropped_rate=dropped_rate,
+        misordeded_packets=misordered_packets,
+        malformed_packets=malformed_packets,
+        relative_weights=relative_weights,
+        relative_weight=relative_weight,
+    )
+
+
 class PstReceiveSimulator:
     """Simulator for the RECV process of the PST.LMC sub-system.
 
@@ -44,18 +75,27 @@ class PstReceiveSimulator:
         """Initialise the simulator."""
         self._nchan = randint(128, 1024)
         self._relative_weights = [0] * self._nchan
+        self._generate = False
+
+    def start_scan(self):
+        self._generate = True
+
+    def stop_scan(self):
+        self._generate = False
 
     def _update(self: PstReceiveSimulator) -> None:
         """Simulate the update of RECV data."""
-        self._received_rate = received_rate = 1.0 * randint(0, 90)
-        self._received_data += int(received_rate * 1e9 / 8)
-        self._dropped_rate = dropped_rated = received_rate / 1000.0 * random()
-        self._dropped_data += int(dropped_rated * 1e9 / 8)
-        self._misordered_packets = randint(0, 3)
-        self._malformed_packets = randint(0, 3)
-        for i in range(self._nchan):
-            self._relative_weights[i] = 1.0 * randint(0, 128)
-        self._relative_weight = sum(self._relative_weights) / self._nchan
+
+        update: ReceiveData = generate_random_update(self._nchan)
+
+        self._received_rate += update.received_rate
+        self._received_data += update.received_data
+        self._dropped_rate = update.dropped_rate
+        self._dropped_data += update.dropped_data
+        self._misordered_packets += update.misordeded_packets
+        self._malformed_packets += update.malformed_packets
+        self._relative_weights = update.relative_weights
+        self._relative_weight = update.relative_weight
 
     def get_data(self) -> ReceiveData:
         """
@@ -66,7 +106,9 @@ class PstReceiveSimulator:
         :returns: current simulated RECV data.
         :rtype: :py:class:`ReceiveData`
         """
-        self._update()
+        if self._generate:
+            self._update()
+
         return ReceiveData(
             received_data=self._received_data,
             received_rate=self._received_rate,

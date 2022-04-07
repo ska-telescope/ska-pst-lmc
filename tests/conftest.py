@@ -8,9 +8,8 @@ import time
 
 import pytest
 import tango
-from tango.test_context import DeviceTestContext, MultiDeviceTestContext, get_host_ip
-
 from ska_tango_base.testing.mock import MockCallable, MockChangeEventCallback
+from tango.test_context import DeviceTestContext, MultiDeviceTestContext, get_host_ip
 
 
 @pytest.fixture(scope="class")
@@ -132,9 +131,7 @@ def devices_to_test(request):
 
 
 @pytest.fixture(scope="function")
-def multi_device_tango_context(
-    mocker, devices_to_test  # pylint: disable=redefined-outer-name
-):
+def multi_device_tango_context(mocker, devices_to_test):  # pylint: disable=redefined-outer-name
     """
     Create and return a TANGO MultiDeviceTestContext object.
 
@@ -158,9 +155,7 @@ def multi_device_tango_context(
             "tango://{0}:{1}/{2}#dbase=no".format(HOST, PORT, fqdn), *args, **kwargs
         ),
     )
-    with MultiDeviceTestContext(
-        devices_to_test, host=HOST, port=PORT, process=True
-    ) as context:
+    with MultiDeviceTestContext(devices_to_test, host=HOST, port=PORT, process=True) as context:
         yield context
 
 
