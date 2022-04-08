@@ -11,12 +11,89 @@
 
 from __future__ import annotations
 
+import logging
 from enum import IntEnum
 from logging import Logger
 from threading import Thread
-from typing import Any, Callable, Optional
+from typing import Any, Callable, List, Optional
 
 from readerwriterlock import rwlock
+
+
+class BackgroundTaskProcessor:
+    """Class used for submitting and reaping of background tasks.
+
+    This class is used to abstract away needing to hold and monitor
+    :py:class:`BackgrounTask` objects. This class submits a background
+    task itself to reap completed tasks.
+    """
+
+    def __init__(self: BackgroundTaskProcessor, default_logger: logging.Logger):
+        """Initialise processor.
+
+        :param default_logger: the logger that the tasks should use if
+            one is not provided.
+        :type default_logger: logging.Logger
+        """
+        # need a queue
+        self._tasks: List[BackgroundTask] = list()
+        self._default_logger: logging.Logger = default_logger
+
+        # need a background reaper
+        self._reaper = BackgroundTask(
+            action_fn=self._reap,
+            logger=self._default_logger,
+            frequency=10.0,
+        )
+        self._reaper.run()
+
+    def __del__(self: BackgroundTaskProcessor) -> None:
+        """Destructor for processor.
+
+        Stops all the background tasks.
+        """
+        for t in self._tasks:
+            t.stop()
+        self._reaper.stop()
+
+    def submit_task(
+        self: BackgroundTaskProcessor,
+        action_fn: Callable,
+        logger: Optional[logging.Logger] = None,
+        frequency: Optional[float] = None,
+    ) -> BackgroundTask:
+        """Submit a background task to run.
+
+        This will submit a background task, whether it is a one
+        shot task or a periodic task. It can take an optional
+        logger, or the default logger used by the processor is used,
+        and an optional frequency.
+
+        :param task: the callable function to run, this must wrap
+            its own callbacks if needed.
+        :param logger: an optional logger to use, else the default logger
+            is used.
+        :param frequency: an optional parameter for background task to
+            run at a given frequency.
+        :returns: the task that was submit if there is a need for
+            external monitoring.
+        :rtype: BackgroundTask
+        """
+        task: BackgroundTask = BackgroundTask(
+            action_fn=action_fn,
+            logger=logger or self._default_logger,
+            frequency=frequency,
+        )
+        self._tasks.append(task)
+        task.run()
+
+        return task
+
+    def _reap(self: BackgroundTaskProcessor) -> None:
+        """Reap completed tasks."""
+        for t in self._tasks:
+            if not t.running():
+                self._tasks.remove(t)
 
 
 class RunState(IntEnum):

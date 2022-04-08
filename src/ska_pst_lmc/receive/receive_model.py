@@ -9,6 +9,8 @@
 
 """Module for providing common model classes within the RECV sub-element component."""
 
+from __future__ import annotations
+
 from collections import namedtuple
 
 
@@ -20,7 +22,7 @@ class ReceiveData(
             "received_rate",
             "dropped_data",
             "dropped_rate",
-            "misordeded_packets",
+            "misordered_packets",
             "malformed_packets",
             "relative_weights",
             "relative_weight",
@@ -34,8 +36,26 @@ class ReceiveData(
     :ivar dropped_data: amount of data dropped during current scan, in bytes.
     :ivar dropped_rate: the rate of data dropped during current scan, in Gb/s.
     :ivar malformed_packets: the number of malformed packets received during current scan.
+    :ivar misordered_packets: the number of misordered packets received during current scan.
     :ivar relative_weights: the relative weights for each channel.
     :ivar relative_weight: the average relative weight over all channels.
     """
 
     __slots__ = ()
+
+    @staticmethod
+    def defaults() -> ReceiveData:
+        """Return a default ReceiveData object.
+
+        This is used when the API is not connected or scanning.
+        """
+        return ReceiveData(
+            received_data=0,
+            received_rate=0.0,
+            dropped_data=0,
+            dropped_rate=0.0,
+            misordered_packets=0,
+            malformed_packets=0,
+            relative_weights=[],
+            relative_weight=0.0,
+        )

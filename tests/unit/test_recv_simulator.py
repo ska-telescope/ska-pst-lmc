@@ -38,14 +38,14 @@ def test_default_values() -> None:
 def test_get_data_will_update_data_when_scanning() -> None:
     """Test to assert that simulator updates data."""
     simulator = PstReceiveSimulator()
-    simulator.scan()
+    simulator.scan(args={})
 
     empty: ReceiveData = ReceiveData(
         received_data=0,
         received_rate=0.0,
         dropped_data=0,
         dropped_rate=0.0,
-        misordeded_packets=0,
+        misordered_packets=0,
         malformed_packets=0,
         relative_weight=0.0,
         relative_weights=__create_expected_relative_weights(simulator._nchan),
@@ -58,14 +58,14 @@ def test_get_data_will_update_data_when_scanning() -> None:
 def test_get_data_wont_update_data_when_scanning_stops() -> None:
     """Test to assert that simulator updates data."""
     simulator = PstReceiveSimulator()
-    simulator.scan()
+    simulator.scan(args={})
 
     empty: ReceiveData = ReceiveData(
         received_data=0,
         received_rate=0.0,
         dropped_data=0,
         dropped_rate=0.0,
-        misordeded_packets=0,
+        misordered_packets=0,
         malformed_packets=0,
         relative_weight=0.0,
         relative_weights=__create_expected_relative_weights(simulator._nchan),

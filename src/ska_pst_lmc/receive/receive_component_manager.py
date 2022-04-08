@@ -13,16 +13,16 @@
 from __future__ import annotations
 
 import logging
-import time
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, List, Tuple
 
 from ska_tango_base.base import check_communicating
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component import PstComponentManager
+from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApi, PstReceiveProcessApiSimulator
 from ska_pst_lmc.receive.receive_simulator import PstReceiveSimulator
-from ska_pst_lmc.util.background_task import BackgroundTask
+from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
 TaskResponse = Tuple[TaskStatus, str]
 
@@ -41,7 +41,9 @@ class PstReceiveComponentManager(PstComponentManager):
     _relative_weight: float = 0.0
 
     _simulator: PstReceiveSimulator
-    _communication_task: Optional[BackgroundTask] = None
+
+    _background_task_processor: BackgroundTaskProcessor
+    _api: PstReceiveProcessApi
 
     def __init__(
         self: PstReceiveComponentManager,
@@ -64,6 +66,12 @@ class PstReceiveComponentManager(PstComponentManager):
             component faults (or stops faulting)
         """
         self._simulator = PstReceiveSimulator()
+        self._api = PstReceiveProcessApiSimulator(
+            self._simulator,
+            logger=logger,
+            component_state_callback=component_state_callback,
+        )
+        self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
         super().__init__(
             simulation_mode,
             logger,
@@ -74,15 +82,6 @@ class PstReceiveComponentManager(PstComponentManager):
             fault=None,
             **kwargs,
         )
-
-    def __del__(self: PstReceiveComponentManager) -> None:
-        """Deconstruct object.
-
-        This will make sure that if there is a background task running
-        that it is stopped.
-        """
-        if self._communication_task is not None:
-            self._communication_task.stop()
 
     def _handle_communication_state_change(
         self: PstReceiveComponentManager, communication_state: CommunicationStatus
@@ -95,38 +94,14 @@ class PstReceiveComponentManager(PstComponentManager):
     def _connect_to_receive(self: PstReceiveComponentManager) -> None:
         """Establish connection to RECV component."""
         self._update_communication_state(CommunicationStatus.NOT_ESTABLISHED)
-        if self._simuation_mode == SimulationMode.TRUE:
-            self._communication_task = BackgroundTask(
-                action_fn=self._monitor_action,
-                logger=self.logger,
-                frequency=1.0,
-            )
-            self._communication_task.run()
+        self._api.connect()
         self._update_communication_state(CommunicationStatus.ESTABLISHED)
         self._component_state_callback(fault=None, power=PowerState.OFF)
 
     def _disconnect_from_receive(self: PstReceiveComponentManager) -> None:
-        if self._communication_task is not None:
-            try:
-                self._communication_task.stop()
-            except Exception as e:
-                self.logger.warning("Error while shutting down communication", e)
-
+        self._api.disconnect()
         self._update_communication_state(CommunicationStatus.DISABLED)
         self._component_state_callback(fault=None, power=PowerState.UNKNOWN)
-
-    def _monitor_action(self: PstReceiveComponentManager) -> None:
-        """Monitor RECV process to get the telemetry information."""
-        data = self._simulator.get_data()
-
-        self._received_data = data.received_data
-        self._received_rate = data.received_rate
-        self._dropped_data = data.dropped_data
-        self._dropped_rate = data.dropped_rate
-        self._malformed_packets = data.malformed_packets
-        self._misordered_packets = data.misordeded_packets
-        self._relative_weight = data.relative_weight
-        self._relative_weights = data.relative_weights
 
     @property
     def received_rate(self: PstReceiveComponentManager) -> float:
@@ -135,7 +110,7 @@ class PstReceiveComponentManager(PstComponentManager):
         :returns: current data receive rate from the CBF interface in Gb/s.
         :rtype: float
         """
-        return self._received_rate
+        return self._api.monitor_data.received_rate
 
     @property
     def received_data(self: PstReceiveComponentManager) -> int:
@@ -144,7 +119,7 @@ class PstReceiveComponentManager(PstComponentManager):
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
         """
-        return self._received_data
+        return self._api.monitor_data.received_data
 
     @property
     def dropped_rate(self: PstReceiveComponentManager) -> float:
@@ -153,7 +128,7 @@ class PstReceiveComponentManager(PstComponentManager):
         :returns: current rate of CBF ingest data being dropped or lost in MB/s.
         :rtype: float
         """
-        return self._dropped_rate
+        return self._api.monitor_data.dropped_rate
 
     @property
     def dropped_data(self: PstReceiveComponentManager) -> int:
@@ -162,7 +137,7 @@ class PstReceiveComponentManager(PstComponentManager):
         :returns: total number of bytes dropped in the current scan in Bytes.
         :rtype: int
         """
-        return self._dropped_data
+        return self._api.monitor_data.dropped_data
 
     @property
     def misordered_packets(self: PstReceiveComponentManager) -> int:
@@ -171,7 +146,7 @@ class PstReceiveComponentManager(PstComponentManager):
         :returns: total number of packets received out of order in the current scan.
         :rtype: int
         """
-        return self._misordered_packets
+        return self._api.monitor_data.misordered_packets
 
     @property
     def malformed_packets(self: PstReceiveComponentManager) -> int:
@@ -180,7 +155,7 @@ class PstReceiveComponentManager(PstComponentManager):
         :returns: total number of malformed packets received during the current scan.
         :rtype: int
         """
-        return self._malformed_packets
+        return self._api.monitor_data.malformed_packets
 
     @property
     def relative_weight(self: PstReceiveComponentManager) -> float:
@@ -189,7 +164,7 @@ class PstReceiveComponentManager(PstComponentManager):
         :returns: time average of all relative weights for the current scan.
         :rtype: float
         """
-        return self._relative_weight
+        return self._api.monitor_data.relative_weight
 
     @property
     def relative_weights(self: PstReceiveComponentManager) -> List[float]:
@@ -198,7 +173,7 @@ class PstReceiveComponentManager(PstComponentManager):
         :returns: time average of relative weights for each channel in the current scan.
         :rtype: list(float)
         """
-        return self._relative_weights
+        return self._api.monitor_data.relative_weights
 
     # ---------------
     # Commands
@@ -258,22 +233,7 @@ class PstReceiveComponentManager(PstComponentManager):
 
         :param resources: resources to be assigned
         """
-
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=33)
-            time.sleep(0.1)
-            task_callback(progress=66)
-            time.sleep(0.1)
-            self._component_state_callback(resourced=True)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        task = BackgroundTask(
-            action_fn=_task,
-            logger=self.logger,
-        )
-        task.run()
+        self._api.assign_resources(resources, task_callback)
         return TaskStatus.QUEUED, "Resourcing"
 
     def release(self: PstReceiveComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
@@ -282,42 +242,12 @@ class PstReceiveComponentManager(PstComponentManager):
 
         :param resources: resources to be released
         """
-
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=33)
-            time.sleep(0.1)
-            task_callback(progress=66)
-            time.sleep(0.1)
-            self._component_state_callback(resourced=False)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        task = BackgroundTask(
-            action_fn=_task,
-            logger=self.logger,
-        )
-        task.run()
+        self._api.release(resources, task_callback)
         return TaskStatus.QUEUED, "Releasing"
 
     def release_all(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
         """Release all resources."""
-
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=33)
-            time.sleep(0.1)
-            task_callback(progress=66)
-            time.sleep(0.1)
-            self._component_state_callback(resourced=False)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        task = BackgroundTask(
-            action_fn=_task,
-            logger=self.logger,
-        )
-        task.run()
+        self._api.release_all(task_callback)
         return TaskStatus.QUEUED, "Releasing all"
 
     def configure(
@@ -329,103 +259,28 @@ class PstReceiveComponentManager(PstComponentManager):
         :param configuration: the configuration to be configured
         :type configuration: dict
         """
-
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=33)
-            time.sleep(0.1)
-            task_callback(progress=66)
-            self._simulator.configure(configuration=configuration)
-            time.sleep(0.1)
-            self._component_state_callback(configured=True)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        task = BackgroundTask(
-            action_fn=_task,
-            logger=self.logger,
-        )
-        task.run()
+        self._api.configure(configuration, task_callback)
         return TaskStatus.QUEUED, "Releasing all"
 
     def deconfigure(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
         """Deconfigure this component."""
-
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=33)
-            time.sleep(0.1)
-            task_callback(progress=66)
-            time.sleep(0.1)
-            self._component_state_callback(configured=False)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        task = BackgroundTask(
-            action_fn=_task,
-            logger=self.logger,
-        )
-        task.run()
+        self._api.deconfigure(task_callback)
         return TaskStatus.QUEUED, "Deconfiguring"
 
     def scan(self: PstReceiveComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
         """Start scanning."""
         # should be for how long the scan is and update based on that.
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=33)
-            time.sleep(0.1)
-            task_callback(progress=66)
-            self._simulator.scan()
-            self._component_state_callback(scanning=True)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        task = BackgroundTask(
-            action_fn=_task,
-            logger=self.logger,
-        )
-        task.run()
+        self._api.scan(args, task_callback)
         return TaskStatus.QUEUED, "Scanning"
 
     def end_scan(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
         """End scanning."""
-
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=33)
-            time.sleep(0.1)
-            task_callback(progress=66)
-            self._simulator.end_scan()
-            self._component_state_callback(scanning=False)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        task = BackgroundTask(
-            action_fn=_task,
-            logger=self.logger,
-        )
-        task.run()
+        self._api.end_scan(task_callback)
         return TaskStatus.QUEUED, "End scanning"
 
     def abort(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
         """Tell the component to abort whatever it was doing."""
-
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=33)
-            time.sleep(0.1)
-            self._simulator.end_scan()
-            self._component_state_callback(scanning=False)
-            task_callback(progress=66)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        task = BackgroundTask(
-            action_fn=_task,
-            logger=self.logger,
-        )
-        task.run()
+        self._api.abort(task_callback)
         return TaskStatus.QUEUED, "Aborting"
 
     def obsreset(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:

@@ -40,7 +40,7 @@ def generate_random_update(nchan: int = 128) -> ReceiveData:
         received_rate=received_rate,
         dropped_data=dropped_data,
         dropped_rate=dropped_rate,
-        misordeded_packets=misordered_packets,
+        misordered_packets=misordered_packets,
         malformed_packets=malformed_packets,
         relative_weights=relative_weights,
         relative_weight=relative_weight,
@@ -83,11 +83,21 @@ class PstReceiveSimulator:
         :param configuration: the configuration to be configured
         :type configuration: dict
         """
-        self._nchan = configuration["nchan"] or randint(128, 1024)
+        if "nchan" in configuration:
+            self._nchan = configuration["nchan"]
+        else:
+            self._nchan = randint(128, 1024)
         self._relative_weights = self._nchan * [0.0]
 
-    def scan(self: PstReceiveSimulator) -> None:
-        """Start scanning."""
+    def deconfigure(self: PstReceiveSimulator) -> None:
+        """Simulate deconfigure."""
+        self._scan = False
+
+    def scan(self: PstReceiveSimulator, args: dict) -> None:
+        """Start scanning.
+
+        :param: the scan arguments.
+        """
         self._scan = True
 
     def end_scan(self: PstReceiveSimulator) -> None:
@@ -106,7 +116,7 @@ class PstReceiveSimulator:
         self._received_data += update.received_data
         self._dropped_rate = update.dropped_rate
         self._dropped_data += update.dropped_data
-        self._misordered_packets += update.misordeded_packets
+        self._misordered_packets += update.misordered_packets
         self._malformed_packets += update.malformed_packets
         self._relative_weights = update.relative_weights
         self._relative_weight = update.relative_weight
@@ -128,7 +138,7 @@ class PstReceiveSimulator:
             received_rate=self._received_rate,
             dropped_data=self._dropped_data,
             dropped_rate=self._dropped_rate,
-            misordeded_packets=self._misordered_packets,
+            misordered_packets=self._misordered_packets,
             malformed_packets=self._malformed_packets,
             relative_weights=self._relative_weights,
             relative_weight=self._relative_weight,
