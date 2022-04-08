@@ -9,17 +9,21 @@
 
 from __future__ import annotations
 
+import json
+import logging
 import time
 from typing import Generator
 
 import pytest
-from ska_tango_base.control_model import AdminMode, ControlMode, HealthState, SimulationMode, TestMode
-from tango import DevFailed, DeviceProxy, DevState
+from ska_tango_base.control_model import AdminMode, ObsState
+from tango import DeviceProxy, DevState
 from tango.test_context import DeviceTestContext
 
 from ska_pst_lmc import PstReceive
 from ska_pst_lmc.receive import generate_random_update
 from ska_pst_lmc.receive.receive_model import ReceiveData
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -41,8 +45,10 @@ def receive_data() -> ReceiveData:
 
 
 class TestPstReceive:
+    """Test class used for testing the PstReceive TANGO device."""
+
     @pytest.fixture(scope="class")
-    def device_test_config(self, device_properties):
+    def device_test_config(self: TestPstReceive, device_properties: dict) -> dict:
         """
         Specify device configuration, including properties and memorized attributes.
 
@@ -57,22 +63,12 @@ class TestPstReceive:
         """
         return {
             "device": PstReceive,
-            # "component_manager_patch": lambda self: PstReceiveComponentManager(
-            #     SimulationMode.TRUE,
-            #     self.logger,
-            #     self._communication_state_changed,
-            #     self._component_state_changed,
-            # ),
-            # "component_manager_patch": lambda self: ReferenceBaseComponentManager(
-            #     self.logger,
-            #     self._communication_state_changed,
-            #     self._component_state_changed,
-            # ),
+            "process": True,
             "properties": device_properties,
             "memorized": {"adminMode": str(AdminMode.ONLINE.value)},
         }
 
-    def test_State(self, device_under_test: DeviceProxy):
+    def test_State(self: TestPstReceive, device_under_test: DeviceProxy) -> None:
         """
         Test for State.
 
@@ -81,7 +77,7 @@ class TestPstReceive:
         assert device_under_test.state() == DevState.OFF
         assert device_under_test.Status() == "The device is in OFF state."
 
-    def test_GetVersionInfo(self, device_under_test):
+    def test_GetVersionInfo(self: TestPstReceive, device_under_test: DeviceProxy) -> None:
         """
         Test for GetVersionInfo.
 
@@ -98,213 +94,58 @@ class TestPstReceive:
         assert len(version_info) == 1
         assert re.match(version_pattern, version_info[0])
 
-    def test_Reset(self, device_under_test):
-        """
-        Test for Reset.
-
-        :param device_under_test: a proxy to the device under test
-        """
-        # PROTECTED REGION ID(SKABaseDevice.test_Reset) ENABLED START #
-        # The main test of this command is
-        # TestSKABaseDevice_commands::test_ResetCommand
+    def test_configure_then_scan_then_stop(self: TestPstReceive, device_under_test: DeviceProxy) -> None:
+        """Test state model of PstReceive."""
+        # need to go through state mode
         assert device_under_test.state() == DevState.OFF
 
-        with pytest.raises(
-            DevFailed,
-            match="Command Reset not allowed when the device is in OFF state",
-        ):
-            _ = device_under_test.Reset()
-
-    def test_online(self, device_under_test) -> None:
-        device_under_test.adminMode = AdminMode.ONLINE
+        device_under_test.On()
         time.sleep(0.1)
-
-        assert device_under_test.adminMode == AdminMode.ONLINE
         assert device_under_test.state() == DevState.ON
-        assert device_under_test.status() == "The device is in ON state."
-        assert device_under_test.healthState == HealthState.OK
-        assert device_under_test.controlMode == ControlMode.REMOTE
-        assert device_under_test.simulationMode == SimulationMode.TRUE
-        assert device_under_test.testMode == TestMode.TEST
 
-    # def test_On(self, device_under_test, tango_change_event_helper):
-    #     """
-    #     Test for On command.
+        # need to assign resources
+        assert device_under_test.obsState == ObsState.EMPTY
 
-    #     :param device_under_test: a proxy to the device under test
-    #     :param tango_change_event_helper: helper fixture that simplifies
-    #         subscription to the device under test with a callback.
-    #     """
-    #     assert device_under_test.state() == DevState.OFF
+        resources = json.dumps({"foo": "bar"})
+        device_under_test.AssignResources(resources)
+        time.sleep(0.1)
+        assert device_under_test.obsState == ObsState.RESOURCING
+        time.sleep(0.3)
+        assert device_under_test.obsState == ObsState.IDLE
 
-    #     device_state_callback = tango_change_event_helper.subscribe("state")
-    #     device_state_callback.assert_next_change_event(DevState.OFF)
+        configuration = json.dumps({"nchan": 1024})
+        device_under_test.Configure(configuration)
+        time.sleep(0.1)
+        assert device_under_test.obsState == ObsState.CONFIGURING
+        time.sleep(0.3)
+        assert device_under_test.obsState == ObsState.READY
 
-    #     device_status_callback = tango_change_event_helper.subscribe("status")
-    #     device_status_callback.assert_next_change_event("The device is in OFF state.")
+        scan = json.dumps({"cat": "dog"})
+        device_under_test.Scan(scan)
+        time.sleep(0.1)
+        assert device_under_test.obsState == ObsState.READY
+        time.sleep(0.3)
+        assert device_under_test.obsState == ObsState.SCANNING
 
-    #     command_progress_callback = tango_change_event_helper.subscribe(
-    #         "longRunningCommandProgress"
-    #     )
-    #     command_progress_callback.assert_next_change_event(None)
+        time.sleep(5)
+        # shoud now be able to get some properties
+        assert device_under_test.received_rate > 0.0
+        assert device_under_test.received_data > 0
+        assert device_under_test.dropped_rate > 0.0
+        assert device_under_test.dropped_data > 0
+        assert device_under_test.misordered_packets > 0
+        assert device_under_test.malformed_packets > 0
+        assert device_under_test.relative_weight > 0.0
+        assert len(device_under_test.relative_weights) == 1024
 
-    #     command_status_callback = tango_change_event_helper.subscribe(
-    #         "longRunningCommandStatus"
-    #     )
-    #     command_status_callback.assert_next_change_event(None)
+        device_under_test.EndScan()
+        time.sleep(0.1)
+        assert device_under_test.obsState == ObsState.SCANNING
+        time.sleep(0.3)
+        assert device_under_test.obsState == ObsState.READY
 
-    #     command_result_callback = tango_change_event_helper.subscribe(
-    #         "longRunningCommandResult"
-    #     )
-    #     command_result_callback.assert_next_change_event(("", ""))
+        logger.info("Device is now in ready state.")
 
-    #     [[result_code], [command_id]] = device_under_test.On()
-    #     assert result_code == ResultCode.QUEUED
-    #     command_status_callback.assert_next_change_event((command_id, "QUEUED"))
-    #     command_status_callback.assert_next_change_event((command_id, "IN_PROGRESS"))
-
-    #     command_progress_callback.assert_next_change_event((command_id, "33"))
-    #     command_progress_callback.assert_next_change_event((command_id, "66"))
-
-    #     command_status_callback.assert_next_change_event((command_id, "COMPLETED"))
-
-    #     device_state_callback.assert_next_change_event(DevState.ON)
-    #     device_status_callback.assert_next_change_event("The device is in ON state.")
-    #     assert device_under_test.state() == DevState.ON
-
-    #     command_result_callback.assert_next_change_event(
-    #         (command_id, json.dumps([int(ResultCode.OK), "On command completed OK"]))
-    #     )
-
-    #     # Check what happens if we call On() when the device is already ON.
-    #     [[result_code], [message]] = device_under_test.On()
-    #     assert result_code == ResultCode.REJECTED
-    #     assert message == "Device is already in ON state."
-
-    #     command_status_callback.assert_not_called()
-    #     command_progress_callback.assert_not_called()
-    #     command_result_callback.assert_not_called()
-
-    #     device_state_callback.assert_not_called()
-    #     device_status_callback.assert_not_called()
-
-    # def test_InitDevice(
-    #     self: TestPstReceive,
-    #     device_under_test: DeviceProxy,
-    # ) -> None:
-    #     """
-    #     Test for Initial state.
-
-    #     :param device_under_test: fixture that provides a
-    #         :py:class:`tango.DeviceProxy` to the device under test, in a
-    #         :py:class:`tango.test_context.DeviceTestContext`.
-    #     """
-    #     assert device_under_test.state() == DevState.DISABLE
-    #     assert device_under_test.status() == "The device is in DISABLE state."
-    #     assert device_under_test.adminMode == AdminMode.OFFLINE
-    #     assert device_under_test.healthState == HealthState.UNKNOWN
-    #     assert device_under_test.controlMode == ControlMode.REMOTE
-    #     assert device_under_test.simulationMode == SimulationMode.TRUE
-    #     assert device_under_test.testMode == TestMode.TEST
-
-    # def test_Status(self, device_under_test):
-    #     """
-    #     Test for Status.
-
-    #     :param device_under_test: a proxy to the device under test
-    #     """
-    #     assert device_under_test.Status() == "The device is in ON state."
-
-    # def test_recevie_device_gets_attributes_from_simulator(self,
-    #     device_under_test: DeviceProxy,
-    #     receive_data: ReceiveData,
-    #     monkeypatch: pytest.monkeypatch,  # type: ignore[name-defined]
-    # ) -> None:
-    #     import numpy as np
-    #     # need to mock the ReceiveSimulator's update data so we know what values it should be.
-    #     def mock_get_data(*args: Any, **kwargs: Any) -> ReceiveData:
-    #         return receive_data
-
-    #     monkeypatch.setattr(PstReceiveSimulator, "get_data", mock_get_data)
-
-    #     assert device_under_test.received_data == 0
-    #     assert device_under_test.received_rate == 0.
-    #     assert device_under_test.dropped_data == 0
-    #     assert device_under_test.dropped_rate == 0.0
-    #     assert device_under_test.misordered_packets == 0
-    #     assert device_under_test.malformed_packets == 0
-    #     assert device_under_test.relative_weight == 0.0
-
-    #     device_under_test.adminMode = AdminMode.ONLINE
-    #     time.sleep(0.1)
-
-    #     assert device_under_test.state() == DevState.ON
-    #     assert device_under_test.status() == "The device is in ON state."
-    #     assert device_under_test.controlMode == ControlMode.REMOTE
-    #     assert device_under_test.simulationMode == SimulationMode.TRUE
-    # assert device_under_test.testMode == TestMode.TEST
-
-    # device_under_test.Init()
-
-    # assert device_under_test.received_data == receive_data.received_data
-    # assert device_under_test.received_rate == receive_data.received_rate
-    # assert device_under_test.dropped_data == receive_data.dropped_data
-    # assert device_under_test.dropped_rate == receive_data.dropped_rate
-    # assert device_under_test.misordered_packets == receive_data.misordeded_packets
-    # assert device_under_test.malformed_packets == receive_data.malformed_packets
-    # assert device_under_test.relative_weights == receive_data.relative_weights
-    # assert device_under_test.relative_weight == receive_data.relative_weight
-
-
-#         # assert receive_device.battery_voltage_a == pytest.approx(27.66106)
-#         # assert receive_device.battery_current_a == pytest.approx(0.08056619)
-#         # assert receive_device.battery_voltage_b == pytest.approx(28.1005)
-#         # assert receive_device.battery_current_b == pytest.approx(3.08837)
-#         # assert receive_device.hydrogen_pressure_setting == pytest.approx(5.8300632)
-#         # assert receive_device.hydrogen_pressure_measured == pytest.approx(1.5319785)
-#         # assert receive_device.purifier_current == pytest.approx(0.61889489)
-#         # assert receive_device.dissociator_current == pytest.approx(0.5163561)
-#         # assert receive_device.dissociator_light == pytest.approx(4.64842559)
-#         # assert receive_device.internal_top_heater_voltage == pytest.approx(1.45995719)
-#         # assert receive_device.internal_bottom_heater_voltage == pytest.approx(0.94238039)
-#         # assert receive_device.internal_side_heater_voltage == pytest.approx(1.391598)
-#         # assert receive_device.thermal_control_unit_heater_voltage == pytest.approx(2.5439388)
-#         # assert receive_device.external_side_heater_voltage == pytest.approx(1.32812159)
-#         # assert receive_device.external_bottom_heater_voltage == pytest.approx(1.1279268)
-#         # assert receive_device.isolator_heater_voltage == pytest.approx(0.84472439)
-#         # assert receive_device.tube_heater_voltage == pytest.approx(0.56640479)
-#         # assert receive_device.boxes_temperature == pytest.approx(42.96864)
-#         # assert receive_device.boxes_current == pytest.approx(0.26122979)
-#         # assert receive_device.ambient_temperature == pytest.approx(22.607364)
-#         # assert receive_device.cfield_voltage == pytest.approx(0.0463866)
-#         # assert receive_device.varactor_diode_voltage == pytest.approx(3.61815479)
-#         # assert receive_device.external_high_voltage_value == pytest.approx(3.50194416)
-#         # assert receive_device.external_high_current_value == pytest.approx(16.11324)
-#         # assert receive_device.internal_high_voltage_value == pytest.approx(3.50389728)
-#         # assert receive_device.internal_high_current_value == pytest.approx(14.16012)
-#         # assert receive_device.hydrogen_storage_pressure == pytest.approx(1.0937472)
-#         # assert receive_device.hydrogen_storage_heater_voltage == pytest.approx(12.951627)
-#         # assert receive_device.pirani_heater_voltage == pytest.approx(11.3586135)
-#         # assert receive_device.oscillator_100mhz_voltage == pytest.approx(0.634764)
-#         # assert receive_device.amplitude_405khz_voltage == pytest.approx(8.715798)
-#         # assert receive_device.oscillator_voltage == pytest.approx(4.29198119)
-#         # assert receive_device.positive24vdc == pytest.approx(24.90228)
-#         # assert receive_device.positive15vdc == pytest.approx(15.78125)
-#         # assert receive_device.negative15vdc == pytest.approx(-15.625)
-#         # assert receive_device.positive5vdc == pytest.approx(5.15592)
-#         # assert receive_device.negative5vdc == pytest.approx(0.0)
-#         # assert receive_device.positive8vdc == pytest.approx(8.0072999)
-#         # assert receive_device.positive18vdc == pytest.approx(0.0)
-#         # assert receive_device.lock100mhz == pytest.approx(4.882499)
-#         # assert receive_device.phase_lock_loop_lockstatus
-
-#     # assert attributes are defaults
-#     # need to set simulation mode
-#     # need to set Admin mode
-#     # assert attributes are not defaults
-
-
-# # ensure component manager is created
-# # putting the device into ONLINE mode will allow for the communication to start
-# #   - this will then allow for checking if attributes change.
-# #   -
+        device_under_test.Off()
+        time.sleep(0.1)
+        assert device_under_test.state() == DevState.OFF

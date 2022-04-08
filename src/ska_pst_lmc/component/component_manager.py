@@ -12,13 +12,13 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable
 
-from ska_tango_base.base import BaseComponentManager
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
+from ska_tango_base.subarray import SubarrayComponentManager
 
 __all__ = ["PstComponentManager"]
 
 
-class PstComponentManager(BaseComponentManager):
+class PstComponentManager(SubarrayComponentManager):
     """
     Base Component Manager for the PST.LMC. subsystem.
 
@@ -70,7 +70,7 @@ class PstComponentManager(BaseComponentManager):
         if self._communication_state == CommunicationStatus.ESTABLISHED:
             return
         if self._communication_state == CommunicationStatus.DISABLED:
-            self.update_communication_state(CommunicationStatus.NOT_ESTABLISHED)
+            self._handle_communication_state_change(CommunicationStatus.NOT_ESTABLISHED)
 
     def stop_communicating(self: PstComponentManager) -> None:
         """
@@ -85,59 +85,26 @@ class PstComponentManager(BaseComponentManager):
         if self._communication_state == CommunicationStatus.DISABLED:
             return
 
-        self.update_communication_state(CommunicationStatus.DISABLED)
+        self._handle_communication_state_change(CommunicationStatus.DISABLED)
 
-    def update_communication_state(
+    def _handle_communication_state_change(
         self: PstComponentManager, communication_state: CommunicationStatus
     ) -> None:
         raise NotImplementedError("PstComponentManager is abstract.")
 
-    # @check_communicating
-    # def off(self: PstComponentManager, task_callback: Callable) -> None:
-    #     """
-    #     Turn the component off.
-
-    #     :param task_callback: callback to be called when the status of
-    #         the command changes
-    #     """
-    #     raise NotImplementedError("PstComponentManager is abstract.")
-
-    # @check_communicating
-    # def standby(self: PstComponentManager, task_callback: Callable) -> None:
-    #     """
-    #     Put the component into low-power standby mode.
-
-    #     :param task_callback: callback to be called when the status of
-    #         the command changes
-    #     """
-    #     raise NotImplementedError("PstComponentManager is abstract.")
-
-    # @check_communicating
-    # def on(self: PstComponentManager, task_callback: Callable) -> None:
-    #     """
-    #     Turn the component on.
-
-    #     :param task_callback: callback to be called when the status of
-    #         the command changes
-    #     """
-    #     raise NotImplementedError("PstComponentManager is abstract.")
-
-    # @check_communicating
-    # def reset(self: PstComponentManager, task_callback: Callable) -> None:
-    #     """
-    #     Reset the component (from fault state).
-
-    #     :param task_callback: callback to be called when the status of
-    #         the command changes
-    #     """
-    #     raise NotImplementedError("PstComponentManager is abstract.")
-
     @property
     def simulation_mode(self: PstComponentManager) -> SimulationMode:
-        self.logger.info(f"Getting simulation mode value: {self._simuation_mode}")
+        """Get value of simulation mode state.
+
+        :returns: current simulation mode state.
+        """
         self._simuation_mode
 
     @simulation_mode.setter
     def simulation_mode(self: PstComponentManager, simulation_mode: SimulationMode) -> None:
-        self.logger.info(f"Setting simulation mode value: {simulation_mode}")
+        """Set simulation mode state.
+
+        :param simulation_mode: the new simulation mode value.
+        :type simulation_mode: :py:class:`SimulationMode`
+        """
         self._simuation_mode = simulation_mode

@@ -14,8 +14,8 @@ from __future__ import annotations
 from typing import List, Optional
 
 import tango
-from ska_tango_base import SKABaseDevice
-from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
+from ska_tango_base.control_model import SimulationMode
+from ska_tango_base.subarray import SKASubarray
 from tango import DebugIt
 from tango.server import attribute, command, run
 
@@ -25,7 +25,7 @@ from ska_pst_lmc.receive.receive_component_manager import PstReceiveComponentMan
 __all__ = ["PstReceive", "main"]
 
 
-class PstReceive(SKABaseDevice):
+class PstReceive(SKASubarray):
     """A software TANGO device for managing the RECV component of the PST.LMC subsystem."""
 
     # -----------------
@@ -61,40 +61,6 @@ class PstReceive(SKABaseDevice):
             communication_state_callback=self._communication_state_changed,
             component_state_callback=self._component_state_changed,
         )
-
-    def _communication_state_changed(self, communication_state):
-        self.logger.info(f"Received communication state changed: {communication_state}")
-        action_map = {
-            CommunicationStatus.DISABLED: "component_disconnected",
-            CommunicationStatus.NOT_ESTABLISHED: "component_unknown",
-            CommunicationStatus.ESTABLISHED: None,  # wait for a component state update
-        }
-        action = action_map[communication_state]
-        if action is not None:
-            self.logger.info(f"Calling op_state_model.perform_action('{action})")
-            self.op_state_model.perform_action(action)
-
-    def _component_state_changed(self, fault=None, power=None):
-        self.logger.info(f"Component state changed. Fault = {fault}, Power = {power}")
-        if power is not None:
-            action_map = {
-                PowerState.UNKNOWN: None,
-                PowerState.OFF: "component_off",
-                PowerState.STANDBY: "component_standby",
-                PowerState.ON: "component_on",
-            }
-            action = action_map[power]
-            self.logger.info(f"Power action is: '{action}'")
-            if action is not None:
-                self.op_state_model.perform_action(action_map[power])
-
-        if fault is not None:
-            if fault:
-                self.logger.info(f"Setting component to fault")
-                self.op_state_model.perform_action("component_fault")
-            else:
-                self.logger.info(f"Setting component to no_fault")
-                self.op_state_model.perform_action("component_no_fault")
 
     def always_executed_hook(self: PstReceive) -> None:
         """Execute call before any TANGO command is executed."""
@@ -267,12 +233,9 @@ class PstReceive(SKABaseDevice):
         doc_out="Version strings",
     )
     @DebugIt()
-    def GetVersionInfo(self):
+    def GetVersionInfo(self: PstReceive) -> List[str]:
         """
         Return the version information of the device.
-
-        To modify behaviour for this command, modify the do() method of
-        the command class.
 
         :return: The result code and the command unique ID
         """

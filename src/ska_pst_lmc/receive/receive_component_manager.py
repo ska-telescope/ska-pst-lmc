@@ -13,16 +13,18 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, List, Optional
+import time
+from typing import Any, Callable, List, Optional, Tuple
 
 from ska_tango_base.base import check_communicating
-from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component import PstComponentManager
 from ska_pst_lmc.receive.receive_simulator import PstReceiveSimulator
 from ska_pst_lmc.util.background_task import BackgroundTask
+
+TaskResponse = Tuple[TaskStatus, str]
 
 
 class PstReceiveComponentManager(PstComponentManager):
@@ -73,17 +75,16 @@ class PstReceiveComponentManager(PstComponentManager):
             **kwargs,
         )
 
-    # def __del__(self: PstReceiveComponentManager) -> None:
-    #     """Deconstruct object.
+    def __del__(self: PstReceiveComponentManager) -> None:
+        """Deconstruct object.
 
-    #     This will make sure that if there is a background task running
-    #     that it is stopped.
-    #     """
-    #     if self._communication_task is not None:
-    #         print("Communication task is not none. Stopping")
-    #         self._communication_task.stop()
+        This will make sure that if there is a background task running
+        that it is stopped.
+        """
+        if self._communication_task is not None:
+            self._communication_task.stop()
 
-    def update_communication_state(
+    def _handle_communication_state_change(
         self: PstReceiveComponentManager, communication_state: CommunicationStatus
     ) -> None:
         if communication_state == CommunicationStatus.NOT_ESTABLISHED:
@@ -93,35 +94,29 @@ class PstReceiveComponentManager(PstComponentManager):
 
     def _connect_to_receive(self: PstReceiveComponentManager) -> None:
         """Establish connection to RECV component."""
-        self.logger.info("Connecting to RECV")
         self._update_communication_state(CommunicationStatus.NOT_ESTABLISHED)
         if self._simuation_mode == SimulationMode.TRUE:
-            self.logger.info("Starting background task to update RECV data")
             self._communication_task = BackgroundTask(
                 action_fn=self._monitor_action,
                 logger=self.logger,
                 frequency=1.0,
             )
             self._communication_task.run()
-        self.logger.info("Connected to RECV")
         self._update_communication_state(CommunicationStatus.ESTABLISHED)
         self._component_state_callback(fault=None, power=PowerState.OFF)
 
     def _disconnect_from_receive(self: PstReceiveComponentManager) -> None:
-        self.logger.info("Disconnecting from RECV")
         if self._communication_task is not None:
             try:
                 self._communication_task.stop()
             except Exception as e:
                 self.logger.warning("Error while shutting down communication", e)
 
-        self.logger.info("Disconnected from RECV")
         self._update_communication_state(CommunicationStatus.DISABLED)
-        self._component_state_callback(fault=None, power=PowerState.OFF)
+        self._component_state_callback(fault=None, power=PowerState.UNKNOWN)
 
     def _monitor_action(self: PstReceiveComponentManager) -> None:
         """Monitor RECV process to get the telemetry information."""
-        self.logger.info("Performing monitor action")
         data = self._simulator.get_data()
 
         self._received_data = data.received_data
@@ -205,33 +200,244 @@ class PstReceiveComponentManager(PstComponentManager):
         """
         return self._relative_weights
 
-    @check_communicating
-    def off(self, task_callback=None):
-        """Turn the component off."""
-        # return self.submit_task(self._component.off, task_callback=task_callback)
-        self.logger.off("on requested")
-        if task_callback is not None:
-            task_callback(status=TaskStatus.COMPLETED, result=(ResultCode.OK, f"off command completed OK"))
+    # ---------------
+    # Commands
+    # ---------------
 
     @check_communicating
-    def standby(self, task_callback=None):
-        """Put the component into low-power standby mode."""
-        self.logger.standby("on requested")
-        if task_callback is not None:
-            task_callback(
-                status=TaskStatus.COMPLETED, result=(ResultCode.OK, f"standby command completed OK")
-            )
+    def off(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
+        """
+        Turn the component off.
+
+        :param task_callback: callback to be called when the status of
+            the command changes
+        """
+        self._component_state_callback(power=PowerState.OFF)
+        task_callback(status=TaskStatus.COMPLETED)
+        return TaskStatus.QUEUED, "Power off"
 
     @check_communicating
-    def on(self, task_callback=None):
-        """Turn the component on."""
-        self.logger.info("on requested")
-        if task_callback is not None:
-            task_callback(status=TaskStatus.COMPLETED, result=(ResultCode.OK, f"on command completed OK"))
+    def standby(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
+        """
+        Put the component into low-power standby mode.
+
+        :param task_callback: callback to be called when the status of
+            the command changes
+        """
+        self._component_state_callback(power=PowerState.STANDBY)
+        task_callback(status=TaskStatus.COMPLETED)
+        return TaskStatus.QUEUED, "Device in standby"
 
     @check_communicating
-    def reset(self, task_callback=None):
-        """Reset the component (from fault state)."""
-        self.logger.reset("on requested")
-        if task_callback is not None:
-            task_callback(status=TaskStatus.COMPLETED, result=(ResultCode.OK, f"reset command completed OK"))
+    def on(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
+        """
+        Turn the component on.
+
+        :param task_callback: callback to be called when the status of
+            the command changes
+        """
+        self._component_state_callback(power=PowerState.ON)
+        task_callback(status=TaskStatus.COMPLETED)
+        return TaskStatus.QUEUED, "Power on"
+
+    @check_communicating
+    def reset(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
+        """
+        Reset the component (from fault state).
+
+        :param task_callback: callback to be called when the status of
+            the command changes
+        """
+        self._component_state_callback(fault=False, power=PowerState.OFF)
+        task_callback(status=TaskStatus.COMPLETED)
+        return TaskStatus.QUEUED, "Device reset"
+
+    def assign(self: PstReceiveComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+        """
+        Assign resources to the component.
+
+        :param resources: resources to be assigned
+        """
+
+        def _task() -> None:
+            task_callback(status=TaskStatus.IN_PROGRESS)
+            time.sleep(0.1)
+            task_callback(progress=33)
+            time.sleep(0.1)
+            task_callback(progress=66)
+            time.sleep(0.1)
+            self._component_state_callback(resourced=True)
+            task_callback(status=TaskStatus.COMPLETED)
+
+        task = BackgroundTask(
+            action_fn=_task,
+            logger=self.logger,
+        )
+        task.run()
+        return TaskStatus.QUEUED, "Resourcing"
+
+    def release(self: PstReceiveComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+        """
+        Release resources from the component.
+
+        :param resources: resources to be released
+        """
+
+        def _task() -> None:
+            task_callback(status=TaskStatus.IN_PROGRESS)
+            time.sleep(0.1)
+            task_callback(progress=33)
+            time.sleep(0.1)
+            task_callback(progress=66)
+            time.sleep(0.1)
+            self._component_state_callback(resourced=False)
+            task_callback(status=TaskStatus.COMPLETED)
+
+        task = BackgroundTask(
+            action_fn=_task,
+            logger=self.logger,
+        )
+        task.run()
+        return TaskStatus.QUEUED, "Releasing"
+
+    def release_all(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
+        """Release all resources."""
+
+        def _task() -> None:
+            task_callback(status=TaskStatus.IN_PROGRESS)
+            time.sleep(0.1)
+            task_callback(progress=33)
+            time.sleep(0.1)
+            task_callback(progress=66)
+            time.sleep(0.1)
+            self._component_state_callback(resourced=False)
+            task_callback(status=TaskStatus.COMPLETED)
+
+        task = BackgroundTask(
+            action_fn=_task,
+            logger=self.logger,
+        )
+        task.run()
+        return TaskStatus.QUEUED, "Releasing all"
+
+    def configure(
+        self: PstReceiveComponentManager, configuration: dict, task_callback: Callable
+    ) -> TaskResponse:
+        """
+        Configure the component.
+
+        :param configuration: the configuration to be configured
+        :type configuration: dict
+        """
+
+        def _task() -> None:
+            task_callback(status=TaskStatus.IN_PROGRESS)
+            time.sleep(0.1)
+            task_callback(progress=33)
+            time.sleep(0.1)
+            task_callback(progress=66)
+            self._simulator.configure(configuration=configuration)
+            time.sleep(0.1)
+            self._component_state_callback(configured=True)
+            task_callback(status=TaskStatus.COMPLETED)
+
+        task = BackgroundTask(
+            action_fn=_task,
+            logger=self.logger,
+        )
+        task.run()
+        return TaskStatus.QUEUED, "Releasing all"
+
+    def deconfigure(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
+        """Deconfigure this component."""
+
+        def _task() -> None:
+            task_callback(status=TaskStatus.IN_PROGRESS)
+            time.sleep(0.1)
+            task_callback(progress=33)
+            time.sleep(0.1)
+            task_callback(progress=66)
+            time.sleep(0.1)
+            self._component_state_callback(configured=False)
+            task_callback(status=TaskStatus.COMPLETED)
+
+        task = BackgroundTask(
+            action_fn=_task,
+            logger=self.logger,
+        )
+        task.run()
+        return TaskStatus.QUEUED, "Deconfiguring"
+
+    def scan(self: PstReceiveComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+        """Start scanning."""
+        # should be for how long the scan is and update based on that.
+        def _task() -> None:
+            task_callback(status=TaskStatus.IN_PROGRESS)
+            time.sleep(0.1)
+            task_callback(progress=33)
+            time.sleep(0.1)
+            task_callback(progress=66)
+            self._simulator.scan()
+            self._component_state_callback(scanning=True)
+            task_callback(status=TaskStatus.COMPLETED)
+
+        task = BackgroundTask(
+            action_fn=_task,
+            logger=self.logger,
+        )
+        task.run()
+        return TaskStatus.QUEUED, "Scanning"
+
+    def end_scan(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
+        """End scanning."""
+
+        def _task() -> None:
+            task_callback(status=TaskStatus.IN_PROGRESS)
+            time.sleep(0.1)
+            task_callback(progress=33)
+            time.sleep(0.1)
+            task_callback(progress=66)
+            self._simulator.end_scan()
+            self._component_state_callback(scanning=False)
+            task_callback(status=TaskStatus.COMPLETED)
+
+        task = BackgroundTask(
+            action_fn=_task,
+            logger=self.logger,
+        )
+        task.run()
+        return TaskStatus.QUEUED, "End scanning"
+
+    def abort(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
+        """Tell the component to abort whatever it was doing."""
+
+        def _task() -> None:
+            task_callback(status=TaskStatus.IN_PROGRESS)
+            time.sleep(0.1)
+            task_callback(progress=33)
+            time.sleep(0.1)
+            self._simulator.end_scan()
+            self._component_state_callback(scanning=False)
+            task_callback(progress=66)
+            task_callback(status=TaskStatus.COMPLETED)
+
+        task = BackgroundTask(
+            action_fn=_task,
+            logger=self.logger,
+        )
+        task.run()
+        return TaskStatus.QUEUED, "Aborting"
+
+    def obsreset(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
+        """Reset the component to unconfigured but do not release resources."""
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        self._component_state_callback(configured=False)
+        task_callback(status=TaskStatus.COMPLETED)
+        return TaskStatus.QUEUED, "Done"
+
+    def restart(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
+        """Deconfigure and release all resources."""
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        self._component_state_callback(configured=False, resourced=False)
+        task_callback(status=TaskStatus.COMPLETED)
+        return TaskStatus.QUEUED, "Done"

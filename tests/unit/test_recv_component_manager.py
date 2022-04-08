@@ -20,26 +20,38 @@ from ska_pst_lmc.receive.receive_component_manager import PstReceiveComponentMan
 from ska_pst_lmc.receive.receive_simulator import PstReceiveSimulator
 from ska_pst_lmc.util.background_task import BackgroundTask
 
-root_logger: logging.Logger = logging.getLogger()
+
+@pytest.fixture
+def logger() -> logging.Logger:
+    """Create logger."""
+    return logging.getLogger()
 
 
-def component_manager_fixture(
-    simulation_mode: SimulationMode = SimulationMode.TRUE,
-    logger: Optional[logging.Logger] = None,
+@pytest.fixture
+def component_manager(
+    simulation_mode: SimulationMode,
+    logger: logging.Logger,
 ) -> PstReceiveComponentManager:
     """Create instance of a component manager."""
     return PstReceiveComponentManager(
         simulation_mode=simulation_mode,
-        logger=logger or root_logger,
+        logger=logger,
         communication_state_callback=MagicMock(),
         component_state_callback=MagicMock(),
     )
 
 
-def test_start_communicating_when_in_simulation_mode() -> None:
-    """Assert start communicating starts a background task."""
-    component_manager = component_manager_fixture()
+@pytest.fixture
+def simulation_mode(request: pytest.FixtureRequest) -> SimulationMode:
+    """Set simulation mode for test."""
+    try:
+        return request.param.get("simulation_mode", SimulationMode.TRUE)  # type: ignore
+    except Exception:
+        return SimulationMode.TRUE
 
+
+def test_start_communicating_when_in_simulation_mode(component_manager: PstReceiveComponentManager) -> None:
+    """Assert start communicating starts a background task."""
     assert component_manager._communication_task is None
     assert component_manager._simulator is not None
 
@@ -49,9 +61,8 @@ def test_start_communicating_when_in_simulation_mode() -> None:
     assert component_manager._communication_task.running()
 
 
-def test_start_communicating_call_monitor() -> None:
+def test_start_communicating_call_monitor(component_manager: PstReceiveComponentManager) -> None:
     """Assert the background task used is the monitor method."""
-    component_manager = component_manager_fixture()
     component_manager._monitor_action = MagicMock(name="_monitor_task")  # type: ignore
 
     component_manager._monitor_action.assert_not_called()
@@ -61,9 +72,8 @@ def test_start_communicating_call_monitor() -> None:
     component_manager._monitor_action.assert_called()
 
 
-def test_monitor_function_gets_values_from_simulator() -> None:
+def test_monitor_function_gets_values_from_simulator(component_manager: PstReceiveComponentManager) -> None:
     """Assert that the compoment manager values updated from monitor action."""
-    component_manager = component_manager_fixture()
     simulator: PstReceiveSimulator = component_manager._simulator
     assert simulator is not None
 
@@ -90,17 +100,10 @@ def test_monitor_function_gets_values_from_simulator() -> None:
         assert component_manager.relative_weights == simulator._relative_weights
 
 
-def test_start_communicating_when_not_in_simulation_mode() -> None:
-    """Assert start communication throws NotImplementError for non-simulation mode."""
-    component_manager = component_manager_fixture(simulation_mode=SimulationMode.FALSE)
-    with pytest.raises(NotImplementedError):
-        component_manager.start_communicating()
-
-
-def test_stop_communicating_stops_stops_background_task() -> None:
+def test_stop_communicating_stops_stops_background_task(
+    component_manager: PstReceiveComponentManager,
+) -> None:
     """Assert stop communicating calls stop on background task."""
-    component_manager = component_manager_fixture()
-
     assert component_manager._communication_task is None
     assert component_manager._simulator is not None
 
@@ -113,10 +116,8 @@ def test_stop_communicating_stops_stops_background_task() -> None:
     assert not component_manager._communication_task.running()
 
 
-def test_del_calls_stops_background_task() -> None:
+def test_del_calls_stops_background_task(component_manager: PstReceiveComponentManager) -> None:
     """Test that the deconstructor of component manager stops task."""
-    component_manager = component_manager_fixture()
-
     component_manager.start_communicating()
     time.sleep(0.01)
 
@@ -127,3 +128,6 @@ def test_del_calls_stops_background_task() -> None:
     component_manager.__del__()
     while task.running():
         time.sleep(0.05)
+
+
+# def test_calling_off() -> None:

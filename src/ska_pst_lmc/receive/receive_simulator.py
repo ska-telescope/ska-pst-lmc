@@ -24,7 +24,6 @@ def generate_random_update(nchan: int = 128) -> ReceiveData:
     :type nchans: int
     :returns: a randomly generated receive data.
     """
-
     received_rate: float = 1.0 * randint(0, 90)
     received_data: int = int(received_rate * 1e9 / 8)
     dropped_rate: float = received_rate / 1000.0 * random()
@@ -75,17 +74,32 @@ class PstReceiveSimulator:
         """Initialise the simulator."""
         self._nchan = randint(128, 1024)
         self._relative_weights = [0] * self._nchan
-        self._generate = False
+        self._scan = False
 
-    def start_scan(self):
-        self._generate = True
+    def configure(self: PstReceiveSimulator, configuration: dict) -> None:
+        """
+        Configure the component.
 
-    def stop_scan(self):
-        self._generate = False
+        :param configuration: the configuration to be configured
+        :type configuration: dict
+        """
+        self._nchan = configuration["nchan"] or randint(128, 1024)
+        self._relative_weights = self._nchan * [0.0]
+
+    def scan(self: PstReceiveSimulator) -> None:
+        """Start scanning."""
+        self._scan = True
+
+    def end_scan(self: PstReceiveSimulator) -> None:
+        """End scanning."""
+        self._scan = False
+
+    def abort(self: PstReceiveSimulator) -> None:
+        """Tell the component to abort whatever it was doing."""
+        self._scan = False
 
     def _update(self: PstReceiveSimulator) -> None:
         """Simulate the update of RECV data."""
-
         update: ReceiveData = generate_random_update(self._nchan)
 
         self._received_rate += update.received_rate
@@ -97,7 +111,7 @@ class PstReceiveSimulator:
         self._relative_weights = update.relative_weights
         self._relative_weight = update.relative_weight
 
-    def get_data(self) -> ReceiveData:
+    def get_data(self: PstReceiveSimulator) -> ReceiveData:
         """
         Get current RECV data.
 
@@ -106,7 +120,7 @@ class PstReceiveSimulator:
         :returns: current simulated RECV data.
         :rtype: :py:class:`ReceiveData`
         """
-        if self._generate:
+        if self._scan:
             self._update()
 
         return ReceiveData(

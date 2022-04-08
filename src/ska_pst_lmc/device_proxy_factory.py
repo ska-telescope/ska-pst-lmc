@@ -71,7 +71,6 @@ class DeviceProxyFactory:
 
         if DeviceProxyFactory._test_context is None:
             if dev_name not in self.dev_proxys:
-                self.logger.info("Creating Proxy for %s", dev_name)
                 self.dev_proxys[dev_name] = DeviceProxy(dev_name, green_mode=green_mode)
             return self.dev_proxys[dev_name]
         else:
