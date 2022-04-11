@@ -1,11 +1,11 @@
 ARG BUILD_IMAGE="artefact.skao.int/ska-tango-images-pytango-builder:9.3.10"
 ARG BASE_IMAGE="artefact.skao.int/ska-tango-images-pytango-runtime:9.3.10"
-FROM $BUILD_IMAGE AS buildenv 
+FROM $BUILD_IMAGE AS buildenv
 
 FROM $BASE_IMAGE
 
 # Install Poetry
-USER root 
+USER root
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_HOME=/opt/poetry python - && \
@@ -22,4 +22,4 @@ RUN /opt/poetry/bin/poetry install --no-dev
 
 USER tango
 
-ENTRYPOINT [ "python3", "-m", "ska_pst_lmc.hello" ]
+ENTRYPOINT [ "/bin/bash" ]

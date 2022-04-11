@@ -13,13 +13,19 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from ska_tango_base.csp.subarray import CspSubElementSubarray
-from tango.server import attribute, run
+import tango
+from ska_tango_base.control_model import SimulationMode
+from ska_tango_base.subarray import SKASubarray
+from tango import DebugIt
+from tango.server import attribute, command, run
+
+import ska_pst_lmc.release as release
+from ska_pst_lmc.receive.receive_component_manager import PstReceiveComponentManager
 
 __all__ = ["PstReceive", "main"]
 
 
-class PstReceive(CspSubElementSubarray):
+class PstReceive(SKASubarray):
     """A software TANGO device for managing the RECV component of the PST.LMC subsystem."""
 
     # -----------------
@@ -33,21 +39,31 @@ class PstReceive(CspSubElementSubarray):
     def init_device(self: PstReceive) -> None:
         """Initialise the attributes and properties of the PstReceive.
 
-        This overrides the :py:class::`CspSubElementSubarray`.
+        This overrides the :py:class:`SKABaseDevice`.
         """
-        CspSubElementSubarray.init_device(self)
-        self.set_change_event("adminMode", True, True)
-        self.set_archive_event("adminMode", True, True)
-        self.set_change_event("obsState", True, True)
-        self.set_archive_event("obsState", True, True)
-        self.set_change_event("longRunningCommandsInQueue", True, True)
-        self.set_change_event("longRunningCommandStatus", True, True)
-        self.set_change_event("longRunningCommandProgress", True, True)
-        self.set_change_event("longRunningCommandResult", True, True)
+        util = tango.Util.instance()
+        util.set_serial_model(tango.SerialModel.NO_SYNC)
+        super().init_device()
+        self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
+        self._version_id = release.VERSION
+
+    def create_component_manager(
+        self: PstReceive,
+    ) -> PstReceiveComponentManager:
+        """
+        Create and return a component manager for this device.
+
+        :return: a component manager for this device.
+        """
+        return PstReceiveComponentManager(
+            simulation_mode=SimulationMode.TRUE,
+            logger=self.logger,
+            communication_state_callback=self._communication_state_changed,
+            component_state_callback=self._component_state_changed,
+        )
 
     def always_executed_hook(self: PstReceive) -> None:
         """Execute call before any TANGO command is executed."""
-        pass
 
     def delete_device(self: PstReceive) -> None:
         """Delete resources allocated in init_device.
@@ -56,7 +72,6 @@ class PstReceive(CspSubElementSubarray):
         init_device method to be released.  This method is called by the device
         destructor and by the device Init command.
         """
-        pass
 
     # ----------
     # Attributes
@@ -78,7 +93,7 @@ class PstReceive(CspSubElementSubarray):
         :returns: current data receive rate from the CBF interface in Gb/s.
         :rtype: float
         """
-        return 0.0
+        return self.component_manager.received_rate
 
     @attribute(
         dtype="DevULong64",
@@ -94,7 +109,7 @@ class PstReceive(CspSubElementSubarray):
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
         """
-        return 0
+        return self.component_manager.received_data
 
     @attribute(
         dtype="DevFloat",
@@ -117,7 +132,7 @@ class PstReceive(CspSubElementSubarray):
         :returns: current rate of CBF ingest data being dropped or lost in MB/s.
         :rtype: float
         """
-        return 0.0
+        return self.component_manager.dropped_rate
 
     @attribute(
         dtype="DevULong64",
@@ -128,13 +143,13 @@ class PstReceive(CspSubElementSubarray):
         polling_period=5000,
         doc="Total number of bytes dropped in the current scan",
     )
-    def dropped(self: PstReceive) -> int:
+    def dropped_data(self: PstReceive) -> int:
         """Get the total number of bytes dropped in the current scan.
 
         :returns: total number of bytes dropped in the current scan in Bytes.
         :rtype: int
         """
-        return 0
+        return self.component_manager.dropped_data
 
     @attribute(
         dtype="DevULong64",
@@ -148,7 +163,7 @@ class PstReceive(CspSubElementSubarray):
         :returns: total number of packets received out of order in the current scan.
         :rtype: int
         """
-        return 0
+        return self.component_manager.misordered_packets
 
     @attribute(
         dtype="DevULong64",
@@ -161,7 +176,7 @@ class PstReceive(CspSubElementSubarray):
         :returns: total number of malformed packets received during the current scan.
         :rtype: int
         """
-        return 0
+        return self.component_manager.malformed_packets
 
     @attribute(
         dtype="DevFloat",
@@ -174,7 +189,7 @@ class PstReceive(CspSubElementSubarray):
         :returns: time average of all relative weights for the current scan.
         :rtype: float
         """
-        return 0.0
+        return self.component_manager.relative_weight
 
     @attribute(
         dtype=("DevFloat",),
@@ -189,7 +204,42 @@ class PstReceive(CspSubElementSubarray):
         :returns: time average of relative weights for each channel in the current scan.
         :rtype: list(float)
         """
-        return [0.0]
+        return self.component_manager.relative_weights
+
+    @attribute(
+        dtype=SimulationMode,
+        memorized=True,
+        hw_memorized=True,
+    )
+    def simulationMode(self: PstReceive) -> SimulationMode:
+        """
+        Report the simulation mode of the device.
+
+        :return: the current simulation mode
+        """
+        return self.component_manager.simulation_mode
+
+    @simulationMode.write  # type: ignore[no-redef]
+    def simulationMode(self: PstReceive, value: SimulationMode) -> None:
+        """
+        Set the simulation mode.
+
+        :param value: The simulation mode, as a SimulationMode value
+        """
+        self.component_manager.simulation_mode = value
+
+    @command(
+        dtype_out=("str",),
+        doc_out="Version strings",
+    )
+    @DebugIt()
+    def GetVersionInfo(self: PstReceive) -> List[str]:
+        """
+        Return the version information of the device.
+
+        :return: The result code and the command unique ID
+        """
+        return [f"{self.__class__.__name__}, {self.read_buildState()}"]
 
     # --------
     # Commands

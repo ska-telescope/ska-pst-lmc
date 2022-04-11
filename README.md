@@ -13,7 +13,30 @@ This project is based off the old [pst-lmc](https://gitlab.com/ska-telescope/pst
 
 ## TANGO Devices
 
-**TODO** - Update as TANGO devices are ported/added.
+**TODO** - Update as TANGO devices ported/updated
+
+### Base classes
+
+The `ska_pst_lmc.component` module is for common base classes for TANGO device components. For now the only class
+in this module is the `PstComponentManager`, though a base PST Process API may also be added here.
+
+Common reusable code (i.e. code that code be used by a completely separate project) is to be added to the `ska_pst_lmc.util`
+module and not the component submodule.
+
+### RECV Device
+
+This device is used for managing and monitoring the RECV process within the PST.LMC sub-system. This is the base example for
+which the other devices are to be modelled upon. It includes the use of:
+
+* SKASubarray TANGO Device (found in the [ska-tango-base](https://gitlab.com/ska-telescope/ska-tango-base))
+* A Component Manager extending from `PstComponentManager`
+* A process API
+* A RECV Model module
+* A simulator
+
+While the Process API is similar to the Component Manager, it's goal is different. The Component Manager uses the API which
+will ultimately connect to the RECV process or a stubbed/simulator process. It is meant to deal with the communication with
+the external process and also not worry about the state model, which is a part of the component manager.
 
 ## Developer Setup
 
@@ -45,6 +68,14 @@ $ poetry install
 
 If the is successful you should be able to use your favourite editor/IDE to develop in this project.
 
+To activate the poetry environment then run in the same directory:
+
+```
+$ poetry shell
+```
+
+(For VS Code, you can then set your Python Interpreter to the path of this virtual env.)
+
 ### Using Visual Studio Code's Remote - Containers
 
 Visual Studio Code (VS Code) has the ability to do remote development to containers. For general instructions on setting this up, see [Developing inside a Container](https://code.visualstudio.com/docs/remote/containers) and [Remote development in Containers](https://code.visualstudio.com/docs/remote/containers-tutorial).
@@ -72,6 +103,7 @@ The required system wide packages should be installed and all you would need to 
 
 ```
 $ poetry install
+$ poetry shell
 ```
 
 ## Project Hygiene
@@ -101,13 +133,47 @@ Various tools are used in this project for linting are:
 
 All these tools help with fixing code style. These tools will be a part of the CI pipeline and there will be used to enforce standards.
 
+#### Personal Pre Lint steps
+
+So not to break the Make process and also to enforce the required Linting steps it is recommended to allow the linting tools
+to fix issues if they can, especially `flake8` and `black`. To do this add the following to your `PrivateRules.mak` (which is under `.gitignore`)
+
+```Make
+PYTHON_SWITCHES_FOR_AUTOFLAKE ?= --in-place --remove-unused-variables --remove-all-unused-imports --recursive --ignore-init-module-imports src tests
+
+python-lint-fix:
+	$(PYTHON_RUNNER) isort --profile black $(PYTHON_SWITCHES_FOR_ISORT) $(PYTHON_LINT_TARGET)
+	$(PYTHON_RUNNER) black $(PYTHON_SWITCHES_FOR_BLACK) $(PYTHON_LINT_TARGET)
+
+python-autoflake:
+	$(PYTHON_RUNNER) autoflake $(PYTHON_SWITCHES_FOR_AUTOFLAKE)
+
+python-pre-lint: python-lint-fix python-autoflake
+
+flake8:
+	$(PYTHON_RUNNER) flake8 --show-source --statistics $(PYTHON_SWITCHES_FOR_FLAKE8) $(PYTHON_LINT_TARGET)
+```
+
 ## Unit Testing
 
 Code coverage is expected to be at leat 80%. New could should not drop the level of existing code coverage.
 
-Tests are found within the `tests` directory and are separated from the code package.
+Tests are found within the `tests` directory and are separated from the code package. Where possible use
+the `pytest` fixtures to be able to build up state. Also use mocks/stubs to be able to limit the tests
+to the class undertests.
 
-This section will be expanded as more development is added.
+Where possible unit tests should be used to cover as much code as possible. For non-TANGO device code, including
+the component managers, these should be able to be run without the TANGO Test Framework (for example see the 
+tests `test_recv_device.py` versus other test files). It is very important when creating multiple tests for the same
+TANGO device that the `device_test_config` fixture has the property `process=True` (again see `test_recv_device.py`
+for an example) else you will get Segmentation Faults.
+
+### Open Issue
+
+Right now the tests coverage is not handling the code which is be run in a thread. This is a known issue with `pytest`
+can coverage. It may require some specific changes to the setup of classes, though if using the common `BackgroundTask`
+you should be able to provide test coverage over the `action_fn` in the calling class and know that the there is
+coverage over the `BackgroundTask`.
 
 ## Documentation
 
@@ -118,13 +184,12 @@ General design decisions for this project need to be captured externally on Conf
 SKA requires that the software is self documenting and that as part of the build process that documentation for the project is generated and published. The documentation is generated using `sphinx`. To generate the documentation locally use
 
 ```
-$ cd docs/src
-$ sphinx-build -T -E -d _build/doctrees-readthedocs -D language=en . _build/html -W
+$ make docs-build html
 ```
 
-The docs can then be found in the `_build/html` directory. If you're using VS Code, you can view the output using a `Live Server` view of this to check that the documentation is being generated correctly.
+The docs can then be found in the `docs/build/html` directory. If you're using VS Code, you can view the output using a `Live Server` view of this to check that the documentation is being generated correctly.
 
-TBD - location of where the documentation can be found from the developer portal.
+[PST LMC Read The Docs](https://developer.skao.int/projects/ska-pss-lmc)
 
 ### Confluence Documentation
 

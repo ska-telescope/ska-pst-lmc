@@ -3,7 +3,7 @@
   <classes name="PstReceive" pogoRevision="9.6">
     <description description="" title="" sourcePath="/home/tango/src/ska-pst-lmc/src/ska_pst_lmc/receive" language="PythonHL" filestogenerate="XMI   file,Code files" license="BSD3" copyright="" hasMandatoryProperty="false" hasConcreteProperty="false" hasAbstractCommand="false" hasAbstractAttribute="false">
       <inheritances classname="Device_Impl" sourcePath=""/>
-      <inheritances classname="SKAObsDevice" sourcePath="../../../../ska-tango-base/pogo"/>
+      <inheritances classname="SKAObsDevice" sourcePath="/home/tango/src/ska-tango-base/pogo"/>
       <inheritances classname="SKASubarray" sourcePath="/home/tango/src/ska-tango-base/pogo/."/>
       <inheritances classname="CspSubElementSubarray" sourcePath="/home/tango/src/ska-tango-base/pogo"/>
       <identification contact="at swin.edu.au - wgauvin" author="wgauvin" emailDomain="swin.edu.au" classFamily="SoftwareSystem" siteSpecific="" platform="All Platforms" bus="Ethernet" manufacturer="none" reference=""/>

@@ -18,6 +18,6 @@ the Pulsar Timing Sub-element (PST) within the Central Signal Processor
 .. automodule:: ska_pst_lmc
 
 .. toctree::
-  :maxdepth: 1
+  :maxdepth: 4
 
   API<api/index>

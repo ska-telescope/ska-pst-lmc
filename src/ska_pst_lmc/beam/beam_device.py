@@ -70,7 +70,7 @@ class PstBeam(CspSubElementSubarray):
     def init_device(self: PstBeam) -> None:
         """Intialise the attributes and properties of the PstBeam device.
 
-        This overrides the :py:class::`CspSubElementSubarray`.
+        This overrides the :py:class:`CspSubElementSubarray`.
         """
         CspSubElementSubarray.init_device(self)
         self.set_change_event("adminMode", True, True)
@@ -84,7 +84,6 @@ class PstBeam(CspSubElementSubarray):
 
     def always_executed_hook(self: PstBeam) -> None:
         """Execute call before any TANGO command is executed."""
-        pass
 
     def delete_device(self: PstBeam) -> None:
         """Delete resources allocated in init_device.
@@ -93,7 +92,6 @@ class PstBeam(CspSubElementSubarray):
         init_device method to be released.  This method is called by the device
         destructor and by the device Init command.
         """
-        pass
 
     # ----------
     # Attributes

@@ -8,17 +8,20 @@
 """This package is the top level project for the SKA PST LMC subsystem."""
 
 __all__ = [
-    "Hello",
+    "DeviceProxyFactory",
     "PstBeam",
     "PstDsp",
     "PstManagement",
     "PstReceive",
+    "PstReceiveComponentManager",
+    "PstReceiveSimulator",
+    "ReceiveData",
     "PstSmrb",
 ]
 
 from .beam import PstBeam
+from .device_proxy_factory import DeviceProxyFactory
 from .dsp import PstDsp
-from .hello import Hello
 from .management import PstManagement
-from .receive import PstReceive
+from .receive import PstReceive, PstReceiveComponentManager, PstReceiveSimulator, ReceiveData
 from .smrb import PstSmrb

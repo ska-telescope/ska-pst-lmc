@@ -19,13 +19,13 @@ class Configuration(object):
 
     This class represents a PST-LMC configuration that is
     sent from the CSP. It is a generic object that is
-    able to validate itself against the `ska-telmodel`
+    able to validate itself against the ``ska-telmodel``
     schema for PST.
 
     Creating instances of these from a JSON encoded string
     should be done via the `Configration.from_json()` method.
     To convert the object to a JSON encoded string should
-    be throught the `to_json()` method.
+    be through the :py:meth:`to_json()` method.
     """
 
     def __init__(self: Configuration, values: dict) -> None:
@@ -141,7 +141,7 @@ class Configuration(object):
         This is a helper method to serialised the configuration
         object to a JSON string. This is effectively
 
-        .. code-block: python
+        .. code-block:: python
 
             json.dumps(self._values)
 

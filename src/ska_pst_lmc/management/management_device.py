@@ -53,7 +53,7 @@ class PstManagement(CspSubElementController):
     def init_device(self: PstManagement) -> None:
         """Intialise the attributes and properties of the PstManagement device.
 
-        This overrides the :py:class::`CspSubElementController`.
+        This overrides the :py:class:`CspSubElementController`.
         """
         CspSubElementController.init_device(self)
         self.set_change_event("adminMode", True, True)
@@ -65,7 +65,6 @@ class PstManagement(CspSubElementController):
 
     def always_executed_hook(self: PstManagement) -> None:
         """Execute call before any TANGO command is executed."""
-        pass
 
     def delete_device(self: PstManagement) -> None:
         """Delete resources allocated in init_device.
@@ -74,7 +73,6 @@ class PstManagement(CspSubElementController):
         init_device method to be released.  This method is called by the device
         destructor and by the device Init command.
         """
-        pass
 
     # ----------
     # Attributes
