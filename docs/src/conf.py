@@ -28,6 +28,7 @@ autodoc_mock_imports = [
     "ska_tango_base",
     "tango",
     "numpy",
+    "readerwriterlock",
 ]
 
 autodoc_default_options = {
