@@ -21,16 +21,6 @@ from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApi, PstRec
 class PstReceiveComponentManager(PstComponentManager):
     """Component manager for the RECV component for the PST.LMC subsystem."""
 
-    _received_data: int = 0
-    _received_rate: float = 0.0
-    _dropped_data: int = 0
-    _dropped_rate: float = 0.0
-    _nchan: int = 0
-    _misordered_packets: int = 0
-    _malformed_packets: int = 0
-    _relative_weights: List[float] = []
-    _relative_weight: float = 0.0
-
     _api: PstReceiveProcessApi
 
     def __init__(

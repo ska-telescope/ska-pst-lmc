@@ -17,6 +17,7 @@ __all__ = [
     "PstReceiveSimulator",
     "ReceiveData",
     "PstSmrb",
+    "PstSmrbComponentManager",
     "PstSmrbSimulator",
     "SharedMemoryRingBufferData",
 ]
@@ -26,4 +27,4 @@ from .device_proxy_factory import DeviceProxyFactory
 from .dsp import PstDsp
 from .management import PstManagement
 from .receive import PstReceive, PstReceiveComponentManager, PstReceiveSimulator, ReceiveData
-from .smrb import PstSmrb, SharedMemoryRingBufferData, PstSmrbSimulator
+from .smrb import PstSmrb, PstSmrbComponentManager, PstSmrbSimulator, SharedMemoryRingBufferData

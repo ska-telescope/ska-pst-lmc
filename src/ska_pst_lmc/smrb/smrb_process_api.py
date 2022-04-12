@@ -58,7 +58,7 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         self: PstSmrbProcessApiSimulator,
         logger: logging.Logger,
         component_state_callback: Callable,
-        simulator: Optional[PstSmrbSimulator],
+        simulator: Optional[PstSmrbSimulator] = None,
     ) -> None:
         """Initialise the API.
 
