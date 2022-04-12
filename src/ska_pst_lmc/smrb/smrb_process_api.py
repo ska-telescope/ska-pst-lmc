@@ -56,18 +56,18 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
 
     def __init__(
         self: PstSmrbProcessApiSimulator,
-        simulator: PstSmrbSimulator,
         logger: logging.Logger,
         component_state_callback: Callable,
+        simulator: Optional[PstSmrbSimulator],
     ) -> None:
         """Initialise the API.
 
-        :param simulator: the simulator instance to use in the API.
         :param logger: the logger to use for the API.
         :param component_state_callback: this allows the API to call back to the
             component manager / TANGO device to deal with state model changes.
+        :param simulator: the simulator instance to use in the API.
         """
-        self._simulator = simulator
+        self._simulator = simulator or PstSmrbSimulator()
         self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
         self._communication_task: Optional[BackgroundTask] = None
         self.data: Optional[SharedMemoryRingBufferData] = None
