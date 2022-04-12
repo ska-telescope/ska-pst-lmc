@@ -25,7 +25,12 @@ from ska_tango_base.commands import TaskStatus
 from ska_pst_lmc.component.process_api import PstProcessApi
 from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_simulator import PstReceiveSimulator
-from ska_pst_lmc.util.background_task import BackgroundTask, BackgroundTaskProcessor
+from ska_pst_lmc.util.background_task import BackgroundTask, BackgroundTaskProcessor, background_task
+
+__all__ = [
+    "PstReceiveProcessApi",
+    "PstReceiveProcessApiSimulator",
+]
 
 
 class PstReceiveProcessApi(PstProcessApi):
@@ -88,6 +93,7 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
             except Exception as e:
                 self._logger.warning("Error while shutting down communication", e)
 
+    @background_task
     def assign_resources(
         self: PstReceiveProcessApiSimulator, resources: dict, task_callback: Callable
     ) -> None:
@@ -96,145 +102,120 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         :param resources: dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
         """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=33)
+        time.sleep(0.1)
+        task_callback(progress=66)
+        time.sleep(0.1)
+        self._component_state_callback(resourced=True)
+        task_callback(status=TaskStatus.COMPLETED)
 
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=33)
-            time.sleep(0.1)
-            task_callback(progress=66)
-            time.sleep(0.1)
-            self._component_state_callback(resourced=True)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        self._background_task_processor.submit_task(_task)
-
+    @background_task
     def release(self: PstReceiveProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
         """Release resources.
 
         :param resources: dictionary of resources to release.
         :param task_callback: callable to connect back to the component manager.
         """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=42)
+        time.sleep(0.1)
+        task_callback(progress=75)
+        time.sleep(0.1)
+        self._component_state_callback(resourced=False)
+        task_callback(status=TaskStatus.COMPLETED)
 
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=42)
-            time.sleep(0.1)
-            task_callback(progress=75)
-            time.sleep(0.1)
-            self._component_state_callback(resourced=False)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        self._background_task_processor.submit_task(_task)
-
+    @background_task
     def release_all(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
         """Release all resources.
 
         :param task_callback: callable to connect back to the component manager.
         """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=50)
+        time.sleep(0.1)
+        self._component_state_callback(resourced=False)
+        task_callback(status=TaskStatus.COMPLETED)
 
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=50)
-            time.sleep(0.1)
-            self._component_state_callback(resourced=False)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        self._background_task_processor.submit_task(_task)
-
+    @background_task
     def configure(self: PstReceiveProcessApiSimulator, configuration: dict, task_callback: Callable) -> None:
         """Configure as scan.
 
         :param configuration: the configuration of for the scan.
         :param task_callback: callable to connect back to the component manager.
         """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=30)
+        time.sleep(0.1)
+        task_callback(progress=60)
+        self._simulator.configure(configuration=configuration)
+        time.sleep(0.1)
+        self._component_state_callback(configured=True)
+        task_callback(status=TaskStatus.COMPLETED)
 
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=30)
-            time.sleep(0.1)
-            task_callback(progress=60)
-            self._simulator.configure(configuration=configuration)
-            time.sleep(0.1)
-            self._component_state_callback(configured=True)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        self._background_task_processor.submit_task(_task)
-
+    @background_task
     def deconfigure(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
         """Deconfiure a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=31)
+        time.sleep(0.1)
+        task_callback(progress=89)
+        time.sleep(0.1)
+        self._simulator.deconfigure()
+        self._component_state_callback(configured=False)
+        task_callback(status=TaskStatus.COMPLETED)
 
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=31)
-            time.sleep(0.1)
-            task_callback(progress=89)
-            time.sleep(0.1)
-            self._simulator.deconfigure()
-            self._component_state_callback(configured=False)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        self._background_task_processor.submit_task(_task)
-
+    @background_task
     def scan(self: PstReceiveProcessApiSimulator, args: dict, task_callback: Callable) -> None:
         """Run a scan.
 
         :param args: arguments for the scan.
         :param task_callback: callable to connect back to the component manager.
         """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=27)
+        time.sleep(0.1)
+        task_callback(progress=69)
+        self._simulator.scan(args)
+        self._component_state_callback(scanning=True)
+        task_callback(status=TaskStatus.COMPLETED)
 
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=27)
-            time.sleep(0.1)
-            task_callback(progress=69)
-            self._simulator.scan(args)
-            self._component_state_callback(scanning=True)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        self._background_task_processor.submit_task(_task)
-
+    @background_task
     def end_scan(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
         """End a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=32)
+        time.sleep(0.1)
+        task_callback(progress=88)
+        self._simulator.end_scan()
+        self._component_state_callback(scanning=False)
+        task_callback(status=TaskStatus.COMPLETED)
 
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=32)
-            time.sleep(0.1)
-            task_callback(progress=88)
-            self._simulator.end_scan()
-            self._component_state_callback(scanning=False)
-            task_callback(status=TaskStatus.COMPLETED)
-
-        self._background_task_processor.submit_task(_task)
-
+    @background_task
     def abort(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
         """Abort a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
-
-        def _task() -> None:
-            task_callback(status=TaskStatus.IN_PROGRESS)
-            time.sleep(0.1)
-            task_callback(progress=60)
-            self._component_state_callback(scanning=False)
-            self._simulator.abort()
-            task_callback(status=TaskStatus.COMPLETED)
-
-        self._background_task_processor.submit_task(_task)
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=60)
+        self._component_state_callback(scanning=False)
+        self._simulator.abort()
+        task_callback(status=TaskStatus.COMPLETED)
 
     @property
     def monitor_data(self: PstReceiveProcessApiSimulator) -> ReceiveData:
