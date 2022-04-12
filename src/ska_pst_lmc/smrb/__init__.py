@@ -9,8 +9,10 @@
 
 __all__ = [
     "PstSmrb",
+    "PstSmrbSimulator",
     "SharedMemoryRingBufferData",
 ]
 
 from .smrb_device import PstSmrb
 from .smrb_model import SharedMemoryRingBufferData
+from .smrb_simulator import PstSmrbSimulator

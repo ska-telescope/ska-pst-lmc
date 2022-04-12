@@ -78,7 +78,9 @@ class PstReceiveSimulator:
 
     def configure(self: PstReceiveSimulator, configuration: dict) -> None:
         """
-        Configure the component.
+        Configure the simulator.
+
+        Only the "nchan" parameter is used by this simulator.
 
         :param configuration: the configuration to be configured
         :type configuration: dict

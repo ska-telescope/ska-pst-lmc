@@ -43,8 +43,8 @@ class SharedMemoryRingBufferData(NamedTuple):
         """
         return SharedMemoryRingBufferData(
             ring_buffer_utilisation=0.0,
-            ring_buffer_size=1024,
-            number_subbands=4,
-            subband_ring_buffer_utilisations=4 * [0.0],
-            subband_ring_buffer_sizes=4 * [256],
+            ring_buffer_size=0,
+            number_subbands=0,
+            subband_ring_buffer_utilisations=[],
+            subband_ring_buffer_sizes=[],
         )
