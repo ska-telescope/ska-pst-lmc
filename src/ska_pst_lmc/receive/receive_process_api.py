@@ -9,13 +9,6 @@
 
 """Module for providing the API to be communicate with the RECV process.
 
-This API is not a part of the component manager, as the component manager
-is also concerned with callbacks to the TANGO device and has state model
-management. This API is expected to be used to call to an external process
-or be simulated. Most of the API is taken from the component manager.
-For specifics of the API see
-https://developer.skao.int/projects/ska-tango-base/en/latest/api/subarray/component_manager.html
-
 The :py:class:`PstReceiveProcessApiSimulator` is used in testing or
 simulation, for now its not run as a separate process but in future
 it should be able to be set up as a separate process and the API
@@ -31,81 +24,19 @@ from typing import Callable, Optional
 
 from ska_tango_base.commands import TaskStatus
 
+from ska_pst_lmc.component.process_api import PstProcessApi
 from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_simulator import PstReceiveSimulator
 from ska_pst_lmc.util.background_task import BackgroundTask, BackgroundTaskProcessor
 
 
-class PstReceiveProcessApi:
-    """Abstract class for the API of the RECV process."""
+class PstReceiveProcessApi(PstProcessApi):
+    """Abstract class for the API of the RECV process.
 
-    def connect(self: PstReceiveProcessApi) -> None:
-        """Connect to the external process."""
-        raise NotImplementedError("PstReceiveProcessApi is abstract class")
-
-    def disconnect(self: PstReceiveProcessApi) -> None:
-        """Disconnect from the external process."""
-        raise NotImplementedError("PstReceiveProcessApi is abstract class")
-
-    def assign_resources(self: PstReceiveProcessApi, resources: dict, task_callback: Callable) -> None:
-        """Assign resources.
-
-        :param resources: dictionary of resources to allocate.
-        :param task_callback: callable to connect back to the component manager.
-        """
-        raise NotImplementedError("PstReceiveProcessApi is abstract class")
-
-    def release(self: PstReceiveProcessApi, resources: dict, task_callback: Callable) -> None:
-        """Release resources.
-
-        :param resources: dictionary of resources to release.
-        :param task_callback: callable to connect back to the component manager.
-        """
-        raise NotImplementedError("PstReceiveProcessApi is abstract class")
-
-    def release_all(self: PstReceiveProcessApi, task_callback: Callable) -> None:
-        """Release all resources.
-
-        :param task_callback: callable to connect back to the component manager.
-        """
-        raise NotImplementedError("PstReceiveProcessApi is abstract class")
-
-    def configure(self: PstReceiveProcessApi, configuration: dict, task_callback: Callable) -> None:
-        """Configure as scan.
-
-        :param configuration: the configuration of for the scan.
-        :param task_callback: callable to connect back to the component manager.
-        """
-        raise NotImplementedError("PstReceiveProcessApi is abstract class")
-
-    def deconfigure(self: PstReceiveProcessApi, task_callback: Callable) -> None:
-        """Deconfiure a scan.
-
-        :param task_callback: callable to connect back to the component manager.
-        """
-        raise NotImplementedError("PstReceiveProcessApi is abstract class")
-
-    def scan(self: PstReceiveProcessApi, args: dict, task_callback: Callable) -> None:
-        """Run a scan.
-
-        :param args: arguments for the scan.
-        :param task_callback: callable to connect back to the component manager.
-        """
-        raise NotImplementedError("PstReceiveProcessApi is abstract class")
-
-    def end_scan(self: PstReceiveProcessApi, task_callback: Callable) -> None:
-        """End a scan.
-
-        :param task_callback: callable to connect back to the component manager.
-        """
-        raise NotImplementedError("PstReceiveProcessApi is abstract class")
-
-    def abort(self: PstReceiveProcessApi, task_callback: Callable) -> None:
-        """Abort a scan.
-
-        :param task_callback: callable to connect back to the component manager.
-        """
-        raise NotImplementedError("PstReceiveProcessApi is abstract class")
+    This extends from :py:class:`PstProcessApi` but
+    provides the specific method of getting the monitoring
+    data.
+    """
 
     @property
     def monitor_data(self: PstReceiveProcessApi) -> ReceiveData:

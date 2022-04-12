@@ -7,6 +7,10 @@
 
 """This package is for common component classes for PST.LMC."""
 
-__all__ = ["PstComponentManager"]
+__all__ = [
+    "PstComponentManager",
+    "PstProcessApi",
+]
 
 from .component_manager import PstComponentManager
+from .process_api import PstProcessApi
