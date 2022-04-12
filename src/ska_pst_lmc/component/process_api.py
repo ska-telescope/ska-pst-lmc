@@ -17,11 +17,27 @@ https://developer.skao.int/projects/ska-tango-base/en/latest/api/subarray/compon
 
 from __future__ import annotations
 
+import logging
 from typing import Callable
 
 
 class PstProcessApi:
     """Abstract class for the API of the PST.LMC processes like RECV, SMRB, etc."""
+
+    def __init__(
+        self: PstProcessApi,
+        logger: logging.Logger,
+        component_state_callback: Callable,
+    ) -> None:
+        """Initialise the API.
+
+        :param simulator: the simulator instance to use in the API.
+        :param logger: the logger to use for the API.
+        :param component_state_callback: this allows the API to call back to the
+            component manager / TANGO device to deal with state model changes.
+        """
+        self._logger = logger
+        self._component_state_callback = component_state_callback
 
     def connect(self: PstProcessApi) -> None:
         """Connect to the external process."""

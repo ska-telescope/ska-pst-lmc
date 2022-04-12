@@ -71,11 +71,11 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
             component manager / TANGO device to deal with state model changes.
         """
         self._simulator = simulator
-        self._logger = logger
-        self._component_state_callback = component_state_callback
         self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
         self._communication_task: Optional[BackgroundTask] = None
         self.data: Optional[ReceiveData] = None
+
+        super().__init__(logger=logger, component_state_callback=component_state_callback)
 
     def connect(self: PstReceiveProcessApiSimulator) -> None:
         """Connect to the external process."""
