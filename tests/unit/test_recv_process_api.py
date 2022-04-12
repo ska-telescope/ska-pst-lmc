@@ -10,7 +10,7 @@
 import logging
 import time
 import unittest
-from typing import Any, Callable
+from typing import Callable
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -32,26 +32,6 @@ def component_state_callback() -> Callable:
 def task_callback() -> Callable:
     """Create a mock component to validate task callbacks."""
     return MagicMock()
-
-
-@pytest.fixture
-def background_task_processor(
-    logger: logging.Logger, monkeypatch: pytest.MonkeyPatch
-) -> BackgroundTaskProcessor:
-    """Create mock for background task processing."""
-
-    def _submit_task(
-        action_fn: Callable,
-        *args: Any,
-        **kwargs: Any,
-    ) -> MagicMock:
-        action_fn()
-        return MagicMock()
-
-    # need to stub the submit_task and replace
-    processor = BackgroundTaskProcessor(default_logger=logger)
-    monkeypatch.setattr(processor, "submit_task", _submit_task)
-    return processor
 
 
 @pytest.fixture
@@ -103,7 +83,7 @@ def test_start_communicating_call_monitor(simulation_api: PstReceiveProcessApiSi
 def test_monitor_function_gets_values_from_simulator(
     simulation_api: PstReceiveProcessApiSimulator, simulator: PstReceiveSimulator
 ) -> None:
-    """Assert that the compoment manager values updated from monitor action."""
+    """Assert that the API values get data from simulator when monitor action called."""
     with unittest.mock.patch.object(simulator, "get_data", wraps=simulator.get_data) as get_data:
         simulation_api._monitor_action()
         get_data.assert_called_once()
