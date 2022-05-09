@@ -45,7 +45,7 @@ class PstComponentManager(SubarrayComponentManager):
         api: PstProcessApi,
         logger: logging.Logger,
         communication_state_callback: Callable[[CommunicationStatus], None],
-        component_state_callback: Callable[[bool, PowerState], None],
+        component_state_callback: Callable,
         *args: Any,
         **kwargs: Any,
     ):

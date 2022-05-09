@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
@@ -28,7 +28,8 @@ class PstReceiveComponentManager(PstComponentManager):
         simulation_mode: SimulationMode,
         logger: logging.Logger,
         communication_state_callback: Callable[[CommunicationStatus], None],
-        component_state_callback: Callable[[bool, PowerState], None],
+        component_state_callback: Callable,
+        api: Optional[PstReceiveProcessApi] = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -42,11 +43,13 @@ class PstReceiveComponentManager(PstComponentManager):
             the component manager and its component changes
         :param component_fault_callback: callback to be called when the
             component faults (or stops faulting)
+        :param api: optional API instance, used to override during testing.
         """
-        api = PstReceiveProcessApiSimulator(
+        api = api or PstReceiveProcessApiSimulator(
             logger=logger,
             component_state_callback=component_state_callback,
         )
+
         super().__init__(
             simulation_mode,
             api,
