@@ -38,6 +38,21 @@ While the Process API is similar to the Component Manager, it's goal is differen
 will ultimately connect to the RECV process or a stubbed/simulator process. It is meant to deal with the communication with
 the external process and also not worry about the state model, which is a part of the component manager.
 
+### SMRB Device
+
+This device is used for managing and monitoring the Shared Memory Ring Buffer (SMRB) process within the PST.LMC sub-system.
+It includes the use of:
+
+* SKASubarray TANGO Device (found in the [ska-tango-base](https://gitlab.com/ska-telescope/ska-tango-base))
+* A Component Manager extending from `PstComponentManager`
+* A process API
+* A SMRB Model module
+* A simulator
+
+While the Process API is similar to the Component Manager, it's goal is different. The Component Manager uses the API which
+will ultimately connect to the SMRB process or a stubbed/simulator process. It is meant to deal with the communication with
+the external process and also not worry about the state model, which is a part of the component manager.
+
 ## Developer Setup
 
 As this project uses `PyTango` via the [ska-tango-base](https://gitlab.com/ska-telescope/ska-tango-base) project, it is not possible to do development on this project using **macOS**. There are a few options available to the developer and are listed below.

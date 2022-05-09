@@ -6,7 +6,9 @@ API
   :caption: Subpackages
   :maxdepth: 3
 
-  Receive subpackge<receive/index>
+  Component subpackage<component/index>
+  Receive subpackage<receive/index>
+  SMRB subpackage<smrb/index>
   Util subpackage<util/index>
 
 .. toctree::
