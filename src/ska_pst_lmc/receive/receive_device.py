@@ -226,6 +226,9 @@ class PstReceive(SKASubarray):
         """
         self.component_manager.simulation_mode = value
 
+    # --------
+    # Commands
+    # --------
     @command(
         dtype_out=("str",),
         doc_out="Version strings",
@@ -238,10 +241,6 @@ class PstReceive(SKASubarray):
         :return: The result code and the command unique ID
         """
         return [f"{self.__class__.__name__}, {self.read_buildState()}"]
-
-    # --------
-    # Commands
-    # --------
 
 
 # ----------

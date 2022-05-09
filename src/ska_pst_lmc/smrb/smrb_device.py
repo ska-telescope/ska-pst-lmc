@@ -11,13 +11,19 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from ska_tango_base.csp.subarray import CspSubElementSubarray
-from tango.server import attribute, run
+import tango
+from ska_tango_base.control_model import SimulationMode
+from ska_tango_base.subarray import SKASubarray
+from tango import DebugIt
+from tango.server import attribute, command, run
+
+import ska_pst_lmc.release as release
+from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
 
 __all__ = ["PstSmrb", "main"]
 
 
-class PstSmrb(CspSubElementSubarray):
+class PstSmrb(SKASubarray):
     """A software TANGO device for managing the SMRB component of the PST.LMC subsystem.
 
     This TANGO device is used to manage the Shared Memory Ring Buffer (SMRB) for the
@@ -37,15 +43,26 @@ class PstSmrb(CspSubElementSubarray):
 
         This overrides the :py:class:`CspSubElementSubarray`.
         """
-        CspSubElementSubarray.init_device(self)
-        self.set_change_event("adminMode", True, True)
-        self.set_archive_event("adminMode", True, True)
-        self.set_change_event("obsState", True, True)
-        self.set_archive_event("obsState", True, True)
-        self.set_change_event("longRunningCommandsInQueue", True, True)
-        self.set_change_event("longRunningCommandStatus", True, True)
-        self.set_change_event("longRunningCommandProgress", True, True)
-        self.set_change_event("longRunningCommandResult", True, True)
+        util = tango.Util.instance()
+        util.set_serial_model(tango.SerialModel.NO_SYNC)
+        super().init_device()
+        self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
+        self._version_id = release.VERSION
+
+    def create_component_manager(
+        self: PstSmrb,
+    ) -> PstSmrbComponentManager:
+        """
+        Create and return a component manager for this device.
+
+        :return: a component manager for this device.
+        """
+        return PstSmrbComponentManager(
+            simulation_mode=SimulationMode.TRUE,
+            logger=self.logger,
+            communication_state_callback=self._communication_state_changed,
+            component_state_callback=self._component_state_changed,
+        )
 
     def always_executed_hook(self: PstSmrb) -> None:
         """Execute call before any TANGO command is executed."""
@@ -77,7 +94,7 @@ class PstSmrb(CspSubElementSubarray):
         :returns: the percentage of the ring buffer elements that are full of data.
         :rtype: float
         """
-        return 0.0
+        return self.component_manager.ring_buffer_utilisation
 
     @attribute(
         dtype="DevULong64",
@@ -94,7 +111,7 @@ class PstSmrb(CspSubElementSubarray):
         :returns: the capacity of the ring buffer, in bytes.
         :rtype: int
         """
-        return 0
+        return self.component_manager.ring_buffer_size
 
     @attribute(
         dtype="DevUShort",
@@ -107,7 +124,7 @@ class PstSmrb(CspSubElementSubarray):
         :returns: the number of sub-bands.
         :rtype: int
         """
-        return 0
+        return self.component_manager.number_subbands
 
     @attribute(
         dtype=("DevFloat",),
@@ -128,7 +145,7 @@ class PstSmrb(CspSubElementSubarray):
         :returns: the percentage of full ring buffer elements for each sub-band.
         :rtype: List[float]
         """
-        return [0.0]
+        return self.component_manager.subband_ring_buffer_utilisations
 
     @attribute(
         dtype=("DevULong64",),
@@ -146,11 +163,23 @@ class PstSmrb(CspSubElementSubarray):
         :returns: the capacity of ring buffers, in bytes, for each sub-band.
         :rtype: List[int]
         """
-        return [0]
+        return self.component_manager.subband_ring_buffer_sizes
 
     # --------
     # Commands
     # --------
+    @command(
+        dtype_out=("str",),
+        doc_out="Version strings",
+    )
+    @DebugIt()
+    def GetVersionInfo(self: PstSmrb) -> List[str]:
+        """
+        Return the version information of the device.
+
+        :return: The result code and the command unique ID
+        """
+        return [f"{self.__class__.__name__}, {self.read_buildState()}"]
 
 
 # ----------
