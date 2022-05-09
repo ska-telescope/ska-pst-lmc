@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
@@ -31,6 +31,7 @@ class PstSmrbComponentManager(PstComponentManager):
         logger: logging.Logger,
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable[[bool, PowerState], None],
+        api: Optional[PstSmrbProcessApi] = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -45,7 +46,7 @@ class PstSmrbComponentManager(PstComponentManager):
         :param component_fault_callback: callback to be called when the
             component faults (or stops faulting)
         """
-        api = PstSmrbProcessApiSimulator(
+        api = api or PstSmrbProcessApiSimulator(
             logger=logger,
             component_state_callback=component_state_callback,
         )

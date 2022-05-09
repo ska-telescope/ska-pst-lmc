@@ -8,40 +8,68 @@
 """This module contains tests for the RECV component managers class."""
 
 import logging
+from typing import Callable
 from unittest.mock import MagicMock
 
 import pytest
-from ska_tango_base.control_model import SimulationMode
+from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 
-from ska_pst_lmc.receive.receive_component_manager import PstReceiveComponentManager
+from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
+from ska_pst_lmc.smrb.smrb_model import SharedMemoryRingBufferData
+from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApi, PstSmrbProcessApiSimulator
 
 
 @pytest.fixture
 def component_manager(
     simulation_mode: SimulationMode,
     logger: logging.Logger,
-) -> PstReceiveComponentManager:
+    api: PstSmrbProcessApi,
+    communication_state_callback: Callable[[CommunicationStatus], None],
+    component_state_callback: Callable,
+) -> PstSmrbComponentManager:
     """Create instance of a component manager."""
-    return PstReceiveComponentManager(
+    return PstSmrbComponentManager(
         simulation_mode=simulation_mode,
         logger=logger,
-        communication_state_callback=MagicMock(),
-        component_state_callback=MagicMock(),
+        communication_state_callback=communication_state_callback,
+        component_state_callback=component_state_callback,
+        api=api,
     )
 
 
 @pytest.fixture
-def simulation_mode(request: pytest.FixtureRequest) -> SimulationMode:
-    """Set simulation mode for test."""
-    try:
-        return request.param.get("simulation_mode", SimulationMode.TRUE)  # type: ignore
-    except Exception:
-        return SimulationMode.TRUE
+def api(
+    simulation_mode: SimulationMode,
+    logger: logging.Logger,
+    component_state_callback: Callable,
+) -> PstSmrbProcessApi:
+    """Create an API instance."""
+    if simulation_mode == SimulationMode.TRUE:
+        return PstSmrbProcessApiSimulator(
+            logger=logger,
+            component_state_callback=component_state_callback,
+        )
+    else:
+        raise ValueError("Expected simulation mode to be true")
 
 
-def test_start_communicating_calls_connect_on_api(component_manager: PstReceiveComponentManager) -> None:
+@pytest.fixture
+def monitor_data() -> SharedMemoryRingBufferData:
+    """Create an an instance of ReceiveData for monitor data."""
+    from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
+
+    simulator = PstSmrbSimulator()
+    simulator.scan(args={})
+
+    return simulator.get_data()
+
+
+def test_start_communicating_calls_connect_on_api(
+    component_manager: PstSmrbComponentManager,
+    api: PstSmrbProcessApi,
+) -> None:
     """Assert start/stop communicating calls API."""
-    api = MagicMock()
+    api = MagicMock(wraps=api)
     component_manager._api = api
 
     component_manager.start_communicating()
@@ -50,3 +78,30 @@ def test_start_communicating_calls_connect_on_api(component_manager: PstReceiveC
 
     component_manager.stop_communicating()
     api.disconnect.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "property",
+    [
+        ("ring_buffer_utilisation"),
+        ("ring_buffer_size"),
+        ("number_subbands"),
+        ("subband_ring_buffer_utilisations"),
+        ("subband_ring_buffer_sizes"),
+    ],
+)
+def test_properties_come_from_api_monitor_data(
+    component_manager: PstSmrbComponentManager,
+    api: PstSmrbProcessApi,
+    monitor_data: SharedMemoryRingBufferData,
+    property: str,
+) -> None:
+    """Test properties are coming from API monitor data."""
+    api = MagicMock()
+    type(api).monitor_data = monitor_data
+    component_manager._api = api
+
+    actual = getattr(component_manager, property)
+    expected = getattr(monitor_data, property)
+
+    assert actual == expected

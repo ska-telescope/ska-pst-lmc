@@ -38,27 +38,6 @@ def component_manager(
 
 
 @pytest.fixture
-def communication_state_callback() -> Callable:
-    """Create a communication state callback."""
-    return MagicMock()
-
-
-@pytest.fixture
-def component_state_callback() -> Callable:
-    """Create a component state callback."""
-    return MagicMock()
-
-
-@pytest.fixture
-def simulation_mode(request: pytest.FixtureRequest) -> SimulationMode:
-    """Set simulation mode for test."""
-    try:
-        return request.param.get("simulation_mode", SimulationMode.TRUE)  # type: ignore
-    except Exception:
-        return SimulationMode.TRUE
-
-
-@pytest.fixture
 def api(
     simulation_mode: SimulationMode,
     logger: logging.Logger,

@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import tango
+from ska_tango_base.control_model import SimulationMode
 from ska_tango_base.testing.mock import MockCallable, MockChangeEventCallback
 from tango import DeviceProxy
 from tango.test_context import DeviceTestContext
@@ -160,3 +161,24 @@ def background_task_processor(
     processor = BackgroundTaskProcessor(default_logger=logger)
     monkeypatch.setattr(processor, "submit_task", _submit_task)
     return processor
+
+
+@pytest.fixture
+def communication_state_callback() -> Callable:
+    """Create a communication state callback."""
+    return MagicMock()
+
+
+@pytest.fixture
+def component_state_callback() -> Callable:
+    """Create a component state callback."""
+    return MagicMock()
+
+
+@pytest.fixture
+def simulation_mode(request: pytest.FixtureRequest) -> SimulationMode:
+    """Set simulation mode for test."""
+    try:
+        return request.param.get("simulation_mode", SimulationMode.TRUE)  # type: ignore
+    except Exception:
+        return SimulationMode.TRUE
