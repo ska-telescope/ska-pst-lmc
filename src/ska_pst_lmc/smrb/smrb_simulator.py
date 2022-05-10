@@ -101,7 +101,7 @@ class PstSmrbSimulator:
         self._scan = False
 
     def _update(self: PstSmrbSimulator) -> None:
-        """Simulate the update of RECV data."""
+        """Simulate the update of SMRB data."""
         for i in range(self._num_subbands):
             self._subband_ring_buffer_utilisations[i] = float(randint(0, 79))
 
@@ -115,8 +115,8 @@ class PstSmrbSimulator:
 
         Updates the current simulated data and returns the latest data.
 
-        :returns: current simulated RECV data.
-        :rtype: :py:class:`ReceiveData`
+        :returns: current simulated SMRB data.
+        :rtype: :py:class:`SharedMemoryRingBufferData`
         """
         if self._scan:
             self._update()

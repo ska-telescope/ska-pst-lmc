@@ -5,7 +5,7 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
 
-"""Module for providing the RECV capability for the Pulsar Timing Sub-element."""
+"""Module for providing the SMRB capability for the Pulsar Timing Sub-element."""
 
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ class PstSmrb(SKASubarray):
     # ---------------
 
     def init_device(self: PstSmrb) -> None:
-        """Initialise the attributes and properties of the PstReceive.
+        """Initialise the attributes and properties of the PstSmrb.
 
         This overrides the :py:class:`CspSubElementSubarray`.
         """

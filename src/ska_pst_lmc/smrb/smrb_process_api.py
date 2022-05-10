@@ -31,7 +31,7 @@ __all__ = [
 
 
 class PstSmrbProcessApi(PstProcessApi):
-    """Abstract class for the API of the RECV process.
+    """Abstract class for the API of the SMRB process.
 
     This extends from :py:class:`PstProcessApi` but
     provides the specific method of getting the monitoring
