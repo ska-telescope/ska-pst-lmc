@@ -11,13 +11,57 @@
 
 from __future__ import annotations
 
+import functools
 import logging
 from enum import IntEnum
 from logging import Logger
 from threading import Thread
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List, Optional, TypeVar, cast
 
 from readerwriterlock import rwlock
+
+__all__ = [
+    "BackgroundTaskProcessor",
+    "BackgroundTask",
+    "background_task",
+    "RunState",
+]
+
+Wrapped = TypeVar("Wrapped", bound=Callable[..., Any])
+
+
+def background_task(func: Wrapped) -> Wrapped:
+    """
+    Return a decorated function that runs tasks in a background.
+
+    Use this decorator on methods of a class that contains
+    a :py:class:`BackgroundTaskProcessor` in the field
+    `_background_task_processor`. If the field doesn't exist
+    than this wrapper will error with the field not existing.
+
+    .. code-block:: python
+
+        @background_task
+        def assign_resources(self):
+            ...
+
+    :param func: the wrapped function
+
+    :return: the wrapped function
+    """
+
+    @functools.wraps(func)
+    def _wrapper(
+        obj: Any,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        def _task() -> None:
+            func(obj, *args, **kwargs)
+
+        obj._background_task_processor.submit_task(_task)
+
+    return cast(Wrapped, _wrapper)
 
 
 class BackgroundTaskProcessor:

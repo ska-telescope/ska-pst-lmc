@@ -16,9 +16,9 @@ from unittest.mock import MagicMock, call
 import pytest
 from ska_tango_base.commands import TaskStatus
 
-from ska_pst_lmc import PstReceiveSimulator
-from ska_pst_lmc.receive.receive_model import ReceiveData
-from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApiSimulator
+from ska_pst_lmc.smrb.smrb_model import SharedMemoryRingBufferData
+from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApiSimulator
+from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
 
@@ -36,13 +36,13 @@ def task_callback() -> Callable:
 
 @pytest.fixture
 def simulation_api(
-    simulator: PstReceiveSimulator,
+    simulator: PstSmrbSimulator,
     logger: logging.Logger,
     component_state_callback: MagicMock,
     background_task_processor: BackgroundTaskProcessor,
-) -> PstReceiveProcessApiSimulator:
+) -> PstSmrbProcessApiSimulator:
     """Create an instance of the Simluator API."""
-    api = PstReceiveProcessApiSimulator(
+    api = PstSmrbProcessApiSimulator(
         simulator=simulator, logger=logger, component_state_callback=component_state_callback
     )
     api._background_task_processor = background_task_processor
@@ -51,12 +51,12 @@ def simulation_api(
 
 
 @pytest.fixture
-def simulator() -> PstReceiveSimulator:
+def simulator() -> PstSmrbSimulator:
     """Create instance of a simulator to be used within the API."""
-    return PstReceiveSimulator()
+    return PstSmrbSimulator()
 
 
-def test_communication_task_on_connect_disconnect(simulation_api: PstReceiveProcessApiSimulator) -> None:
+def test_communication_task_on_connect_disconnect(simulation_api: PstSmrbProcessApiSimulator) -> None:
     """Assert start communicating starts a background task."""
     assert simulation_api._communication_task is None
 
@@ -69,7 +69,7 @@ def test_communication_task_on_connect_disconnect(simulation_api: PstReceiveProc
     assert simulation_api._communication_task is None
 
 
-def test_start_communicating_call_monitor(simulation_api: PstReceiveProcessApiSimulator) -> None:
+def test_start_communicating_call_monitor(simulation_api: PstSmrbProcessApiSimulator) -> None:
     """Assert the background task used is the monitor method."""
     simulation_api._monitor_action = MagicMock(name="_monitor_task")  # type: ignore
 
@@ -81,7 +81,7 @@ def test_start_communicating_call_monitor(simulation_api: PstReceiveProcessApiSi
 
 
 def test_monitor_function_gets_values_from_simulator(
-    simulation_api: PstReceiveProcessApiSimulator, simulator: PstReceiveSimulator
+    simulation_api: PstSmrbProcessApiSimulator, simulator: PstSmrbSimulator
 ) -> None:
     """Assert that the API values get data from simulator when monitor action called."""
     with unittest.mock.patch.object(simulator, "get_data", wraps=simulator.get_data) as get_data:
@@ -89,20 +89,20 @@ def test_monitor_function_gets_values_from_simulator(
         get_data.assert_called_once()
 
 
-def test_get_data_returns_empty_data_if_not_monitoring(simulation_api: PstReceiveProcessApiSimulator) -> None:
+def test_get_data_returns_empty_data_if_not_monitoring(simulation_api: PstSmrbProcessApiSimulator) -> None:
     """Test that the data returned when API is not scanning is the default data."""
     assert simulation_api.data is None
 
-    actual: ReceiveData = simulation_api.monitor_data
+    actual: SharedMemoryRingBufferData = simulation_api.monitor_data
     assert actual is not None
 
-    expected: ReceiveData = ReceiveData.defaults()
+    expected: SharedMemoryRingBufferData = SharedMemoryRingBufferData.defaults()
 
     assert actual == expected
 
 
 def test_assign_resources(
-    simulation_api: PstReceiveProcessApiSimulator,
+    simulation_api: PstSmrbProcessApiSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
@@ -113,8 +113,7 @@ def test_assign_resources(
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(progress=33),
-        call(progress=66),
+        call(progress=50),
         call(status=TaskStatus.COMPLETED),
     ]
     task_callback.assert_has_calls(expected_calls)
@@ -122,7 +121,7 @@ def test_assign_resources(
 
 
 def test_release(
-    simulation_api: PstReceiveProcessApiSimulator,
+    simulation_api: PstSmrbProcessApiSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
@@ -133,8 +132,8 @@ def test_release(
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(progress=42),
-        call(progress=75),
+        call(progress=19),
+        call(progress=81),
         call(status=TaskStatus.COMPLETED),
     ]
     task_callback.assert_has_calls(expected_calls)
@@ -142,7 +141,7 @@ def test_release(
 
 
 def test_release_all(
-    simulation_api: PstReceiveProcessApiSimulator,
+    simulation_api: PstSmrbProcessApiSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
@@ -151,7 +150,7 @@ def test_release_all(
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(progress=50),
+        call(progress=45),
         call(status=TaskStatus.COMPLETED),
     ]
     task_callback.assert_has_calls(expected_calls)
@@ -159,8 +158,8 @@ def test_release_all(
 
 
 def test_configure(
-    simulation_api: PstReceiveProcessApiSimulator,
-    simulator: PstReceiveSimulator,
+    simulation_api: PstSmrbProcessApiSimulator,
+    simulator: PstSmrbSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
@@ -173,8 +172,8 @@ def test_configure(
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(progress=30),
-        call(progress=60),
+        call(progress=42),
+        call(progress=58),
         call(status=TaskStatus.COMPLETED),
     ]
     task_callback.assert_has_calls(expected_calls)
@@ -182,8 +181,8 @@ def test_configure(
 
 
 def test_deconfigure(
-    simulation_api: PstReceiveProcessApiSimulator,
-    simulator: PstReceiveSimulator,
+    simulation_api: PstSmrbProcessApiSimulator,
+    simulator: PstSmrbSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
@@ -194,8 +193,9 @@ def test_deconfigure(
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(progress=31),
-        call(progress=89),
+        call(progress=20),
+        call(progress=50),
+        call(progress=80),
         call(status=TaskStatus.COMPLETED),
     ]
     task_callback.assert_has_calls(expected_calls)
@@ -203,21 +203,20 @@ def test_deconfigure(
 
 
 def test_scan(
-    simulation_api: PstReceiveProcessApiSimulator,
-    simulator: PstReceiveSimulator,
+    simulation_api: PstSmrbProcessApiSimulator,
+    simulator: PstSmrbSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
     """Test that release_all simulator calls task."""
-    args = {"foo": "bar"}
+    args = {"cat": "dog"}
     with unittest.mock.patch.object(simulator, "scan", wraps=simulator.scan) as scan:
         simulation_api.scan(args, task_callback)
         scan.assert_called_with(args)
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(progress=27),
-        call(progress=69),
+        call(progress=55),
         call(status=TaskStatus.COMPLETED),
     ]
     task_callback.assert_has_calls(expected_calls)
@@ -225,8 +224,8 @@ def test_scan(
 
 
 def test_end_scan(
-    simulation_api: PstReceiveProcessApiSimulator,
-    simulator: PstReceiveSimulator,
+    simulation_api: PstSmrbProcessApiSimulator,
+    simulator: PstSmrbSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
@@ -237,8 +236,8 @@ def test_end_scan(
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(progress=32),
-        call(progress=88),
+        call(progress=37),
+        call(progress=63),
         call(status=TaskStatus.COMPLETED),
     ]
     task_callback.assert_has_calls(expected_calls)
@@ -246,8 +245,8 @@ def test_end_scan(
 
 
 def test_abort(
-    simulation_api: PstReceiveProcessApiSimulator,
-    simulator: PstReceiveSimulator,
+    simulation_api: PstSmrbProcessApiSimulator,
+    simulator: PstSmrbSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
@@ -258,7 +257,7 @@ def test_abort(
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(progress=60),
+        call(progress=59),
         call(status=TaskStatus.COMPLETED),
     ]
     task_callback.assert_has_calls(expected_calls)

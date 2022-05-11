@@ -1,47 +1,46 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of the PstReceive project
+# This file is part of the SKA PST LMC project
 #
-#
-#
-# Distributed under the terms of the BSD3 license.
-# See LICENSE.txt for more info.
+# Distributed under the terms of the BSD 3-clause new license.
+# See LICENSE for more info.
 
 """Module for providing common model classes within the RECV sub-element component."""
 
 from __future__ import annotations
 
-from collections import namedtuple
+from typing import List, NamedTuple
 
 
-class ReceiveData(
-    namedtuple(
-        "ReceiveData",
-        [
-            "received_data",
-            "received_rate",
-            "dropped_data",
-            "dropped_rate",
-            "misordered_packets",
-            "malformed_packets",
-            "relative_weights",
-            "relative_weight",
-        ],
-    )
-):
+class ReceiveData(NamedTuple):
     """Named tuple used to transfer current RECV data between the process and the component manager.
 
     :ivar received_data: amount of data received during current scan, in bytes.
+    :vartype received_data: int
     :ivar received_rate: the rate of data received during current scan, in Gb/s.
+    :vartype received_rate: float
     :ivar dropped_data: amount of data dropped during current scan, in bytes.
+    :vartype dropped_data: int
     :ivar dropped_rate: the rate of data dropped during current scan, in Gb/s.
+    :vartype dropped_rate: float
     :ivar malformed_packets: the number of malformed packets received during current scan.
+    :vartype malformed_packets: int
     :ivar misordered_packets: the number of misordered packets received during current scan.
+    :vartype misordered_packets: int
     :ivar relative_weights: the relative weights for each channel.
+    :vartype relative_weights: List[float]
     :ivar relative_weight: the average relative weight over all channels.
+    :vartype relative_weight: float
     """
 
-    __slots__ = ()
+    received_data: int
+    received_rate: float
+    dropped_data: int
+    dropped_rate: float
+    malformed_packets: int
+    misordered_packets: int
+    relative_weights: List[float]
+    relative_weight: float
 
     @staticmethod
     def defaults() -> ReceiveData:

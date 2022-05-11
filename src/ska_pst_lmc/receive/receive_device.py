@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of the PstReceive project
+# This file is part of the SKA PST LMC project
 #
-#
-#
-# Distributed under the terms of the BSD3 license.
-# See LICENSE.txt for more info.
+# Distributed under the terms of the BSD 3-clause new license.
+# See LICENSE for more info.
 
 """Module for providing the RECV capability for the Pulsar Timing Sub-element."""
 
@@ -228,6 +226,9 @@ class PstReceive(SKASubarray):
         """
         self.component_manager.simulation_mode = value
 
+    # --------
+    # Commands
+    # --------
     @command(
         dtype_out=("str",),
         doc_out="Version strings",
@@ -240,10 +241,6 @@ class PstReceive(SKASubarray):
         :return: The result code and the command unique ID
         """
         return [f"{self.__class__.__name__}, {self.read_buildState()}"]
-
-    # --------
-    # Commands
-    # --------
 
 
 # ----------

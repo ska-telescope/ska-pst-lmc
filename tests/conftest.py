@@ -4,13 +4,17 @@ from __future__ import annotations
 import collections
 import logging
 import time
-from typing import Any, Generator
+from typing import Any, Callable, Generator
+from unittest.mock import MagicMock
 
 import pytest
 import tango
+from ska_tango_base.control_model import SimulationMode
 from ska_tango_base.testing.mock import MockCallable, MockChangeEventCallback
 from tango import DeviceProxy
 from tango.test_context import DeviceTestContext
+
+from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
 
 @pytest.fixture(scope="class")
@@ -137,3 +141,44 @@ def tango_change_event_helper(
 def logger() -> logging.Logger:
     """Fixture that returns a default logger for tests."""
     return logging.Logger("Test logger")
+
+
+@pytest.fixture
+def background_task_processor(
+    logger: logging.Logger, monkeypatch: pytest.MonkeyPatch
+) -> BackgroundTaskProcessor:
+    """Create mock for background task processing."""
+
+    def _submit_task(
+        action_fn: Callable,
+        *args: Any,
+        **kwargs: Any,
+    ) -> MagicMock:
+        action_fn()
+        return MagicMock()
+
+    # need to stub the submit_task and replace
+    processor = BackgroundTaskProcessor(default_logger=logger)
+    monkeypatch.setattr(processor, "submit_task", _submit_task)
+    return processor
+
+
+@pytest.fixture
+def communication_state_callback() -> Callable:
+    """Create a communication state callback."""
+    return MagicMock()
+
+
+@pytest.fixture
+def component_state_callback() -> Callable:
+    """Create a component state callback."""
+    return MagicMock()
+
+
+@pytest.fixture
+def simulation_mode(request: pytest.FixtureRequest) -> SimulationMode:
+    """Set simulation mode for test."""
+    try:
+        return request.param.get("simulation_mode", SimulationMode.TRUE)  # type: ignore
+    except Exception:
+        return SimulationMode.TRUE

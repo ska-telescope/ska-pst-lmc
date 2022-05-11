@@ -14,21 +14,21 @@ from unittest.mock import MagicMock
 import pytest
 from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 
-from ska_pst_lmc.receive.receive_component_manager import PstReceiveComponentManager
-from ska_pst_lmc.receive.receive_model import ReceiveData
-from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApi, PstReceiveProcessApiSimulator
+from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
+from ska_pst_lmc.smrb.smrb_model import SharedMemoryRingBufferData
+from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApi, PstSmrbProcessApiSimulator
 
 
 @pytest.fixture
 def component_manager(
     simulation_mode: SimulationMode,
     logger: logging.Logger,
-    api: PstReceiveProcessApi,
+    api: PstSmrbProcessApi,
     communication_state_callback: Callable[[CommunicationStatus], None],
     component_state_callback: Callable,
-) -> PstReceiveComponentManager:
+) -> PstSmrbComponentManager:
     """Create instance of a component manager."""
-    return PstReceiveComponentManager(
+    return PstSmrbComponentManager(
         simulation_mode=simulation_mode,
         logger=logger,
         communication_state_callback=communication_state_callback,
@@ -42,10 +42,10 @@ def api(
     simulation_mode: SimulationMode,
     logger: logging.Logger,
     component_state_callback: Callable,
-) -> PstReceiveProcessApi:
+) -> PstSmrbProcessApi:
     """Create an API instance."""
     if simulation_mode == SimulationMode.TRUE:
-        return PstReceiveProcessApiSimulator(
+        return PstSmrbProcessApiSimulator(
             logger=logger,
             component_state_callback=component_state_callback,
         )
@@ -54,16 +54,19 @@ def api(
 
 
 @pytest.fixture
-def monitor_data() -> ReceiveData:
+def monitor_data() -> SharedMemoryRingBufferData:
     """Create an an instance of ReceiveData for monitor data."""
-    from ska_pst_lmc.receive.receive_simulator import generate_random_update
+    from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
 
-    return generate_random_update()
+    simulator = PstSmrbSimulator()
+    simulator.scan(args={})
+
+    return simulator.get_data()
 
 
 def test_start_communicating_calls_connect_on_api(
-    component_manager: PstReceiveComponentManager,
-    api: PstReceiveProcessApi,
+    component_manager: PstSmrbComponentManager,
+    api: PstSmrbProcessApi,
 ) -> None:
     """Assert start/stop communicating calls API."""
     api = MagicMock(wraps=api)
@@ -80,20 +83,17 @@ def test_start_communicating_calls_connect_on_api(
 @pytest.mark.parametrize(
     "property",
     [
-        ("received_rate"),
-        ("received_data"),
-        ("dropped_rate"),
-        ("dropped_data"),
-        ("misordered_packets"),
-        ("malformed_packets"),
-        ("relative_weight"),
-        ("relative_weights"),
+        ("ring_buffer_utilisation"),
+        ("ring_buffer_size"),
+        ("number_subbands"),
+        ("subband_ring_buffer_utilisations"),
+        ("subband_ring_buffer_sizes"),
     ],
 )
 def test_properties_come_from_api_monitor_data(
-    component_manager: PstReceiveComponentManager,
-    api: PstReceiveProcessApi,
-    monitor_data: ReceiveData,
+    component_manager: PstSmrbComponentManager,
+    api: PstSmrbProcessApi,
+    monitor_data: SharedMemoryRingBufferData,
     property: str,
 ) -> None:
     """Test properties are coming from API monitor data."""

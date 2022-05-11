@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of the PstReceive project
+# This file is part of the SKA PST LMC project
 #
-#
-#
-# Distributed under the terms of the BSD3 license.
-# See LICENSE.txt for more info.
+# Distributed under the terms of the BSD 3-clause new license.
+# See LICENSE for more info.
 
 """Module for providing the Simulated RECV capability for the Pulsar Timing Sub-element."""
 
@@ -78,7 +76,9 @@ class PstReceiveSimulator:
 
     def configure(self: PstReceiveSimulator, configuration: dict) -> None:
         """
-        Configure the component.
+        Configure the simulator.
+
+        Only the "nchan" parameter is used by this simulator.
 
         :param configuration: the configuration to be configured
         :type configuration: dict

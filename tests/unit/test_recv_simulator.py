@@ -9,8 +9,16 @@
 
 from typing import List
 
+import pytest
+
 from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_simulator import PstReceiveSimulator
+
+
+@pytest.fixture
+def simulator() -> PstReceiveSimulator:
+    """Create a simulator configuration."""
+    return PstReceiveSimulator()
 
 
 def __create_expected_relative_weights(nchans: int) -> List[float]:
@@ -19,9 +27,8 @@ def __create_expected_relative_weights(nchans: int) -> List[float]:
     return weights
 
 
-def test_default_values() -> None:
+def test_default_values(simulator: PstReceiveSimulator) -> None:
     """Test to see if that the simulator is initialised with defaults."""
-    simulator = PstReceiveSimulator()
     assert simulator._received_data == 0
     assert simulator._received_rate == 0.0
     assert simulator._dropped_data == 0.0
@@ -35,9 +42,8 @@ def test_default_values() -> None:
     assert expected == simulator._relative_weights
 
 
-def test_get_data_will_update_data_when_scanning() -> None:
+def test_get_data_will_update_data_when_scanning(simulator: PstReceiveSimulator) -> None:
     """Test to assert that simulator updates data."""
-    simulator = PstReceiveSimulator()
     simulator.scan(args={})
 
     empty: ReceiveData = ReceiveData(
@@ -55,9 +61,8 @@ def test_get_data_will_update_data_when_scanning() -> None:
     assert actual != empty
 
 
-def test_get_data_wont_update_data_when_scanning_stops() -> None:
+def test_get_data_wont_update_data_when_scanning_stops(simulator: PstReceiveSimulator) -> None:
     """Test to assert that simulator updates data."""
-    simulator = PstReceiveSimulator()
     simulator.scan(args={})
 
     empty: ReceiveData = ReceiveData(

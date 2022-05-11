@@ -7,9 +7,11 @@ __all__ = [
     "Strictness",
     "Configuration",
     "BackgroundTask",
+    "BackgroundTaskProcessor",
+    "background_task",
     "RunState",
 ]
 
 from .configuration import Configuration
 from .validation import validate, Strictness
-from .background_task import BackgroundTask, RunState
+from .background_task import BackgroundTaskProcessor, BackgroundTask, RunState, background_task
