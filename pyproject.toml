@@ -51,4 +51,5 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-Hello = "ska_pst_lmc.hello:main"
+PstReceive = 'ska_pst_lmc.receiver.receive_device:main'
+PstTestClient = 'ska_pst_lmc.test.test_device:main'
