@@ -13,8 +13,18 @@ PYTHON_LINT_TARGET = src tests  ## Paths containing python to be formatted and l
 PYTHON_SWITCHES_FOR_PYLINT = --disable=W,C,R
 DOCS_SOURCEDIR=./docs/src
 
+
+HELM_CHART ?= test-parent
+UMBRELLA_CHART_PATH ?= charts/$(HELM_CHART)/
+
 # include OCI support
 include .make/oci.mk
+
+# include k8s support
+include .make/k8s.mk
+
+# include Helm Chart support
+include .make/helm.mk
 
 # include Python support
 include .make/python.mk
