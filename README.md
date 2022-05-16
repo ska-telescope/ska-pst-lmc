@@ -121,6 +121,17 @@ $ poetry install
 $ poetry shell
 ```
 
+### Using a VM for development
+
+A Linux virtual machine can be used for development.  Follow setting up a Linux development environment. While each developer's
+host machine has specific resources that following has been shown to work for TANGO device development.
+
+* VM Type: VirtualBox
+* Guest OS: Ubuntu
+* Num CPUs: 6 (min would be 4)
+* Mem: 8 GB
+* Video Mem: 32 MB (enable VMSVGA and 3D acceleration, VirtualBox Guest addons are needed for this)
+
 ## Project Hygiene
 
 ### Gitignore
@@ -168,6 +179,30 @@ python-pre-lint: python-lint-fix python-autoflake
 flake8:
 	$(PYTHON_RUNNER) flake8 --show-source --statistics $(PYTHON_SWITCHES_FOR_FLAKE8) $(PYTHON_LINT_TARGET)
 ```
+
+## Example Kubernetes Deployment
+
+As part of [AT3-189]() an example TANGO Device was developed as a proof of concept to be able to connect to a remote
+device and listen to events. The following assumes that you're using a `minikube` setup (this is not possible on `pst-beam1`).
+
+```
+helm dependency build charts/ska-pst-lmc
+helm dependency build charts/test-parent
+helm install <name> ./charts/test-parent
+```
+
+Using a tool like `k9s`, you should be able then seen the pod deployment. Note, while it may take time for downloading the
+Docker images these should be cached. However, if deployment takes too long and the device server `simple-simple-01-0` fails
+to come up this might be due to lack of resources, this was the case using a VM. If this does happen and you're using a VM
+increase the resources but also start the VM in headless mode.
+
+If you want to see the Helm chart that is being for the deployment then use:
+
+```
+helm template charts/test-parent > <file>
+```
+
+Use the `test-parent` as this includes all the extra scaffolding for a TANGO deployment.
 
 ## Unit Testing
 
