@@ -1,25 +1,25 @@
-ARG BUILD_IMAGE="artefact.skao.int/ska-tango-images-pytango-builder:9.3.10"
-ARG BASE_IMAGE="artefact.skao.int/ska-tango-images-pytango-runtime:9.3.10"
+ARG BUILD_IMAGE="artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.28"
+ARG BASE_IMAGE="artefact.skao.int/ska-tango-images-pytango-runtime-alpine:9.3.16"
 FROM $BUILD_IMAGE AS buildenv
 
 FROM $BASE_IMAGE
 
-# Install Poetry
 USER root
 
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_HOME=/opt/poetry python - && \
-    chmod a+x /opt/poetry/bin/poetry && \
-    /opt/poetry/bin/poetry config virtualenvs.create false
+RUN apk --update add --no-cache pkgconfig boost-dev tar 
 
-# Copy poetry.lock* in case it doesn't exist in the repo
+RUN poetry config virtualenvs.create false
+
 WORKDIR /app
 
-COPY pyproject.toml poetry.lock* ./
+COPY pyproject.toml poetry.lock* /app/
 
-# Install runtime dependencies and the app
-RUN /opt/poetry/bin/poetry install --no-dev
+RUN poetry export --format requirements.txt --output poetry-requirements.txt --without-hashes && \
+    pip install -r poetry-requirements.txt && \
+    rm poetry-requirements.txt 
+
+COPY --chown=tango:tango . /app
 
 USER tango
 
-ENTRYPOINT [ "/bin/bash" ]
+ENV PYTHONPATH=/app/src:/usr/local/lib/python3.9/site-packages

@@ -1,0 +1,70 @@
+display: ":0"
+xauthority: "~/.Xauthority"
+
+global:
+  minikube: true
+  tango_host: databaseds-tango-base-test:10000
+  sub-system:
+    ska-tango-base:
+      enabled: false
+
+ska-tango-base:
+  vnc:
+    enabled: false
+  tangorest:
+    enabled: false
+  ingress:
+    enabled: false
+  tangodb:
+    use_pv: false
+  itango:
+    enabled: true
+  jive:
+    enabled: false
+  deviceServers:
+    tangotest:
+      livenessProbe:
+        initialDelaySeconds: 0
+        periodSeconds: 10
+        timeoutSeconds: 3
+        successThreshold: 1
+        failureThreshold: 3
+      readinessProbe:
+        initialDelaySeconds: 0
+        periodSeconds: 10
+        timeoutSeconds: 3
+        successThreshold: 1
+        failureThreshold: 3
+
+ska_pst_lmc:
+  deviceServers:
+    simple:
+      instances: ["simple-01"]
+      polling: 600
+
+ska-dashboard-repo:
+  enabled: false
+
+ska-taranta:
+  enabled: false
+  # in minikube uncomment the following lines. 
+  # tangogql:
+  #   replicas: 1
+  #   resources:
+  #     requests:
+  #       cpu: 200m     # 00m = 0.1 CPU
+  #       memory: 512Mi # 128Mi = 0.125 GB mem
+  #     limits:
+  #       cpu: 400m     # 00m = 0.1 CPU
+  #       memory: 1024Mi # 128Mi = 0.125 GB mem
+  # webjivenode:
+  #   resources:
+  #     requests:
+  #       cpu: 200m     # 00m = 0.1 CPU
+  #       memory: 512Mi # 128Mi = 0.125 GB mem
+  #     limits:
+  #       cpu: 400m     # 00m = 0.1 CPU
+  #       memory: 1024Mi # 128Mi = 0.125 GB mem
+
+ska-taranta-auth:
+  enabled: false
