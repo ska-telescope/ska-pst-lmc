@@ -10,10 +10,9 @@ import logging
 from typing import Any, Optional
 
 import tango
-from tango import DeviceProxy
 from tango.server import Device, DeviceMeta, attribute, run
 
-from ska_pst_lmc.device_proxy_factory import DeviceProxyFactory
+from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
 
 __all__ = ["PstTestClient", "main"]
 
@@ -39,8 +38,7 @@ class PstTestClient(Device):
         """Initialise device."""
         super().init_device()
         self.logger = logging.getLogger(__name__)
-        self._dev_factory = DeviceProxyFactory()
-        self.dev: Optional[DeviceProxy] = None
+        self.dev: Optional[PstDeviceProxy] = None
         self.attr_EventReceived = False
 
     def always_executed_hook(self: PstTestClient) -> None:
@@ -48,7 +46,7 @@ class PstTestClient(Device):
         try:
             if self.dev is None:
                 self.logger.info("Connect to RECV device")
-                self.dev = self._dev_factory.get_device("test/receive/1")
+                self.dev = DeviceProxyFactory.get_device("test/receive/1")
                 self.attr_EventReceived = False
                 self.logger.info("subscribe_event on obsState")
                 self.dev.subscribe_event(
