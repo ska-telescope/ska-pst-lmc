@@ -9,19 +9,21 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional
 
-from ska_tango_base.csp.subarray import CspSubElementSubarray
-from tango.server import device_property, run
+import tango
+from ska_tango_base import SKASubarray
+from ska_tango_base.control_model import AdminMode, SimulationMode
+from tango import DebugIt
+from tango.server import command, device_property, run
 
-# PyTango imports
-# from tango import AttrQuality, AttrWriteType, DebugIt, DevState, DispLevel, PipeWriteType
-# from tango.server import Device, attribute, command, device_property, run
+import ska_pst_lmc.release as release
+from ska_pst_lmc.beam.beam_component_manager import PstBeamComponentManager
 
 __all__ = ["PstBeam", "main"]
 
 
-class PstBeam(CspSubElementSubarray):
+class PstBeam(SKASubarray):
     """A logical TANGO device representing a Beam Capability for PST.LMC.
 
     **Properties:**
@@ -44,23 +46,23 @@ class PstBeam(CspSubElementSubarray):
     # -----------------
 
     beam_id = device_property(
-        dtype="DevString",
+        dtype=str,
     )
 
     RecvFQDN = device_property(
-        dtype="DevString",
+        dtype=str,
     )
 
     SmrbFQDN = device_property(
-        dtype="DevString",
+        dtype=str,
     )
 
     DspFQDN = device_property(
-        dtype="DevString",
+        dtype=str,
     )
 
     SendFQDN = device_property(
-        dtype="DevString",
+        dtype=str,
     )
 
     # ---------------
@@ -68,19 +70,32 @@ class PstBeam(CspSubElementSubarray):
     # ---------------
 
     def init_device(self: PstBeam) -> None:
-        """Intialise the attributes and properties of the PstBeam device.
+        """Initialise the attributes and properties of the PstReceive.
 
-        This overrides the :py:class:`CspSubElementSubarray`.
+        This overrides the :py:class:`SKABaseDevice`.
         """
-        CspSubElementSubarray.init_device(self)
-        self.set_change_event("adminMode", True, True)
-        self.set_archive_event("adminMode", True, True)
-        self.set_change_event("obsState", True, True)
-        self.set_archive_event("obsState", True, True)
-        self.set_change_event("longRunningCommandsInQueue", True, True)
-        self.set_change_event("longRunningCommandStatus", True, True)
-        self.set_change_event("longRunningCommandProgress", True, True)
-        self.set_change_event("longRunningCommandResult", True, True)
+        util = tango.Util.instance()
+        util.set_serial_model(tango.SerialModel.NO_SYNC)
+        super().init_device()
+        self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
+        self._version_id = release.VERSION
+
+    def create_component_manager(
+        self: PstBeam,
+    ) -> PstBeamComponentManager:
+        """
+        Create and return a component manager for this device.
+
+        :return: a component manager for this device.
+        """
+        return PstBeamComponentManager(
+            smrb_fqdn=self.SmrbFQDN,
+            recv_fqdn=self.RecvFQDN,
+            simulation_mode=SimulationMode.TRUE,
+            logger=self.logger,
+            communication_state_callback=self._communication_state_changed,
+            component_state_callback=self._component_state_changed,
+        )
 
     def always_executed_hook(self: PstBeam) -> None:
         """Execute call before any TANGO command is executed."""
@@ -100,6 +115,22 @@ class PstBeam(CspSubElementSubarray):
     # --------
     # Commands
     # --------
+    @command(
+        dtype_out=("str",),
+        doc_out="Version strings",
+    )
+    @DebugIt()
+    def GetVersionInfo(self: PstBeam) -> List[str]:
+        """
+        Return the version information of the device.
+
+        :return: The result code and the command unique ID
+        """
+        return [f"{self.__class__.__name__}, {self.read_buildState()}"]
+
+    def _update_admin_mode(self: PstBeam, admin_mode: AdminMode) -> None:
+        super()._updata_admin_mode(admin_mode)
+        self.component_manager.update_admin_mode(admin_mode)
 
 
 # ----------
