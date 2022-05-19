@@ -10,8 +10,11 @@ __all__ = [
     "BackgroundTaskProcessor",
     "background_task",
     "RunState",
+    "RemoteTask",
+    "AggregateRemoteTask",
 ]
 
 from .configuration import Configuration
 from .validation import validate, Strictness
 from .background_task import BackgroundTaskProcessor, BackgroundTask, RunState, background_task
+from .remote_task import RemoteTask, AggregateRemoteTask
