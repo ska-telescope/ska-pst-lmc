@@ -14,11 +14,11 @@ from typing import Any, Callable, List, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
-from ska_pst_lmc.component import PstComponentManager
+from ska_pst_lmc.component import PstApiComponentManager
 from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApi, PstReceiveProcessApiSimulator
 
 
-class PstReceiveComponentManager(PstComponentManager):
+class PstReceiveComponentManager(PstApiComponentManager):
     """Component manager for the RECV component for the PST.LMC subsystem."""
 
     _api: PstReceiveProcessApi

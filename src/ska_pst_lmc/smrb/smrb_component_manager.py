@@ -14,13 +14,13 @@ from typing import Any, Callable, List, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
-from ska_pst_lmc.component.component_manager import PstComponentManager
+from ska_pst_lmc.component.component_manager import PstApiComponentManager
 from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApi, PstSmrbProcessApiSimulator
 
 __all__ = ["PstSmrbComponentManager"]
 
 
-class PstSmrbComponentManager(PstComponentManager):
+class PstSmrbComponentManager(PstApiComponentManager):
     """Component manager for the SMRB component for the PST.LMC subsystem."""
 
     _api: PstSmrbProcessApi
