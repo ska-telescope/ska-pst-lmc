@@ -34,6 +34,5 @@ include:
       - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
   - local: '.gitlab/ci/branch.yml'
-    when: manual
     rules:
       - if: $CI_COMMIT_BRANCH =~ /at3.*/
