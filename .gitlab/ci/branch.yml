@@ -23,6 +23,8 @@ python-publish-to-gitlab:
   when: manual
 
 oci-image-scan:
+  needs:
+    - oci-image-build
   when: manual
 
 python-gemnasium-scan:
