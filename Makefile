@@ -26,6 +26,9 @@ include .make/k8s.mk
 # include Helm Chart support
 include .make/helm.mk
 
+# include k8s test support
+include .make/k8s.mk
+
 # include Python support
 include .make/python.mk
 
