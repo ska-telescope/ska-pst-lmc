@@ -3,34 +3,47 @@ include:
   # Python packages build,lint, test and publish
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/python.gitlab-ci.yml'
-    when: never
-
+    rules:
+      - if: $CI_PIPELINE_SOURCE == "push"
+        when: never
   # OCI
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/oci-image.gitlab-ci.yml'
-    when: never
+    rules:
+      - if: $CI_PIPELINE_SOURCE == "push"
+        when: never
 
   # Docs pages
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/docs.gitlab-ci.yml'
-    when: never
+    rules:
+      - if: $CI_PIPELINE_SOURCE == "push"
+        when: never
 
   # Create Gitlab CI badges from CI metrics
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/finaliser.gitlab-ci.yml'
-    when: never
+    rules:
+      - if: $CI_PIPELINE_SOURCE == "push"
+        when: never
 
   # Create a release
   - project: 'ska-telescope/templates-repository'
     file : 'gitlab-ci/includes/release.gitlab-ci.yml'
-    when: never
+    rules:
+      - if: $CI_PIPELINE_SOURCE == "push"
+        when: never
 
   # k8s steps
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/k8s.gitlab-ci.yml'
-    when: never
+    rules:
+      - if: $CI_PIPELINE_SOURCE == "push"
+        when: never
 
   # changelog release page
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/changelog.gitlab-ci.yml'
-    when: never
+    rules:
+      - if: $CI_PIPELINE_SOURCE == "push"
+        when: never
