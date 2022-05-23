@@ -39,7 +39,8 @@ include:
   - local: '.gitlab/ci/all.yml'
     rules:
       - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
   - local: '.gitlab/ci/branch.yml'
     rules:
-      - if: $CI_COMMIT_BRANCH =~ '/at3.*/'
+      - if: $CI_COMMIT_BRANCH =~ /at3.*/
