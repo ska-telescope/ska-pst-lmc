@@ -13,9 +13,6 @@ oci-image-build:
 python-build-for-development:
   when: manual
 
-join_linting_reports:
-  when: manual
-
 python-test:
   when: manual
 
