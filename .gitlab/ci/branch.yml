@@ -33,7 +33,7 @@ k8s-test:
     - mv build build_k8s_test
   after_script:
     - kubectl config get-contexts
-    - kubectl config use-context ska-telescope/ska-cicd-gitlab-k8s-agents-config:psi-low-agent
+    # - kubectl config use-context ska-telescope/ska-cicd-gitlab-k8s-agents-config:psi-low-agent
     - echo $CI_JOB_NAME - $CI_JOB_STAGE
     - make k8s-uninstall-chart
     - kubectl -n $KUBE_NAMESPACE delete pods,svc,daemonsets,deployments,replicasets,statefulsets,cronjobs,jobs,ingresses,configmaps --all
