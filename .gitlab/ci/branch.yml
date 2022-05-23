@@ -6,6 +6,7 @@ include:
     rules:
       - if: $CI_COMMIT_BRANCH =~ /at3.*/
         when: manual
+        allow_failure: true
 
   # OCI
   - project: 'ska-telescope/templates-repository'
@@ -13,6 +14,7 @@ include:
     rules:
       - if: $CI_COMMIT_BRANCH =~ /at3.*/
         when: manual
+        allow_failure: true
 
   # Docs pages
   - project: 'ska-telescope/templates-repository'
@@ -20,6 +22,7 @@ include:
     rules:
       - if: $CI_COMMIT_BRANCH =~ /at3.*/
         when: manual
+        allow_failure: true
 
   # Create Gitlab CI badges from CI metrics
   - project: 'ska-telescope/templates-repository'
@@ -27,6 +30,7 @@ include:
     rules:
       - if: $CI_COMMIT_BRANCH =~ /at3.*/
         when: manual
+        allow_failure: true
 
   # Create a release
   - project: 'ska-telescope/templates-repository'
@@ -41,6 +45,7 @@ include:
     rules:
       - if: $CI_COMMIT_BRANCH =~ /at3.*/
         when: manual
+        allow_failure: true
 
   # changelog release page
   - project: 'ska-telescope/templates-repository'
@@ -48,3 +53,4 @@ include:
     rules:
       - if: $CI_COMMIT_BRANCH =~ /at3.*/
         when: manual
+        allow_failure: true
