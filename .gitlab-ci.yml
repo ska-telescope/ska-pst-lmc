@@ -23,14 +23,6 @@ stages:
   - publish
   - scan
 
-clean shell runner:
-  stage: .pre
-  tags:
-    - k8srunner-psi-low
-  script:
-    # Gitlab CI badges creation
-    - rm -rf build/*
-
 # Standardised included jobs
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
