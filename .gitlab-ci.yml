@@ -36,3 +36,4 @@ include:
   - local: '.gitlab/ci/branch.yml'
     rules:
       - if: $CI_COMMIT_BRANCH =~ /at3.*/
+        when: manual

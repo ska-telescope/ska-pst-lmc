@@ -7,41 +7,23 @@ include:
   # OCI
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/oci-image.gitlab-ci.yml'
-    rules:
-      - if: $CI_PIPELINE_SOURCE == "push"
-        when: never
 
   # Docs pages
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/docs.gitlab-ci.yml'
-    rules:
-      - if: $CI_PIPELINE_SOURCE == "push"
-        when: never
 
   # Create Gitlab CI badges from CI metrics
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/finaliser.gitlab-ci.yml'
-    rules:
-      - if: $CI_PIPELINE_SOURCE == "push"
-        when: never
 
   # Create a release
   - project: 'ska-telescope/templates-repository'
     file : 'gitlab-ci/includes/release.gitlab-ci.yml'
-    rules:
-      - if: $CI_PIPELINE_SOURCE == "push"
-        when: never
 
   # k8s steps
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/k8s.gitlab-ci.yml'
-    rules:
-      - if: $CI_PIPELINE_SOURCE == "push"
-        when: never
 
   # changelog release page
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/changelog.gitlab-ci.yml'
-    rules:
-      - if: $CI_PIPELINE_SOURCE == "push"
-        when: never
