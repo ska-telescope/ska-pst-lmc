@@ -54,14 +54,6 @@ include:
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/finaliser.gitlab-ci.yml'
 
-  # Create a release
-  - project: 'ska-telescope/templates-repository'
-    file : 'gitlab-ci/includes/release.gitlab-ci.yml'
-
   # k8s steps
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/k8s.gitlab-ci.yml'
-
-  # changelog release page
-  - project: 'ska-telescope/templates-repository'
-    file: 'gitlab-ci/includes/changelog.gitlab-ci.yml'
