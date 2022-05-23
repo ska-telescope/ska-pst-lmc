@@ -26,7 +26,7 @@ stages:
 clean shell runner:
   stage: .pre
   tags:
-    - k8srunner
+    - k8srunner-psi-low
   script:
     # Gitlab CI badges creation
     - rm -rf build/*
@@ -38,7 +38,7 @@ python-test:
 join_linting_reports:
   stage: join-reports
   tags:
-    - k8srunner
+    - k8srunner-psi-low
   script:
     - echo "This step is needed as the artifacts can't be passed in the same stage"
     - make join-lint-reports
