@@ -31,22 +31,6 @@ clean shell runner:
     # Gitlab CI badges creation
     - rm -rf build/*
 
-python-test:
-  retry: 2
-    
-#Join linting reports (This stage is temporary!)
-join_linting_reports:
-  stage: join-reports
-  tags:
-    - k8srunner-psi-low
-  script:
-    - echo "This step is needed as the artifacts can't be passed in the same stage"
-    - make join-lint-reports
-  artifacts:
-    paths:
-      - build/
-    when: always
-
 # Standardised included jobs
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
@@ -58,4 +42,4 @@ include:
 
   - local: '.gitlab/ci/branch.yml'
     rules:
-      - if: $CI_COMMIT_BRANCH =~ '/at3\-.*/'
+      - if: $CI_COMMIT_BRANCH =~ '/at3-.*/'
