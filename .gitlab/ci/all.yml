@@ -1,3 +1,11 @@
+clean shell runner:
+  stage: .pre
+  tags:
+    - k8srunner
+  script:
+    # Gitlab CI badges creation
+    - rm -rf build/*
+
 python-test:
   retry: 2
 
