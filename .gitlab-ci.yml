@@ -27,6 +27,14 @@ stages:
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
+clean shell runner:
+  stage: .pre
+  tags:
+    - k8srunner
+  script:
+    # Gitlab CI badges creation
+    - rm -rf build/*
+
 include:
   - local: '.gitlab/ci/all.yml'
     rules:

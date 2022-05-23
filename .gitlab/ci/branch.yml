@@ -1,3 +1,36 @@
+oci-image-lint:
+  when: manual
+
+python-lint:
+  when: manual
+
+docs-build:
+  when: manual
+
+oci-image-build:
+  when: manual
+
+python-build-for-development:
+  when: manual
+
+join_linting_reports:
+  when: manual
+
+python-test:
+  when: manual
+
+docs-pages:
+  when: manual
+
+python-publish-to-gitlab:
+  when: manual
+
+oci-image-scan:
+  when: manual
+
+python-gemnasium-scan:
+  when: manual
+
 
 # https://gitlab.com/ska-telescope/ska-tmc/ska-tmc-integration/-/blob/main/.gitlab-ci.yml#L50
 k8s-test:
@@ -5,6 +38,30 @@ k8s-test:
 
 # Include CI templates
 include:
+  # Python packages build,lint, test and publish
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/python.gitlab-ci.yml'
+
+  # OCI
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/oci-image.gitlab-ci.yml'
+
+  # Docs pages
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/docs.gitlab-ci.yml'
+
+  # Create Gitlab CI badges from CI metrics
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/finaliser.gitlab-ci.yml'
+
+  # Create a release
+  - project: 'ska-telescope/templates-repository'
+    file : 'gitlab-ci/includes/release.gitlab-ci.yml'
+
   # k8s steps
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/k8s.gitlab-ci.yml'
+
+  # changelog release page
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/changelog.gitlab-ci.yml'
