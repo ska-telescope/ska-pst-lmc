@@ -4,40 +4,47 @@ include:
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/python.gitlab-ci.yml'
     rules:
-     - when: manual
+     - if: $CI_COMMIT_BRANCH =~ /at3.*/
+       when: manual
 
   # OCI
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/oci-image.gitlab-ci.yml'
     rules:
-     - when: manual
+     - if: $CI_COMMIT_BRANCH =~ /at3.*/
+       when: manual
 
   # Docs pages
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/docs.gitlab-ci.yml'
     rules:
-     - when: manual
+     - if: $CI_COMMIT_BRANCH =~ /at3.*/
+       when: manual
 
   # Create Gitlab CI badges from CI metrics
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/finaliser.gitlab-ci.yml'
     rules:
-     - when: manual
+     - if: $CI_COMMIT_BRANCH =~ /at3.*/
+       when: manual
 
   # Create a release
   - project: 'ska-telescope/templates-repository'
     file : 'gitlab-ci/includes/release.gitlab-ci.yml'
     rules:
-     - when: manual
+     - if: $CI_COMMIT_BRANCH =~ /at3.*/
+       when: manual
 
   # k8s steps
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/k8s.gitlab-ci.yml'
     rules:
-     - when: manual
+     - if: $CI_COMMIT_BRANCH =~ /at3.*/
+       when: manual
 
   # changelog release page
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/changelog.gitlab-ci.yml'
     rules:
-     - when: manual
+     - if: $CI_COMMIT_BRANCH =~ /at3.*/
+       when: manual
