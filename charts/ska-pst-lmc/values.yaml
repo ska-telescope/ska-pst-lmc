@@ -20,6 +20,9 @@ annotations:
 global:
   minikube: true
   tango_host: databaseds-tango-base-test:10000
+  retry:
+  - "--tries=10"
+  - "--sleep=5"
 
 dsconfig:
   image:
@@ -37,10 +40,10 @@ itango:
 
 resources:
   limits:
-    cpu: 60m
+    cpu: 100m
     memory: 150Mi
   requests:
-    cpu: 20m
+    cpu: 50m
     memory: 50Mi
 
 
@@ -60,6 +63,22 @@ deviceServers:
   simple:
     instances: ["simple-01"]
     file: "data/simple.yaml"
+  beam:
+    instances: ["beam-01", "beam-02"]
+    file: "data/beam.yaml"
+
+livenessProbe:
+  initialDelaySeconds: 0
+  periodSeconds: 10
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+readinessProbe:
+  initialDelaySeconds: 0
+  periodSeconds: 10
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
 
 nodeSelector: {}
 

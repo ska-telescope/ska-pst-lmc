@@ -284,7 +284,7 @@ class DeviceProxyFactory:
             tango.DevFailed,
             on_giveup=_on_giveup_connect,  # type: ignore
             factor=1,
-            max_time=5.0,
+            max_time=120.0,
         )
         def _get_proxy() -> tango.DeviceProxy:
             return cls._proxy_supplier(fqdn, green_mode=green_mode)

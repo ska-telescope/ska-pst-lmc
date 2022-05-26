@@ -14,10 +14,14 @@ server:
       classes: 
       - name: "PstReceive"
         devices: 
-        - name: "test/receive/1"
+        - name: "test/receive/simple"
       - name: "PstTestClient"
         devices: 
         - name: "test/testclient/1"
+          properties:
+          - name: "RecvFQDN"
+            values:
+            - "test/receive/simple"
 
 depends_on:
   - device: sys/database/2

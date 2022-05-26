@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
+from threading import Lock
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from tango import EventData, EventType
@@ -61,6 +62,7 @@ class LongRunningCommandInterface:
         self._result_subscriptions: List[int] = []
         self._stored_commands: Dict[str, List[StoredCommand]] = {}
         self._stored_callbacks: Dict[str, Callable] = {}
+        self._lock = Lock()
 
     def setup(self: LongRunningCommandInterface) -> None:
         """Only create the device proxy and subscribe when a command is invoked."""
@@ -108,30 +110,34 @@ class LongRunningCommandInterface:
                 self._handle_command_completed(event_command_id)
 
     def _handle_command_completed(self: LongRunningCommandInterface, event_command_id: str) -> None:
-        for stored_commands in self._stored_commands.values():
-            for stored_command in stored_commands:
-                if stored_command.command_id == event_command_id:
-                    stored_command.is_completed = True
+        with self._lock:
+            for stored_commands in self._stored_commands.values():
+                for stored_command in stored_commands:
+                    if stored_command.command_id == event_command_id:
+                        stored_command.is_completed = True
 
-        completed_group_keys = []
-        for key, stored_command_group in self._stored_commands.items():
-            if stored_command_group:
-                # Determine if all the commands in this group have completed
-                commands_are_completed = [
-                    stored_command.is_completed for stored_command in stored_command_group
-                ]
-                if all(commands_are_completed):
-                    completed_group_keys.append(key)
+            completed_group_keys = []
+            for key, stored_command_group in self._stored_commands.items():
+                if stored_command_group:
+                    # Determine if all the commands in this group have completed
+                    commands_are_completed = [
+                        stored_command.is_completed for stored_command in stored_command_group
+                    ]
+                    if all(commands_are_completed):
+                        completed_group_keys.append(key)
 
-                    # Get the command IDs
-                    command_ids = [stored_command.command_id for stored_command in stored_command_group]
-                    self._stored_callbacks[key](command_ids)
+                        # Get the command IDs
+                        command_ids = [stored_command.command_id for stored_command in stored_command_group]
+                        self._stored_callbacks[key](command_ids)
 
-        # Clean up
-        # Remove callback and commands no longer needed
-        for key in completed_group_keys:
-            del self._stored_callbacks[key]
-            del self._stored_commands[key]
+            # Clean up
+            # Remove callback and commands no longer needed
+            for key in completed_group_keys:
+                if key in self._stored_callbacks:
+                    del self._stored_callbacks[key]
+
+                if key in self._stored_commands:
+                    del self._stored_commands[key]
 
     def execute_long_running_command(
         self: LongRunningCommandInterface,

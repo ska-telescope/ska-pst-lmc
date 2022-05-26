@@ -1,0 +1,79 @@
+name: "simple-{{.Release.Name}}"
+function: ska-pst-lmc-test
+domain: ska-pst-lmc
+instances: ["beam-01"]
+entrypoints:
+  - name: "receive_device.PstReceive"
+    path: "/app/src/ska_pst_lmc/receive/receive_device.py"
+  - name: "smrb_device.PstSmrb"
+    path: "/app/src/ska_pst_lmc/smrb/smrb_device.py"
+  - name: "beam.PstBeam"
+    path: "/app/src/ska_pst_lmc/beam/beam_device.py"
+server:
+  name: "beam"
+  instances:
+    - name: "beam-01"
+      classes: 
+      - name: "PstReceive"
+        devices: 
+        - name: "test/receive/1"
+      - name: "PstSmrb"
+        devices: 
+        - name: "test/smrb/1"
+      - name: "PstBeam"
+        devices: 
+        - name: "test/beam/1"
+          properties:
+          - name: "beam_id"
+            values:
+            - "1"
+          - name: "RecvFQDN"
+            values: 
+            - "test/receive/1"
+          - name: "SmrbFQDN"
+            values: 
+            - "test/smrb/1"
+          - name: "DspFQDN"
+            values: 
+            - "test/dsp/1"
+          - name: "SendFQDN"
+            values: 
+            - "test/send/1"
+    - name: "beam-02"
+      classes: 
+      - name: "PstReceive"
+        devices: 
+        - name: "test/receive/2"
+      - name: "PstSmrb"
+        devices: 
+        - name: "test/smrb/2"
+      - name: "PstBeam"
+        devices: 
+        - name: "test/beam/2"
+          properties:
+          - name: "beam_id"
+            values:
+            - "1"
+          - name: "RecvFQDN"
+            values: 
+            - "test/receive/2"
+          - name: "SmrbFQDN"
+            values: 
+            - "test/smrb/2"
+          - name: "DspFQDN"
+            values: 
+            - "test/dsp/2"
+          - name: "SendFQDN"
+            values: 
+            - "test/send/2"
+depends_on:
+  - device: sys/database/2
+image:
+  registry: "{{.Values.ska_pst_lmc.image.registry}}"
+  image: "{{.Values.ska_pst_lmc.image.image}}"
+  tag: "{{.Values.ska_pst_lmc.image.tag}}"
+  pullPolicy: "{{.Values.ska_pst_lmc.image.pullPolicy}}"
+livenessProbe:
+{{ toYaml .Values.livenessProbe | indent 2 }}
+readinessProbe:
+{{ toYaml .Values.readinessProbe | indent 2 }}

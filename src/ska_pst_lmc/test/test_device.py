@@ -10,7 +10,7 @@ import logging
 from typing import Any, Optional
 
 import tango
-from tango.server import Device, DeviceMeta, attribute, run
+from tango.server import Device, DeviceMeta, attribute, device_property, run
 
 from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
 
@@ -30,6 +30,14 @@ class PstTestClient(Device):
         dtype="bool",
     )
 
+    NumEventsReceived = attribute(
+        dtype="int",
+    )
+
+    RecvFQDN = device_property(
+        dtype=str,
+    )
+
     # ---------------
     # General methods
     # ---------------
@@ -40,13 +48,14 @@ class PstTestClient(Device):
         self.logger = logging.getLogger(__name__)
         self.dev: Optional[PstDeviceProxy] = None
         self.attr_EventReceived = False
+        self._num_events_received = 0
 
     def always_executed_hook(self: PstTestClient) -> None:
         """Ensure device proxy is setup."""
         try:
             if self.dev is None:
                 self.logger.info("Connect to RECV device")
-                self.dev = DeviceProxyFactory.get_device("test/receive/1")
+                self.dev = DeviceProxyFactory.get_device(self.RecvFQDN)
                 self.attr_EventReceived = False
                 self.logger.info("subscribe_event on obsState")
                 self.dev.subscribe_event(
@@ -76,6 +85,10 @@ class PstTestClient(Device):
             )
             raise ex
 
+    def read_NumEventsReceived(self: PstTestClient) -> int:
+        """Return number of events recevied."""
+        return self._num_events_received
+
     # --------
     # Commands
     # --------
@@ -88,6 +101,7 @@ class PstTestClient(Device):
                 str(self.dev.obsState),  # type: ignore
             )
             self.logger.info("args = %s", str(args))
+            self._num_events_received += 1
             self.attr_EventReceived = True
         except Exception as ex:
             self.logger.info(
