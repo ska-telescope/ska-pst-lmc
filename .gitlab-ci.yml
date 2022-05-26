@@ -23,16 +23,69 @@ stages:
   - publish
   - scan
 
+clean shell runner:
+  stage: .pre
+  tags:
+    - k8srunner
+  script:
+    # Gitlab CI badges creation
+    - rm -rf build/*
+
+python-test:
+  retry: 2
+
+#Join linting reports (This stage is temporary!)
+join_linting_reports:
+  stage: join-reports
+  tags:
+    - k8srunner
+  script:
+    - echo "This step is needed as the artifacts can't be passed in the same stage"
+    - make join-lint-reports
+  artifacts:
+    paths:
+      - build/
+    when: always
+  
 # Standardised included jobs
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
+# Include CI templates
 include:
-  - local: '.gitlab/ci/all.yml'
-    rules:
-      - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-      - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  # Python packages build,lint, test and publish
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/python.gitlab-ci.yml'
 
+  # OCI
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/oci-image.gitlab-ci.yml'
+
+  # Docs pages
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/docs.gitlab-ci.yml'
+
+  # Create Gitlab CI badges from CI metrics
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/finaliser.gitlab-ci.yml'
+
+  # Create a release
+  - project: 'ska-telescope/templates-repository'
+    file : 'gitlab-ci/includes/release.gitlab-ci.yml'
+
+  # # Publish Helm chart
+  # - project: 'ska-telescope/templates-repository'
+  #   file : 'gitlab-ci/includes/helm-chart.gitlab-ci.yml'
+
+  # # k8s steps
+  # - project: 'ska-telescope/templates-repository'
+  #   file: 'gitlab-ci/includes/k8s.gitlab-ci.yml'
+
+  # changelog release page
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/changelog.gitlab-ci.yml'
+
+  # Override for branch based builds
   - local: '.gitlab/ci/branch.yml'
     rules:
       - if: $CI_COMMIT_BRANCH =~ /at3.*/
