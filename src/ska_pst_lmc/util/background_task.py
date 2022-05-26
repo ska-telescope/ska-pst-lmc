@@ -213,10 +213,10 @@ class BackgroundTask:
     not expected to do any waiting.
     """
 
-    _state: RunState = RunState.STOPPED
-    _thread: Optional[Thread] = None
-    _exception: Optional[Exception] = None
-    _completed: bool = False
+    _state: RunState
+    _thread: Optional[Thread]
+    _exception: Optional[Exception]
+    _completed: bool
 
     def __init__(
         self,
@@ -243,6 +243,10 @@ class BackgroundTask:
         self._frequency = frequency
         self._daemon = daemon
         self._lock = rwlock.RWLockWrite()
+        self._state = RunState.STOPPED
+        self._thread = None
+        self._exception = None
+        self._completed = False
 
     def __del__(self: BackgroundTask) -> None:
         """Deconstruct object.

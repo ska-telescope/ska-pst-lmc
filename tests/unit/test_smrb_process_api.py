@@ -114,7 +114,7 @@ def test_assign_resources(
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
         call(progress=50),
-        call(status=TaskStatus.COMPLETED),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(resourced=True)
@@ -134,7 +134,7 @@ def test_release(
         call(status=TaskStatus.IN_PROGRESS),
         call(progress=19),
         call(progress=81),
-        call(status=TaskStatus.COMPLETED),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(resourced=False)
@@ -151,7 +151,7 @@ def test_release_all(
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
         call(progress=45),
-        call(status=TaskStatus.COMPLETED),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(resourced=False)
@@ -174,7 +174,7 @@ def test_configure(
         call(status=TaskStatus.IN_PROGRESS),
         call(progress=42),
         call(progress=58),
-        call(status=TaskStatus.COMPLETED),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(configured=True)
@@ -196,7 +196,7 @@ def test_deconfigure(
         call(progress=20),
         call(progress=50),
         call(progress=80),
-        call(status=TaskStatus.COMPLETED),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(configured=False)
@@ -217,7 +217,7 @@ def test_scan(
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
         call(progress=55),
-        call(status=TaskStatus.COMPLETED),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(scanning=True)
@@ -238,7 +238,7 @@ def test_end_scan(
         call(status=TaskStatus.IN_PROGRESS),
         call(progress=37),
         call(progress=63),
-        call(status=TaskStatus.COMPLETED),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(scanning=False)
@@ -258,7 +258,7 @@ def test_abort(
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
         call(progress=59),
-        call(status=TaskStatus.COMPLETED),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(scanning=False)

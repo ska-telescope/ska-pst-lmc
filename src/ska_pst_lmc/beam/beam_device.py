@@ -129,8 +129,9 @@ class PstBeam(SKASubarray):
         return [f"{self.__class__.__name__}, {self.read_buildState()}"]
 
     def _update_admin_mode(self: PstBeam, admin_mode: AdminMode) -> None:
-        super()._updata_admin_mode(admin_mode)
-        self.component_manager.update_admin_mode(admin_mode)
+        super()._update_admin_mode(admin_mode)
+        if hasattr(self, "component_manager"):
+            self.component_manager.update_admin_mode(admin_mode)
 
 
 # ----------

@@ -9,17 +9,17 @@
 
 import json
 import logging
-from typing import Callable, List, Optional
+import time
+from typing import Any, Callable, List, Optional
 from unittest.mock import MagicMock, call
 
 import pytest
-from ska_tango_base.control_model import AdminMode, CommunicationStatus, PowerState, SimulationMode
+from ska_tango_base.control_model import AdminMode, CommunicationStatus, PowerState
 from ska_tango_base.executor import TaskStatus
 
-from ska_pst_lmc.beam.beam_component_manager import PstBeamComponentManager, _PstBeamTask
+from ska_pst_lmc.beam.beam_component_manager import PstBeamComponentManager
 from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
-from ska_pst_lmc.util.remote_task import AggregateRemoteTask
 
 
 @pytest.fixture
@@ -99,42 +99,11 @@ def component_manager(
     return PstBeamComponentManager(
         smrb_fqdn,
         recv_fqdn,
-        SimulationMode.TRUE,
         logger,
         communication_state_callback,
         component_state_callback,
         background_task_processor=background_task_processor,
     )
-
-
-def test_beam_task(
-    smrb_device_proxy: PstDeviceProxy, recv_device_proxy: PstDeviceProxy, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Test logic of _PstBeamTask."""
-    remote_task = MagicMock()
-    add_remote_task = MagicMock()
-    action = MagicMock()
-    task_callback = MagicMock()
-
-    monkeypatch.setattr(AggregateRemoteTask, "__call__", remote_task)
-    monkeypatch.setattr(AggregateRemoteTask, "add_remote_task", add_remote_task)
-
-    task = _PstBeamTask(
-        action=action,
-        devices=[smrb_device_proxy, recv_device_proxy],
-        task_callback=task_callback,
-    )
-
-    assert task._task is not None
-    assert task._task.task_callback == task_callback
-
-    add_remote_task.call_count == 2
-    calls = [call(device=smrb_device_proxy, action=action), call(device=recv_device_proxy, action=action)]
-    add_remote_task.assert_has_calls(calls)
-
-    task()
-
-    remote_task.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -197,213 +166,103 @@ def test_component_manager_delegates_admin_mode(
         assert recv_device_proxy.adminMode == a
 
 
-def test_component_manager_assign(
+def test_component_manager_calls_abort_on_subdevices(
     component_manager: PstBeamComponentManager,
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
-    background_task_processor: BackgroundTaskProcessor,
 ) -> None:
-    """Test component manager handles the 'assign' method correctly."""
-    task_callback = MagicMock()
+    """Test component manager delegates setting admin mode to sub-element devices."""
+    task_executor = MagicMock()
+    task_executor.abort.return_value = (TaskStatus.IN_PROGRESS, "Aborting tasks")
 
-    resources = {"foo": "bar"}
-    resources_str = json.dumps(resources)
+    component_manager._task_executor = task_executor
+    callback = MagicMock()
+    (status, message) = component_manager.abort(task_callback=callback)
 
-    (status, message) = component_manager.assign(resources=resources, task_callback=task_callback)
-    assert status == TaskStatus.QUEUED
-    assert message == "Resourcing"
-
-    [call1] = background_task_processor.submit_task.call_args_list  # type: ignore
-    task = call1.args[0]
-
-    assert task._devices == [smrb_device_proxy, recv_device_proxy]
-    assert task._task_callback == task_callback
-    remote_tasks = task._task.tasks
-
-    for (d, t) in zip(task._devices, remote_tasks):
-        t.action(d)
-        d.AssignResources.assert_called_once_with(resources_str)
-
-
-def test_component_manager_release(
-    component_manager: PstBeamComponentManager,
-    smrb_device_proxy: PstDeviceProxy,
-    recv_device_proxy: PstDeviceProxy,
-    background_task_processor: BackgroundTaskProcessor,
-) -> None:
-    """Test component manager handles the 'release' method correctly."""
-    task_callback = MagicMock()
-
-    resources = {"foo": "bar"}
-    resources_str = json.dumps(resources)
-
-    (status, message) = component_manager.release(resources=resources, task_callback=task_callback)
-    assert status == TaskStatus.QUEUED
-    assert message == "Releasing"
-
-    [call1] = background_task_processor.submit_task.call_args_list  # type: ignore
-    task = call1.args[0]
-
-    assert task._devices == [smrb_device_proxy, recv_device_proxy]
-    assert task._task_callback == task_callback
-    remote_tasks = task._task.tasks
-
-    for (d, t) in zip(task._devices, remote_tasks):
-        t.action(d)
-        d.ReleaseResources.assert_called_once_with(resources_str)
-
-
-def test_component_manager_release_all(
-    component_manager: PstBeamComponentManager,
-    smrb_device_proxy: PstDeviceProxy,
-    recv_device_proxy: PstDeviceProxy,
-    background_task_processor: BackgroundTaskProcessor,
-) -> None:
-    """Test component manager handles the 'release_all' method correctly."""
-    task_callback = MagicMock()
-
-    (status, message) = component_manager.release_all(task_callback=task_callback)
-    assert status == TaskStatus.QUEUED
-    assert message == "Releasing all"
-
-    [call1] = background_task_processor.submit_task.call_args_list  # type: ignore
-    task = call1.args[0]
-
-    assert task._devices == [smrb_device_proxy, recv_device_proxy]
-    assert task._task_callback == task_callback
-    remote_tasks = task._task.tasks
-
-    for (d, t) in zip(task._devices, remote_tasks):
-        t.action(d)
-        d.ReleaseAllResources.assert_called_once()
-
-
-def test_component_manager_configure(
-    component_manager: PstBeamComponentManager,
-    smrb_device_proxy: PstDeviceProxy,
-    recv_device_proxy: PstDeviceProxy,
-    background_task_processor: BackgroundTaskProcessor,
-) -> None:
-    """Test component manager handles the 'configure' method correctly."""
-    task_callback = MagicMock()
-
-    configuration = {"cat": "dogs"}
-    configuration_str = json.dumps(configuration)
-
-    (status, message) = component_manager.configure(configuration=configuration, task_callback=task_callback)
-    assert status == TaskStatus.QUEUED
-    assert message == "Configuring"
-
-    [call1] = background_task_processor.submit_task.call_args_list  # type: ignore
-    task = call1.args[0]
-
-    assert task._devices == [smrb_device_proxy, recv_device_proxy]
-    assert task._task_callback == task_callback
-    remote_tasks = task._task.tasks
-
-    for (d, t) in zip(task._devices, remote_tasks):
-        t.action(d)
-        d.Configure.assert_called_once_with(configuration_str)
-
-
-def test_component_manager_deconfigure(
-    component_manager: PstBeamComponentManager,
-    smrb_device_proxy: PstDeviceProxy,
-    recv_device_proxy: PstDeviceProxy,
-    background_task_processor: BackgroundTaskProcessor,
-) -> None:
-    """Test component manager handles the 'deconfigure' method correctly."""
-    task_callback = MagicMock()
-
-    (status, message) = component_manager.deconfigure(task_callback=task_callback)
-    assert status == TaskStatus.QUEUED
-    assert message == "Deconfiguring"
-
-    [call1] = background_task_processor.submit_task.call_args_list  # type: ignore
-    task = call1.args[0]
-
-    assert task._devices == [smrb_device_proxy, recv_device_proxy]
-    assert task._task_callback == task_callback
-    remote_tasks = task._task.tasks
-
-    for (d, t) in zip(task._devices, remote_tasks):
-        t.action(d)
-        d.End.assert_called_once()
-
-
-def test_component_manager_scan(
-    component_manager: PstBeamComponentManager,
-    smrb_device_proxy: PstDeviceProxy,
-    recv_device_proxy: PstDeviceProxy,
-    background_task_processor: BackgroundTaskProcessor,
-) -> None:
-    """Test component manager handles the 'scan' method correctly."""
-    task_callback = MagicMock()
-
-    args = {"luke": "skywalker"}
-    args_str = json.dumps(args)
-
-    (status, message) = component_manager.scan(args=args, task_callback=task_callback)
-    assert status == TaskStatus.QUEUED
-    assert message == "Scanning"
-
-    [call1] = background_task_processor.submit_task.call_args_list  # type: ignore
-    task = call1.args[0]
-
-    assert task._devices == [smrb_device_proxy, recv_device_proxy]
-    assert task._task_callback == task_callback
-    remote_tasks = task._task.tasks
-
-    for (d, t) in zip(task._devices, remote_tasks):
-        t.action(d)
-        d.Scan.assert_called_once_with(args_str)
-
-
-def test_component_manager_end_scan(
-    component_manager: PstBeamComponentManager,
-    smrb_device_proxy: PstDeviceProxy,
-    recv_device_proxy: PstDeviceProxy,
-    background_task_processor: BackgroundTaskProcessor,
-) -> None:
-    """Test component manager handles the 'end_scan' method correctly."""
-    task_callback = MagicMock()
-
-    (status, message) = component_manager.end_scan(task_callback=task_callback)
-    assert status == TaskStatus.QUEUED
-    assert message == "End scanning"
-
-    [call1] = background_task_processor.submit_task.call_args_list  # type: ignore
-    task = call1.args[0]
-
-    assert task._devices == [smrb_device_proxy, recv_device_proxy]
-    assert task._task_callback == task_callback
-    remote_tasks = task._task.tasks
-
-    for (d, t) in zip(task._devices, remote_tasks):
-        t.action(d)
-        d.EndScan.assert_called_once()
-
-
-def test_component_manager_abort(
-    component_manager: PstBeamComponentManager,
-    smrb_device_proxy: PstDeviceProxy,
-    recv_device_proxy: PstDeviceProxy,
-    background_task_processor: BackgroundTaskProcessor,
-) -> None:
-    """Test component manager handles the 'abort' method correctly."""
-    task_callback = MagicMock()
-
-    (status, message) = component_manager.abort(task_callback=task_callback)
     assert status == TaskStatus.IN_PROGRESS
-    assert message == "Aborting"
+    assert message == "Aborting tasks"
 
-    [call1] = background_task_processor.submit_task.call_args_list  # type: ignore
-    task = call1.args[0]
+    smrb_device_proxy.Abort.assert_called_once()
+    recv_device_proxy.Abort.assert_called_once()
 
-    assert task._devices == [smrb_device_proxy, recv_device_proxy]
-    assert task._task_callback == task_callback
-    remote_tasks = task._task.tasks
+    task_executor.abort.assert_called_once()
 
-    for (d, t) in zip(task._devices, remote_tasks):
-        t.action(d)
-        d.Abort.assert_called_once()
+
+@pytest.mark.parametrize(
+    "method_name, params, remote_action_supplier, component_state_callback_params",
+    [
+        ("on", None, lambda d: d.On, {"power": PowerState.ON}),
+        ("off", None, lambda d: d.Off, {"power": PowerState.OFF}),
+        ("reset", None, lambda d: d.Reset, {"power": PowerState.OFF}),
+        ("standby", None, lambda d: d.Standby, {"power": PowerState.STANDBY}),
+        ("assign", {"foo": "bar"}, lambda d: d.AssignResources, {"resourced": True}),
+        ("release", {"foo": "bar"}, lambda d: d.ReleaseResources, {"resourced": False}),
+        ("release_all", None, lambda d: d.ReleaseAllResources, {"resourced": False}),
+        ("configure", {"cat": "dog"}, lambda d: d.Configure, {"configured": True}),
+        ("deconfigure", None, lambda d: d.End, {"configured": False}),
+        ("scan", {"luke": "skywalker"}, lambda d: d.Scan, {"scanning": True}),
+        ("end_scan", None, lambda d: d.EndScan, {"scanning": False}),
+        ("obsreset", None, lambda d: d.ObsReset, {"configured": False}),
+        ("restart", None, lambda d: d.Restart, {"configured": False, "resourced": False}),
+    ],
+)
+def test_remote_actions(
+    component_manager: PstBeamComponentManager,
+    smrb_device_proxy: PstDeviceProxy,
+    recv_device_proxy: PstDeviceProxy,
+    component_state_callback: Callable,
+    method_name: str,
+    params: Optional[Any],
+    remote_action_supplier: Callable[[PstDeviceProxy], Callable],
+    component_state_callback_params: Optional[dict],
+) -> None:
+    """Assert that actions that need to be delegated to remote devices."""
+    task_callback = MagicMock()
+
+    component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
+
+    remote_action_supplier(smrb_device_proxy).return_value = (  # type: ignore
+        [TaskStatus.QUEUED],
+        ["smrb_job_id"],
+    )
+    remote_action_supplier(recv_device_proxy).return_value = (  # type: ignore
+        [TaskStatus.QUEUED],
+        ["recv_job_id"],
+    )
+
+    func = getattr(component_manager, method_name)
+    if params:
+        (status, message) = func(params, task_callback=task_callback)
+    else:
+        (status, message) = func(task_callback=task_callback)
+
+    assert status == TaskStatus.QUEUED
+    assert message == "Task queued"
+
+    time.sleep(0.1)
+
+    if params:
+        params_str = json.dumps(params)
+        [
+            remote_action_supplier(d).assert_called_once_with(params_str)  # type: ignore
+            for d in [smrb_device_proxy, recv_device_proxy]
+        ]
+    else:
+        [
+            remote_action_supplier(d).assert_called_once()  # type: ignore
+            for d in [smrb_device_proxy, recv_device_proxy]
+        ]
+
+    # need to force an data update
+    [
+        component_manager._long_running_client._handle_command_completed(job_id)  # type: ignore
+        for job_id in ["smrb_job_id", "recv_job_id"]
+    ]
+
+    if component_state_callback_params:
+        component_state_callback.assert_called_once_with(**component_state_callback_params)  # type: ignore
+    else:
+        component_state_callback.assert_not_called()  # type: ignore
+
+    calls = [call(status=TaskStatus.COMPLETED), call(result="Completed")]
+    task_callback.assert_has_calls(calls)

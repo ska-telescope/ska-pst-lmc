@@ -8,7 +8,7 @@
 """This module contains the pytest tests for the Device Proxy and Factory class."""
 
 import logging
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock
 
 import tango
 from ska_tango_base.control_model import AdminMode
@@ -55,22 +55,31 @@ def test_pst_device_proxy_subscribe_to_event() -> None:
     DeviceProxyFactory._proxy_supplier = supplier
 
     device = DeviceProxyFactory.get_device(fqdn="test/recv/0")
+    device._device.subscribe_event.return_value = 1138
 
     callback = MagicMock()
     subscription = device.subscribe_change_event("obsState", callback=callback, stateless=False)
 
     assert subscription is not None
     assert subscription.subscribed
+    assert callback in subscription._callbacks
 
-    subscription.unsubscribe()
-    assert not subscription.subscribed
+    callback2 = MagicMock()
+    subscription2 = device.subscribe_change_event("obsState", callback=callback2, stateless=False)
+    assert subscription == subscription2
+    assert subscription2._callbacks == [callback, callback2]
 
     device._device.subscribe_event.assert_called_once_with(
         "obsState",
         tango.EventType.CHANGE_EVENT,
-        callback,
+        ANY,
         stateless=False,
     )
+
+    subscription.unsubscribe()
+    assert not subscription.subscribed
+    assert subscription.callbacks == []
+    device._device.unsubscribe_event.assert_called_once_with(subscription._subscription_id)
 
 
 def test_pst_device_proxy_sends_requests_to_device() -> None:

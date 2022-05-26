@@ -12,12 +12,17 @@ This code is based off the SKA TANGO Examples class.
 
 from __future__ import annotations
 
+import functools
 import logging
 import threading
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Type, TypedDict
 
+import backoff
 import tango
+from readerwriterlock import rwlock
 from tango import DeviceProxy, GreenMode
+
+BackoffDetailsType = TypedDict("BackoffDetailsType", {"args": list, "elapsed": float})
 
 
 class ChangeEventSubscription:
@@ -27,7 +32,12 @@ class ChangeEventSubscription:
     event, without having to have access to the device or the subscription id.
     """
 
-    def __init__(self: ChangeEventSubscription, subscription_id: int, device: PstDeviceProxy) -> None:
+    def __init__(
+        self: ChangeEventSubscription,
+        subscription_id: int,
+        device: PstDeviceProxy,
+        callbacks: List[Callable],
+    ) -> None:
         """Initialise object.
 
         :param subscription_id: the id of the subscription.
@@ -36,6 +46,12 @@ class ChangeEventSubscription:
         self._subscription_id = subscription_id
         self._device = device
         self._subscribed = True
+        self._callbacks = callbacks
+
+    @property
+    def callbacks(self: ChangeEventSubscription) -> List[Callable]:
+        """Get callbacks for current subscription."""
+        return self._callbacks
 
     def __del__(self: ChangeEventSubscription) -> None:
         """Cleanup the subscription when object is getting deleted."""
@@ -53,6 +69,8 @@ class ChangeEventSubscription:
             self._subscribed = False
             with tango.EnsureOmniThread():
                 self._device.unsubscribe_event(self._subscription_id)
+
+            self._callbacks.clear()
 
         if self._subscribed:
             thread = threading.Thread(target=_task)
@@ -98,9 +116,48 @@ class PstDeviceProxy:
         self.__dict__["_fqdn"] = fqdn
         self.__dict__["_logger"] = logger
         self.__dict__["_device"] = device
+        self.__dict__["_subscriptions"] = {}
+        self.__dict__["_lock"] = rwlock.RWLockWrite()
+
+    def _event_callback(self: PstDeviceProxy, attribute_name: str, event: tango.EventData) -> None:
+        if event.err:
+            self._logger.warning(f"Received failed change event: error stack is {event.errors}.")
+            return
+        elif event.attr_value is None:
+            warning_message = (
+                "Received change event with empty value. Falling back to manual "
+                f"attribute read. Event.err is {event.err}. Event.errors is\n"
+                f"{event.errors}."
+            )
+            self._logger.warning(warning_message)
+            value = self._read(attribute_name)
+        else:
+            value = event.attr_value
+
+        if isinstance(value, tango.DeviceAttribute):
+            value = value.value
+
+        self._logger.info(f"Received event callback for {self.fqdn}.{attribute_name} with value: {value}")
+
+        # read lock
+        # with self._lock.gen_rlock():
+        if attribute_name in self._subscriptions:
+            [c(value) for c in self._subscriptions[attribute_name].callbacks]
+
+    def _read(self: PstDeviceProxy, attribute_name: str) -> Any:
+        """
+        Read an attribute manually.
+
+        Used when we receive an event with empty attribute data.
+
+        :param attribute_name: the name of the attribute to be read
+
+        :return: the attribute value
+        """
+        return self._device.read_attribute(attribute_name)
 
     def subscribe_change_event(
-        self: PstDeviceProxy, attribute_name: str, callback: Callable, stateless: bool = True
+        self: PstDeviceProxy, attribute_name: str, callback: Callable, stateless: bool = False
     ) -> ChangeEventSubscription:
         """Subscribe to change events.
 
@@ -124,17 +181,29 @@ class PstDeviceProxy:
         :param stateless: whether to use the TANGO stateless event model or not, default is True.
         :returns: a ChangeEventSubscription that can be used to later to unsubscribe from.
         """
-        subscription_id = self._device.subscribe_event(
-            attribute_name,
-            tango.EventType.CHANGE_EVENT,
-            callback,
-            stateless=stateless,
-        )
+        self._logger.info(f"Subscribing to events on {self.fqdn}.{attribute_name}")
 
-        return ChangeEventSubscription(
-            subscription_id=subscription_id,
-            device=self._device,
-        )
+        if attribute_name in self._subscriptions:
+            self._subscriptions[attribute_name].callbacks.append(callback)
+            value = self._read(attribute_name)
+            callback(value.value)
+        else:
+            # write lock
+            # with self._lock.gen_wlock():
+            subscription_id = self._device.subscribe_event(
+                attribute_name,
+                tango.EventType.CHANGE_EVENT,
+                functools.partial(self._event_callback, attribute_name),
+                stateless=stateless,
+            )
+            subscription = ChangeEventSubscription(
+                subscription_id=subscription_id,
+                device=self._device,
+                callbacks=[callback],
+            )
+            self._subscriptions[attribute_name] = subscription
+
+        return self._subscriptions[attribute_name]
 
     def __setattr__(self: PstDeviceProxy, name: str, value: Any) -> None:
         """Set attritube.
@@ -200,10 +269,34 @@ class DeviceProxyFactory:
         :param green_mode: the TANGO green mode, the default is GreenMode.Synchronous.
         :param logger: the Python logger to use for the proxy.
         """
-        logger = logger or logging.getLogger(__name__)
+        if logger is None:
+            logger = logging.getLogger(__name__)  # type: ignore
+
+        def _on_giveup_connect(details: BackoffDetailsType) -> None:
+            fqdn = details["args"][1]
+            elapsed = details["elapsed"]
+            logger.warning(  # type: ignore
+                f"Gave up trying to connect to device {fqdn} after " f"{elapsed} seconds."
+            )
+
+        @backoff.on_exception(
+            backoff.expo,
+            tango.DevFailed,
+            on_giveup=_on_giveup_connect,  # type: ignore
+            factor=1,
+            max_time=5.0,
+        )
+        def _get_proxy() -> tango.DeviceProxy:
+            return cls._proxy_supplier(fqdn, green_mode=green_mode)
 
         if fqdn not in cls._raw_proxies:
-            cls._raw_proxies[fqdn] = cls._proxy_supplier(fqdn, green_mode=green_mode)
+            logger.debug(f"Creating new PstDeviceProxy for {fqdn}")
+            try:
+                cls._raw_proxies[fqdn] = _get_proxy()
+            except Exception:
+                cls._raw_proxies[fqdn] = cls._proxy_supplier(fqdn)
+
             cls.__proxies[fqdn] = PstDeviceProxy(fqdn=fqdn, logger=logger, device=cls._raw_proxies[fqdn])
 
-        return cls.__proxies[fqdn]
+        proxy = cls.__proxies[fqdn]
+        return proxy

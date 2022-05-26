@@ -90,7 +90,6 @@ class TestPstReceive:
             "[0-9]+.[0-9]+.[0-9]+, A set of PST LMC tango devices for the SKA Low and Mid Telescopes."
         )
         version_info = device_under_test.GetVersionInfo()
-        print(version_info)
         assert len(version_info) == 1
         assert re.match(version_pattern, version_info[0])
 
