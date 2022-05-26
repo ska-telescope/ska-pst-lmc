@@ -33,7 +33,7 @@ clean shell runner:
 
 python-test:
   retry: 2
-    
+
 #Join linting reports (This stage is temporary!)
 join_linting_reports:
   stage: join-reports
@@ -46,7 +46,7 @@ join_linting_reports:
     paths:
       - build/
     when: always
-
+  
 # Standardised included jobs
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
@@ -84,3 +84,8 @@ include:
   # changelog release page
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/changelog.gitlab-ci.yml'
+
+  # Override for branch based builds
+  - local: '.gitlab/ci/branch.yml'
+    rules:
+      - if: $CI_COMMIT_BRANCH =~ /at3.*/

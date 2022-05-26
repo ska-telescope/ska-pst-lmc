@@ -1,0 +1,54 @@
+oci-image-lint:
+  when: manual
+
+python-lint:
+  when: manual
+
+docs-build:
+  when: manual
+
+oci-image-build:
+  when: manual
+
+python-build-for-development:
+  when: manual
+
+python-test:
+  when: manual
+
+docs-pages:
+  when: manual
+
+python-publish-to-gitlab:
+  when: manual
+
+oci-image-scan:
+  needs:
+    - oci-image-build
+  when: manual
+
+python-gemnasium-scan:
+  when: manual
+
+
+# https://gitlab.com/ska-telescope/ska-tmc/ska-tmc-integration/-/blob/main/.gitlab-ci.yml#L50
+k8s-test:
+  when: manual
+
+# Include CI templates
+include:
+  # Python packages build,lint, test and publish
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/python.gitlab-ci.yml'
+
+  # OCI
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/oci-image.gitlab-ci.yml'
+
+  # Docs pages
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/docs.gitlab-ci.yml'
+
+  # k8s steps
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/k8s.gitlab-ci.yml'
