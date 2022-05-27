@@ -1,0 +1,268 @@
+# -*- coding: utf-8 -*-
+#
+# This file is part of the SKA PST LMC project
+#
+# Distributed under the terms of the BSD 3-clause new license.
+# See LICENSE for more info.
+
+"""This module contains tests for the BEAM component managers class."""
+
+import json
+import logging
+import time
+from typing import Any, Callable, List, Optional
+from unittest.mock import MagicMock, call
+
+import pytest
+from ska_tango_base.control_model import AdminMode, CommunicationStatus, PowerState
+from ska_tango_base.executor import TaskStatus
+
+from ska_pst_lmc.beam.beam_component_manager import PstBeamComponentManager
+from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
+from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
+
+
+@pytest.fixture
+def logger() -> logging.Logger:
+    """Create logger fixture."""
+    return logging.getLogger("test")
+
+
+@pytest.fixture
+def smrb_fqdn() -> str:
+    """Create SMRB FQDN fixture."""
+    return "test/smrb/1"
+
+
+@pytest.fixture
+def smrb_device_proxy(smrb_fqdn: str) -> PstDeviceProxy:
+    """Create SMRB Device Proxy fixture."""
+    proxy = MagicMock()
+    proxy.fqdn = smrb_fqdn
+    return proxy
+
+
+@pytest.fixture
+def recv_fqdn() -> str:
+    """Create RECV FQDN fixture."""
+    return "test/recv/1"
+
+
+@pytest.fixture
+def recv_device_proxy(recv_fqdn: str) -> PstDeviceProxy:
+    """Create RECV device proxy fixture."""
+    proxy = MagicMock()
+    proxy.fqdn = recv_fqdn
+    return proxy
+
+
+@pytest.fixture
+def background_task_processor() -> BackgroundTaskProcessor:
+    """Create Background Processor fixture."""
+    return MagicMock()
+
+
+@pytest.fixture
+def communication_state_callback() -> Callable[[CommunicationStatus], None]:
+    """Create communication state callback fixture."""
+    return MagicMock()
+
+
+@pytest.fixture
+def component_state_callback() -> Callable:
+    """Create component state callback fixture."""
+    return MagicMock()
+
+
+@pytest.fixture
+def component_manager(
+    smrb_device_proxy: PstDeviceProxy,
+    recv_device_proxy: PstDeviceProxy,
+    logger: logging.Logger,
+    communication_state_callback: Callable[[CommunicationStatus], None],
+    component_state_callback: Callable,
+    background_task_processor: BackgroundTaskProcessor,
+    monkeypatch: pytest.MonkeyPatch,
+) -> PstBeamComponentManager:
+    """Create PST Beam Component fixture."""
+    smrb_fqdn = smrb_device_proxy.fqdn
+    recv_fqdn = recv_device_proxy.fqdn
+
+    def _get_device(fqdn: str) -> PstDeviceProxy:
+        if fqdn == smrb_fqdn:
+            return smrb_device_proxy
+        else:
+            return recv_device_proxy
+
+    monkeypatch.setattr(DeviceProxyFactory, "get_device", _get_device)
+
+    return PstBeamComponentManager(
+        smrb_fqdn,
+        recv_fqdn,
+        logger,
+        communication_state_callback,
+        component_state_callback,
+        background_task_processor=background_task_processor,
+    )
+
+
+@pytest.mark.parametrize(
+    "curr_communication_status, new_communication_status, expected_update_states, expected_power_state",
+    [
+        (
+            CommunicationStatus.DISABLED,
+            CommunicationStatus.NOT_ESTABLISHED,
+            [CommunicationStatus.NOT_ESTABLISHED, CommunicationStatus.ESTABLISHED],
+            PowerState.OFF,
+        ),
+        (
+            CommunicationStatus.ESTABLISHED,
+            CommunicationStatus.DISABLED,
+            [CommunicationStatus.DISABLED],
+            PowerState.UNKNOWN,
+        ),
+        (CommunicationStatus.ESTABLISHED, CommunicationStatus.ESTABLISHED, [], None),
+    ],
+)
+def test_component_manager_handle_communication_state_change(
+    component_manager: PstBeamComponentManager,
+    communication_state_callback: Callable[[CommunicationStatus], None],
+    component_state_callback: Callable,
+    curr_communication_status: CommunicationStatus,
+    new_communication_status: CommunicationStatus,
+    expected_update_states: List[CommunicationStatus],
+    expected_power_state: Optional[PowerState],
+) -> None:
+    """Test component manager handles communication state changes corrrectly."""
+    component_manager._communication_state = curr_communication_status
+
+    component_manager._handle_communication_state_change(new_communication_status)
+
+    if len(expected_update_states) == 0:
+        communication_state_callback.assert_not_called()  # type: ignore
+    else:
+        calls = [call(s) for s in expected_update_states]
+        communication_state_callback.assert_has_calls(calls)  # type: ignore
+        assert component_manager._communication_state == expected_update_states[-1]
+
+    if expected_power_state is not None:
+        component_state_callback.assert_called_once_with(  # type: ignore
+            fault=None, power=expected_power_state
+        )
+    else:
+        component_state_callback.assert_not_called()  # type: ignore
+
+
+def test_component_manager_delegates_admin_mode(
+    component_manager: PstBeamComponentManager,
+    smrb_device_proxy: PstDeviceProxy,
+    recv_device_proxy: PstDeviceProxy,
+) -> None:
+    """Test component manager delegates setting admin mode to sub-element devices."""
+    for a in list(AdminMode):
+        component_manager.update_admin_mode(a)
+
+        assert smrb_device_proxy.adminMode == a
+        assert recv_device_proxy.adminMode == a
+
+
+def test_component_manager_calls_abort_on_subdevices(
+    component_manager: PstBeamComponentManager,
+    smrb_device_proxy: PstDeviceProxy,
+    recv_device_proxy: PstDeviceProxy,
+) -> None:
+    """Test component manager delegates setting admin mode to sub-element devices."""
+    task_executor = MagicMock()
+    task_executor.abort.return_value = (TaskStatus.IN_PROGRESS, "Aborting tasks")
+
+    component_manager._task_executor = task_executor
+    callback = MagicMock()
+    (status, message) = component_manager.abort(task_callback=callback)
+
+    assert status == TaskStatus.IN_PROGRESS
+    assert message == "Aborting tasks"
+
+    smrb_device_proxy.Abort.assert_called_once()
+    recv_device_proxy.Abort.assert_called_once()
+
+    task_executor.abort.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "method_name, params, remote_action_supplier, component_state_callback_params",
+    [
+        ("on", None, lambda d: d.On, {"power": PowerState.ON}),
+        ("off", None, lambda d: d.Off, {"power": PowerState.OFF}),
+        ("reset", None, lambda d: d.Reset, {"power": PowerState.OFF}),
+        ("standby", None, lambda d: d.Standby, {"power": PowerState.STANDBY}),
+        ("assign", {"foo": "bar"}, lambda d: d.AssignResources, {"resourced": True}),
+        ("release", {"foo": "bar"}, lambda d: d.ReleaseResources, {"resourced": False}),
+        ("release_all", None, lambda d: d.ReleaseAllResources, {"resourced": False}),
+        ("configure", {"cat": "dog"}, lambda d: d.Configure, {"configured": True}),
+        ("deconfigure", None, lambda d: d.End, {"configured": False}),
+        ("scan", {"luke": "skywalker"}, lambda d: d.Scan, {"scanning": True}),
+        ("end_scan", None, lambda d: d.EndScan, {"scanning": False}),
+        ("obsreset", None, lambda d: d.ObsReset, {"configured": False}),
+        ("restart", None, lambda d: d.Restart, {"configured": False, "resourced": False}),
+    ],
+)
+def test_remote_actions(
+    component_manager: PstBeamComponentManager,
+    smrb_device_proxy: PstDeviceProxy,
+    recv_device_proxy: PstDeviceProxy,
+    component_state_callback: Callable,
+    method_name: str,
+    params: Optional[Any],
+    remote_action_supplier: Callable[[PstDeviceProxy], Callable],
+    component_state_callback_params: Optional[dict],
+) -> None:
+    """Assert that actions that need to be delegated to remote devices."""
+    task_callback = MagicMock()
+
+    component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
+
+    remote_action_supplier(smrb_device_proxy).return_value = (  # type: ignore
+        [TaskStatus.QUEUED],
+        ["smrb_job_id"],
+    )
+    remote_action_supplier(recv_device_proxy).return_value = (  # type: ignore
+        [TaskStatus.QUEUED],
+        ["recv_job_id"],
+    )
+
+    func = getattr(component_manager, method_name)
+    if params:
+        (status, message) = func(params, task_callback=task_callback)
+    else:
+        (status, message) = func(task_callback=task_callback)
+
+    assert status == TaskStatus.QUEUED
+    assert message == "Task queued"
+
+    time.sleep(0.1)
+
+    if params:
+        params_str = json.dumps(params)
+        [
+            remote_action_supplier(d).assert_called_once_with(params_str)  # type: ignore
+            for d in [smrb_device_proxy, recv_device_proxy]
+        ]
+    else:
+        [
+            remote_action_supplier(d).assert_called_once()  # type: ignore
+            for d in [smrb_device_proxy, recv_device_proxy]
+        ]
+
+    # need to force an data update
+    [
+        component_manager._long_running_client._handle_command_completed(job_id)  # type: ignore
+        for job_id in ["smrb_job_id", "recv_job_id"]
+    ]
+
+    if component_state_callback_params:
+        component_state_callback.assert_called_once_with(**component_state_callback_params)  # type: ignore
+    else:
+        component_state_callback.assert_not_called()  # type: ignore
+
+    calls = [call(status=TaskStatus.COMPLETED), call(result="Completed")]
+    task_callback.assert_has_calls(calls)

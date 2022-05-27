@@ -10,22 +10,27 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Tuple
+from threading import Event
+from typing import Any, Callable, Optional, Tuple
 
-from ska_tango_base.base import check_communicating
+from ska_tango_base.base import TaskExecutorComponentManager, check_communicating
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 from ska_tango_base.executor import TaskStatus
 from ska_tango_base.subarray import SubarrayComponentManager
 
 from ska_pst_lmc.component.process_api import PstProcessApi
+from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
-__all__ = ["PstComponentManager"]
+__all__ = [
+    "PstApiComponentManager",
+    "PstComponentManager",
+]
 
 
 TaskResponse = Tuple[TaskStatus, str]
 
 
-class PstComponentManager(SubarrayComponentManager):
+class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager):
     """
     Base Component Manager for the PST.LMC. subsystem.
 
@@ -41,14 +46,12 @@ class PstComponentManager(SubarrayComponentManager):
 
     def __init__(
         self: PstComponentManager,
-        simulation_mode: SimulationMode,
-        api: PstProcessApi,
         logger: logging.Logger,
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable,
         *args: Any,
         **kwargs: Any,
-    ):
+    ) -> None:
         """Initialise instance of the component manager.
 
         :param simulation_mode: enum to track if component should be
@@ -60,8 +63,8 @@ class PstComponentManager(SubarrayComponentManager):
         :param component_fault_callback: callback to be called when the
             component faults (or stops faulting)
         """
-        self._simuation_mode = simulation_mode
-        self._api = api
+        self._simuation_mode = SimulationMode.TRUE
+        self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
         super().__init__(logger, communication_state_callback, component_state_callback, *args, **kwargs)
 
     def start_communicating(self: PstComponentManager) -> None:
@@ -130,9 +133,20 @@ class PstComponentManager(SubarrayComponentManager):
         :param task_callback: callback to be called when the status of
             the command changes
         """
-        self._component_state_callback(power=PowerState.OFF)
-        task_callback(status=TaskStatus.COMPLETED)
-        return TaskStatus.QUEUED, "Power off"
+
+        def _task(
+            *args: Any,
+            task_callback: Optional[Callable] = None,
+            task_abort_event: Optional[Event] = None,
+            **kwargs: Any,
+        ) -> None:
+            if task_callback:
+                task_callback(status=TaskStatus.IN_PROGRESS)
+            self._component_state_callback(power=PowerState.OFF)
+            if task_callback:
+                task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+        return self.submit_task(_task, task_callback=task_callback)
 
     @check_communicating
     def standby(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
@@ -142,9 +156,20 @@ class PstComponentManager(SubarrayComponentManager):
         :param task_callback: callback to be called when the status of
             the command changes
         """
-        self._component_state_callback(power=PowerState.STANDBY)
-        task_callback(status=TaskStatus.COMPLETED)
-        return TaskStatus.QUEUED, "Device in standby"
+
+        def _task(
+            *args: Any,
+            task_callback: Optional[Callable] = None,
+            task_abort_event: Optional[Event] = None,
+            **kwargs: Any,
+        ) -> None:
+            if task_callback:
+                task_callback(status=TaskStatus.IN_PROGRESS)
+            self._component_state_callback(power=PowerState.STANDBY)
+            if task_callback:
+                task_callback(status=TaskStatus.COMPLETED)
+
+        return self.submit_task(_task, task_callback=task_callback)
 
     @check_communicating
     def on(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
@@ -154,9 +179,20 @@ class PstComponentManager(SubarrayComponentManager):
         :param task_callback: callback to be called when the status of
             the command changes
         """
-        self._component_state_callback(power=PowerState.ON)
-        task_callback(status=TaskStatus.COMPLETED)
-        return TaskStatus.QUEUED, "Power on"
+
+        def _task(
+            *args: Any,
+            task_callback: Optional[Callable] = None,
+            task_abort_event: Optional[Event] = None,
+            **kwargs: Any,
+        ) -> None:
+            if task_callback:
+                task_callback(status=TaskStatus.IN_PROGRESS)
+            self._component_state_callback(power=PowerState.ON)
+            if task_callback:
+                task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+        return self.submit_task(_task, task_callback=task_callback)
 
     @check_communicating
     def reset(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
@@ -166,11 +202,95 @@ class PstComponentManager(SubarrayComponentManager):
         :param task_callback: callback to be called when the status of
             the command changes
         """
-        self._component_state_callback(fault=False, power=PowerState.OFF)
-        task_callback(status=TaskStatus.COMPLETED)
-        return TaskStatus.QUEUED, "Device reset"
 
-    def assign(self: PstComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+        def _task(
+            *args: Any,
+            task_callback: Optional[Callable] = None,
+            task_abort_event: Optional[Event] = None,
+            **kwargs: Any,
+        ) -> None:
+            if task_callback:
+                task_callback(status=TaskStatus.IN_PROGRESS)
+            self._component_state_callback(fault=False, power=PowerState.OFF)
+            if task_callback:
+                task_callback(status=TaskStatus.COMPLETED)
+
+        return self.submit_task(_task, task_callback=task_callback)
+
+    def obsreset(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
+        """Reset the component to unconfigured but do not release resources."""
+
+        def _task(
+            *args: Any,
+            task_callback: Optional[Callable] = None,
+            task_abort_event: Optional[Event] = None,
+            **kwargs: Any,
+        ) -> None:
+            if task_callback:
+                task_callback(status=TaskStatus.IN_PROGRESS)
+            self._component_state_callback(configured=False)
+            if task_callback:
+                task_callback(status=TaskStatus.COMPLETED)
+
+        return self.submit_task(_task, task_callback=task_callback)
+
+    def restart(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
+        """Deconfigure and release all resources."""
+
+        def _task(
+            *args: Any,
+            task_callback: Optional[Callable] = None,
+            task_abort_event: Optional[Event] = None,
+            **kwargs: Any,
+        ) -> None:
+            if task_callback:
+                task_callback(status=TaskStatus.IN_PROGRESS)
+            self._component_state_callback(configured=False, resourced=False)
+            if task_callback:
+                task_callback(status=TaskStatus.COMPLETED)
+
+        return self.submit_task(_task, task_callback=task_callback)
+
+
+class PstApiComponentManager(PstComponentManager):
+    """
+    A base component Manager for the PST.LMC. that uses and API.
+
+    Instances of this component manager are required to provide an
+    instance of :py:class::`PstProcessApi` to delegate functionality
+    to.
+
+    Only components that use an external process, such as RECV and SMRB
+    are to be extended from this class. Components such as BEAM need
+    to use :py:class::`PstComponentManager` as they don't use a process
+    API.
+    """
+
+    def __init__(
+        self: PstApiComponentManager,
+        api: PstProcessApi,
+        logger: logging.Logger,
+        communication_state_callback: Callable[[CommunicationStatus], None],
+        component_state_callback: Callable,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Initialise instance of the component manager.
+
+        :param simulation_mode: enum to track if component should be
+            in simulation mode or not.
+        :param api: an API object used to delegate functionality to.
+        :param logger: a logger for this object to use
+        :param communication_status_changed_callback: callback to be
+            called when the status of the communications channel between
+            the component manager and its component changes
+        :param component_fault_callback: callback to be called when the
+            component faults (or stops faulting)
+        """
+        self._api = api
+        super().__init__(logger, communication_state_callback, component_state_callback, *args, **kwargs)
+
+    def assign(self: PstApiComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
         """
         Assign resources to the component.
 
@@ -179,7 +299,7 @@ class PstComponentManager(SubarrayComponentManager):
         self._api.assign_resources(resources, task_callback)
         return TaskStatus.QUEUED, "Resourcing"
 
-    def release(self: PstComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+    def release(self: PstApiComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
         """
         Release resources from the component.
 
@@ -188,12 +308,12 @@ class PstComponentManager(SubarrayComponentManager):
         self._api.release(resources, task_callback)
         return TaskStatus.QUEUED, "Releasing"
 
-    def release_all(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
+    def release_all(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
         """Release all resources."""
         self._api.release_all(task_callback)
         return TaskStatus.QUEUED, "Releasing all"
 
-    def configure(self: PstComponentManager, configuration: dict, task_callback: Callable) -> TaskResponse:
+    def configure(self: PstApiComponentManager, configuration: dict, task_callback: Callable) -> TaskResponse:
         """
         Configure the component.
 
@@ -203,37 +323,18 @@ class PstComponentManager(SubarrayComponentManager):
         self._api.configure(configuration, task_callback)
         return TaskStatus.QUEUED, "Releasing all"
 
-    def deconfigure(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
+    def deconfigure(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
         """Deconfigure this component."""
         self._api.deconfigure(task_callback)
         return TaskStatus.QUEUED, "Deconfiguring"
 
-    def scan(self: PstComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+    def scan(self: PstApiComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
         """Start scanning."""
         # should be for how long the scan is and update based on that.
         self._api.scan(args, task_callback)
         return TaskStatus.QUEUED, "Scanning"
 
-    def end_scan(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
+    def end_scan(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
         """End scanning."""
         self._api.end_scan(task_callback)
         return TaskStatus.QUEUED, "End scanning"
-
-    def abort(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
-        """Tell the component to abort whatever it was doing."""
-        self._api.abort(task_callback)
-        return TaskStatus.QUEUED, "Aborting"
-
-    def obsreset(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
-        """Reset the component to unconfigured but do not release resources."""
-        task_callback(status=TaskStatus.IN_PROGRESS)
-        self._component_state_callback(configured=False)
-        task_callback(status=TaskStatus.COMPLETED)
-        return TaskStatus.QUEUED, "Done"
-
-    def restart(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
-        """Deconfigure and release all resources."""
-        task_callback(status=TaskStatus.IN_PROGRESS)
-        self._component_state_callback(configured=False, resourced=False)
-        task_callback(status=TaskStatus.COMPLETED)
-        return TaskStatus.QUEUED, "Done"

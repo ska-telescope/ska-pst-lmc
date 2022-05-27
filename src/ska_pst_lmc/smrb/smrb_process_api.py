@@ -97,12 +97,13 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         :param resources: dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
         """
+        self._logger.info(f"Assigning resources for SMRB. {resources}")
         task_callback(status=TaskStatus.IN_PROGRESS)
         time.sleep(0.1)
         task_callback(progress=50)
         time.sleep(0.1)
         self._component_state_callback(resourced=True)
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
     def release(self: PstSmrbProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
@@ -118,7 +119,7 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         task_callback(progress=81)
         time.sleep(0.1)
         self._component_state_callback(resourced=False)
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
     def release_all(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
@@ -131,7 +132,7 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         task_callback(progress=45)
         time.sleep(0.1)
         self._component_state_callback(resourced=False)
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
     def configure(self: PstSmrbProcessApiSimulator, configuration: dict, task_callback: Callable) -> None:
@@ -148,7 +149,7 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         self._simulator.configure(configuration=configuration)
         time.sleep(0.1)
         self._component_state_callback(configured=True)
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
     def deconfigure(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
@@ -166,7 +167,7 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         time.sleep(0.1)
         self._simulator.deconfigure()
         self._component_state_callback(configured=False)
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
     def scan(self: PstSmrbProcessApiSimulator, args: dict, task_callback: Callable) -> None:
@@ -181,7 +182,7 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         time.sleep(0.1)
         self._simulator.scan(args)
         self._component_state_callback(scanning=True)
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
     def end_scan(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
@@ -196,7 +197,7 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         task_callback(progress=63)
         self._simulator.end_scan()
         self._component_state_callback(scanning=False)
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
     def abort(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
@@ -209,7 +210,7 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         task_callback(progress=59)
         self._component_state_callback(scanning=False)
         self._simulator.abort()
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @property
     def monitor_data(self: PstSmrbProcessApiSimulator) -> SharedMemoryRingBufferData:

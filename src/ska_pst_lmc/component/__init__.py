@@ -8,9 +8,10 @@
 """This package is for common component classes for PST.LMC."""
 
 __all__ = [
+    "PstApiComponentManager",
     "PstComponentManager",
     "PstProcessApi",
 ]
 
-from .component_manager import PstComponentManager
+from .component_manager import PstApiComponentManager, PstComponentManager
 from .process_api import PstProcessApi

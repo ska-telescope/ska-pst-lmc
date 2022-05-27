@@ -98,7 +98,6 @@ def test_set_attributes() -> None:
 def test_delete_item() -> None:
     """Test being able to delete an configuration item from a Configuration object."""
     example = get_csp_config_example(version=CSP_CONFIG_VER2_2, scan="pst_scan_pt")
-    print(example.keys())
 
     obj = Configuration(example)
 

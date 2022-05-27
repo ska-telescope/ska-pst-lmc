@@ -9,6 +9,8 @@
 
 __all__ = [
     "PstBeam",
+    "PstBeamComponentManager",
 ]
 
 from .beam_device import PstBeam
+from .beam_component_manager import PstBeamComponentManager

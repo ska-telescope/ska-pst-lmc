@@ -12,20 +12,19 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, List, Optional
 
-from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
+from ska_tango_base.control_model import CommunicationStatus, PowerState
 
-from ska_pst_lmc.component import PstComponentManager
+from ska_pst_lmc.component import PstApiComponentManager
 from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApi, PstReceiveProcessApiSimulator
 
 
-class PstReceiveComponentManager(PstComponentManager):
+class PstReceiveComponentManager(PstApiComponentManager):
     """Component manager for the RECV component for the PST.LMC subsystem."""
 
     _api: PstReceiveProcessApi
 
     def __init__(
         self: PstReceiveComponentManager,
-        simulation_mode: SimulationMode,
         logger: logging.Logger,
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable,
@@ -51,7 +50,6 @@ class PstReceiveComponentManager(PstComponentManager):
         )
 
         super().__init__(
-            simulation_mode,
             api,
             logger,
             communication_state_callback,

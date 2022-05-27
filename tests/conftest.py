@@ -12,8 +12,9 @@ import tango
 from ska_tango_base.control_model import SimulationMode
 from ska_tango_base.testing.mock import MockCallable, MockChangeEventCallback
 from tango import DeviceProxy
-from tango.test_context import DeviceTestContext
+from tango.test_context import DeviceTestContext, MultiDeviceTestContext, get_host_ip
 
+from ska_pst_lmc.device_proxy import DeviceProxyFactory
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
 
@@ -37,7 +38,42 @@ def tango_context(device_test_config: dict) -> Generator[DeviceTestContext, None
         device_test_config["device"].create_component_manager = component_manager_patch
 
     tango_context = DeviceTestContext(**device_test_config)
+    DeviceProxyFactory._proxy_supplier = tango_context.get_device
     tango_context.start()
+    yield tango_context
+    tango_context.stop()
+
+
+@pytest.fixture(scope="class")
+def server_configuration() -> dict:
+    """Get server configuration for multi device test."""
+    return {}
+
+
+@pytest.fixture()
+def multidevice_test_context(server_configuration: dict) -> Generator[MultiDeviceTestContext, None, None]:
+    """Get generator for MultiDeviceTestContext."""
+    if "host" not in server_configuration:
+        server_configuration["host"] = get_host_ip()
+    if "port" not in server_configuration:
+        server_configuration["port"] = 31138
+    if "timeout" not in server_configuration:
+        server_configuration["timeout"] = 10
+
+    tango_context = MultiDeviceTestContext(**server_configuration)
+
+    def device_proxy_supplier(fqdn: str, *args: Any, **kwargs: Any) -> tango.DeviceProxy:
+        if not fqdn.startswith("tango://"):
+            host = server_configuration["host"]
+            port = server_configuration["port"]
+
+            fqdn = f"tango://{host}:{port}/{fqdn}#dbase=no"
+
+        return tango.DeviceProxy(fqdn)
+
+    DeviceProxyFactory._proxy_supplier = device_proxy_supplier
+    tango_context.start()
+    time.sleep(0.15)
     yield tango_context
     tango_context.stop()
 

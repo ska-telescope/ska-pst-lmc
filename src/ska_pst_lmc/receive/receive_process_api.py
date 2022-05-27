@@ -109,7 +109,7 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         task_callback(progress=66)
         time.sleep(0.1)
         self._component_state_callback(resourced=True)
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
     def release(self: PstReceiveProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
@@ -125,7 +125,7 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         task_callback(progress=75)
         time.sleep(0.1)
         self._component_state_callback(resourced=False)
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
     def release_all(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
@@ -138,7 +138,7 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         task_callback(progress=50)
         time.sleep(0.1)
         self._component_state_callback(resourced=False)
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
     def configure(self: PstReceiveProcessApiSimulator, configuration: dict, task_callback: Callable) -> None:
@@ -155,7 +155,7 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         self._simulator.configure(configuration=configuration)
         time.sleep(0.1)
         self._component_state_callback(configured=True)
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
     def deconfigure(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
@@ -171,7 +171,7 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         time.sleep(0.1)
         self._simulator.deconfigure()
         self._component_state_callback(configured=False)
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
     def scan(self: PstReceiveProcessApiSimulator, args: dict, task_callback: Callable) -> None:
@@ -187,7 +187,7 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         task_callback(progress=69)
         self._simulator.scan(args)
         self._component_state_callback(scanning=True)
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
     def end_scan(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
@@ -202,7 +202,7 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         task_callback(progress=88)
         self._simulator.end_scan()
         self._component_state_callback(scanning=False)
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
     def abort(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
@@ -215,7 +215,7 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         task_callback(progress=60)
         self._component_state_callback(scanning=False)
         self._simulator.abort()
-        task_callback(status=TaskStatus.COMPLETED)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @property
     def monitor_data(self: PstReceiveProcessApiSimulator) -> ReceiveData:

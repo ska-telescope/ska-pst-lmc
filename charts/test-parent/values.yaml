@@ -41,6 +41,9 @@ ska_pst_lmc:
     simple:
       instances: ["simple-01"]
       polling: 600
+    beam:
+      instances: ["beam-01", "beam-02"]
+      polling: 600
 
 ska-dashboard-repo:
   enabled: false
