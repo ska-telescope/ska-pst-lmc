@@ -6,6 +6,7 @@ API
   :caption: Subpackages
   :maxdepth: 3
 
+  Beam subpackage<beam/index>
   Component subpackage<component/index>
   Receive subpackage<receive/index>
   SMRB subpackage<smrb/index>

@@ -23,6 +23,14 @@ in this module is the `PstComponentManager`, though a base PST Process API may a
 Common reusable code (i.e. code that code be used by a completely separate project) is to be added to the `ska_pst_lmc.util`
 module and not the component submodule.
 
+### BEAM Device
+
+This device is a logical device for managing devices like RECV and SMRB. This uses references to a `PstDeviceProxy` which
+is a wrapper around the `tango.DeviceProxy` class. This allows for not having to import TANGO classes within component
+classes.
+
+The component manager proxies commands to the remote devices that are configured based on the TANGO device's attributes of `RecvFQDN`, `SmrbFQDN`, `DspFQDN`, and `SendFQDN`.
+
 ### RECV Device
 
 This device is used for managing and monitoring the RECV process within the PST.LMC sub-system. This is the base example for
@@ -70,6 +78,10 @@ This project uses [Poetry](https://python-poetry.org/) for `Python` package mana
 * libboost-python-dev
 * libtango-dev
 * python3-venv
+
+#### TANGO Development setup
+
+Follow the instructions in [TANGO_INSTALL](TANGO_INSTALL) to install TANGO 9.3.5 (or higher if available). 
 
 It is highly recommended to work within a Python virtual env, install `virtualenv` if you already haven't. For Ubuntu, you will need to install `python3-venv` as distro package for Poetry to work.
 
