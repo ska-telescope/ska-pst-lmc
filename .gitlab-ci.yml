@@ -73,13 +73,13 @@ include:
   - project: 'ska-telescope/templates-repository'
     file : 'gitlab-ci/includes/release.gitlab-ci.yml'
 
-  # # Publish Helm chart
-  # - project: 'ska-telescope/templates-repository'
-  #   file : 'gitlab-ci/includes/helm-chart.gitlab-ci.yml'
+  # Publish Helm chart
+  - project: 'ska-telescope/templates-repository'
+    file : 'gitlab-ci/includes/helm-chart.gitlab-ci.yml'
 
-  # # k8s steps
-  # - project: 'ska-telescope/templates-repository'
-  #   file: 'gitlab-ci/includes/k8s.gitlab-ci.yml'
+  # k8s steps
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/k8s.gitlab-ci.yml'
 
   # changelog release page
   - project: 'ska-telescope/templates-repository'
