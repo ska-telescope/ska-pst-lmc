@@ -15,12 +15,13 @@ from __future__ import annotations
 import functools
 import logging
 import threading
-from typing import Any, Callable, Dict, List, Optional, Type, TypedDict
+from typing import Any, Callable, Dict, List, Optional, Type
 
 import backoff
 import tango
 from readerwriterlock import rwlock
 from tango import DeviceProxy, GreenMode
+from typing_extensions import TypedDict
 
 BackoffDetailsType = TypedDict("BackoffDetailsType", {"args": list, "elapsed": float})
 
