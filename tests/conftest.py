@@ -53,14 +53,22 @@ def server_configuration() -> dict:
 @pytest.fixture()
 def multidevice_test_context(server_configuration: dict) -> Generator[MultiDeviceTestContext, None, None]:
     """Get generator for MultiDeviceTestContext."""
+
+    def _get_port() -> int:
+        import socket
+        from contextlib import closing
+
+        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+            s.bind(("", 0))
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            return s.getsockname()[1]
+
     if "host" not in server_configuration:
         server_configuration["host"] = get_host_ip()
     if "port" not in server_configuration:
-        server_configuration["port"] = 31138
+        server_configuration["port"] = _get_port()
     if "timeout" not in server_configuration:
         server_configuration["timeout"] = 10
-
-    tango_context = MultiDeviceTestContext(**server_configuration)
 
     def device_proxy_supplier(fqdn: str, *args: Any, **kwargs: Any) -> tango.DeviceProxy:
         if not fqdn.startswith("tango://"):
@@ -72,10 +80,10 @@ def multidevice_test_context(server_configuration: dict) -> Generator[MultiDevic
         return tango.DeviceProxy(fqdn)
 
     DeviceProxyFactory._proxy_supplier = device_proxy_supplier
-    tango_context.start()
-    time.sleep(0.15)
-    yield tango_context
-    tango_context.stop()
+
+    with MultiDeviceTestContext(**server_configuration) as context:
+        time.sleep(0.15)
+        yield context
 
 
 @pytest.fixture()
