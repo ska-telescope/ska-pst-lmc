@@ -73,6 +73,9 @@ K8S_TEST_TANGO_IMAGE = --set ska_pst_lmc.ska_pst_lmc.image.tag=$(VERSION)
 K8S_TEST_IMAGE_TO_TEST = $(CAR_OCI_REGISTRY_HOST)/$(NAME):$(VERSION)
 endif
 
+PROXY_VALUES ?= --env="HTTPS_PROXY=$(HTTPS_PROXY)" --env="HTTP_PROXY=$(HTTP_PROXY)" --env="NO_PROXY=$(NO_PROXY)"  \
+	--env="https_proxy=$(HTTPS_PROXY)" --env="http_proxy=$(HTTP_PROXY)" --env="no_proxy=$(NO_PROXY)"
+
 K8S_CHART_PARAMS = --set global.minikube=$(MINIKUBE) \
 	--set global.tango_host=$(TANGO_HOST) \
 	--set ska-tango-base.display=$(DISPLAY) \
