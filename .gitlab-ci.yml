@@ -52,7 +52,7 @@ k8s-test:
   image: $SKA_K8S_TOOLS_DEPLOY_IMAGE
   stage: test
   tags:
-    - k8srunner-psi-low
+    - k8srunner
   variables:
     KUBE_NAMESPACE: 'ci-$CI_PROJECT_NAME-$CI_COMMIT_SHORT_SHA'
   before_script:
@@ -63,7 +63,6 @@ k8s-test:
     - make k8s-wait
   script:
     - kubectl config get-contexts
-    - kubectl config use-context ska-telescope/ska-cicd-gitlab-k8s-agents-config:psi-low-agent
     - make k8s-get-pods
     - make k8s-pod-versions
     - make k8s-describe
