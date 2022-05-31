@@ -62,6 +62,8 @@ k8s-test:
     - make k8s-vars
     - make k8s-wait
   script:
+    - kubectl config get-contexts
+    - kubectl config use-context ska-telescope/ska-cicd-gitlab-k8s-agents-config:psi-low-agent
     - make k8s-get-pods
     - make k8s-pod-versions
     - make k8s-describe
