@@ -82,3 +82,17 @@ K8S_CHART_PARAMS = --set global.minikube=$(MINIKUBE) \
 	--set ska-tango-base.xauthority=$(XAUTHORITY) \
 	--set ska-tango-base.jive.enabled=$(JIVE) \
 	${K8S_TEST_TANGO_IMAGE}
+
+k8s_test_command = /bin/bash -o pipefail -c "\
+	mkfifo results-pipe && tar zx --warning=all && \
+        ( if [[ -f pyproject.toml ]]; then poetry export --format requirements.txt --output poetry-requirements.txt --without-hashes --dev; echo 'k8s-test: installing poetry-requirements.txt';  pip install -Ur poetry-requirements.txt; else if [[ -f $(k8s_test_folder)/requirements.txt ]]; then echo 'k8s-test: installing $(k8s_test_folder)/requirements.txt'; pip install -Ur $(k8s_test_folder)/requirements.txt; fi; fi ) && \
+		echo \"Dev python packages installed.\" && \
+		export PYTHONPATH=${PYTHONPATH}:/app/src$(k8s_test_src_dirs) && \
+		mkdir -p build && \
+		echo \"Executing: \$$(K8S_TEST_TEST_COMMAND)\" && \
+	( \
+	$(K8S_TEST_TEST_COMMAND) \
+	); \
+	echo \$$? > build/status; pip list > build/pip_list.txt; \
+	echo \"k8s_test_command: test command exit is: \$$(cat build/status)\"; \
+	tar zcf results-pipe build;"
