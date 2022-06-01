@@ -1,25 +1,7 @@
 oci-image-lint:
   when: manual
 
-python-lint:
-  when: manual
-
-docs-build:
-  when: manual
-
 oci-image-build:
-  when: manual
-
-python-build-for-development:
-  when: manual
-
-python-test:
-  when: manual
-
-docs-pages:
-  when: manual
-
-python-publish-to-gitlab:
   when: manual
 
 oci-image-scan:
