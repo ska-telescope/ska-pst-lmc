@@ -12,7 +12,7 @@ VERSION_INFO = VERSION.split(".")
 DESCRIPTION = """A set of PST LMC tango devices for the SKA Low and Mid Telescopes."""
 AUTHOR = "William Gauvin"
 AUTHOR_EMAIL = "wgauvin@swin.edu.au"
-URL = """https://gitlab.com/ska-telescope/ska-pst-lmc"""
+URL = """https://gitlab.com/ska-telescope/pst/ska-pst-lmc"""
 LICENSE = """BSD-3-Clause"""
 COPYRIGHT = "Swinburne University of Technology"
 

@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "PST-LMC Tango device package"
 authors = ["Team PST"]
 license = "BSD-3-Clause"
-repository = "https://gitlab.com/ska-telescope/ska-pst-lmc.git"
+repository = "https://gitlab.com/ska-telescope/pst/ska-pst-lmc.git"
 
 [[tool.poetry.source]]
 name = 'ska-nexus'
