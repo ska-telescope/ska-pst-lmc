@@ -46,7 +46,7 @@ class TestPstBeam:
         assert_state(DevState.DISABLE)
 
         beam_proxy.adminMode = AdminMode.ONLINE
-        time.sleep(0.1)
+        time.sleep(0.2)
         assert recv_proxy.adminMode == AdminMode.ONLINE
         assert smrb_proxy.adminMode == AdminMode.ONLINE
 
@@ -76,7 +76,7 @@ class TestPstBeam:
             time.sleep(0.1)
             assert_obstate(ObsState.CONFIGURING)
 
-            time.sleep(0.3)
+            time.sleep(1)
             assert_obstate(ObsState.READY)
 
             scan = json.dumps({"cat": "dog"})
@@ -84,22 +84,22 @@ class TestPstBeam:
             time.sleep(0.1)
 
             assert_obstate(ObsState.READY)
-            time.sleep(0.3)
+            time.sleep(1)
             assert_obstate(ObsState.SCANNING)
 
             beam_proxy.EndScan()
             time.sleep(0.1)
             assert_obstate(ObsState.SCANNING)
-            time.sleep(0.5)
+            time.sleep(1)
             assert_obstate(ObsState.READY)
 
             beam_proxy.Off()
-            time.sleep(0.5)
+            time.sleep(1)
 
             assert_state(DevState.OFF)
         finally:
             beam_proxy.Off()
-            time.sleep(0.5)
+            time.sleep(1)
             beam_proxy.adminMode = AdminMode.OFFLINE
             time.sleep(0.1)
             assert recv_proxy.adminMode == AdminMode.OFFLINE
