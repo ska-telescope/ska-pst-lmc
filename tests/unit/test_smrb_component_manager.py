@@ -9,14 +9,18 @@
 
 import logging
 from typing import Callable
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 import pytest
 from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 
 from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
 from ska_pst_lmc.smrb.smrb_model import SharedMemoryRingBufferData
-from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApi, PstSmrbProcessApiSimulator
+from ska_pst_lmc.smrb.smrb_process_api import (
+    PstSmrbProcessApi,
+    PstSmrbProcessApiGrpc,
+    PstSmrbProcessApiSimulator,
+)
 
 
 @pytest.fixture
@@ -50,7 +54,10 @@ def api(
             component_state_callback=component_state_callback,
         )
     else:
-        raise ValueError("Expected simulation mode to be true")
+        return PstSmrbProcessApiGrpc(
+            logger=logger,
+            component_state_callback=component_state_callback,
+        )
 
 
 @pytest.fixture
@@ -81,22 +88,34 @@ def test_start_communicating_calls_connect_on_api(
 
 
 @pytest.mark.parametrize(
-    "property",
+    "simulation_mode, property",
     [
-        ("ring_buffer_utilisation"),
-        ("ring_buffer_size"),
-        ("number_subbands"),
-        ("subband_ring_buffer_utilisations"),
-        ("subband_ring_buffer_sizes"),
+        (SimulationMode.TRUE, "ring_buffer_utilisation"),
+        (SimulationMode.TRUE, "ring_buffer_size"),
+        (SimulationMode.TRUE, "number_subbands"),
+        (SimulationMode.TRUE, "subband_ring_buffer_utilisations"),
+        (SimulationMode.TRUE, "subband_ring_buffer_sizes"),
+        (SimulationMode.FALSE, "ring_buffer_utilisation"),
+        (SimulationMode.FALSE, "ring_buffer_size"),
+        (SimulationMode.FALSE, "number_subbands"),
+        (SimulationMode.FALSE, "subband_ring_buffer_utilisations"),
+        (SimulationMode.FALSE, "subband_ring_buffer_sizes"),
     ],
 )
-def test_properties_come_from_api_monitor_data(
+def test_properties_come_from_simulator_api_monitor_data(
     component_manager: PstSmrbComponentManager,
+    simulation_mode: SimulationMode,
     api: PstSmrbProcessApi,
     monitor_data: SharedMemoryRingBufferData,
     property: str,
 ) -> None:
     """Test properties are coming from API monitor data."""
+    if simulation_mode == SimulationMode.TRUE:
+        assert type(api) == PstSmrbProcessApiSimulator
+    else:
+        assert type(api) == PstSmrbProcessApiGrpc
+
+    # mock the API as we don't need to call it.
     api = MagicMock()
     type(api).monitor_data = monitor_data
     component_manager._api = api
@@ -105,3 +124,99 @@ def test_properties_come_from_api_monitor_data(
     expected = getattr(monitor_data, property)
 
     assert actual == expected
+
+
+def test_api_instance_changes_depending_on_simulation_mode(
+    component_manager: PstSmrbComponentManager,
+) -> None:
+    """Test to assert that the process API changes depending on simulation mode."""
+    assert component_manager.simulation_mode == SimulationMode.TRUE
+    assert type(component_manager._api) == PstSmrbProcessApiSimulator
+
+    component_manager.simulation_mode = SimulationMode.FALSE
+
+    assert type(component_manager._api) == PstSmrbProcessApiGrpc
+
+
+@pytest.mark.parametrize(
+    "simulation_mode",
+    [
+        (SimulationMode.TRUE,),
+        (SimulationMode.FALSE,),
+    ],
+)
+def test_no_change_in_simulation_mode_value_wont_change_communication_state(
+    component_manager: PstSmrbComponentManager,
+    simulation_mode: SimulationMode,
+) -> None:
+    """Test no change in simulation mode does not change communication state."""
+    update_communication_state = MagicMock(wraps=component_manager._update_communication_state)
+    component_manager._update_communication_state = update_communication_state
+
+    assert component_manager.communication_state == CommunicationStatus.DISABLED
+    assert component_manager.simulation_mode == simulation_mode
+
+    component_manager.start_communicating()
+    assert component_manager.communication_state == CommunicationStatus.ESTABLISHED
+
+    calls = [call(CommunicationStatus.NOT_ESTABLISHED), call(CommunicationStatus.ESTABLISHED)]
+    update_communication_state.assert_has_calls(calls)
+    update_communication_state.reset_mock()
+
+    component_manager.simulation_mode = simulation_mode
+    update_communication_state.assert_not_called()
+
+
+def test_if_communicating_switching_simulation_mode_must_stop_then_restart(
+    component_manager: PstSmrbComponentManager,
+) -> None:
+    """Test if communicating and simulation mode changes, then need to reconnect."""
+    update_communication_state = MagicMock(wraps=component_manager._update_communication_state)
+    component_manager._update_communication_state = update_communication_state
+
+    assert component_manager.communication_state == CommunicationStatus.DISABLED
+    assert component_manager.simulation_mode == SimulationMode.TRUE
+
+    component_manager.start_communicating()
+    assert component_manager.communication_state == CommunicationStatus.ESTABLISHED
+
+    calls = [call(CommunicationStatus.NOT_ESTABLISHED), call(CommunicationStatus.ESTABLISHED)]
+    update_communication_state.assert_has_calls(calls)
+    update_communication_state.reset_mock()
+
+    component_manager.simulation_mode = SimulationMode.FALSE
+
+    calls = [
+        call(CommunicationStatus.DISABLED),
+        call(CommunicationStatus.NOT_ESTABLISHED),
+        call(CommunicationStatus.ESTABLISHED),
+    ]
+    update_communication_state.assert_has_calls(calls)
+    update_communication_state.reset_mock()
+
+    component_manager.simulation_mode = SimulationMode.TRUE
+    update_communication_state.assert_has_calls(calls)
+    update_communication_state.reset_mock()
+
+
+def test_not_communicating_switching_simulation_mode_not_try_to_establish_connection(
+    component_manager: PstSmrbComponentManager,
+) -> None:
+    """Test if not communicating and change of simulation happens, don't do anything."""
+    update_communication_state = MagicMock(wraps=component_manager._update_communication_state)
+    component_manager._update_communication_state = update_communication_state
+
+    assert component_manager.communication_state == CommunicationStatus.DISABLED
+    assert component_manager.simulation_mode == SimulationMode.TRUE
+
+    update_communication_state.reset_mock()
+
+    component_manager.simulation_mode = SimulationMode.FALSE
+    update_communication_state.assert_not_called()
+    update_communication_state.reset_mock()
+
+    component_manager.simulation_mode = SimulationMode.TRUE
+    update_communication_state.assert_not_called()
+
+
+# need test to see that it uses the API's

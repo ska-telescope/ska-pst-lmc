@@ -42,7 +42,7 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
     using a simulated process or a real subprocess.
     """
 
-    _simuation_mode: SimulationMode = SimulationMode.TRUE
+    _simuation_mode: SimulationMode
 
     def __init__(
         self: PstComponentManager,
@@ -50,6 +50,7 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable,
         *args: Any,
+        simulation_mode: SimulationMode = SimulationMode.TRUE,
         **kwargs: Any,
     ) -> None:
         """Initialise instance of the component manager.
@@ -63,7 +64,7 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
         :param component_fault_callback: callback to be called when the
             component faults (or stops faulting)
         """
-        self._simuation_mode = SimulationMode.TRUE
+        self._simuation_mode = simulation_mode
         self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
         super().__init__(logger, communication_state_callback, component_state_callback, *args, **kwargs)
 
@@ -110,7 +111,7 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
 
         :returns: current simulation mode state.
         """
-        self._simuation_mode
+        return self._simuation_mode
 
     @simulation_mode.setter
     def simulation_mode(self: PstComponentManager, simulation_mode: SimulationMode) -> None:
@@ -119,7 +120,16 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
         :param simulation_mode: the new simulation mode value.
         :type simulation_mode: :py:class:`SimulationMode`
         """
-        self._simuation_mode = simulation_mode
+        if self._simuation_mode != simulation_mode:
+            self._simuation_mode = simulation_mode
+            self._simulation_mode_changed()
+
+    def _simulation_mode_changed(self: PstComponentManager) -> None:
+        """Handle change of simulation mode.
+
+        Default implementation of this is to do nothing. It is up to the individual devices
+        to handle what it means when the simulation mode changes.
+        """
 
     # ---------------
     # Commands

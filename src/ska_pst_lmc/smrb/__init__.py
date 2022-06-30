@@ -12,6 +12,7 @@ __all__ = [
     "PstSmrbComponentManager",
     "PstSmrbProcessApi",
     "PstSmrbProcessApiSimulator",
+    "PstSmrbProcessApiGrpc",
     "PstSmrbSimulator",
     "SharedMemoryRingBufferData",
 ]
@@ -19,5 +20,5 @@ __all__ = [
 from .smrb_component_manager import PstSmrbComponentManager
 from .smrb_device import PstSmrb
 from .smrb_model import SharedMemoryRingBufferData
-from .smrb_process_api import PstSmrbProcessApi, PstSmrbProcessApiSimulator
+from .smrb_process_api import PstSmrbProcessApi, PstSmrbProcessApiSimulator, PstSmrbProcessApiGrpc
 from .smrb_simulator import PstSmrbSimulator

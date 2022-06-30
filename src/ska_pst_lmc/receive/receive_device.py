@@ -13,17 +13,17 @@ from typing import List, Optional
 
 import tango
 from ska_tango_base.control_model import SimulationMode
-from ska_tango_base.subarray import SKASubarray
 from tango import DebugIt
 from tango.server import attribute, command, run
 
 import ska_pst_lmc.release as release
+from ska_pst_lmc.component.pst_device import PstBaseDevice
 from ska_pst_lmc.receive.receive_component_manager import PstReceiveComponentManager
 
 __all__ = ["PstReceive", "main"]
 
 
-class PstReceive(SKASubarray):
+class PstReceive(PstBaseDevice):
     """A software TANGO device for managing the RECV component of the PST.LMC subsystem."""
 
     # -----------------

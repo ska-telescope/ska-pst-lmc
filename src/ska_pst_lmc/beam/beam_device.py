@@ -12,18 +12,18 @@ from __future__ import annotations
 from typing import List, Optional
 
 import tango
-from ska_tango_base import SKASubarray
 from ska_tango_base.control_model import AdminMode, SimulationMode
 from tango import DebugIt
 from tango.server import command, device_property, run
 
 import ska_pst_lmc.release as release
 from ska_pst_lmc.beam.beam_component_manager import PstBeamComponentManager
+from ska_pst_lmc.component.pst_device import PstBaseDevice
 
 __all__ = ["PstBeam", "main"]
 
 
-class PstBeam(SKASubarray):
+class PstBeam(PstBaseDevice):
     """A logical TANGO device representing a Beam Capability for PST.LMC.
 
     **Properties:**
