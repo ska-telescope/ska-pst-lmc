@@ -54,7 +54,7 @@ class TestPstBeam:
 
         try:
             beam_proxy.On()
-            time.sleep(0.2)
+            time.sleep(0.5)
             assert_state(DevState.ON)
 
             # need to assign resources
