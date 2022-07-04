@@ -13,59 +13,96 @@ server:
   name: "beam"
   instances:
     - name: "beam-01"
-      classes: 
+      classes:
       - name: "PstReceive"
-        devices: 
+        devices:
         - name: "test/receive/1"
+          attribute_properties:
+          - attribute: "simulationMode"
+            properties:
+            - name: "__value"
+              values:
+              - "{{.Values.ska_pst_lmc.simulationMode}}"
       - name: "PstSmrb"
-        devices: 
+        devices:
         - name: "test/smrb/1"
+          attribute_properties:
+          - attribute: "simulationMode"
+            properties:
+            - name: "__value"
+              values:
+              - "{{.Values.ska_pst_lmc.simulationMode}}"
       - name: "PstBeam"
-        devices: 
+        devices:
         - name: "test/beam/1"
           properties:
           - name: "beam_id"
             values:
             - "1"
           - name: "RecvFQDN"
-            values: 
+            values:
             - "test/receive/1"
           - name: "SmrbFQDN"
-            values: 
+            values:
             - "test/smrb/1"
           - name: "DspFQDN"
-            values: 
+            values:
             - "test/dsp/1"
           - name: "SendFQDN"
-            values: 
+            values:
             - "test/send/1"
+          attribute_properties:
+          - attribute: "simulationMode"
+            properties:
+            - name: "__value"
+              values:
+              - "{{.Values.ska_pst_lmc.simulationMode}}"
     - name: "beam-02"
-      classes: 
+      classes:
       - name: "PstReceive"
-        devices: 
+        devices:
         - name: "test/receive/2"
+          attribute_properties:
+          - attribute: "simulationMode"
+            properties:
+            - name: "__value"
+              values:
+              - "{{.Values.ska_pst_lmc.simulationMode}}"
+
       - name: "PstSmrb"
-        devices: 
+        devices:
         - name: "test/smrb/2"
+          attribute_properties:
+          - attribute: "simulationMode"
+            properties:
+            - name: "__value"
+              values:
+              - "{{.Values.ska_pst_lmc.simulationMode}}"
       - name: "PstBeam"
-        devices: 
+        devices:
         - name: "test/beam/2"
           properties:
           - name: "beam_id"
             values:
             - "1"
           - name: "RecvFQDN"
-            values: 
+            values:
             - "test/receive/2"
           - name: "SmrbFQDN"
-            values: 
+            values:
             - "test/smrb/2"
           - name: "DspFQDN"
-            values: 
+            values:
             - "test/dsp/2"
           - name: "SendFQDN"
-            values: 
+            values:
             - "test/send/2"
+          attribute_properties:
+          - attribute: "simulationMode"
+            properties:
+            - name: "__value"
+              values:
+              - "{{.Values.ska_pst_lmc.simulationMode}}"
 depends_on:
   - device: sys/database/2
 image:
