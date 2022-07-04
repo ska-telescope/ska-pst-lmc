@@ -83,7 +83,7 @@ This project uses [Poetry](https://python-poetry.org/) for `Python` package mana
 
 #### TANGO Development setup
 
-Follow the instructions in [TANGO_INSTALL](TANGO_INSTALL) to install TANGO 9.3.5 (or higher if available). 
+Follow the instructions in [TANGO_INSTALL](https://gitlab.com/tango-controls/cppTango/-/blob/main/INSTALL.md) to install TANGO 9.3.5 (or higher if available).
 
 It is highly recommended to work within a Python virtual env, install `virtualenv` if you already haven't. For Ubuntu, you will need to install `python3-venv` as distro package for Poetry to work.
 
@@ -196,7 +196,7 @@ flake8:
 
 ## Example Kubernetes Deployment
 
-As part of [AT3-189]() an example TANGO Device was developed as a proof of concept to be able to connect to a remote
+As part of [AT3-189](https://jira.skatelescope.org/browse/AT3-189) an example TANGO Device was developed as a proof of concept to be able to connect to a remote
 device and listen to events. The following assumes that you're using a `minikube` setup (this is not possible on `pst-beam1`).
 
 ```
@@ -263,7 +263,7 @@ documentation.
 
 ## Contributing
 
-First and foremost, place make sure that you understand the [LICENSE](LISENCE) and also add your GitLab user id to the [CODEOWNERS](CODEOWNERS) file if you're going to contribute to this project.
+First and foremost, place make sure that you understand the [LICENSE](https://gitlab.com/ska-telescope/pst/ska-pst-lmc/-/blob/main/LICENSE) and also add your GitLab user id to the [CODEOWNERS](https://gitlab.com/ska-telescope/pst/ska-pst-lmc/-/blob/main/CODEOWNERS) file if you're going to contribute to this project.
 
 All development should be done via a branch and only merged onto `main` via a merge request. This allows for code reviewing of the changes.
 
@@ -274,4 +274,4 @@ SKA has some standards about branch and commit names and where possible these sh
 Note, that there is a Git standard that the first line of the commit message should not be more than 72 characters. Also commit messages should be in the imperative (i.e 'Fix bug' rather than 'Fixed bug'), basically it reads as a command. If your description can't fit in 72 chars use more detailed body, which can then include bullet points.
 
 ## License
-See the [LICENSE](LICENSE) file for details.
+See the [LICENSE](https://gitlab.com/ska-telescope/pst/ska-pst-lmc/-/blob/main/LICENSE) file for details.

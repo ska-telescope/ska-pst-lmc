@@ -14,8 +14,6 @@ from ska_tango_base import SKASubarray
 from ska_tango_base.control_model import ObsState, SimulationMode
 from tango.server import attribute
 
-from ska_pst_lmc.component.component_manager import PstComponentManager
-
 __all__ = ["PstBaseDevice"]
 
 
