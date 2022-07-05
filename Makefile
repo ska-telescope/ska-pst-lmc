@@ -55,6 +55,9 @@ python-post-lint:
 
 .PHONY: python-post-format python-post-lint
 
+local-oci-scan:
+	docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $(strip $(OCI_IMAGE)):$(VERSION)
+
 MINIKUBE ?= true
 CI_JOB_ID ?= local##pipeline job id
 TANGO_HOST ?= tango-databaseds:10000## TANGO_HOST connection to the Tango DS
