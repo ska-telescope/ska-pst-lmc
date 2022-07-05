@@ -11,7 +11,9 @@ __all__ = [
     "PstApiComponentManager",
     "PstComponentManager",
     "PstProcessApi",
+    "PstBaseDevice",
 ]
 
 from .component_manager import PstApiComponentManager, PstComponentManager
 from .process_api import PstProcessApi
+from .pst_device import PstBaseDevice

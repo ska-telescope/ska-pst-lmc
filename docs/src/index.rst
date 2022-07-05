@@ -15,6 +15,15 @@ The repository for the Local Monitoring and Control (LMC) software
 the Pulsar Timing Sub-element (PST) within the Central Signal Processor
 (CSP) Element of the Square Kilometre Array (SKA) Low and Mid telescopes.
 
+.. README =============================================================
+
+.. toctree::
+  :maxdepth: 2
+
+  ../../README
+
+.. API =============================================================
+
 .. automodule:: ska_pst_lmc
 
 .. toctree::

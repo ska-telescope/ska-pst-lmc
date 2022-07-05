@@ -14,7 +14,8 @@ import logging
 import time
 
 import pytest
-from ska_tango_base.control_model import AdminMode, ObsState
+import tango
+from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
 
 from ska_pst_lmc.smrb.smrb_device import PstSmrb
@@ -125,3 +126,57 @@ class TestPstSmrb:
         device_under_test.Off()
         time.sleep(0.1)
         assert device_under_test.state() == DevState.OFF
+
+    def test_simulation_mode(self: TestPstSmrb, device_under_test: DeviceProxy) -> None:
+        """Test state model of PstSmrb."""
+        device_under_test.simulationMode = SimulationMode.TRUE
+        assert device_under_test.simulationMode == SimulationMode.TRUE
+
+        device_under_test.simulationMode = SimulationMode.FALSE
+        assert device_under_test.simulationMode == SimulationMode.FALSE
+
+        device_under_test.simulationMode = SimulationMode.TRUE
+        assert device_under_test.simulationMode == SimulationMode.TRUE
+
+    def test_simulation_mode_when_not_in_empty_obs_state(
+        self: TestPstSmrb, device_under_test: DeviceProxy
+    ) -> None:
+        """Test state model of PstSmrb."""
+        device_under_test.simulationMode = SimulationMode.TRUE
+        assert device_under_test.simulationMode == SimulationMode.TRUE
+
+        device_under_test.adminMode = AdminMode.ONLINE
+        device_under_test.On()
+        time.sleep(0.1)
+        assert device_under_test.state() == DevState.ON
+
+        resources = json.dumps({"foo": "bar"})
+        device_under_test.AssignResources(resources)
+        time.sleep(0.5)
+        assert device_under_test.obsState == ObsState.IDLE
+
+        with pytest.raises(tango.DevFailed) as exc_info:
+            device_under_test.simulationMode = SimulationMode.FALSE
+
+        assert device_under_test.simulationMode == SimulationMode.TRUE
+        exc_info.value.args[
+            0
+        ].desc == "ValueError: Unable to change simulation mode unless in EMPTY observation state"
+
+    def test_simulation_mode_when_in_empty_obs_state(
+        self: TestPstSmrb, device_under_test: DeviceProxy
+    ) -> None:
+        """Test state model of PstSmrb."""
+        assert device_under_test.obsState == ObsState.EMPTY
+
+        device_under_test.simulationMode = SimulationMode.TRUE
+        assert device_under_test.simulationMode == SimulationMode.TRUE
+
+        device_under_test.adminMode = AdminMode.ONLINE
+        device_under_test.On()
+        time.sleep(0.1)
+        assert device_under_test.state() == DevState.ON
+        assert device_under_test.obsState == ObsState.EMPTY
+
+        device_under_test.simulationMode = SimulationMode.FALSE
+        assert device_under_test.simulationMode == SimulationMode.FALSE

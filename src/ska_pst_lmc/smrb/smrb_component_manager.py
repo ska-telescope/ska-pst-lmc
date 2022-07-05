@@ -12,10 +12,14 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, List, Optional
 
-from ska_tango_base.control_model import CommunicationStatus, PowerState
+from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
 from ska_pst_lmc.component.component_manager import PstApiComponentManager
-from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApi, PstSmrbProcessApiSimulator
+from ska_pst_lmc.smrb.smrb_process_api import (
+    PstSmrbProcessApi,
+    PstSmrbProcessApiGrpc,
+    PstSmrbProcessApiSimulator,
+)
 
 __all__ = ["PstSmrbComponentManager"]
 
@@ -126,3 +130,23 @@ class PstSmrbComponentManager(PstApiComponentManager):
         :rtype: List[int]
         """
         return self._api.monitor_data.subband_ring_buffer_sizes
+
+    def _simulation_mode_changed(self: PstSmrbComponentManager) -> None:
+        """Handle change of simulation mode."""
+        curr_communication_state = self.communication_state
+        if curr_communication_state == CommunicationStatus.ESTABLISHED:
+            self.stop_communicating()
+
+        if self._simuation_mode == SimulationMode.TRUE:
+            self._api = PstSmrbProcessApiSimulator(
+                logger=self.logger,
+                component_state_callback=self._component_state_callback,
+            )
+        else:
+            self._api = PstSmrbProcessApiGrpc(
+                logger=self.logger,
+                component_state_callback=self._component_state_callback,
+            )
+
+        if curr_communication_state == CommunicationStatus.ESTABLISHED:
+            self.start_communicating()

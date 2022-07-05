@@ -27,6 +27,7 @@ from ska_pst_lmc.util.background_task import BackgroundTask, BackgroundTaskProce
 __all__ = [
     "PstSmrbProcessApi",
     "PstSmrbProcessApiSimulator",
+    "PstSmrbProcessApiGrpc",
 ]
 
 
@@ -221,5 +222,183 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         return self.data or SharedMemoryRingBufferData.defaults()
 
     def _monitor_action(self: PstSmrbProcessApiSimulator) -> None:
+        """Monitor SMRB process to get the telemetry information."""
+        self.data = self._simulator.get_data()
+
+
+class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
+    """An interface for the gRPC implemenation version of the  API of `PstSmrbProcessApi`.
+
+    At the moment this performs the same as the `PstSmrbProcessApiSimulator` but as
+    the gRPC service is implemented this functionality will be migrated across.
+    """
+
+    def __init__(
+        self: PstSmrbProcessApiGrpc,
+        logger: logging.Logger,
+        component_state_callback: Callable,
+        simulator: Optional[PstSmrbSimulator] = None,
+    ) -> None:
+        """Initialise the API.
+
+        :param logger: the logger to use for the API.
+        :param component_state_callback: this allows the API to call back to the
+            component manager / TANGO device to deal with state model changes.
+        :param simulator: the simulator instance to use in the API.
+        """
+        self._simulator = simulator or PstSmrbSimulator()
+        self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
+        self._communication_task: Optional[BackgroundTask] = None
+        self.data: Optional[SharedMemoryRingBufferData] = None
+
+        super().__init__(logger=logger, component_state_callback=component_state_callback)
+
+    def connect(self: PstSmrbProcessApiGrpc) -> None:
+        """Connect to the external process."""
+        self._communication_task = self._background_task_processor.submit_task(
+            action_fn=self._monitor_action,
+            frequency=1.0,
+        )
+
+    def disconnect(self: PstSmrbProcessApiGrpc) -> None:
+        """Disconnect from the external process."""
+        if self._communication_task is not None:
+            try:
+                self._communication_task.stop()
+                self._communication_task = None
+            except Exception as e:
+                self._logger.warning("Error while shutting down communication", e)
+
+    @background_task
+    def assign_resources(self: PstSmrbProcessApiGrpc, resources: dict, task_callback: Callable) -> None:
+        """Assign resources.
+
+        :param resources: dictionary of resources to allocate.
+        :param task_callback: callable to connect back to the component manager.
+        """
+        self._logger.info(f"Assigning resources for SMRB. {resources}")
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=50)
+        time.sleep(0.1)
+        self._component_state_callback(resourced=True)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+    @background_task
+    def release(self: PstSmrbProcessApiGrpc, resources: dict, task_callback: Callable) -> None:
+        """Release resources.
+
+        :param resources: dictionary of resources to release.
+        :param task_callback: callable to connect back to the component manager.
+        """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=19)
+        time.sleep(0.1)
+        task_callback(progress=81)
+        time.sleep(0.1)
+        self._component_state_callback(resourced=False)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+    @background_task
+    def release_all(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
+        """Release all resources.
+
+        :param task_callback: callable to connect back to the component manager.
+        """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=45)
+        time.sleep(0.1)
+        self._component_state_callback(resourced=False)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+    @background_task
+    def configure(self: PstSmrbProcessApiGrpc, configuration: dict, task_callback: Callable) -> None:
+        """Configure as scan.
+
+        :param configuration: the configuration of for the scan.
+        :param task_callback: callable to connect back to the component manager.
+        """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=42)
+        time.sleep(0.1)
+        task_callback(progress=58)
+        self._simulator.configure(configuration=configuration)
+        time.sleep(0.1)
+        self._component_state_callback(configured=True)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+    @background_task
+    def deconfigure(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
+        """Deconfiure a scan.
+
+        :param task_callback: callable to connect back to the component manager.
+        """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=20)
+        time.sleep(0.05)
+        task_callback(progress=50)
+        time.sleep(0.05)
+        task_callback(progress=80)
+        time.sleep(0.1)
+        self._simulator.deconfigure()
+        self._component_state_callback(configured=False)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+    @background_task
+    def scan(self: PstSmrbProcessApiGrpc, args: dict, task_callback: Callable) -> None:
+        """Run a scan.
+
+        :param args: arguments for the scan.
+        :param task_callback: callable to connect back to the component manager.
+        """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=55)
+        time.sleep(0.1)
+        self._simulator.scan(args)
+        self._component_state_callback(scanning=True)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+    @background_task
+    def end_scan(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
+        """End a scan.
+
+        :param task_callback: callable to connect back to the component manager.
+        """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=37)
+        time.sleep(0.1)
+        task_callback(progress=63)
+        self._simulator.end_scan()
+        self._component_state_callback(scanning=False)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+    @background_task
+    def abort(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
+        """Abort a scan.
+
+        :param task_callback: callable to connect back to the component manager.
+        """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=59)
+        self._component_state_callback(scanning=False)
+        self._simulator.abort()
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+    @property
+    def monitor_data(self: PstSmrbProcessApiGrpc) -> SharedMemoryRingBufferData:
+        """Get the current monitoring data.
+
+        :returns: current monitoring data.
+        """
+        return self.data or SharedMemoryRingBufferData.defaults()
+
+    def _monitor_action(self: PstSmrbProcessApiGrpc) -> None:
         """Monitor SMRB process to get the telemetry information."""
         self.data = self._simulator.get_data()

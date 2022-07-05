@@ -55,7 +55,7 @@ ska_pst_lmc:
     image: ska-pst-lmc
     tag: 0.1.0
     pullPolicy: IfNotPresent
-
+  simulationMode: 1
 
 # Default ska-pst-lmc device server instances
 deviceServers:

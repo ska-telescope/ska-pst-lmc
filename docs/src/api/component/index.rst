@@ -13,3 +13,4 @@ and Process API's.
 
   Component Manager<component_manager>
   Process API<process_api>
+  PST Device<pst_device>
