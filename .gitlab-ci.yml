@@ -76,7 +76,7 @@ join_linting_reports:
     when: always
 
 copy-protobuf:
-  image: registry.gitlab.com/ska-telescope/pst/ska-pst-common/ska-pst-common-proto:0.1.0
+  image: registry.gitlab.com/ska-telescope/pst/ska-pst-common/ska-pst-common-proto:0.1.0-dev.c77e84f67
   stage: build
   tags:
     - k8srunner
