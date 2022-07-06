@@ -71,3 +71,10 @@ ska-taranta:
 
 ska-taranta-auth:
   enabled: false
+
+ska-pst-smrb:
+  enabled: true
+  image:
+    repository: registry.gitlab.com/ska-telescope/pst/ska-pst-smrb/ska-pst-smrb
+    tag: 0.0.0
+  tolerations: []

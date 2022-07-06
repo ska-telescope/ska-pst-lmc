@@ -76,11 +76,13 @@ endif
 PROXY_VALUES ?= --env="HTTPS_PROXY=$(HTTPS_PROXY)" --env="HTTP_PROXY=$(HTTP_PROXY)" --env="NO_PROXY=$(NO_PROXY)"  \
 	--env="https_proxy=$(HTTPS_PROXY)" --env="http_proxy=$(HTTP_PROXY)" --env="no_proxy=$(NO_PROXY)"
 
+SMRB ?= true
 K8S_CHART_PARAMS = --set global.minikube=$(MINIKUBE) \
 	--set global.tango_host=$(TANGO_HOST) \
 	--set ska-tango-base.display=$(DISPLAY) \
 	--set ska-tango-base.xauthority=$(XAUTHORITY) \
 	--set ska-tango-base.jive.enabled=$(JIVE) \
+	--set ska-pst-smrb.enabled=$(SMRB) \
 	${K8S_TEST_TANGO_IMAGE}
 
 k8s_test_command = /bin/bash -o pipefail -c "\
