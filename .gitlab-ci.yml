@@ -81,14 +81,32 @@ copy-protobuf:
   tags:
     - k8srunner
   script:
-    - echo "Checking container directory structure."
-    - find .
     - echo "Copying files across to artifacts."
-    - cp -rf /app/protobuf build/
+    - mkdir -p build/protobuf/ska_pst_lmc_proto
+    - find /app/protobuf/ska/pst/lmc -iname "*.proto" -exec cp '{}' build/protobuf/ska_pst_lmc_proto \;
   artifacts:
     paths:
       - build/
     when: always
+
+python-generate-code:
+  allow_failure: false
+  stage: build
+  image: artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.30
+  needs:
+    - copy-protobuf
+  tags:
+    - k8srunner
+  before_script:
+    - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile; exit 1")'
+    - 'make help | grep python-build'
+    - 'echo "python-generate-code: updating pip3"; time pip3 install --upgrade pip'
+    - poetry config virtualenvs.create false
+  script:
+    - make PROTOBUF_DIR="$(pwd)/build/protobuf" GENERATED_PATH="$(pwd)/build/generated" python-generate-code
+  artifacts:
+    paths:
+      - ./build/generated/*
 
 stop-k8s-test:
   image: "$SKA_K8S_TOOLS_DEPLOY_IMAGE"
@@ -145,53 +163,34 @@ k8s-test:
         - tests/**/*
 
 python-build-for-publication: # Executed on a tag
-  allow_failure: true
-  stage: build
+  allow_failure: false
   image: $SKA_K8S_TOOLS_DEPLOY_IMAGE
   needs:
     - copy-protobuf
-  tags:
-    - k8srunner
+    - python-generate-code
   before_script:
     - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile; exit 1")'
     - 'make help | grep python-build'
+    - 'echo "python-build-for-publication: updating pip3"; time pip3 install --upgrade pip'
     - pip3 install poetry black isort build
     - poetry config virtualenvs.create false
-  script:
-    - make python-generate-code
-    - make python-build PYTHON_BUILD_TYPE="tag_pyproject"
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      exists:
-      - pyproject.toml
-  artifacts:
-    paths:
-      - ./dist/
+    - cp -rf build/generated/* ./generated/
 
 python-build-for-development: # Executed on non-tagged commit
-  allow_failure: true
+  allow_failure: false
   stage: build
-  image: $SKA_K8S_TOOLS_DEPLOY_IMAGE
   needs:
     - copy-protobuf
-  tags:
-    - k8srunner
+    - python-generate-code
   before_script:
     - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile; exit 1")'
     - 'make help | grep python-build'
+    - 'echo "python-build-for-development: updating pip3"; time pip3 install --upgrade pip'
     - pip3 install poetry black isort build
     - poetry config virtualenvs.create false
-  script:
-    - make python-generate-code
-    - make python-build PYTHON_BUILD_TYPE="non_tag_pyproject"
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      when: never
-    - exists:
-        - pyproject.toml
-  artifacts:
-    paths:
-      - ./dist/
+    - find build/generated
+    - cp -rf build/generated/* ./generated/
+    - find ./generated/
 
 # Include CI templates
 include:

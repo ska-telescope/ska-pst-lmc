@@ -26,7 +26,7 @@ PYTHON_VARS_BEFORE_PYTEST = PYTHONPATH=/app/src:/usr/local/lib/python3.9/site-pa
 PYTHON_VARS_AFTER_PYTEST := -m 'integration' --disable-pytest-warnings --forked
 endif
 
-PROTOBUF_DIR=$(PWD)/build/protobuf
+PROTOBUF_DIR=$(PWD)/protobuf
 GENERATED_PATH=$(PWD)/generated
 
 # include OCI support
@@ -62,29 +62,49 @@ local-oci-scan:
 	docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $(strip $(OCI_IMAGE)):$(VERSION)
 
 python-pre-generate-code:
-	pip install --upgrade pip
-	poetry export --format requirements.txt --output requirements.txt --without-hashes --dev
-	pip install -r requirements.txt
+	@echo "Installing dev dependencies for Python gRPC/Protobuf code generation."
+	pip3 install grpcio grpcio-tools protobuf-init
+	@echo "Ensuring generated path $(GENERATED_PATH) exists"
+	mkdir -p $(GENERATED_PATH)
 
 python-do-generate-code:
+	@echo "Generating Python gRPC/Protobuf code."
+	@echo "PROTOBUF_DIR=$(PROTOBUF_DIR)"
+	@echo "GENERATED_PATH=$(GENERATED_PATH)"
+	@echo
+	@echo "List of protobuf files: $(shell find "$(PROTOBUF_DIR)" -iname "*.proto")"
+	@echo
 	$(PYTHON_RUNNER) python3 -m grpc_tools.protoc --proto_path="$(PROTOBUF_DIR)" \
 			--python_out="$(GENERATED_PATH)" \
 			--init_python_out="$(GENERATED_PATH)" \
 			--init_python_opt=imports=protobuf+grpcio \
 			--grpc_python_out="$(GENERATED_PATH)" \
 			$(shell find "$(PROTOBUF_DIR)" -iname "*.proto")
+	@echo
+	@echo "Files generated. $(shell find "$(GENERATED_PATH)" -iname "*.py")"
 
 python-post-generate-code:
 
 python-generate-code: python-pre-generate-code python-do-generate-code python-post-generate-code
 
 local_generate_code:
+	@echo "Generating Python gRPC/Protobuf code."
+	@echo "PROTOBUF_DIR=$(PROTOBUF_DIR)"
+	@echo "GENERATED_PATH=$(GENERATED_PATH)"
+	@echo
+	@echo "List of protobuf files: $(shell find "$(PROTOBUF_DIR)" -iname "*.proto")"
+	@echo
+	@echo "Ensuring generated path $(GENERATED_PATH) exists"
+	mkdir -p $(GENERATED_PATH)
+	@echo
 	python -m grpc_tools.protoc --proto_path="$(PROTOBUF_DIR)" \
 			--python_out="$(GENERATED_PATH)" \
 			--init_python_out="$(GENERATED_PATH)" \
 			--init_python_opt=imports=protobuf+grpcio \
 			--grpc_python_out="$(GENERATED_PATH)" \
 			$(shell find "$(PROTOBUF_DIR)" -iname "*.proto")
+	@echo
+	@echo "Files generated. $(shell find "$(GENERATED_PATH)" -iname "*.py")"
 
 .PHONY: local_generate_code python-pre-build python-generate-code python-pre-generate-code python-do-generate-code python-post-generate-code
 
