@@ -81,6 +81,7 @@ K8S_CHART_PARAMS = --set global.minikube=$(MINIKUBE) \
 	--set ska-tango-base.display=$(DISPLAY) \
 	--set ska-tango-base.xauthority=$(XAUTHORITY) \
 	--set ska-tango-base.jive.enabled=$(JIVE) \
+	--set ska_pst_lmc.ska-pst-smrb.enabled=$(SMRB) \
 	${K8S_TEST_TANGO_IMAGE}
 
 k8s_test_command = /bin/bash -o pipefail -c "\

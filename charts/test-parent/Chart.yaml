@@ -28,3 +28,7 @@ dependencies:
   version: 0.1.9
   repository: https://artefact.skao.int/repository/helm-internal
   condition: ska-dashboard-repo.enabled
+- name: ska-pst-smrb
+  version: 0.0.0-dev.c64c16d92
+  repository: https://gitlab.com/api/v4/projects/37036101/packages/helm/dev
+  condition: ska-pst-smrb.enabled
