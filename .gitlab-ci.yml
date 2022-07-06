@@ -81,7 +81,10 @@ copy-protobuf:
   tags:
     - k8srunner
   script:
-    - cp -r /app/protobuf/ build/
+    - echo "Checking container directory structure."
+    - find .
+    - echo "Copying files across to artifacts."
+    - cp -rf /app/protobuf build/
   artifacts:
     paths:
       - build/
