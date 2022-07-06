@@ -12,7 +12,7 @@ PYTHON_SWITCHES_FOR_BLACK = --line-length=110
 PYTHON_SWITCHES_FOR_ISORT = --skip-glob=*/__init__.py -w=110
 PYTHON_TEST_FILE = tests
 PYTHON_LINT_TARGET = src tests  ## Paths containing python to be formatted and linted
-PYTHON_SWITCHES_FOR_PYLINT = --disable=W,C,R
+PYTHON_SWITCHES_FOR_PYLINT = --disable=W,C,R --init-hook="import os, sys; sys.path.append(os.path.dirname('generated'))"
 DOCS_SOURCEDIR=./docs/src
 
 K8S_CHART ?= test-parent
@@ -25,6 +25,9 @@ ifeq ($(strip $(firstword $(MAKECMDGOALS))),k8s-test)
 PYTHON_VARS_BEFORE_PYTEST = PYTHONPATH=/app/src:/usr/local/lib/python3.9/site-packages TANGO_HOST="$(TANGO_HOST)"
 PYTHON_VARS_AFTER_PYTEST := -m 'integration' --disable-pytest-warnings --forked
 endif
+
+PROTOBUF_DIR=$(PWD)/build/protobuf
+GENERATED_PATH=$(PWD)/generated
 
 # include OCI support
 include .make/oci.mk
@@ -57,6 +60,39 @@ python-post-lint:
 
 local-oci-scan:
 	docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $(strip $(OCI_IMAGE)):$(VERSION)
+
+python-pre-generate-code:
+	pip install --upgrade pip
+	poetry export --format requirements.txt --output requirements.txt --without-hashes --dev
+	pip install -r requirements.txt
+
+python-do-generate-code:
+	$(PYTHON_RUNNER) python3 -m grpc_tools.protoc --proto_path="$(PROTOBUF_DIR)" \
+			--python_out="$(GENERATED_PATH)" \
+			--init_python_out="$(GENERATED_PATH)" \
+			--init_python_opt=imports=protobuf+grpcio \
+			--grpc_python_out="$(GENERATED_PATH)" \
+			$(shell find "$(PROTOBUF_DIR)" -iname "*.proto")
+
+python-post-generate-code:
+
+python-generate-code: python-pre-generate-code python-do-generate-code python-post-generate-code
+
+local_generate_code:
+	python -m grpc_tools.protoc --proto_path="$(PROTOBUF_DIR)" \
+			--python_out="$(GENERATED_PATH)" \
+			--init_python_out="$(GENERATED_PATH)" \
+			--init_python_opt=imports=protobuf+grpcio \
+			--grpc_python_out="$(GENERATED_PATH)" \
+			$(shell find "$(PROTOBUF_DIR)" -iname "*.proto")
+
+.PHONY: local_generate_code python-pre-build python-generate-code python-pre-generate-code python-do-generate-code python-post-generate-code
+
+DEV_IMAGE=artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.30
+local-dev-env:
+	docker run -ti --rm -v $(PWD):/mnt/$(PROJECT) -w /mnt/$(PROJECT) $(DEV_IMAGE) bash
+
+.PHONY: local-dev-env
 
 MINIKUBE ?= true
 CI_JOB_ID ?= local##pipeline job id
