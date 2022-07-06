@@ -44,6 +44,23 @@ python-test:
 
 python-lint:
   image: artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.30
+  before_script:
+    - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile"; exit 1;)'
+    - 'make help | grep python-lint'
+    - 'echo "python-lint: updating pip3"; time pip3 install --upgrade pip'
+    - 'echo "python-lint: installing tools"; time pip3 install poetry black isort pylint-junit'
+    - poetry config virtualenvs.create false
+    - |
+      if [[ -f pyproject.toml ]]; then
+        echo "python-lint: Installing with poetry";
+        poetry export --format requirements.txt --output requirements.txt --without-hashes --dev
+        time pip3 install -r requirements.txt;
+      else
+        if  [[ -f requirements.txt ]]; then
+          echo "python-lint: Installing with pip";
+          time pip3 install -r requirements.txt;
+        fi;
+      fi;
 
 #Join linting reports (This stage is temporary!)
 join_linting_reports:
