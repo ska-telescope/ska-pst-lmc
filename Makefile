@@ -19,10 +19,12 @@ K8S_CHART ?= test-parent
 K8S_CHARTS ?= $(K8S_CHART)
 K8S_UMBRELLA_CHART_PATH ?= charts/$(K8S_CHART)/
 
+PYTHON_VARS_BEFORE_PYTEST = PYTHONPATH=./src:./generated:/app/src:/usr/local/lib/python3.9/site-packages
+
 ifeq ($(strip $(firstword $(MAKECMDGOALS))),k8s-test)
 # need to set the PYTHONPATH since the ska-cicd-makefile default definition
 # of it is not OK for the alpine images
-PYTHON_VARS_BEFORE_PYTEST = PYTHONPATH=/app/src:/usr/local/lib/python3.9/site-packages TANGO_HOST="$(TANGO_HOST)"
+PYTHON_VARS_BEFORE_PYTEST = PYTHONPATH=./src:./generated:/app/src:/usr/local/lib/python3.9/site-packages TANGO_HOST="$(TANGO_HOST)"
 PYTHON_VARS_AFTER_PYTEST := -m 'integration' --disable-pytest-warnings --forked
 endif
 

@@ -39,9 +39,6 @@ clean shell runner:
     # Gitlab CI badges creation
     - rm -rf build/*
 
-python-test:
-  retry: 2
-
 python-lint:
   image: artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.30
   before_script:
@@ -50,17 +47,8 @@ python-lint:
     - 'echo "python-lint: updating pip3"; time pip3 install --upgrade pip'
     - 'echo "python-lint: installing tools"; time pip3 install poetry black isort pylint-junit'
     - poetry config virtualenvs.create false
-    - |
-      if [[ -f pyproject.toml ]]; then
-        echo "python-lint: Installing with poetry";
-        poetry export --format requirements.txt --output requirements.txt --without-hashes --dev
-        time pip3 install -r requirements.txt;
-      else
-        if  [[ -f requirements.txt ]]; then
-          echo "python-lint: Installing with pip";
-          time pip3 install -r requirements.txt;
-        fi;
-      fi;
+    - poetry export --format requirements.txt --output requirements.txt --without-hashes --dev
+    - time pip3 install -r requirements.txt;
 
 #Join linting reports (This stage is temporary!)
 join_linting_reports:
@@ -103,10 +91,10 @@ python-generate-code:
     - 'echo "python-generate-code: updating pip3"; time pip3 install --upgrade pip'
     - poetry config virtualenvs.create false
   script:
-    - make PROTOBUF_DIR="$(pwd)/build/protobuf" GENERATED_PATH="$(pwd)/build/generated" python-generate-code
+    - make PROTOBUF_DIR="$(pwd)/build/protobuf" GENERATED_PATH="$(pwd)/generated" python-generate-code
   artifacts:
     paths:
-      - ./build/generated/*
+      - generated/*
 
 stop-k8s-test:
   image: "$SKA_K8S_TOOLS_DEPLOY_IMAGE"
@@ -166,7 +154,6 @@ python-build-for-publication: # Executed on a tag
   allow_failure: false
   image: $SKA_K8S_TOOLS_DEPLOY_IMAGE
   needs:
-    - copy-protobuf
     - python-generate-code
   before_script:
     - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile; exit 1")'
@@ -174,13 +161,11 @@ python-build-for-publication: # Executed on a tag
     - 'echo "python-build-for-publication: updating pip3"; time pip3 install --upgrade pip'
     - pip3 install poetry black isort build
     - poetry config virtualenvs.create false
-    - cp -rf build/generated/* ./generated/
 
 python-build-for-development: # Executed on non-tagged commit
   allow_failure: false
   stage: build
   needs:
-    - copy-protobuf
     - python-generate-code
   before_script:
     - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile; exit 1")'
@@ -188,9 +173,24 @@ python-build-for-development: # Executed on non-tagged commit
     - 'echo "python-build-for-development: updating pip3"; time pip3 install --upgrade pip'
     - pip3 install poetry black isort build
     - poetry config virtualenvs.create false
-    - find build/generated
-    - cp -rf build/generated/* ./generated/
-    - find ./generated/
+
+python-test:
+  # allow_failure: true
+  image: artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.30
+  retry: 2
+  tags:
+    - k8srunner
+  needs:
+    - python-generate-code
+  before_script:
+    - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile; exit 1")'
+    - 'make help | grep python-test'
+    - 'echo "python-test: updating pip3"; time pip3 install --upgrade pip'
+    - poetry config virtualenvs.create false
+    - poetry export --format requirements.txt --output requirements.txt --without-hashes --dev
+    - time pip3 install -r requirements.txt
+  script:
+    - make python-test;
 
 # Include CI templates
 include:
