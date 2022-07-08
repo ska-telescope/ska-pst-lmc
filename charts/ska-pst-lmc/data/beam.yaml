@@ -26,6 +26,10 @@ server:
       - name: "PstSmrb"
         devices:
         - name: "test/smrb/1"
+          properties:
+          - name: "process_api_endpoint"
+            values:
+            - "ska-pst-smrb:8080"
           attribute_properties:
           - attribute: "simulationMode"
             properties:

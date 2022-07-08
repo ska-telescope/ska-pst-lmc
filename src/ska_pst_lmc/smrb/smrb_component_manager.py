@@ -31,6 +31,8 @@ class PstSmrbComponentManager(PstApiComponentManager):
 
     def __init__(
         self: PstSmrbComponentManager,
+        device_name: str,
+        process_api_endpoint: str,
         logger: logging.Logger,
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable[[bool, PowerState], None],
@@ -40,6 +42,10 @@ class PstSmrbComponentManager(PstApiComponentManager):
     ):
         """Initialise instance of the component manager.
 
+        :param device_name: the FQDN of the current device. This
+            is used within the gRPC process to identify who is
+            doing the calling.
+        :param process_api_endpoint: the endpoint of the gRPC process.
         :param simulation_mode: enum to track if component should be
             in simulation mode or not.
         :param logger: a logger for this object to use
@@ -49,6 +55,12 @@ class PstSmrbComponentManager(PstApiComponentManager):
         :param component_fault_callback: callback to be called when the
             component faults (or stops faulting)
         """
+        logger.debug(
+            f"Setting up SMRB component manager with device_name='{device_name}'"
+            + "and api_endpoint='{process_api_endpoint}'"
+        )
+        self.device_name = device_name
+        self.api_endpoint = process_api_endpoint
         api = api or PstSmrbProcessApiSimulator(
             logger=logger,
             component_state_callback=component_state_callback,
@@ -75,10 +87,14 @@ class PstSmrbComponentManager(PstApiComponentManager):
 
     def _connect_to_smrb(self: PstSmrbComponentManager) -> None:
         """Establish connection to SMRB component."""
-        self._update_communication_state(CommunicationStatus.NOT_ESTABLISHED)
-        self._api.connect()
-        self._update_communication_state(CommunicationStatus.ESTABLISHED)
-        self._component_state_callback(fault=None, power=PowerState.OFF)
+
+        def _task() -> None:
+            self._update_communication_state(CommunicationStatus.NOT_ESTABLISHED)
+            self._api.connect()
+            self._update_communication_state(CommunicationStatus.ESTABLISHED)
+            self._component_state_callback(fault=None, power=PowerState.OFF)
+
+        self._background_task_processor.submit_task(_task)
 
     def _disconnect_from_smrb(self: PstSmrbComponentManager) -> None:
         """Establish connection to SMRB component."""
@@ -144,6 +160,8 @@ class PstSmrbComponentManager(PstApiComponentManager):
             )
         else:
             self._api = PstSmrbProcessApiGrpc(
+                client_id=self.device_name,
+                grpc_endpoint=self.api_endpoint,
                 logger=self.logger,
                 component_state_callback=self._component_state_callback,
             )

@@ -14,11 +14,13 @@ from typing import Callable
 from unittest.mock import MagicMock, call
 
 import pytest
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionResponse
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.smrb.smrb_model import SharedMemoryRingBufferData
-from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApiSimulator
+from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApiGrpc, PstSmrbProcessApiSimulator
 from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
+from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
 
@@ -262,3 +264,26 @@ def test_abort(
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(scanning=False)
+
+
+def test_smrb_grpc_sends_connect_request(
+    mock_servicer_context: MagicMock,
+    grpc_port: int,
+    client_id: str,
+    component_state_callback: MagicMock,
+    pst_lmc_service: TestPstLmcService,
+) -> None:
+    """Test that SMRB gRPC API connects to the server."""
+    response = ConnectionResponse()
+    mock_servicer_context.connect = MagicMock(return_value=response)
+
+    api = PstSmrbProcessApiGrpc(
+        client_id=client_id,
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        logger=logging.getLogger(__name__),
+        component_state_callback=MagicMock(),
+    )
+
+    api.connect()
+
+    mock_servicer_context.connect.assert_called_once_with(ConnectionRequest(client_id=client_id))

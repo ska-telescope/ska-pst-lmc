@@ -19,6 +19,7 @@ from typing import Callable, Optional
 
 from ska_tango_base.commands import TaskStatus
 
+from ska_pst_lmc.component.grpc_lmc_client import PstGrpcLmcClient
 from ska_pst_lmc.component.process_api import PstProcessApi
 from ska_pst_lmc.smrb.smrb_model import SharedMemoryRingBufferData
 from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
@@ -235,6 +236,8 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
 
     def __init__(
         self: PstSmrbProcessApiGrpc,
+        client_id: str,
+        grpc_endpoint: str,
         logger: logging.Logger,
         component_state_callback: Callable,
         simulator: Optional[PstSmrbSimulator] = None,
@@ -246,19 +249,28 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
             component manager / TANGO device to deal with state model changes.
         :param simulator: the simulator instance to use in the API.
         """
+        logger.info("Creating instance of gRPC Process API")
+        self._grpc_client = PstGrpcLmcClient(client_id=client_id, endpoint=grpc_endpoint, logger=logger)
         self._simulator = simulator or PstSmrbSimulator()
         self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
         self._communication_task: Optional[BackgroundTask] = None
         self.data: Optional[SharedMemoryRingBufferData] = None
+        self._connected = False
 
         super().__init__(logger=logger, component_state_callback=component_state_callback)
 
     def connect(self: PstSmrbProcessApiGrpc) -> None:
-        """Connect to the external process."""
-        self._communication_task = self._background_task_processor.submit_task(
-            action_fn=self._monitor_action,
-            frequency=1.0,
-        )
+        """Connect to the external process.
+
+        Connects to the remote gRPC service. It also establishes a
+        """
+        self._logger.info("About to call gRPC client connect")
+        self._connected = self._grpc_client.connect()
+        if self._connected:
+            self._communication_task = self._background_task_processor.submit_task(
+                action_fn=self._monitor_action,
+                frequency=1.0,
+            )
 
     def disconnect(self: PstSmrbProcessApiGrpc) -> None:
         """Disconnect from the external process."""

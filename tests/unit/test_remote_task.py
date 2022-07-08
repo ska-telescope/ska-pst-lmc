@@ -248,6 +248,7 @@ def test_if_one_task_is_rejected_aggregate_is_rejected(device_proxy: PstDevicePr
     (result, details) = aggregate_remote_task()
     assert result == TaskStatus.QUEUED
     assert details == "Queued"
+    time.sleep(0.1)
 
     calls = [call(status=TaskStatus.IN_PROGRESS, progress=0), call(status=TaskStatus.REJECTED)]
 
