@@ -12,19 +12,24 @@ PYTHON_SWITCHES_FOR_BLACK = --line-length=110
 PYTHON_SWITCHES_FOR_ISORT = --skip-glob=*/__init__.py -w=110
 PYTHON_TEST_FILE = tests
 PYTHON_LINT_TARGET = src tests  ## Paths containing python to be formatted and linted
-PYTHON_SWITCHES_FOR_PYLINT = --disable=W,C,R
+PYTHON_SWITCHES_FOR_PYLINT = --disable=W,C,R --init-hook="import os, sys; sys.path.append(os.path.dirname('generated'))" --ignored-modules="ska_pst_lmc_proto,ska_pst_lmc_proto.*"
 DOCS_SOURCEDIR=./docs/src
 
 K8S_CHART ?= test-parent
 K8S_CHARTS ?= $(K8S_CHART)
 K8S_UMBRELLA_CHART_PATH ?= charts/$(K8S_CHART)/
 
+PYTHON_VARS_BEFORE_PYTEST = PYTHONPATH=./src:./generated:/app/src:/usr/local/lib/python3.9/site-packages
+
 ifeq ($(strip $(firstword $(MAKECMDGOALS))),k8s-test)
 # need to set the PYTHONPATH since the ska-cicd-makefile default definition
 # of it is not OK for the alpine images
-PYTHON_VARS_BEFORE_PYTEST = PYTHONPATH=/app/src:/usr/local/lib/python3.9/site-packages TANGO_HOST="$(TANGO_HOST)"
+PYTHON_VARS_BEFORE_PYTEST = PYTHONPATH=./src:./generated:/app/src:/usr/local/lib/python3.9/site-packages TANGO_HOST="$(TANGO_HOST)"
 PYTHON_VARS_AFTER_PYTEST := -m 'integration' --disable-pytest-warnings --forked
 endif
+
+PROTOBUF_DIR=$(PWD)/protobuf
+GENERATED_PATH=$(PWD)/generated
 
 # include OCI support
 include .make/oci.mk
@@ -54,6 +59,62 @@ python-post-lint:
 	$(PYTHON_RUNNER) mypy --config-file mypy.ini src/ tests/
 
 .PHONY: python-post-format python-post-lint
+
+local-oci-scan:
+	docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $(strip $(OCI_IMAGE)):$(VERSION)
+
+python-pre-generate-code:
+	@echo "Installing dev dependencies for Python gRPC/Protobuf code generation."
+	pip3 install grpcio grpcio-tools protobuf-init
+	@echo "Ensuring generated path $(GENERATED_PATH) exists"
+	mkdir -p $(GENERATED_PATH)
+
+python-do-generate-code:
+	@echo "Generating Python gRPC/Protobuf code."
+	@echo "PROTOBUF_DIR=$(PROTOBUF_DIR)"
+	@echo "GENERATED_PATH=$(GENERATED_PATH)"
+	@echo
+	@echo "List of protobuf files: $(shell find "$(PROTOBUF_DIR)" -iname "*.proto")"
+	@echo
+	$(PYTHON_RUNNER) python3 -m grpc_tools.protoc --proto_path="$(PROTOBUF_DIR)" \
+			--python_out="$(GENERATED_PATH)" \
+			--init_python_out="$(GENERATED_PATH)" \
+			--init_python_opt=imports=protobuf+grpcio \
+			--grpc_python_out="$(GENERATED_PATH)" \
+			$(shell find "$(PROTOBUF_DIR)" -iname "*.proto")
+	@echo
+	@echo "Files generated. $(shell find "$(GENERATED_PATH)" -iname "*.py")"
+
+python-post-generate-code:
+
+python-generate-code: python-pre-generate-code python-do-generate-code python-post-generate-code
+
+local_generate_code:
+	@echo "Generating Python gRPC/Protobuf code."
+	@echo "PROTOBUF_DIR=$(PROTOBUF_DIR)"
+	@echo "GENERATED_PATH=$(GENERATED_PATH)"
+	@echo
+	@echo "List of protobuf files: $(shell find "$(PROTOBUF_DIR)" -iname "*.proto")"
+	@echo
+	@echo "Ensuring generated path $(GENERATED_PATH) exists"
+	mkdir -p $(GENERATED_PATH)
+	@echo
+	python -m grpc_tools.protoc --proto_path="$(PROTOBUF_DIR)" \
+			--python_out="$(GENERATED_PATH)" \
+			--init_python_out="$(GENERATED_PATH)" \
+			--init_python_opt=imports=protobuf+grpcio \
+			--grpc_python_out="$(GENERATED_PATH)" \
+			$(shell find "$(PROTOBUF_DIR)" -iname "*.proto")
+	@echo
+	@echo "Files generated. $(shell find "$(GENERATED_PATH)" -iname "*.py")"
+
+.PHONY: local_generate_code python-pre-build python-generate-code python-pre-generate-code python-do-generate-code python-post-generate-code
+
+DEV_IMAGE=artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.30
+local-dev-env:
+	docker run -ti --rm -v $(PWD):/mnt/$(PROJECT) -w /mnt/$(PROJECT) $(DEV_IMAGE) bash
+
+.PHONY: local-dev-env
 
 MINIKUBE ?= true
 CI_JOB_ID ?= local##pipeline job id
@@ -87,11 +148,11 @@ K8S_CHART_PARAMS = --set global.minikube=$(MINIKUBE) \
 
 k8s_test_command = /bin/bash -o pipefail -c "\
 	mkfifo results-pipe && tar zx --warning=all && \
-        ( if [[ -f pyproject.toml ]]; then poetry export --format requirements.txt --output poetry-requirements.txt --without-hashes --dev; echo 'k8s-test: installing poetry-requirements.txt';  pip install -Ur poetry-requirements.txt; else if [[ -f $(k8s_test_folder)/requirements.txt ]]; then echo 'k8s-test: installing $(k8s_test_folder)/requirements.txt'; pip install -Ur $(k8s_test_folder)/requirements.txt; fi; fi ) && \
+        ( if [[ -f pyproject.toml ]]; then poetry export --format requirements.txt --output poetry-requirements.txt --without-hashes --dev; echo 'k8s-test: installing poetry-requirements.txt';  pip install -qUr poetry-requirements.txt; else if [[ -f $(k8s_test_folder)/requirements.txt ]]; then echo 'k8s-test: installing $(k8s_test_folder)/requirements.txt'; pip install -qUr $(k8s_test_folder)/requirements.txt; fi; fi ) && \
 		echo \"Dev python packages installed.\" && \
 		export PYTHONPATH=${PYTHONPATH}:/app/src$(k8s_test_src_dirs) && \
 		mkdir -p build && \
-		echo \"Executing: \$$(K8S_TEST_TEST_COMMAND)\" && \
+		echo \"Executing: $(K8S_TEST_TEST_COMMAND)\" && \
 	( \
 	$(K8S_TEST_TEST_COMMAND) \
 	); \

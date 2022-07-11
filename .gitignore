@@ -3,6 +3,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 
 PrivateRules.mak
+src/ska_pst_lmc_proto/
 
 ### Python ###
 # Byte-compiled / optimized / DLL files

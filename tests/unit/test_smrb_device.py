@@ -12,13 +12,16 @@ from __future__ import annotations
 import json
 import logging
 import time
+from unittest.mock import MagicMock
 
 import pytest
 import tango
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionResponse
 from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
 
 from ska_pst_lmc.smrb.smrb_device import PstSmrb
+from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +30,7 @@ class TestPstSmrb:
     """Test class used for testing the PstReceive TANGO device."""
 
     @pytest.fixture(scope="class")
-    def device_test_config(self: TestPstSmrb, device_properties: dict) -> dict:
+    def device_test_config(self: TestPstSmrb, device_properties: dict, grpc_endpoint: str) -> dict:
         """
         Specify device configuration, including properties and memorized attributes.
 
@@ -40,10 +43,11 @@ class TestPstSmrb:
         :return: specification of how the device under test should be
             configured
         """
+        properties = {**device_properties, "process_api_endpoint": grpc_endpoint}
         return {
             "device": PstSmrb,
             "process": True,
-            "properties": device_properties,
+            "properties": properties,
             "memorized": {"adminMode": str(AdminMode.ONLINE.value)},
         }
 
@@ -164,9 +168,14 @@ class TestPstSmrb:
         ].desc == "ValueError: Unable to change simulation mode unless in EMPTY observation state"
 
     def test_simulation_mode_when_in_empty_obs_state(
-        self: TestPstSmrb, device_under_test: DeviceProxy
+        self: TestPstSmrb,
+        device_under_test: DeviceProxy,
+        pst_lmc_service: TestPstLmcService,
+        mock_servicer_context: MagicMock,
     ) -> None:
         """Test state model of PstSmrb."""
+        response = ConnectionResponse()
+        mock_servicer_context.connect = MagicMock(return_value=response)
         assert device_under_test.obsState == ObsState.EMPTY
 
         device_under_test.simulationMode = SimulationMode.TRUE
@@ -179,4 +188,5 @@ class TestPstSmrb:
         assert device_under_test.obsState == ObsState.EMPTY
 
         device_under_test.simulationMode = SimulationMode.FALSE
+        time.sleep(0.1)
         assert device_under_test.simulationMode == SimulationMode.FALSE

@@ -7,6 +7,11 @@
 
 """This subpackage with test TANGO device as client."""
 
-__all__ = ["PstTestClient"]
+__all__ = [
+    "PstTestClient",
+    "TestMockServicer",
+    "TestPstLmcService",
+]
 
 from .test_device import PstTestClient
+from .test_grpc_server import TestMockServicer, TestPstLmcService

@@ -14,7 +14,7 @@ from typing import List, Optional
 import tango
 from ska_tango_base.control_model import SimulationMode
 from tango import DebugIt
-from tango.server import attribute, command, run
+from tango.server import attribute, command, device_property, run
 
 import ska_pst_lmc.release as release
 from ska_pst_lmc.component.pst_device import PstBaseDevice
@@ -33,6 +33,9 @@ class PstSmrb(PstBaseDevice):
     # -----------------
     # Device Properties
     # -----------------
+    process_api_endpoint = device_property(
+        dtype=str,
+    )
 
     # ---------------
     # General methods
@@ -58,6 +61,8 @@ class PstSmrb(PstBaseDevice):
         :return: a component manager for this device.
         """
         return PstSmrbComponentManager(
+            device_name=self.get_name(),
+            process_api_endpoint=self.process_api_endpoint,
             simulation_mode=SimulationMode.TRUE,
             logger=self.logger,
             communication_state_callback=self._communication_state_changed,

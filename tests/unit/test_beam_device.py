@@ -164,12 +164,9 @@ class TestPstBeam:
         assert smrb_proxy.adminMode == AdminMode.ONLINE
 
         assert_state(DevState.OFF)
-        # assert device_under_test.state() == DevState.OFF
-        # assert recv_proxy.state() == DevState.OFF
-        # assert smrb_proxy.state() == DevState.OFF
 
         device_under_test.On()
-        time.sleep(0.2)
+        time.sleep(0.5)
         assert_state(DevState.ON)
 
         # need to assign resources
@@ -191,7 +188,7 @@ class TestPstBeam:
         time.sleep(0.1)
         assert_obstate(ObsState.CONFIGURING)
 
-        time.sleep(0.3)
+        time.sleep(0.5)
         assert_obstate(ObsState.READY)
 
         scan = json.dumps({"cat": "dog"})
@@ -199,7 +196,7 @@ class TestPstBeam:
         time.sleep(0.1)
 
         assert_obstate(ObsState.READY)
-        time.sleep(0.3)
+        time.sleep(0.5)
         assert_obstate(ObsState.SCANNING)
 
         device_under_test.EndScan()

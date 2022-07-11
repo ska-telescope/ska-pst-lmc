@@ -9,12 +9,14 @@ from unittest.mock import MagicMock
 
 import pytest
 import tango
+from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer
 from ska_tango_base.control_model import SimulationMode
 from ska_tango_base.testing.mock import MockCallable, MockChangeEventCallback
 from tango import DeviceProxy
 from tango.test_context import DeviceTestContext, MultiDeviceTestContext, get_host_ip
 
 from ska_pst_lmc.device_proxy import DeviceProxyFactory
+from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
 
@@ -50,23 +52,79 @@ def server_configuration() -> dict:
     return {}
 
 
-@pytest.fixture()
+def _generate_port() -> int:
+    """Generate a random socket port number."""
+    import socket
+    from contextlib import closing
+
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+        s.bind(("", 0))
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        return s.getsockname()[1]
+
+
+@pytest.fixture(scope="class")
+def grpc_port() -> int:
+    """Fixture to generate port for gRPC."""
+    return _generate_port()
+
+
+@pytest.fixture(scope="class")
+def client_id() -> str:
+    """Generate a random client_id string."""
+    import random
+    import string
+
+    letters = string.ascii_lowercase
+    return "".join(random.choice(letters) for i in range(10))
+
+
+@pytest.fixture(scope="class")
+def device_name(client_id: str) -> str:
+    """Generate a random device name."""
+    import random
+
+    return f"test/{client_id}/{random.randint(0,16)}"
+
+
+@pytest.fixture(scope="class")
+def grpc_endpoint(grpc_port: int) -> str:
+    """Return the endpoint of the gRPC server."""
+    return f"127.0.0.1:{grpc_port}"
+
+
+@pytest.fixture(scope="class")
+def grpc_servicer(mock_servicer_context: MagicMock) -> TestMockServicer:
+    """Create a test mock servicer given mock context."""
+    return TestMockServicer(context=mock_servicer_context)
+
+
+@pytest.fixture(scope="class")
+def pst_lmc_service(
+    grpc_port: int, grpc_servicer: PstLmcServiceServicer
+) -> Generator[TestPstLmcService, None, None]:
+    """Yield an instance of a PstLmcServiceServicer for testing."""
+    service = TestPstLmcService(
+        servicer=grpc_servicer,
+        port=grpc_port,
+    )
+    with service as s:
+        yield s
+
+
+@pytest.fixture(scope="class")
+def mock_servicer_context() -> MagicMock:
+    """Generate a mock gRPC servicer context to use with testing of gRPC calls."""
+    return MagicMock()
+
+
+@pytest.fixture(scope="class")
 def multidevice_test_context(server_configuration: dict) -> Generator[MultiDeviceTestContext, None, None]:
     """Get generator for MultiDeviceTestContext."""
-
-    def _get_port() -> int:
-        import socket
-        from contextlib import closing
-
-        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-            s.bind(("", 0))
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            return s.getsockname()[1]
-
     if "host" not in server_configuration:
         server_configuration["host"] = get_host_ip()
     if "port" not in server_configuration:
-        server_configuration["port"] = _get_port()
+        server_configuration["port"] = _generate_port()
     if "timeout" not in server_configuration:
         server_configuration["timeout"] = 10
 

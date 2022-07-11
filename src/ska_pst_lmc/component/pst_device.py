@@ -68,9 +68,10 @@ class PstBaseDevice(SKASubarray):
         :param value: The simulation mode, as a SimulationMode value
         """
         if self._obs_state == ObsState.EMPTY:
-            self.component_manager.simulation_mode = value
+            self._simulation_mode = value
             self.push_change_event("simulationMode", value)
             self.push_archive_event("simulationMode", value)
+            self.component_manager.simulation_mode = value
         else:
             self.logger.warning(
                 f"Attempt to set simulation mode when not in EMPTY state. Current state is {self._obs_state}"

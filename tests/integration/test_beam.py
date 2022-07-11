@@ -18,9 +18,8 @@ from tango import DevState
 
 from ska_pst_lmc import DeviceProxyFactory
 
-pytestmark = pytest.mark.integration
 
-
+@pytest.mark.integration
 class TestPstBeam:
     """Test class used for testing the PstReceive TANGO device."""
 
