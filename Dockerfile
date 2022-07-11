@@ -40,7 +40,7 @@ RUN poetry config virtualenvs.create false
 
 WORKDIR /app
 
-COPY --from=buildenv --chown=tango:tango /app/generated /app/generated
+COPY --from=buildenv --chown=tango:tango /app/generated/ /app/src/
 COPY --from=buildenv --chown=tango:tango /app/requirements.txt /app/
 COPY --from=buildenv --chown=tango:tango /app/tests/requirements.txt /app/tests
 
@@ -50,4 +50,4 @@ RUN pip install --upgrade pip && \
 
 USER tango
 
-ENV PYTHONPATH=/app/src:/app/generated:/usr/local/lib/python3.9/site-packages
+ENV PYTHONPATH=/app/src:/usr/local/lib/python3.9/site-packages

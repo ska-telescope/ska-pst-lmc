@@ -12,7 +12,7 @@ PYTHON_SWITCHES_FOR_BLACK = --line-length=110
 PYTHON_SWITCHES_FOR_ISORT = --skip-glob=*/__init__.py -w=110
 PYTHON_TEST_FILE = tests
 PYTHON_LINT_TARGET = src tests  ## Paths containing python to be formatted and linted
-PYTHON_SWITCHES_FOR_PYLINT = --disable=W,C,R --init-hook="import os, sys; sys.path.append(os.path.dirname('generated'))"
+PYTHON_SWITCHES_FOR_PYLINT = --disable=W,C,R --init-hook="import os, sys; sys.path.append(os.path.dirname('generated'))" --ignored-modules="ska_pst_lmc_proto,ska_pst_lmc_proto.*"
 DOCS_SOURCEDIR=./docs/src
 
 K8S_CHART ?= test-parent
