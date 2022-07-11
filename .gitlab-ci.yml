@@ -161,6 +161,7 @@ python-build-for-publication: # Executed on a tag
     - 'echo "python-build-for-publication: updating pip3"; time pip3 install --upgrade pip'
     - pip3 install poetry black isort build
     - poetry config virtualenvs.create false
+    - cp -fr generated/ska_pst_lmc_proto src/
 
 python-build-for-development: # Executed on non-tagged commit
   allow_failure: false
@@ -174,9 +175,6 @@ python-build-for-development: # Executed on non-tagged commit
     - pip3 install poetry black isort build
     - poetry config virtualenvs.create false
     - cp -fr generated/ska_pst_lmc_proto src/
-  script:
-    - 'echo "Current directory is: $(pwd)"'
-    - make python-build PYTHON_BUILD_TYPE="non_tag_pyproject"
 
 python-test:
   # allow_failure: true
