@@ -29,7 +29,7 @@ server:
           properties:
           - name: "process_api_endpoint"
             values:
-            - "ska-pst-smrb:8080"
+            - "test-ska-pst-smrb:8080"
           attribute_properties:
           - attribute: "simulationMode"
             properties:
