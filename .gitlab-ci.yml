@@ -100,6 +100,8 @@ python-generate-code:
 oci-image-build:
   variables:
     PROTOBUF_IMAGE: $SKA_PST_COMMON_PROTOBUF_IMAGE
+  script:
+    - make oci-build-all CAR_OCI_REGISTRY_HOST=${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME} OCI_BUILD_ADDITIONAL_ARGS=" --build-arg BUILD_IMAGE --build-arg BASE_IMAGE --build-arg PROTOBUF_IMAGE "
 
 stop-k8s-test:
   image: "$SKA_K8S_TOOLS_DEPLOY_IMAGE"
