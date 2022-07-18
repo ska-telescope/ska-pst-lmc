@@ -31,6 +31,8 @@ endif
 PROTOBUF_DIR=$(PWD)/protobuf
 GENERATED_PATH=$(PWD)/generated
 
+PROTOBUF_IMAGE ?= $(SKA_PST_COMMON_PROTOBUF_IMAGE)
+
 # include OCI support
 include .make/oci.mk
 
@@ -113,6 +115,8 @@ local_generate_code:
 DEV_IMAGE=artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.30
 local-dev-env:
 	docker run -ti --rm -v $(PWD):/mnt/$(PROJECT) -w /mnt/$(PROJECT) $(DEV_IMAGE) bash
+
+OCI_BUILD_ADDITIONAL_ARGS=--build-arg PROTOBUF_IMAGE=$(PROTOBUF_IMAGE)
 
 .PHONY: local-dev-env
 
