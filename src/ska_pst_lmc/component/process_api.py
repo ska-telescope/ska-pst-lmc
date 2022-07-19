@@ -55,15 +55,7 @@ class PstProcessApi:
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
-    def release(self: PstProcessApi, resources: dict, task_callback: Callable) -> None:
-        """Release resources.
-
-        :param resources: dictionary of resources to release.
-        :param task_callback: callable to connect back to the component manager.
-        """
-        raise NotImplementedError("PstProcessApi is abstract class")
-
-    def release_all(self: PstProcessApi, task_callback: Callable) -> None:
+    def release_resources(self: PstProcessApi, task_callback: Callable) -> None:
         """Release all resources.
 
         :param task_callback: callable to connect back to the component manager.

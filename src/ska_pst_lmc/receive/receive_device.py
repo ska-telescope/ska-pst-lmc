@@ -54,6 +54,7 @@ class PstReceive(PstBaseDevice):
         :return: a component manager for this device.
         """
         return PstReceiveComponentManager(
+            device_name=self.get_name(),
             simulation_mode=SimulationMode.TRUE,
             logger=self.logger,
             communication_state_callback=self._communication_state_changed,

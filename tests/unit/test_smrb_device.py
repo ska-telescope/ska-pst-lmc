@@ -16,12 +16,12 @@ from unittest.mock import MagicMock
 
 import pytest
 import tango
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionResponse
 from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
 
 from ska_pst_lmc.smrb.smrb_device import PstSmrb
 from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionResponse
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,11 @@ class TestPstSmrb:
         assert len(version_info) == 1
         assert re.match(version_pattern, version_info[0])
 
-    def test_configure_then_scan_then_stop(self: TestPstSmrb, device_under_test: DeviceProxy) -> None:
+    def test_configure_then_scan_then_stop(
+        self: TestPstSmrb,
+        device_under_test: DeviceProxy,
+        assign_resources_request: dict,
+    ) -> None:
         """Test state model of PstSmrb."""
         # need to go through state mode
         assert device_under_test.state() == DevState.OFF
@@ -88,7 +92,7 @@ class TestPstSmrb:
         # need to assign resources
         assert device_under_test.obsState == ObsState.EMPTY
 
-        resources = json.dumps({"foo": "bar"})
+        resources = json.dumps(assign_resources_request)
         device_under_test.AssignResources(resources)
         time.sleep(0.1)
         assert device_under_test.obsState == ObsState.RESOURCING
@@ -143,7 +147,9 @@ class TestPstSmrb:
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
     def test_simulation_mode_when_not_in_empty_obs_state(
-        self: TestPstSmrb, device_under_test: DeviceProxy
+        self: TestPstSmrb,
+        device_under_test: DeviceProxy,
+        assign_resources_request: dict,
     ) -> None:
         """Test state model of PstSmrb."""
         device_under_test.simulationMode = SimulationMode.TRUE
@@ -154,7 +160,7 @@ class TestPstSmrb:
         time.sleep(0.1)
         assert device_under_test.state() == DevState.ON
 
-        resources = json.dumps({"foo": "bar"})
+        resources = json.dumps(assign_resources_request)
         device_under_test.AssignResources(resources)
         time.sleep(0.5)
         assert device_under_test.obsState == ObsState.IDLE

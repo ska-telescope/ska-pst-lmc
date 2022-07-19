@@ -11,19 +11,59 @@ from __future__ import annotations
 
 import logging
 from concurrent import futures
+from dataclasses import dataclass
 from types import TracebackType
 from typing import Any, Optional, Type
 
 import grpc
 import tango
 from grpc import ServicerContext
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionResponse
+
+from ska_pst_lmc.component.grpc_lmc_client import GRPC_STATUS_DETAILS_METADATA_KEY
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    AssignResourcesRequest,
+    AssignResourcesResponse,
+    ConnectionRequest,
+    ConnectionResponse,
+    ErrorCode,
+    ReleaseResourcesRequest,
+    ReleaseResourcesResponse,
+    Status,
+)
 from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer, add_PstLmcServiceServicer_to_server
 
 __all__ = [
     "TestMockServicer",
     "TestPstLmcService",
 ]
+
+
+@dataclass
+class TestGrpcStatus(grpc.Status):
+    code: grpc.StatusCode
+    details: str
+    trailing_metadata: Any
+
+
+class TestMockException(Exception):
+
+    # Disable PyTest thinking class is test suite class
+    __test__: bool = False
+
+    def __init__(
+        self: TestMockException, grpc_status_code: grpc.StatusCode, error_code: ErrorCode, message: str
+    ) -> None:
+        self.grpc_status_code = grpc_status_code
+        self.error_code = error_code
+        self.message = message
+
+    def as_grpc_status(self: TestMockException) -> TestGrpcStatus:
+        status = Status(code=self.error_code, message=self.message)
+        return TestGrpcStatus(
+            code=self.grpc_status_code,
+            details=self.message,
+            trailing_metadata=((GRPC_STATUS_DETAILS_METADATA_KEY, status.SerializeToString()),),
+        )
 
 
 class TestMockServicer(PstLmcServiceServicer):
@@ -53,6 +93,26 @@ class TestMockServicer(PstLmcServiceServicer):
     ) -> ConnectionResponse:
         """Handle connection request from client."""
         return self._context.connect(request)
+
+    def assign_resources(
+        self: TestMockServicer, request: AssignResourcesRequest, context: ServicerContext
+    ) -> AssignResourcesResponse:
+        """Handle assign resources."""
+        try:
+            return self._context.assign_resources(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
+
+    def release_resources(
+        self: TestMockServicer, request: ReleaseResourcesRequest, context: ServicerContext
+    ) -> ReleaseResourcesResponse:
+        """Handle release resources."""
+        try:
+            return self._context.release_resources(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
 
 
 class TestPstLmcService:

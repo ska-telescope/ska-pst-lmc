@@ -13,7 +13,6 @@ from typing import Callable
 from unittest.mock import MagicMock, call
 
 import pytest
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionResponse
 from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 
 from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
@@ -24,6 +23,7 @@ from ska_pst_lmc.smrb.smrb_process_api import (
     PstSmrbProcessApiSimulator,
 )
 from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionResponse
 
 
 @pytest.fixture

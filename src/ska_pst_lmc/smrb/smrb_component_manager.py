@@ -10,16 +10,18 @@
 from __future__ import annotations
 
 import logging
+from threading import Event
 from typing import Any, Callable, List, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
-from ska_pst_lmc.component.component_manager import PstApiComponentManager
+from ska_pst_lmc.component.component_manager import PstApiComponentManager, TaskResponse
 from ska_pst_lmc.smrb.smrb_process_api import (
     PstSmrbProcessApi,
     PstSmrbProcessApiGrpc,
     PstSmrbProcessApiSimulator,
 )
+from ska_pst_lmc.smrb.smrb_util import calculate_smrb_subband_resources
 
 __all__ = ["PstSmrbComponentManager"]
 
@@ -59,13 +61,13 @@ class PstSmrbComponentManager(PstApiComponentManager):
             f"Setting up SMRB component manager with device_name='{device_name}'"
             + "and api_endpoint='{process_api_endpoint}'"
         )
-        self.device_name = device_name
         self.api_endpoint = process_api_endpoint
         api = api or PstSmrbProcessApiSimulator(
             logger=logger,
             component_state_callback=component_state_callback,
         )
         super().__init__(
+            device_name,
             api,
             logger,
             communication_state_callback,
@@ -101,6 +103,15 @@ class PstSmrbComponentManager(PstApiComponentManager):
         self._api.disconnect()
         self._update_communication_state(CommunicationStatus.DISABLED)
         self._component_state_callback(fault=None, power=PowerState.UNKNOWN)
+
+    @property
+    def beam_id(self: PstSmrbComponentManager) -> int:
+        """Return the beam id for the current SMRB component.
+
+        This should be determined from the FQDN as that should have
+        the beam 1 encoded in it.
+        """
+        return 1
 
     @property
     def ring_buffer_utilisation(self: PstSmrbComponentManager) -> float:
@@ -160,7 +171,7 @@ class PstSmrbComponentManager(PstApiComponentManager):
             )
         else:
             self._api = PstSmrbProcessApiGrpc(
-                client_id=self.device_name,
+                client_id=self._device_name,
                 grpc_endpoint=self.api_endpoint,
                 logger=self.logger,
                 component_state_callback=self._component_state_callback,
@@ -168,3 +179,39 @@ class PstSmrbComponentManager(PstApiComponentManager):
 
         if curr_communication_state == CommunicationStatus.ESTABLISHED:
             self.start_communicating()
+
+    def assign(self: PstSmrbComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+        """
+        Assign resources to the component.
+
+        :param resources: resources to be assigned
+        """
+
+        def _task(
+            *args: Any,
+            task_callback: Callable,
+            task_abort_event: Optional[Event] = None,
+            **kwargs: Any,
+        ) -> None:
+            beam_id: int = self.beam_id
+
+            smrb_resources = calculate_smrb_subband_resources(beam_id, request_params=resources)
+
+            # deal only with subband 1 for now.
+            self.logger.debug(f"Calling API with smrb_resources={smrb_resources[1]}")
+            self._api.assign_resources(resources=smrb_resources[1], task_callback=task_callback)
+
+        return self.submit_task(_task, task_callback=task_callback)
+
+    def release_all(self: PstSmrbComponentManager, task_callback: Callable) -> TaskResponse:
+        """Release all resources."""
+
+        def _task(
+            *args: Any,
+            task_callback: Callable,
+            task_abort_event: Optional[Event] = None,
+            **kwargs: Any,
+        ) -> None:
+            self._api.release_resources(task_callback=task_callback)
+
+        return self.submit_task(_task, task_callback=task_callback)

@@ -121,33 +121,13 @@ def test_assign_resources(
     component_state_callback.assert_called_with(resourced=True)
 
 
-def test_release(
-    simulation_api: PstReceiveProcessApiSimulator,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that release resources simulator calls task."""
-    resources: dict = {}
-
-    simulation_api.release(resources, task_callback)
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(progress=42),
-        call(progress=75),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_with(resourced=False)
-
-
-def test_release_all(
+def test_release_resources(
     simulation_api: PstReceiveProcessApiSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
     """Test that release_all simulator calls task."""
-    simulation_api.release_all(task_callback)
+    simulation_api.release_resources(task_callback)
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),

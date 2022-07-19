@@ -23,7 +23,10 @@ from ska_pst_lmc import DeviceProxyFactory
 class TestPstBeam:
     """Test class used for testing the PstReceive TANGO device."""
 
-    def test_configure_then_scan_then_stop(self: TestPstBeam) -> None:
+    def test_configure_then_scan_then_stop(
+        self: TestPstBeam,
+        assign_resources_request: dict,
+    ) -> None:
         """Test state model of PstReceive."""
         # need to go through state mode
 
@@ -59,7 +62,7 @@ class TestPstBeam:
             # need to assign resources
             assert_obstate(ObsState.EMPTY)
 
-            resources = json.dumps({"foo": "bar"})
+            resources = json.dumps(assign_resources_request)
             beam_proxy.AssignResources(resources)
             time.sleep(0.1)
 

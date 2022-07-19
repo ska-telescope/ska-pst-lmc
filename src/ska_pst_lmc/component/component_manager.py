@@ -46,6 +46,7 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
 
     def __init__(
         self: PstComponentManager,
+        device_name: str,
         logger: logging.Logger,
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable,
@@ -55,6 +56,9 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
     ) -> None:
         """Initialise instance of the component manager.
 
+        :param device_name: the FQDN of the current device. This
+            is used within the gRPC process to identify who is
+            doing the calling.
         :param simulation_mode: enum to track if component should be
             in simulation mode or not.
         :param logger: a logger for this object to use
@@ -64,6 +68,7 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
         :param component_fault_callback: callback to be called when the
             component faults (or stops faulting)
         """
+        self._device_name = device_name
         self._simuation_mode = simulation_mode
         self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
         super().__init__(logger, communication_state_callback, component_state_callback, *args, **kwargs)
@@ -278,6 +283,7 @@ class PstApiComponentManager(PstComponentManager):
 
     def __init__(
         self: PstApiComponentManager,
+        device_name: str,
         api: PstProcessApi,
         logger: logging.Logger,
         communication_state_callback: Callable[[CommunicationStatus], None],
@@ -287,6 +293,9 @@ class PstApiComponentManager(PstComponentManager):
     ) -> None:
         """Initialise instance of the component manager.
 
+        :param device_name: the FQDN of the current device. This
+            is used within the gRPC process to identify who is
+            doing the calling.
         :param simulation_mode: enum to track if component should be
             in simulation mode or not.
         :param api: an API object used to delegate functionality to.
@@ -298,7 +307,9 @@ class PstApiComponentManager(PstComponentManager):
             component faults (or stops faulting)
         """
         self._api = api
-        super().__init__(logger, communication_state_callback, component_state_callback, *args, **kwargs)
+        super().__init__(
+            device_name, logger, communication_state_callback, component_state_callback, *args, **kwargs
+        )
 
     def assign(self: PstApiComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
         """
@@ -313,14 +324,17 @@ class PstApiComponentManager(PstComponentManager):
         """
         Release resources from the component.
 
+        This will release all the resources for this component, due to the fact that in PST it
+        does not make sense that a BEAM can be partially configured. It's either all or nothing.
+
         :param resources: resources to be released
         """
-        self._api.release(resources, task_callback)
-        return TaskStatus.QUEUED, "Releasing"
+        # pylint: disable=unused-argument
+        return self.release_all(task_callback=task_callback)
 
     def release_all(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
         """Release all resources."""
-        self._api.release_all(task_callback)
+        self._api.release_resources(task_callback)
         return TaskStatus.QUEUED, "Releasing all"
 
     def configure(self: PstApiComponentManager, configuration: dict, task_callback: Callable) -> TaskResponse:

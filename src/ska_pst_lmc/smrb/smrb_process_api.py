@@ -19,11 +19,16 @@ from typing import Callable, Optional
 
 from ska_tango_base.commands import TaskStatus
 
-from ska_pst_lmc.component.grpc_lmc_client import PstGrpcLmcClient
+from ska_pst_lmc.component.grpc_lmc_client import (
+    PstGrpcLmcClient,
+    ResourcesAlreadyAssignedException,
+    ResourcesNotAssignedException,
+)
 from ska_pst_lmc.component.process_api import PstProcessApi
 from ska_pst_lmc.smrb.smrb_model import SharedMemoryRingBufferData
 from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
 from ska_pst_lmc.util.background_task import BackgroundTask, BackgroundTaskProcessor, background_task
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import AssignResourcesRequest, SmrbResources
 
 __all__ = [
     "PstSmrbProcessApi",
@@ -108,23 +113,7 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
-    def release(self: PstSmrbProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
-        """Release resources.
-
-        :param resources: dictionary of resources to release.
-        :param task_callback: callable to connect back to the component manager.
-        """
-        task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
-        task_callback(progress=19)
-        time.sleep(0.1)
-        task_callback(progress=81)
-        time.sleep(0.1)
-        self._component_state_callback(resourced=False)
-        task_callback(status=TaskStatus.COMPLETED, result="Completed")
-
-    @background_task
-    def release_all(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
+    def release_resources(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
         """Release all resources.
 
         :param task_callback: callable to connect back to the component manager.
@@ -281,7 +270,6 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
             except Exception as e:
                 self._logger.warning("Error while shutting down communication", e)
 
-    @background_task
     def assign_resources(self: PstSmrbProcessApiGrpc, resources: dict, task_callback: Callable) -> None:
         """Assign resources.
 
@@ -290,40 +278,34 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
         """
         self._logger.info(f"Assigning resources for SMRB. {resources}")
         task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
-        task_callback(progress=50)
-        time.sleep(0.1)
-        self._component_state_callback(resourced=True)
-        task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
-    def release(self: PstSmrbProcessApiGrpc, resources: dict, task_callback: Callable) -> None:
-        """Release resources.
+        smrb_resources = SmrbResources(**resources)
+        request = AssignResourcesRequest(smrb=smrb_resources)
+        try:
+            self._grpc_client.assign_resources(request=request)
 
-        :param resources: dictionary of resources to release.
-        :param task_callback: callable to connect back to the component manager.
-        """
-        task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
-        task_callback(progress=19)
-        time.sleep(0.1)
-        task_callback(progress=81)
-        time.sleep(0.1)
-        self._component_state_callback(resourced=False)
-        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+            self._component_state_callback(resourced=True)
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+        except ResourcesAlreadyAssignedException as e:
+            self._logger.error(e.message)
+            task_callback(result=e.message, status=TaskStatus.FAILED)
 
-    @background_task
-    def release_all(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
+    def release_resources(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
         """Release all resources.
 
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
-        task_callback(progress=45)
-        time.sleep(0.1)
-        self._component_state_callback(resourced=False)
-        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+        try:
+            self._grpc_client.release_resources()
+
+            self._component_state_callback(resourced=False)
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+        except ResourcesNotAssignedException as e:
+            self._logger.warning(e.message)
+            self._component_state_callback(resourced=False)
+            task_callback(status=TaskStatus.COMPLETED, result=e.message)
 
     @background_task
     def configure(self: PstSmrbProcessApiGrpc, configuration: dict, task_callback: Callable) -> None:

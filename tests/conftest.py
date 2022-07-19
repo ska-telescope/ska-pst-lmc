@@ -9,7 +9,6 @@ from unittest.mock import MagicMock
 
 import pytest
 import tango
-from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer
 from ska_tango_base.control_model import SimulationMode
 from ska_tango_base.testing.mock import MockCallable, MockChangeEventCallback
 from tango import DeviceProxy
@@ -18,6 +17,18 @@ from tango.test_context import DeviceTestContext, MultiDeviceTestContext, get_ho
 from ska_pst_lmc.device_proxy import DeviceProxyFactory
 from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
+from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer
+
+
+@pytest.fixture(scope="class")
+def assign_resources_request() -> dict:
+    """Return a valid assign resources object."""
+    return {
+        "num_frequency_channels": 8192,
+        "bits_per_sample": 32,
+        "udp_nsamp": 32,
+        "wt_nsamp": 32,
+    }
 
 
 @pytest.fixture(scope="class")

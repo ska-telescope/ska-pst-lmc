@@ -112,23 +112,7 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
-    def release(self: PstReceiveProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
-        """Release resources.
-
-        :param resources: dictionary of resources to release.
-        :param task_callback: callable to connect back to the component manager.
-        """
-        task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
-        task_callback(progress=42)
-        time.sleep(0.1)
-        task_callback(progress=75)
-        time.sleep(0.1)
-        self._component_state_callback(resourced=False)
-        task_callback(status=TaskStatus.COMPLETED, result="Completed")
-
-    @background_task
-    def release_all(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
+    def release_resources(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
         """Release all resources.
 
         :param task_callback: callable to connect back to the component manager.

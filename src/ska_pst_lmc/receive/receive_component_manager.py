@@ -25,6 +25,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
 
     def __init__(
         self: PstReceiveComponentManager,
+        device_name: str,
         logger: logging.Logger,
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable,
@@ -50,6 +51,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
         )
 
         super().__init__(
+            device_name,
             api,
             logger,
             communication_state_callback,

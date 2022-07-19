@@ -4,6 +4,8 @@
 
 PrivateRules.mak
 src/ska_pst_lmc_proto/
+generated/*
+protobuf/*
 
 ### Python ###
 # Byte-compiled / optimized / DLL files

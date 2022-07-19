@@ -7,21 +7,34 @@
 
 """This module contains tests for the RECV API."""
 
+from __future__ import annotations
+
 import logging
 import time
 import unittest
 from typing import Callable
 from unittest.mock import MagicMock, call
 
+import grpc
 import pytest
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionResponse
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.smrb.smrb_model import SharedMemoryRingBufferData
 from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApiGrpc, PstSmrbProcessApiSimulator
 from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
-from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
+from ska_pst_lmc.smrb.smrb_util import calculate_smrb_subband_resources
+from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    AssignResourcesRequest,
+    AssignResourcesResponse,
+    ConnectionRequest,
+    ConnectionResponse,
+    ErrorCode,
+    ReleaseResourcesRequest,
+    ReleaseResourcesResponse,
+    SmrbResources,
+)
 
 
 @pytest.fixture
@@ -122,33 +135,13 @@ def test_assign_resources(
     component_state_callback.assert_called_with(resourced=True)
 
 
-def test_release(
+def test_release_resources(
     simulation_api: PstSmrbProcessApiSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
     """Test that release resources simulator calls task."""
-    resources: dict = {}
-
-    simulation_api.release(resources, task_callback)
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(progress=19),
-        call(progress=81),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_with(resourced=False)
-
-
-def test_release_all(
-    simulation_api: PstSmrbProcessApiSimulator,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that release_all simulator calls task."""
-    simulation_api.release_all(task_callback)
+    simulation_api.release_resources(task_callback)
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
@@ -281,9 +274,145 @@ def test_smrb_grpc_sends_connect_request(
         client_id=client_id,
         grpc_endpoint=f"127.0.0.1:{grpc_port}",
         logger=logging.getLogger(__name__),
-        component_state_callback=MagicMock(),
+        component_state_callback=component_state_callback,
     )
 
     api.connect()
 
     mock_servicer_context.connect.assert_called_once_with(ConnectionRequest(client_id=client_id))
+
+
+def test_smrb_grpc_assign_resources(
+    mock_servicer_context: MagicMock,
+    grpc_port: int,
+    client_id: str,
+    component_state_callback: MagicMock,
+    pst_lmc_service: TestPstLmcService,
+    assign_resources_request: dict,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC API connects to the server."""
+    response = AssignResourcesResponse()
+    mock_servicer_context.assign_resources = MagicMock(return_value=response)
+    resources = calculate_smrb_subband_resources(1, assign_resources_request)[1]
+
+    api = PstSmrbProcessApiGrpc(
+        client_id=client_id,
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        logger=logging.getLogger(__name__),
+        component_state_callback=component_state_callback,
+    )
+
+    api.assign_resources(resources, task_callback=task_callback)
+
+    expected_smrb_request = SmrbResources(**resources)
+    expected_request = AssignResourcesRequest(smrb=expected_smrb_request)
+    mock_servicer_context.assign_resources.assert_called_once_with(expected_request)
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(resourced=True)
+
+
+def test_smrb_grpc_assign_resources_when_already_assigned(
+    mock_servicer_context: MagicMock,
+    grpc_port: int,
+    client_id: str,
+    component_state_callback: MagicMock,
+    pst_lmc_service: TestPstLmcService,
+    assign_resources_request: dict,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC API connects to the server."""
+    mock_servicer_context.assign_resources.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.RESOURCES_ALREADY_ASSIGNED,
+        message="Resources have already been assigned",
+    )
+    resources = calculate_smrb_subband_resources(1, assign_resources_request)[1]
+
+    api = PstSmrbProcessApiGrpc(
+        client_id=client_id,
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        logger=logging.getLogger(__name__),
+        component_state_callback=component_state_callback,
+    )
+
+    api.assign_resources(resources, task_callback=task_callback)
+
+    expected_smrb_request = SmrbResources(**resources)
+    expected_request = AssignResourcesRequest(smrb=expected_smrb_request)
+    mock_servicer_context.assign_resources.assert_called_once_with(expected_request)
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Resources have already been assigned"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_smrb_grpc_release_resources(
+    mock_servicer_context: MagicMock,
+    grpc_port: int,
+    client_id: str,
+    component_state_callback: MagicMock,
+    pst_lmc_service: TestPstLmcService,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC API connects to the server."""
+    response = ReleaseResourcesResponse()
+    mock_servicer_context.release_resources = MagicMock(return_value=response)
+
+    api = PstSmrbProcessApiGrpc(
+        client_id=client_id,
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        logger=logging.getLogger(__name__),
+        component_state_callback=component_state_callback,
+    )
+
+    api.release_resources(task_callback=task_callback)
+
+    mock_servicer_context.release_resources.assert_called_once_with(ReleaseResourcesRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(resourced=False)
+
+
+def test_smrb_grpc_release_resources_when_no_resources_assigned(
+    mock_servicer_context: MagicMock,
+    grpc_port: int,
+    client_id: str,
+    component_state_callback: MagicMock,
+    pst_lmc_service: TestPstLmcService,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC API connects to the server."""
+    mock_servicer_context.release_resources.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.RESOURCES_NOT_ASSIGNED,
+        message="No resources have been assigned",
+    )
+
+    api = PstSmrbProcessApiGrpc(
+        client_id=client_id,
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        logger=logging.getLogger(__name__),
+        component_state_callback=component_state_callback,
+    )
+
+    api.release_resources(task_callback=task_callback)
+
+    mock_servicer_context.release_resources.assert_called_once_with(ReleaseResourcesRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="No resources have been assigned"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(resourced=False)
