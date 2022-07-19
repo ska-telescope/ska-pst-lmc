@@ -5,10 +5,6 @@ description = "PST-LMC Tango device package"
 authors = ["Team PST"]
 license = "BSD-3-Clause"
 repository = "https://gitlab.com/ska-telescope/pst/ska-pst-lmc.git"
-packages = [
-  { include = "ska_pst_lmc_proto", from = "generated" },
-  { include = "ska_pst_lmc", from = "src" },
-]
 
 [[tool.poetry.source]]
 name = 'ska-nexus'
