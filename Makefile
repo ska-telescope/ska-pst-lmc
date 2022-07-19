@@ -9,7 +9,7 @@ HELM_CHARTS_TO_PUBLISH = ska-pst-lmc
 PYTHON_SWITCHES_FOR_FLAKE8 = --extend-ignore=BLK,T --enable=DAR104 --ignore=E203,FS003,W503,N802 --max-complexity=10 \
     --max-line-length=110 --rst-roles=py:attr,py:class,py:const,py:exc,py:func,py:meth,py:mod --exclude=src/ska_pst_lmc_proto
 PYTHON_SWITCHES_FOR_BLACK = --line-length=110
-PYTHON_SWITCHES_FOR_ISORT = --skip-glob=*/__init__.py -w=110
+PYTHON_SWITCHES_FOR_ISORT = --skip-glob="*/__init__.py" -w=110
 PYTHON_TEST_FILE = tests
 PYTHON_LINT_TARGET = src tests  ## Paths containing python to be formatted and linted
 PYTHON_SWITCHES_FOR_PYLINT = --disable=W,C,R --ignored-modules="ska_pst_lmc_proto"
