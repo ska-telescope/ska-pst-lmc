@@ -14,7 +14,6 @@ from typing import Any, Optional
 
 import grpc
 from grpc import Channel
-
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesRequest,
     ConnectionRequest,

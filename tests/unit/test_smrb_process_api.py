@@ -17,14 +17,6 @@ from unittest.mock import MagicMock, call
 
 import grpc
 import pytest
-from ska_tango_base.commands import TaskStatus
-
-from ska_pst_lmc.smrb.smrb_model import SharedMemoryRingBufferData
-from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApiGrpc, PstSmrbProcessApiSimulator
-from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
-from ska_pst_lmc.smrb.smrb_util import calculate_smrb_subband_resources
-from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
-from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesRequest,
     AssignResourcesResponse,
@@ -35,6 +27,14 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ReleaseResourcesResponse,
     SmrbResources,
 )
+from ska_tango_base.commands import TaskStatus
+
+from ska_pst_lmc.smrb.smrb_model import SharedMemoryRingBufferData
+from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApiGrpc, PstSmrbProcessApiSimulator
+from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
+from ska_pst_lmc.smrb.smrb_util import calculate_smrb_subband_resources
+from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
+from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
 
 @pytest.fixture

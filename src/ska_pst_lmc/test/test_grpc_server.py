@@ -18,8 +18,6 @@ from typing import Any, Optional, Type
 import grpc
 import tango
 from grpc import ServicerContext
-
-from ska_pst_lmc.component.grpc_lmc_client import GRPC_STATUS_DETAILS_METADATA_KEY
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesRequest,
     AssignResourcesResponse,
@@ -31,6 +29,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     Status,
 )
 from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer, add_PstLmcServiceServicer_to_server
+
+from ska_pst_lmc.component.grpc_lmc_client import GRPC_STATUS_DETAILS_METADATA_KEY
 
 __all__ = [
     "TestMockServicer",

@@ -16,12 +16,12 @@ from unittest.mock import MagicMock
 
 import pytest
 import tango
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionResponse
 from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
 
 from ska_pst_lmc.smrb.smrb_device import PstSmrb
 from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionResponse
 
 logger = logging.getLogger(__name__)
 

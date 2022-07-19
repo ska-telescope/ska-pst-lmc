@@ -17,6 +17,7 @@ import logging
 import time
 from typing import Callable, Optional
 
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import AssignResourcesRequest, SmrbResources
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.component.grpc_lmc_client import (
@@ -28,7 +29,6 @@ from ska_pst_lmc.component.process_api import PstProcessApi
 from ska_pst_lmc.smrb.smrb_model import SharedMemoryRingBufferData
 from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
 from ska_pst_lmc.util.background_task import BackgroundTask, BackgroundTaskProcessor, background_task
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import AssignResourcesRequest, SmrbResources
 
 __all__ = [
     "PstSmrbProcessApi",
