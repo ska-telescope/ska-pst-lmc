@@ -111,7 +111,7 @@ local_generate_code:
 			--grpc_python_out="$(GENERATED_PATH)" \
 			$(shell find "$(PROTOBUF_DIR)" -iname "*.proto")
 	@echo
-	@echo "Files generated. $(shell find "$(GENERATED_PATH)" -iname "*.py")"
+	@echo "Files generated. $(shell find "$(GENERATED_PATH)/ska_pst_lmc_proto" -iname "*.py")"
 
 .PHONY: local_generate_code python-pre-build python-generate-code python-pre-generate-code python-do-generate-code python-post-generate-code
 

@@ -52,14 +52,15 @@ def calculate_smrb_subband_resources(beam_id: int, request_params: dict) -> Dict
 
     """
     obsnchan = request_params["num_frequency_channels"]
+    obsnpol = request_params["num_of_polarizations"]
     # this is 2 * num bits per dimension (real + complex)
     nbits = request_params["bits_per_sample"]
     udp_nsamp = request_params["udp_nsamp"]
     wt_nsamp = request_params["wt_nsamp"]
-    # this should be 1 as udp_nsmap should equal wt_nsamp
+    # this should be 1 as udp_nsamp should equal wt_nsamp
     wt_nweight = udp_nsamp // wt_nsamp
 
-    data_buffer_resolution = obsnchan * nbits // 8 * udp_nsamp
+    data_buffer_resolution = obsnchan * obsnpol * nbits // 8 * udp_nsamp
     # this should be efficitvely 2 * obsnchan as WEIGHTS_NBITS is 16
     weights_buffer_resolution = obsnchan * WEIGHTS_NBITS // 8 * wt_nweight
 

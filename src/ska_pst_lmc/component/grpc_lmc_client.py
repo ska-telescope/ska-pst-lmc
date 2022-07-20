@@ -44,7 +44,7 @@ class ResourcesAlreadyAssignedException(Exception):
 class ResourcesNotAssignedException(Exception):
     """Exception for when resources have not been assigned.
 
-    Rasied when the server does not have any resources assigned. This
+    Raised when the server does not have any resources assigned. This
     request should not have been called.
     """
 
@@ -58,8 +58,8 @@ class InvalidRequestException(Exception):
     """Exception with the actual request parameters.
 
     This is raised when the server validates the request and request is
-    not correct, such as the assign resources message has a Oneof field
-    and the incorrect one was applied.
+    not correct, such as the assign resources message has a protobuf
+    Oneof field for resources and the incorrect one was applied.
     """
 
     def __init__(self: InvalidRequestException, message: str) -> None:

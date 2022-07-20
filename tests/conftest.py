@@ -25,6 +25,7 @@ def assign_resources_request() -> dict:
     """Return a valid assign resources object."""
     return {
         "num_frequency_channels": 8192,
+        "num_of_polarizations": 2,
         "bits_per_sample": 32,
         "udp_nsamp": 32,
         "wt_nsamp": 32,
