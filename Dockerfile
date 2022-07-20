@@ -1,6 +1,6 @@
 ARG BUILD_IMAGE="artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.30"
 ARG BASE_IMAGE="artefact.skao.int/ska-tango-images-pytango-runtime-alpine:9.3.18"
-ARG PROTOBUF_IMAGE="registry.gitlab.com/ska-telescope/pst/ska-pst-common/ska-pst-common-proto:0.1.0"
+ARG PROTOBUF_IMAGE="artefact.skao.int/ska-pst-common-proto:0.1.0"
 
 FROM $PROTOBUF_IMAGE as proto
 

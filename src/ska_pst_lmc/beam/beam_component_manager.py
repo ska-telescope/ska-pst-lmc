@@ -93,6 +93,7 @@ class PstBeamComponentManager(PstComponentManager):
 
     def __init__(
         self: PstBeamComponentManager,
+        device_name: str,
         smrb_fqdn: str,
         recv_fqdn: str,
         logger: logging.Logger,
@@ -124,6 +125,7 @@ class PstBeamComponentManager(PstComponentManager):
             logger=logger,
         )
         super().__init__(
+            device_name,
             logger,
             communication_state_callback,
             component_state_callback,

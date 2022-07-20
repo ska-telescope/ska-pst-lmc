@@ -21,6 +21,18 @@ from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
 
 @pytest.fixture(scope="class")
+def assign_resources_request() -> dict:
+    """Return a valid assign resources object."""
+    return {
+        "num_frequency_channels": 8192,
+        "num_of_polarizations": 2,
+        "bits_per_sample": 32,
+        "udp_nsamp": 32,
+        "wt_nsamp": 32,
+    }
+
+
+@pytest.fixture(scope="class")
 def device_properties() -> dict:
     """
     Fixture that returns device_properties to be provided to the device under test.

@@ -29,6 +29,7 @@ def component_manager(
 ) -> PstReceiveComponentManager:
     """Create instance of a component manager."""
     return PstReceiveComponentManager(
+        device_name="test/recv/1",
         simulation_mode=simulation_mode,
         logger=logger,
         communication_state_callback=communication_state_callback,

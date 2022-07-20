@@ -97,6 +97,7 @@ def component_manager(
     monkeypatch.setattr(DeviceProxyFactory, "get_device", _get_device)
 
     return PstBeamComponentManager(
+        "test/beam/1",
         smrb_fqdn,
         recv_fqdn,
         logger,
@@ -188,22 +189,40 @@ def test_component_manager_calls_abort_on_subdevices(
     task_executor.abort.assert_called_once()
 
 
+@pytest.fixture
+def request_params(
+    method_name: str,
+    assign_resources_request: dict,
+) -> Optional[Any]:
+    """Get request parameters for a given method name."""
+    if method_name == "assign":
+        return assign_resources_request
+    elif method_name == "configure":
+        return {"cat": "dog"}
+    elif method_name == "release":
+        return {"red": "green"}
+    elif method_name == "scan":
+        return {"foo": "bar"}
+    else:
+        return None
+
+
 @pytest.mark.parametrize(
-    "method_name, params, remote_action_supplier, component_state_callback_params",
+    "method_name, remote_action_supplier, component_state_callback_params",
     [
-        ("on", None, lambda d: d.On, {"power": PowerState.ON}),
-        ("off", None, lambda d: d.Off, {"power": PowerState.OFF}),
-        ("reset", None, lambda d: d.Reset, {"power": PowerState.OFF}),
-        ("standby", None, lambda d: d.Standby, {"power": PowerState.STANDBY}),
-        ("assign", {"foo": "bar"}, lambda d: d.AssignResources, {"resourced": True}),
-        ("release", {"foo": "bar"}, lambda d: d.ReleaseResources, {"resourced": False}),
-        ("release_all", None, lambda d: d.ReleaseAllResources, {"resourced": False}),
-        ("configure", {"cat": "dog"}, lambda d: d.Configure, {"configured": True}),
-        ("deconfigure", None, lambda d: d.End, {"configured": False}),
-        ("scan", {"luke": "skywalker"}, lambda d: d.Scan, {"scanning": True}),
-        ("end_scan", None, lambda d: d.EndScan, {"scanning": False}),
-        ("obsreset", None, lambda d: d.ObsReset, {"configured": False}),
-        ("restart", None, lambda d: d.Restart, {"configured": False, "resourced": False}),
+        ("on", lambda d: d.On, {"power": PowerState.ON}),
+        ("off", lambda d: d.Off, {"power": PowerState.OFF}),
+        ("reset", lambda d: d.Reset, {"power": PowerState.OFF}),
+        ("standby", lambda d: d.Standby, {"power": PowerState.STANDBY}),
+        ("assign", lambda d: d.AssignResources, {"resourced": True}),
+        ("release", lambda d: d.ReleaseResources, {"resourced": False}),
+        ("release_all", lambda d: d.ReleaseAllResources, {"resourced": False}),
+        ("configure", lambda d: d.Configure, {"configured": True}),
+        ("deconfigure", lambda d: d.End, {"configured": False}),
+        ("scan", lambda d: d.Scan, {"scanning": True}),
+        ("end_scan", lambda d: d.EndScan, {"scanning": False}),
+        ("obsreset", lambda d: d.ObsReset, {"configured": False}),
+        ("restart", lambda d: d.Restart, {"configured": False, "resourced": False}),
     ],
 )
 def test_remote_actions(
@@ -212,7 +231,7 @@ def test_remote_actions(
     recv_device_proxy: PstDeviceProxy,
     component_state_callback: Callable,
     method_name: str,
-    params: Optional[Any],
+    request_params: Optional[Any],
     remote_action_supplier: Callable[[PstDeviceProxy], Callable],
     component_state_callback_params: Optional[dict],
 ) -> None:
@@ -231,8 +250,8 @@ def test_remote_actions(
     )
 
     func = getattr(component_manager, method_name)
-    if params:
-        (status, message) = func(params, task_callback=task_callback)
+    if request_params:
+        (status, message) = func(request_params, task_callback=task_callback)
     else:
         (status, message) = func(task_callback=task_callback)
 
@@ -241,8 +260,8 @@ def test_remote_actions(
 
     time.sleep(0.1)
 
-    if params:
-        params_str = json.dumps(params)
+    if request_params:
+        params_str = json.dumps(request_params)
         [
             remote_action_supplier(d).assert_called_once_with(params_str)  # type: ignore
             for d in [smrb_device_proxy, recv_device_proxy]

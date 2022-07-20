@@ -89,6 +89,7 @@ class PstBeam(PstBaseDevice):
         :return: a component manager for this device.
         """
         return PstBeamComponentManager(
+            device_name=self.get_name(),
             smrb_fqdn=self.SmrbFQDN,
             recv_fqdn=self.RecvFQDN,
             simulation_mode=SimulationMode.TRUE,

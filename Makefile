@@ -7,13 +7,14 @@ HELM_CHARTS_TO_PUBLISH = ska-pst-lmc
 
 # E203 and W503 conflict with black
 PYTHON_SWITCHES_FOR_FLAKE8 = --extend-ignore=BLK,T --enable=DAR104 --ignore=E203,FS003,W503,N802 --max-complexity=10 \
-    --max-line-length=110 --rst-roles=py:attr,py:class,py:const,py:exc,py:func,py:meth,py:mod
+    --max-line-length=110 --rst-roles=py:attr,py:class,py:const,py:exc,py:func,py:meth,py:mod --exclude=src/ska_pst_lmc_proto
 PYTHON_SWITCHES_FOR_BLACK = --line-length=110
-PYTHON_SWITCHES_FOR_ISORT = --skip-glob=*/__init__.py -w=110
+PYTHON_SWITCHES_FOR_ISORT = --skip-glob="*/__init__.py" -w=110 --py 39 --thirdparty=ska_pst_lmc_proto
 PYTHON_TEST_FILE = tests
 PYTHON_LINT_TARGET = src tests  ## Paths containing python to be formatted and linted
-PYTHON_SWITCHES_FOR_PYLINT = --disable=W,C,R --init-hook="import os, sys; sys.path.append(os.path.dirname('generated'))" --ignored-modules="ska_pst_lmc_proto,ska_pst_lmc_proto.*"
+PYTHON_SWITCHES_FOR_PYLINT = --disable=W,C,R --ignored-modules="ska_pst_lmc_proto"
 DOCS_SOURCEDIR=./docs/src
+PYTHON_VARS_AFTER_PYTEST = --cov-config=$(PWD)/.coveragerc
 
 K8S_CHART ?= test-parent
 K8S_CHARTS ?= $(K8S_CHART)
@@ -30,6 +31,10 @@ endif
 
 PROTOBUF_DIR=$(PWD)/protobuf
 GENERATED_PATH=$(PWD)/generated
+
+PROTOBUF_IMAGE ?= $(SKA_PST_COMMON_PROTOBUF_IMAGE)
+
+OCI_BUILD_ADDITIONAL_ARGS=--build-arg PROTOBUF_IMAGE=$(PROTOBUF_IMAGE)
 
 # include OCI support
 include .make/oci.mk
@@ -106,7 +111,7 @@ local_generate_code:
 			--grpc_python_out="$(GENERATED_PATH)" \
 			$(shell find "$(PROTOBUF_DIR)" -iname "*.proto")
 	@echo
-	@echo "Files generated. $(shell find "$(GENERATED_PATH)" -iname "*.py")"
+	@echo "Files generated. $(shell find "$(GENERATED_PATH)/ska_pst_lmc_proto" -iname "*.py")"
 
 .PHONY: local_generate_code python-pre-build python-generate-code python-pre-generate-code python-do-generate-code python-post-generate-code
 

@@ -87,27 +87,6 @@ def devices_info() -> List[dict]:
 class TestPstBeam:
     """Test class used for testing the PstReceive TANGO device."""
 
-    # @pytest.fixture(scope="class")
-    # def device_test_config(self: TestPstBeam, device_properties: dict) -> dict:
-    #     """
-    #     Specify device configuration, including properties and memorized attributes.
-
-    #     This implementation provides a concrete subclass of
-    #     SKABaseDevice, and a memorized value for adminMode.
-
-    #     :param device_properties: fixture that returns device properties
-    #         of the device under test
-
-    #     :return: specification of how the device under test should be
-    #         configured
-    #     """
-    #     return {
-    #         "device": PstBeam,
-    #         "process": True,
-    #         "properties": device_properties,
-    #         "memorized": {"adminMode": str(AdminMode.OFFLINE.value)},
-    #     }
-
     def test_State(self: TestPstBeam, device_under_test: DeviceProxy) -> None:
         """
         Test for State.
@@ -137,7 +116,10 @@ class TestPstBeam:
         assert re.match(version_pattern, version_info[0])
 
     def test_configure_then_scan_then_stop(
-        self: TestPstBeam, device_under_test: DeviceProxy, multidevice_test_context: MultiDeviceTestContext
+        self: TestPstBeam,
+        device_under_test: DeviceProxy,
+        multidevice_test_context: MultiDeviceTestContext,
+        assign_resources_request: dict,
     ) -> None:
         """Test state model of PstReceive."""
         # need to go through state mode
@@ -172,7 +154,7 @@ class TestPstBeam:
         # need to assign resources
         assert_obstate(ObsState.EMPTY)
 
-        resources = json.dumps({"foo": "bar"})
+        resources = json.dumps(assign_resources_request)
         device_under_test.AssignResources(resources)
         time.sleep(0.1)
 

@@ -64,7 +64,7 @@ deviceServers:
     instances: ["simple-01"]
     file: "data/simple.yaml"
   beam:
-    instances: ["beam-01", "beam-02"]
+    instances: ["beam-01"]
     file: "data/beam.yaml"
 
 livenessProbe:
