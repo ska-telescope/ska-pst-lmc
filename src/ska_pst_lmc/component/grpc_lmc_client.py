@@ -10,51 +10,73 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any, Dict, NoReturn, Optional, Type
 
 import grpc
 from grpc import Channel
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesRequest,
     ConnectionRequest,
+    EndScanRequest,
     ErrorCode,
     GetAssignedResourcesRequest,
     GetAssignedResourcesResponse,
+    GetStateRequest,
+    GetStateResponse,
     ReleaseResourcesRequest,
+    ScanRequest,
     Status,
 )
 from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceStub
+from ska_tango_base.control_model import ObsState
 
 GRPC_STATUS_DETAILS_METADATA_KEY = "grpc-status-details-bin"
 
 
-class ResourcesAlreadyAssignedException(Exception):
+class BaseGrpcException(Exception):
+    """Base exception to capture gRPC related exceptions."""
+
+    def __init__(self: BaseGrpcException, message: str) -> None:
+        """Initialise exception."""
+        self.message = message
+        super().__init__()
+
+
+class AlreadyScanningException(BaseGrpcException):
+    """Exception for when the process is already scanning.
+
+    Raised when the server is already scanning and is in the
+    SCANNING ObsState mode. If the is raise it is due to
+    a mismatch in the state model, or if a comman line
+    interface has set the scanning state not through the LMC.
+    """
+
+
+class NotScanningException(BaseGrpcException):
+    """Exception for when tyring to end scan but component is not scanning.
+
+    Raised when the server is not in a scanning state but received an
+    end scan command.
+    """
+
+
+class ResourcesAlreadyAssignedException(BaseGrpcException):
     """Exception for when resources were already assigned.
 
     Raised when the server is already in an assigned resources state
     and the request should not have been called.
     """
 
-    def __init__(self: ResourcesAlreadyAssignedException, message: str) -> None:
-        """Initialise exception."""
-        self.message = message
-        super().__init__()
 
-
-class ResourcesNotAssignedException(Exception):
+class ResourcesNotAssignedException(BaseGrpcException):
     """Exception for when resources have not been assigned.
 
     Raised when the server does not have any resources assigned. This
     request should not have been called.
     """
 
-    def __init__(self: ResourcesNotAssignedException, message: str) -> None:
-        """Initialise exception."""
-        self.message = message
-        super().__init__()
 
-
-class InvalidRequestException(Exception):
+class InvalidRequestException(BaseGrpcException):
     """Exception with the actual request parameters.
 
     This is raised when the server validates the request and request is
@@ -62,13 +84,8 @@ class InvalidRequestException(Exception):
     Oneof field for resources and the incorrect one was applied.
     """
 
-    def __init__(self: InvalidRequestException, message: str) -> None:
-        """Initialise exception."""
-        self.message = message
-        super().__init__()
 
-
-class ServerError(Exception):
+class ServerError(BaseGrpcException):
     """Exception when an exception on the server side happens.
 
     The server raised an exception during the processing of the request
@@ -79,11 +96,10 @@ class ServerError(Exception):
     def __init__(self: ServerError, error_code: int, message: str) -> None:
         """Initialise exception."""
         self.error_code = error_code
-        self.message = message
-        super().__init__()
+        super().__init__(message)
 
 
-class UnknownGrpcException(Exception):
+class UnknownGrpcException(BaseGrpcException):
     """An unknown gRPC exception.
 
     This error occurs due to gRPC itself. The client is not
@@ -93,11 +109,19 @@ class UnknownGrpcException(Exception):
     def __init__(self: UnknownGrpcException, error_code: int, message: str) -> None:
         """Initialise exception."""
         self.error_code = error_code
-        self.message = message
-        super().__init__()
+        super().__init__(message)
 
 
-def _handle_grpc_error(error: grpc.RpcError) -> None:
+ERROR_CODE_EXCEPTION_MAP: Dict[ErrorCode, Type[BaseGrpcException]] = {
+    ErrorCode.ALREADY_SCANNING: AlreadyScanningException,
+    ErrorCode.NOT_SCANNING: NotScanningException,
+    ErrorCode.INVALID_REQUEST: InvalidRequestException,
+    ErrorCode.RESOURCES_ALREADY_ASSIGNED: ResourcesAlreadyAssignedException,
+    ErrorCode.RESOURCES_NOT_ASSIGNED: ResourcesNotAssignedException,
+}
+
+
+def _handle_grpc_error(error: grpc.RpcError) -> NoReturn:
     if hasattr(error, "trailing_metadata"):
         for k, v in error.trailing_metadata():
             if k == GRPC_STATUS_DETAILS_METADATA_KEY:
@@ -105,23 +129,19 @@ def _handle_grpc_error(error: grpc.RpcError) -> None:
                 msg.ParseFromString(v)
 
                 error_code = msg.code
-                if error_code == ErrorCode.INVALID_REQUEST:
-                    raise InvalidRequestException(msg.message) from error
-                elif error_code == ErrorCode.RESOURCES_ALREADY_ASSIGNED:
-                    raise ResourcesAlreadyAssignedException(msg.message) from error
-                elif error_code == ErrorCode.RESOURCES_NOT_ASSIGNED:
-                    raise ResourcesNotAssignedException(msg.message) from error
+                if error_code in ERROR_CODE_EXCEPTION_MAP:
+                    raise ERROR_CODE_EXCEPTION_MAP[error_code](msg.message) from error
                 else:
                     if hasattr(error, "code"):
                         error_code = error.code()
-                    raise ServerError(error_code, msg.message()) from error
+                    raise ServerError(error_code, msg.message) from error
 
     if hasattr(error, "code"):
         error_code = error.code()
     else:
         error_code = -1
 
-    raise UnknownGrpcException(error_code, error.message()) from error
+    raise UnknownGrpcException(error_code, error.details()) from error
 
 
 class PstGrpcLmcClient:
@@ -182,7 +202,6 @@ class PstGrpcLmcClient:
             return True
         except grpc.RpcError as e:
             _handle_grpc_error(e)
-            assert False, "unreachable"
 
     def release_resources(self: PstGrpcLmcClient) -> bool:
         """Call release_resources on remote gRPC service."""
@@ -192,7 +211,6 @@ class PstGrpcLmcClient:
             return True
         except grpc.RpcError as e:
             _handle_grpc_error(e)
-            assert False, "unreachable"
 
     def get_assigned_resources(self: PstGrpcLmcClient) -> GetAssignedResourcesResponse:
         """Call get_assigned_resources on remote gRPC service."""
@@ -202,3 +220,31 @@ class PstGrpcLmcClient:
             return self._service.get_assigned_resources(request)
         except grpc.RpcError as e:
             _handle_grpc_error(e)
+
+    def scan(self: PstGrpcLmcClient) -> bool:
+        """Call scan on remote gRPC service."""
+        self._logger.debug("Calling scan")
+        try:
+            self._service.scan(ScanRequest())
+            return True
+        except grpc.RpcError as e:
+            _handle_grpc_error(e)
+
+    def end_scan(self: PstGrpcLmcClient) -> bool:
+        """Call scan on remote gRPC service."""
+        self._logger.debug("Calling end scan")
+        try:
+            self._service.end_scan(EndScanRequest())
+            return True
+        except grpc.RpcError as e:
+            _handle_grpc_error(e)
+
+    def get_state(self: PstGrpcLmcClient) -> ObsState:
+        """Call scan on remote gRPC service."""
+        self._logger.debug("Calling get state")
+        try:
+            result: GetStateResponse = self._service.get_state(GetStateRequest())
+            return ObsState(result.state)
+        except grpc.RpcError as e:
+            _handle_grpc_error(e)
+            # assert False, "unreachable"

@@ -107,9 +107,6 @@ class TestPstReceive:
 
         resources = json.dumps({"foo": "bar"})
         device_under_test.AssignResources(resources)
-        time.sleep(0.1)
-        assert device_under_test.obsState == ObsState.RESOURCING
-        time.sleep(0.3)
         assert device_under_test.obsState == ObsState.IDLE
 
         configuration = json.dumps({"nchan": 1024})
@@ -126,7 +123,7 @@ class TestPstReceive:
         time.sleep(0.3)
         assert device_under_test.obsState == ObsState.SCANNING
 
-        time.sleep(5)
+        time.sleep(5.5)
         # shoud now be able to get some properties
         assert device_under_test.received_rate > 0.0
         assert device_under_test.received_data > 0

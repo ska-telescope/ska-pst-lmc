@@ -22,9 +22,13 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesResponse,
     ConnectionRequest,
     ConnectionResponse,
+    EndScanRequest,
+    EndScanResponse,
     ErrorCode,
     ReleaseResourcesRequest,
     ReleaseResourcesResponse,
+    ScanRequest,
+    ScanResponse,
     SmrbResources,
 )
 from ska_tango_base.commands import TaskStatus
@@ -291,7 +295,7 @@ def test_smrb_grpc_assign_resources(
     assign_resources_request: dict,
     task_callback: MagicMock,
 ) -> None:
-    """Test that SMRB gRPC API connects to the server."""
+    """Test that SMRB gRPC assign resources."""
     response = AssignResourcesResponse()
     mock_servicer_context.assign_resources = MagicMock(return_value=response)
     resources = calculate_smrb_subband_resources(1, assign_resources_request)[1]
@@ -326,7 +330,7 @@ def test_smrb_grpc_assign_resources_when_already_assigned(
     assign_resources_request: dict,
     task_callback: MagicMock,
 ) -> None:
-    """Test that SMRB gRPC API connects to the server."""
+    """Test that SMRB gRPC assign resources when resources alreay assigned."""
     mock_servicer_context.assign_resources.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.RESOURCES_ALREADY_ASSIGNED,
@@ -355,6 +359,44 @@ def test_smrb_grpc_assign_resources_when_already_assigned(
     component_state_callback.assert_not_called()
 
 
+def test_smrb_grpc_assign_resources_when_throws_exception(
+    mock_servicer_context: MagicMock,
+    grpc_port: int,
+    client_id: str,
+    component_state_callback: MagicMock,
+    pst_lmc_service: TestPstLmcService,
+    assign_resources_request: dict,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC assign resources throws an exception."""
+    mock_servicer_context.assign_resources.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.INTERNAL_ERROR,
+        message="Internal server error occurred",
+    )
+    resources = calculate_smrb_subband_resources(1, assign_resources_request)[1]
+
+    api = PstSmrbProcessApiGrpc(
+        client_id=client_id,
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        logger=logging.getLogger(__name__),
+        component_state_callback=component_state_callback,
+    )
+
+    api.assign_resources(resources, task_callback=task_callback)
+
+    expected_smrb_request = SmrbResources(**resources)
+    expected_request = AssignResourcesRequest(smrb=expected_smrb_request)
+    mock_servicer_context.assign_resources.assert_called_once_with(expected_request)
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Internal server error occurred"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
 def test_smrb_grpc_release_resources(
     mock_servicer_context: MagicMock,
     grpc_port: int,
@@ -363,7 +405,7 @@ def test_smrb_grpc_release_resources(
     pst_lmc_service: TestPstLmcService,
     task_callback: MagicMock,
 ) -> None:
-    """Test that SMRB gRPC API connects to the server."""
+    """Test that SMRB gRPC release resources."""
     response = ReleaseResourcesResponse()
     mock_servicer_context.release_resources = MagicMock(return_value=response)
 
@@ -393,7 +435,7 @@ def test_smrb_grpc_release_resources_when_no_resources_assigned(
     pst_lmc_service: TestPstLmcService,
     task_callback: MagicMock,
 ) -> None:
-    """Test that SMRB gRPC API connects to the server."""
+    """Test that SMRB release resources when there are not resources assigned."""
     mock_servicer_context.release_resources.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.RESOURCES_NOT_ASSIGNED,
@@ -416,3 +458,225 @@ def test_smrb_grpc_release_resources_when_no_resources_assigned(
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_once_with(resourced=False)
+
+
+def test_smrb_grpc_release_resources_when_throws_exception(
+    mock_servicer_context: MagicMock,
+    grpc_port: int,
+    client_id: str,
+    component_state_callback: MagicMock,
+    pst_lmc_service: TestPstLmcService,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB release resources when an exception is thrown."""
+    mock_servicer_context.release_resources.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.INTERNAL,
+        message="Oops there was a problem",
+    )
+
+    api = PstSmrbProcessApiGrpc(
+        client_id=client_id,
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        logger=logging.getLogger(__name__),
+        component_state_callback=component_state_callback,
+    )
+
+    api.release_resources(task_callback=task_callback)
+
+    mock_servicer_context.release_resources.assert_called_once_with(ReleaseResourcesRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Oops there was a problem"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_smrb_grpc_scan(
+    mock_servicer_context: MagicMock,
+    grpc_port: int,
+    client_id: str,
+    component_state_callback: MagicMock,
+    pst_lmc_service: TestPstLmcService,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC scan."""
+    response = ScanResponse()
+    mock_servicer_context.scan = MagicMock(return_value=response)
+
+    api = PstSmrbProcessApiGrpc(
+        client_id=client_id,
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        logger=logging.getLogger(__name__),
+        component_state_callback=component_state_callback,
+    )
+
+    api.scan(args={}, task_callback=task_callback)
+
+    mock_servicer_context.scan.assert_called_once_with(ScanRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(scanning=True)
+
+
+def test_smrb_grpc_scan_when_already_scanning(
+    mock_servicer_context: MagicMock,
+    grpc_port: int,
+    client_id: str,
+    component_state_callback: MagicMock,
+    pst_lmc_service: TestPstLmcService,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC scan when already scanning."""
+    mock_servicer_context.scan.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.ALREADY_SCANNING,
+        message="We are already scanning",
+    )
+
+    api = PstSmrbProcessApiGrpc(
+        client_id=client_id,
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        logger=logging.getLogger(__name__),
+        component_state_callback=component_state_callback,
+    )
+
+    api.scan(args={}, task_callback=task_callback)
+
+    mock_servicer_context.scan.assert_called_once_with(ScanRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(scanning=True)
+
+
+def test_smrb_grpc_scan_when_throws_exception(
+    mock_servicer_context: MagicMock,
+    grpc_port: int,
+    client_id: str,
+    component_state_callback: MagicMock,
+    pst_lmc_service: TestPstLmcService,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC scan when an exception is thrown."""
+    mock_servicer_context.scan.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.INTERNAL,
+        message="Oops there was a problem",
+    )
+
+    api = PstSmrbProcessApiGrpc(
+        client_id=client_id,
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        logger=logging.getLogger(__name__),
+        component_state_callback=component_state_callback,
+    )
+
+    api.scan(args={}, task_callback=task_callback)
+
+    mock_servicer_context.scan.assert_called_once_with(ScanRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Oops there was a problem"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_smrb_grpc_end_scan(
+    mock_servicer_context: MagicMock,
+    grpc_port: int,
+    client_id: str,
+    component_state_callback: MagicMock,
+    pst_lmc_service: TestPstLmcService,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC end scan."""
+    response = EndScanResponse()
+    mock_servicer_context.end_scan = MagicMock(return_value=response)
+
+    api = PstSmrbProcessApiGrpc(
+        client_id=client_id,
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        logger=logging.getLogger(__name__),
+        component_state_callback=component_state_callback,
+    )
+
+    api.end_scan(task_callback=task_callback)
+
+    mock_servicer_context.end_scan.assert_called_once_with(EndScanRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(scanning=False)
+
+
+def test_smrb_grpc_end_scan_when_not_scanning(
+    mock_servicer_context: MagicMock,
+    grpc_port: int,
+    client_id: str,
+    component_state_callback: MagicMock,
+    pst_lmc_service: TestPstLmcService,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC end scan when not scanning."""
+    mock_servicer_context.end_scan.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.NOT_SCANNING,
+        message="We're not scanning. End Scan doesn't need to do anything",
+    )
+
+    api = PstSmrbProcessApiGrpc(
+        client_id=client_id,
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        logger=logging.getLogger(__name__),
+        component_state_callback=component_state_callback,
+    )
+
+    api.end_scan(task_callback=task_callback)
+
+    mock_servicer_context.end_scan.assert_called_once_with(EndScanRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(scanning=False)
+
+
+def test_smrb_grpc_end_scan_when_exception_thrown(
+    mock_servicer_context: MagicMock,
+    grpc_port: int,
+    client_id: str,
+    component_state_callback: MagicMock,
+    pst_lmc_service: TestPstLmcService,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC end scan when an exception is thrown."""
+    mock_servicer_context.end_scan.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.INTERNAL,
+        message="Something is wrong!",
+    )
+
+    api = PstSmrbProcessApiGrpc(
+        client_id=client_id,
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        logger=logging.getLogger(__name__),
+        component_state_callback=component_state_callback,
+    )
+
+    api.end_scan(task_callback=task_callback)
+
+    mock_servicer_context.end_scan.assert_called_once_with(EndScanRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Something is wrong!"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
