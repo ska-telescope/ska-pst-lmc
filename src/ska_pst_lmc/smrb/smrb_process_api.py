@@ -332,7 +332,7 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
     def deconfigure(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
         """Deconfiure a scan.
 
-        For SMRB this is a n-op command. There is nothin on the server that would be
+        For SMRB this is a no-op command. There is nothin on the server that would be
         performed and executing this will do nothing.
 
         :param task_callback: callable to connect back to the component manager.

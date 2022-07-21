@@ -46,9 +46,14 @@ class AlreadyScanningException(BaseGrpcException):
     """Exception for when the process is already scanning.
 
     Raised when the server is already scanning and is in the
-    SCANNING ObsState mode. If the is raise it is due to
-    a mismatch in the state model, or if a comman line
-    interface has set the scanning state not through the LMC.
+    SCANNING ObsState state. If this exception is raised
+    it is likely due to a mismatch in the state model of the
+    LMC and the server, which could be the case if a command
+    line interface has interacted with the server directly.
+
+    The LMC can recover from this as it should only be raised
+    when the scan command is called. The LMC should log this
+    happened but can safely go into SCANNING state.
     """
 
 
@@ -56,7 +61,10 @@ class NotScanningException(BaseGrpcException):
     """Exception for when tyring to end scan but component is not scanning.
 
     Raised when the server is not in a scanning state but received an
-    end scan command.
+    end scan command. Just like :py:class:`AlreadyScanningException`
+    it is possible for the LMC to recover from this as this exception
+    is only raised during end_scan. The LMC should log this happened
+    but can safely go into a READY state.
     """
 
 
