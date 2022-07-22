@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import functools
 import logging
 from threading import Event
 from typing import Any, Callable, Optional, Tuple
@@ -334,8 +335,7 @@ class PstApiComponentManager(PstComponentManager):
 
     def release_all(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
         """Release all resources."""
-        self._api.release_resources(task_callback)
-        return TaskStatus.QUEUED, "Releasing all"
+        return self._submit_background_task(self._api.release_resources, task_callback=task_callback)
 
     def configure(self: PstApiComponentManager, configuration: dict, task_callback: Callable) -> TaskResponse:
         """
@@ -355,10 +355,23 @@ class PstApiComponentManager(PstComponentManager):
     def scan(self: PstApiComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
         """Start scanning."""
         # should be for how long the scan is and update based on that.
-        self._api.scan(args, task_callback)
-        return TaskStatus.QUEUED, "Scanning"
+        return self._submit_background_task(
+            functools.partial(self._api.scan, args), task_callback=task_callback
+        )
 
     def end_scan(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
         """End scanning."""
-        self._api.end_scan(task_callback)
-        return TaskStatus.QUEUED, "End scanning"
+        return self._submit_background_task(self._api.end_scan, task_callback=task_callback)
+
+    def _submit_background_task(
+        self: PstApiComponentManager, task: Callable, task_callback: Callable
+    ) -> TaskResponse:
+        def _task(
+            *args: Any,
+            task_callback: Callable,
+            task_abort_event: Optional[Event] = None,
+            **kwargs: Any,
+        ) -> None:
+            task(task_callback=task_callback)
+
+        return self.submit_task(_task, task_callback=task_callback)

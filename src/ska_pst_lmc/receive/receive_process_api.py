@@ -93,7 +93,6 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
             except Exception as e:
                 self._logger.warning("Error while shutting down communication", e)
 
-    @background_task
     def assign_resources(
         self: PstReceiveProcessApiSimulator, resources: dict, task_callback: Callable
     ) -> None:
@@ -111,7 +110,6 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         self._component_state_callback(resourced=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
     def release_resources(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
         """Release all resources.
 
@@ -157,7 +155,6 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         self._component_state_callback(configured=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
     def scan(self: PstReceiveProcessApiSimulator, args: dict, task_callback: Callable) -> None:
         """Run a scan.
 
@@ -173,7 +170,6 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         self._component_state_callback(scanning=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
     def end_scan(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
         """End a scan.
 

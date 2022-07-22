@@ -23,9 +23,13 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesResponse,
     ConnectionRequest,
     ConnectionResponse,
+    EndScanRequest,
+    EndScanResponse,
     ErrorCode,
     ReleaseResourcesRequest,
     ReleaseResourcesResponse,
+    ScanRequest,
+    ScanResponse,
     Status,
 )
 from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer, add_PstLmcServiceServicer_to_server
@@ -42,7 +46,7 @@ __all__ = [
 class TestGrpcStatus(grpc.Status):
     code: grpc.StatusCode
     details: str
-    trailing_metadata: Any
+    trailing_metadata: Optional[Any] = None
 
 
 class TestMockException(Exception):
@@ -51,19 +55,28 @@ class TestMockException(Exception):
     __test__: bool = False
 
     def __init__(
-        self: TestMockException, grpc_status_code: grpc.StatusCode, error_code: ErrorCode, message: str
+        self: TestMockException,
+        grpc_status_code: grpc.StatusCode,
+        message: str,
+        error_code: Optional[ErrorCode] = None,
     ) -> None:
         self.grpc_status_code = grpc_status_code
         self.error_code = error_code
         self.message = message
 
     def as_grpc_status(self: TestMockException) -> TestGrpcStatus:
-        status = Status(code=self.error_code, message=self.message)
-        return TestGrpcStatus(
-            code=self.grpc_status_code,
-            details=self.message,
-            trailing_metadata=((GRPC_STATUS_DETAILS_METADATA_KEY, status.SerializeToString()),),
-        )
+        if self.error_code:
+            status = Status(code=self.error_code, message=self.message)
+            return TestGrpcStatus(
+                code=self.grpc_status_code,
+                details=self.message,
+                trailing_metadata=((GRPC_STATUS_DETAILS_METADATA_KEY, status.SerializeToString()),),
+            )
+        else:
+            return TestGrpcStatus(
+                code=self.grpc_status_code,
+                details=self.message,
+            )
 
 
 class TestMockServicer(PstLmcServiceServicer):
@@ -110,6 +123,24 @@ class TestMockServicer(PstLmcServiceServicer):
         """Handle release resources."""
         try:
             return self._context.release_resources(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
+
+    def scan(self: TestMockServicer, request: ScanRequest, context: ServicerContext) -> ScanResponse:
+        """Handle scan."""
+        try:
+            return self._context.scan(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
+
+    def end_scan(
+        self: TestMockServicer, request: EndScanRequest, context: ServicerContext
+    ) -> EndScanResponse:
+        """Handle end scan."""
+        try:
+            return self._context.end_scan(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"

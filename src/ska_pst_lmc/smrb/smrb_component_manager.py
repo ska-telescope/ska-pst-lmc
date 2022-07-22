@@ -9,8 +9,8 @@
 
 from __future__ import annotations
 
+import functools
 import logging
-from threading import Event
 from typing import Any, Callable, List, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
@@ -186,32 +186,12 @@ class PstSmrbComponentManager(PstApiComponentManager):
 
         :param resources: resources to be assigned
         """
+        smrb_resources = calculate_smrb_subband_resources(self.beam_id, request_params=resources)
 
-        def _task(
-            *args: Any,
-            task_callback: Callable,
-            task_abort_event: Optional[Event] = None,
-            **kwargs: Any,
-        ) -> None:
-            beam_id: int = self.beam_id
+        # deal only with subband 1 for now.
+        self.logger.debug(f"Submitting API with smrb_resources={smrb_resources[1]}")
 
-            smrb_resources = calculate_smrb_subband_resources(beam_id, request_params=resources)
-
-            # deal only with subband 1 for now.
-            self.logger.debug(f"Calling API with smrb_resources={smrb_resources[1]}")
-            self._api.assign_resources(resources=smrb_resources[1], task_callback=task_callback)
-
-        return self.submit_task(_task, task_callback=task_callback)
-
-    def release_all(self: PstSmrbComponentManager, task_callback: Callable) -> TaskResponse:
-        """Release all resources."""
-
-        def _task(
-            *args: Any,
-            task_callback: Callable,
-            task_abort_event: Optional[Event] = None,
-            **kwargs: Any,
-        ) -> None:
-            self._api.release_resources(task_callback=task_callback)
-
-        return self.submit_task(_task, task_callback=task_callback)
+        return self._submit_background_task(
+            functools.partial(self._api.assign_resources, resources=smrb_resources[1]),
+            task_callback=task_callback,
+        )

@@ -21,6 +21,9 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import AssignResourcesRequest, SmrbResour
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.component.grpc_lmc_client import (
+    AlreadyScanningException,
+    BaseGrpcException,
+    NotScanningException,
     PstGrpcLmcClient,
     ResourcesAlreadyAssignedException,
     ResourcesNotAssignedException,
@@ -289,6 +292,9 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
         except ResourcesAlreadyAssignedException as e:
             self._logger.error(e.message)
             task_callback(result=e.message, status=TaskStatus.FAILED)
+        except BaseGrpcException as e:
+            self._logger.error("Problem processing assign_resources request for SMRB.", exc_info=True)
+            task_callback(status=TaskStatus.FAILED, result=e.message)
 
     def release_resources(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
         """Release all resources.
@@ -306,43 +312,35 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
             self._logger.warning(e.message)
             self._component_state_callback(resourced=False)
             task_callback(status=TaskStatus.COMPLETED, result=e.message)
+        except BaseGrpcException as e:
+            self._logger.error("Problem processing release_resources request for SMRB.", exc_info=True)
+            task_callback(status=TaskStatus.FAILED, result=e.message)
 
-    @background_task
     def configure(self: PstSmrbProcessApiGrpc, configuration: dict, task_callback: Callable) -> None:
         """Configure as scan.
+
+        For SMRB this is a no-op command. There is nothing on the server that would be
+        performed and executing this will do nothing.
 
         :param configuration: the configuration of for the scan.
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
-        task_callback(progress=42)
-        time.sleep(0.1)
-        task_callback(progress=58)
-        self._simulator.configure(configuration=configuration)
-        time.sleep(0.1)
         self._component_state_callback(configured=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
     def deconfigure(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
         """Deconfiure a scan.
+
+        For SMRB this is a no-op command. There is nothin on the server that would be
+        performed and executing this will do nothing.
 
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
-        task_callback(progress=20)
-        time.sleep(0.05)
-        task_callback(progress=50)
-        time.sleep(0.05)
-        task_callback(progress=80)
-        time.sleep(0.1)
-        self._simulator.deconfigure()
         self._component_state_callback(configured=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
     def scan(self: PstSmrbProcessApiGrpc, args: dict, task_callback: Callable) -> None:
         """Run a scan.
 
@@ -350,27 +348,35 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
-        task_callback(progress=55)
-        time.sleep(0.1)
-        self._simulator.scan(args)
-        self._component_state_callback(scanning=True)
-        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+        try:
+            self._grpc_client.scan()
+            self._component_state_callback(scanning=True)
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+        except AlreadyScanningException as e:
+            self._logger.warning(e.message)
+            self._component_state_callback(scanning=True)
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+        except BaseGrpcException as e:
+            self._logger.error("Problem processing scan request for SMRB.", exc_info=True)
+            task_callback(status=TaskStatus.FAILED, result=e.message)
 
-    @background_task
     def end_scan(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
         """End a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
-        task_callback(progress=37)
-        time.sleep(0.1)
-        task_callback(progress=63)
-        self._simulator.end_scan()
-        self._component_state_callback(scanning=False)
-        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+        try:
+            self._grpc_client.end_scan()
+            self._component_state_callback(scanning=False)
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+        except NotScanningException as e:
+            self._logger.warning(e.message)
+            self._component_state_callback(scanning=False)
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+        except BaseGrpcException as e:
+            self._logger.error("Problem processing end_scan request for SMRB.", exc_info=True)
+            task_callback(status=TaskStatus.FAILED, result=e.message)
 
     @background_task
     def abort(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:

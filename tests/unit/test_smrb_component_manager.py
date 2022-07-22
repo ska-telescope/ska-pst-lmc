@@ -91,10 +91,12 @@ def test_start_communicating_calls_connect_on_api(
     component_manager._api = api
 
     component_manager.start_communicating()
+    time.sleep(0.1)
     api.connect.assert_called_once()
     api.disconnect.assert_not_called()
 
     component_manager.stop_communicating()
+    time.sleep(0.1)
     api.disconnect.assert_called_once()
 
 
