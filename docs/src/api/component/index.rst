@@ -12,5 +12,6 @@ and Process API's.
 .. toctree::
 
   Component Manager<component_manager>
+  gRPC LMC Client<grpc_lmc_client>
   Process API<process_api>
   PST Device<pst_device>
