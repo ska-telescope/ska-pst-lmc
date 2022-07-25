@@ -9,6 +9,7 @@
 
 import logging
 import time
+from random import randint
 from typing import Callable
 from unittest.mock import MagicMock, call
 
@@ -17,13 +18,19 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionRespo
 from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 
 from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
-from ska_pst_lmc.smrb.smrb_model import SharedMemoryRingBufferData
+from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData
 from ska_pst_lmc.smrb.smrb_process_api import (
     PstSmrbProcessApi,
     PstSmrbProcessApiGrpc,
     PstSmrbProcessApiSimulator,
 )
 from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
+
+
+@pytest.fixture
+def monitor_data_callback() -> MagicMock:
+    """Create fixture for monitor data callback testing."""
+    return MagicMock()
 
 
 @pytest.fixture
@@ -35,6 +42,7 @@ def component_manager(
     api: PstSmrbProcessApi,
     communication_state_callback: Callable[[CommunicationStatus], None],
     component_state_callback: Callable,
+    monitor_data_callback: Callable,
 ) -> PstSmrbComponentManager:
     """Create instance of a component manager."""
     return PstSmrbComponentManager(
@@ -45,6 +53,7 @@ def component_manager(
         communication_state_callback=communication_state_callback,
         component_state_callback=component_state_callback,
         api=api,
+        monitor_data_callback=monitor_data_callback,
     )
 
 
@@ -72,7 +81,7 @@ def api(
 
 
 @pytest.fixture
-def monitor_data() -> SharedMemoryRingBufferData:
+def monitor_data() -> SmrbMonitorData:
     """Create an an instance of ReceiveData for monitor data."""
     from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
 
@@ -101,42 +110,53 @@ def test_start_communicating_calls_connect_on_api(
 
 
 @pytest.mark.parametrize(
-    "simulation_mode, property",
+    "property",
     [
-        (SimulationMode.TRUE, "ring_buffer_utilisation"),
-        (SimulationMode.TRUE, "ring_buffer_size"),
-        (SimulationMode.TRUE, "number_subbands"),
-        (SimulationMode.TRUE, "subband_ring_buffer_utilisations"),
-        (SimulationMode.TRUE, "subband_ring_buffer_sizes"),
-        (SimulationMode.FALSE, "ring_buffer_utilisation"),
-        (SimulationMode.FALSE, "ring_buffer_size"),
-        (SimulationMode.FALSE, "number_subbands"),
-        (SimulationMode.FALSE, "subband_ring_buffer_utilisations"),
-        (SimulationMode.FALSE, "subband_ring_buffer_sizes"),
+        ("ring_buffer_utilisation"),
+        ("ring_buffer_size"),
+        ("number_subbands"),
+        ("ring_buffer_read"),
+        ("ring_buffer_written"),
+        ("subband_ring_buffer_utilisations"),
+        ("subband_ring_buffer_sizes"),
+        ("subband_ring_buffer_read"),
+        ("subband_ring_buffer_written"),
     ],
 )
 def test_properties_come_from_simulator_api_monitor_data(
     component_manager: PstSmrbComponentManager,
-    simulation_mode: SimulationMode,
-    api: PstSmrbProcessApi,
-    monitor_data: SharedMemoryRingBufferData,
+    monitor_data: SmrbMonitorData,
     property: str,
 ) -> None:
     """Test properties are coming from API monitor data."""
-    if simulation_mode == SimulationMode.TRUE:
-        assert type(api) == PstSmrbProcessApiSimulator
-    else:
-        assert type(api) == PstSmrbProcessApiGrpc
-
-    # mock the API as we don't need to call it.
-    api = MagicMock()
-    type(api).monitor_data = monitor_data
-    component_manager._api = api
+    component_manager._monitor_data = monitor_data
 
     actual = getattr(component_manager, property)
     expected = getattr(monitor_data, property)
 
     assert actual == expected
+
+
+def test_handle_subband_monitor_data(
+    component_manager: PstSmrbComponentManager,
+    monitor_data_callback: MagicMock,
+    monitor_data: SmrbMonitorData,
+) -> None:
+    """Test handle_subband_monitor_data."""
+    subband_data = MagicMock()
+    monitor_data_store = MagicMock()
+    monitor_data_store.get_smrb_monitor_data.return_value = monitor_data
+    component_manager._monitor_data_store = monitor_data_store
+    subband_id = randint(1, 4)
+
+    component_manager._handle_subband_monitor_data(
+        subband_id=subband_id,
+        subband_data=subband_data,
+    )
+
+    monitor_data_store.subband_data.__setitem__.assert_called_once_with(subband_id, subband_data)
+    assert component_manager._monitor_data == monitor_data
+    monitor_data_callback.assert_called_once_with(monitor_data)
 
 
 def test_api_instance_changes_depending_on_simulation_mode(

@@ -118,10 +118,14 @@ class TestPstSmrb:
         assert device_under_test.ring_buffer_utilisation > 0.0
         assert device_under_test.ring_buffer_size > 0
         assert device_under_test.number_subbands > 0
+        assert device_under_test.ring_buffer_read >= 0
+        assert device_under_test.ring_buffer_written >= 0
 
         for i in range(device_under_test.number_subbands):
-            assert device_under_test.subband_ring_buffer_utilisations[i] > 0.0
+            assert device_under_test.subband_ring_buffer_utilisations[i] >= 0.0
             assert device_under_test.subband_ring_buffer_sizes[i] > 0
+            assert device_under_test.subband_ring_buffer_read[i] >= 0
+            assert device_under_test.subband_ring_buffer_written[i] >= 0
 
         device_under_test.EndScan()
         time.sleep(0.1)
