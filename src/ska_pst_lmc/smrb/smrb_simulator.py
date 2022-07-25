@@ -12,21 +12,18 @@ from __future__ import annotations
 from random import randint
 from typing import Any, Dict, List, Optional
 
-from ska_pst_lmc.smrb.smrb_model import SharedMemoryRingBufferData
+from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData, SmrbMonitorDataStore, SubbandMonitorData
 
 
 class PstSmrbSimulator:
     """Class used for simulating SMRB data."""
 
-    _num_subbands: int
-    _ring_buffer_size: int
-    _ring_buffer_utilisation: float
-    _subband_ring_buffer_sizes: List[int]
-    _subband_ring_buffer_utilisations: List[float]
+    _data_store: SmrbMonitorDataStore
 
     def __init__(
         self: PstSmrbSimulator,
         num_subbands: Optional[int] = None,
+        subband_num_of_buffers: Optional[List[int]] = None,
         subband_ring_buffer_sizes: Optional[List[int]] = None,
     ) -> None:
         """Initialise the SMRB simulator.
@@ -42,6 +39,9 @@ class PstSmrbSimulator:
         configuration: Dict[str, Any] = {}
         if num_subbands is not None:
             configuration["num_subbands"] = num_subbands
+
+        if subband_num_of_buffers is not None:
+            configuration["subband_num_of_buffers"] = subband_num_of_buffers
 
         if subband_ring_buffer_sizes is not None:
             configuration["subband_ring_buffer_sizes"] = subband_ring_buffer_sizes
@@ -64,22 +64,34 @@ class PstSmrbSimulator:
             num_subbands.
         """
         if "num_subbands" in configuration:
-            self._num_subbands = configuration["num_subbands"]
+            self.num_subbands = configuration["num_subbands"]
         else:
-            self._num_subbands = randint(1, 4)
+            self.num_subbands = randint(1, 4)
 
-        if "subband_ring_buffer_sizes" in configuration:
-            self._subband_ring_buffer_sizes = configuration["subband_ring_buffer_sizes"]
-            assert (
-                len(self._subband_ring_buffer_sizes) == self._num_subbands
-            ), f"Expected length of subband_ring_buffer_sizes to be {self._num_subbands}"
-        else:
-            # simulate allocate of 2^22 to 2^28 bytes per subband
-            self._subband_ring_buffer_sizes = [1048576 * randint(4, 64) for _ in range(self._num_subbands)]
+        # set up subband ring buffer sizes
+        subband_ring_buffer_sizes = configuration.get(
+            "subband_ring_buffer_sizes", [1048576 * randint(4, 64) for _ in range(self.num_subbands)]
+        )
+        assert (
+            len(subband_ring_buffer_sizes) == self.num_subbands
+        ), f"Expected length of subband_ring_buffer_sizes to be { self.num_subbands}"
 
-        self._ring_buffer_size = sum(self._subband_ring_buffer_sizes)
-        self._subband_ring_buffer_utilisations = self._num_subbands * [0.0]
-        self._ring_buffer_utilisation = 0.0
+        subband_num_of_buffers = configuration.get(
+            "subband_num_of_buffers", [randint(4, 8) for _ in range(self.num_subbands)]
+        )
+        assert (
+            len(subband_num_of_buffers) == self.num_subbands
+        ), f"Expected length of subband_num_of_buffers to be { self.num_subbands}"
+
+        self._data_store = SmrbMonitorDataStore()
+        for idx in range(self.num_subbands):
+            num_of_buffers = subband_num_of_buffers[idx]
+            buffer_size = subband_ring_buffer_sizes[idx]
+
+            self._data_store.subband_data[idx + 1] = SubbandMonitorData(
+                buffer_size=buffer_size,
+                num_of_buffers=num_of_buffers,
+            )
 
     def deconfigure(self: PstSmrbSimulator) -> None:
         """Simulate deconfigure."""
@@ -102,14 +114,18 @@ class PstSmrbSimulator:
 
     def _update(self: PstSmrbSimulator) -> None:
         """Simulate the update of SMRB data."""
-        for i in range(self._num_subbands):
-            self._subband_ring_buffer_utilisations[i] = float(randint(0, 79))
+        for idx in range(self.num_subbands):
+            subband_data = self._data_store.subband_data[idx + 1]
 
-        self._ring_buffer_utilisation = sum(
-            [s * u for (s, u) in zip(self._subband_ring_buffer_sizes, self._subband_ring_buffer_utilisations)]
-        )
+            written = randint(2**10, 2**16)
+            utilisation = randint(0, 1000) / 10.0  # between 0-100%
+            full = int(subband_data.num_of_buffers * utilisation / 100.0)
 
-    def get_data(self: PstSmrbSimulator) -> SharedMemoryRingBufferData:
+            subband_data.total_written += written
+            subband_data.total_read += written
+            subband_data.full = full
+
+    def get_data(self: PstSmrbSimulator) -> SmrbMonitorData:
         """
         Get current SMRB data.
 
@@ -121,10 +137,11 @@ class PstSmrbSimulator:
         if self._scan:
             self._update()
 
-        return SharedMemoryRingBufferData(
-            number_subbands=self._num_subbands,
-            ring_buffer_size=self._ring_buffer_size,
-            ring_buffer_utilisation=self._ring_buffer_utilisation,
-            subband_ring_buffer_sizes=self._subband_ring_buffer_sizes,
-            subband_ring_buffer_utilisations=self._subband_ring_buffer_utilisations,
-        )
+        return self._data_store.get_smrb_monitor_data()
+
+    def get_subband_data(self: PstSmrbSimulator) -> Dict[int, SubbandMonitorData]:
+        """Get simulated subband data."""
+        if self._scan:
+            self._update()
+
+        return self._data_store.subband_data
