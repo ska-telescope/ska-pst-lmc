@@ -10,7 +10,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, NoReturn, Optional, Type
+from threading import Event
+from typing import Any, Dict, Generator, NoReturn, Optional, Type
 
 import grpc
 from grpc import Channel
@@ -23,12 +24,16 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GetAssignedResourcesResponse,
     GetStateRequest,
     GetStateResponse,
+    MonitorRequest,
+    MonitorResponse,
     ReleaseResourcesRequest,
     ScanRequest,
     Status,
 )
 from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceStub
 from ska_tango_base.control_model import ObsState
+
+from ska_pst_lmc.util.timeout_iterator import TimeoutIterator
 
 GRPC_STATUS_DETAILS_METADATA_KEY = "grpc-status-details-bin"
 
@@ -255,4 +260,32 @@ class PstGrpcLmcClient:
             return ObsState(result.state)
         except grpc.RpcError as e:
             _handle_grpc_error(e)
-            # assert False, "unreachable"
+
+    def monitor(
+        self: PstGrpcLmcClient,
+        polling_rate: int = 5000,
+        abort_event: Optional[Event] = None,
+    ) -> Generator[MonitorResponse, None, None]:
+        """Call monitor on reqmore gRPC service.
+
+        :param polling_rate: the rate, in milliseconds, at which the monitoring
+            should poll. The default value is 5000ms (i.e. 5 seconds).
+        :param abort_event: a :py:class:`threading.Event` that can be
+            used to signal to stop monitoring.
+        """
+        self._logger.debug("Calling monitor")
+        try:
+            self._monitor_stream = TimeoutIterator(
+                iterator=self._service.monitor(MonitorRequest(polling_rate=polling_rate)),
+                timeout=2.0 * polling_rate / 1000.0,  # convert to seconds and double
+                abort_event=abort_event,
+                expected_rate=polling_rate / 1000.0,
+            )
+            for t in self._monitor_stream:
+                yield t
+
+        except TimeoutError:
+            pass
+
+        except grpc.RpcError as e:
+            _handle_grpc_error(e)
