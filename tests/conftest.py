@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import collections
 import logging
+import threading
 import time
 from typing import Any, Callable, Generator
 from unittest.mock import MagicMock
@@ -255,6 +256,14 @@ def tango_change_event_helper(
 def logger() -> logging.Logger:
     """Fixture that returns a default logger for tests."""
     return logging.Logger("Test logger")
+
+
+@pytest.fixture
+def abort_event() -> threading.Event:
+    """Get fixture to handle aborting threads."""
+    return threading.Event()
+
+
 
 
 @pytest.fixture
