@@ -54,6 +54,7 @@ autoflake = "^1.4"
 packaging = "20.9"
 grpcio-tools = "^1.47.0"
 protobuf-init = "^0.1.0"
+ipython = "^8.4.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
