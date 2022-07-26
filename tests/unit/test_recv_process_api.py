@@ -10,7 +10,7 @@
 import logging
 import time
 import unittest
-from typing import Callable
+from typing import Any, Callable
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -20,6 +20,26 @@ from ska_pst_lmc import PstReceiveSimulator
 from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApiSimulator
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
+
+
+@pytest.fixture
+def background_task_processor(
+    logger: logging.Logger, monkeypatch: pytest.MonkeyPatch
+) -> BackgroundTaskProcessor:
+    """Create mock for background task processing."""
+
+    def _submit_task(
+        action_fn: Callable,
+        *args: Any,
+        **kwargs: Any,
+    ) -> MagicMock:
+        action_fn()
+        return MagicMock()
+
+    # need to stub the submit_task and replace
+    processor = BackgroundTaskProcessor(default_logger=logger)
+    monkeypatch.setattr(processor, "submit_task", _submit_task)
+    return processor
 
 
 @pytest.fixture

@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 import time
 import unittest
 from typing import Callable
@@ -33,7 +34,6 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
 )
 from ska_tango_base.commands import TaskStatus
 
-from ska_pst_lmc.smrb.smrb_model import SharedMemoryRingBufferData
 from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApiGrpc, PstSmrbProcessApiSimulator
 from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
 from ska_pst_lmc.smrb.smrb_util import calculate_smrb_subband_resources
@@ -75,49 +75,33 @@ def simulator() -> PstSmrbSimulator:
     return PstSmrbSimulator()
 
 
-def test_communication_task_on_connect_disconnect(simulation_api: PstSmrbProcessApiSimulator) -> None:
-    """Assert start communicating starts a background task."""
-    assert simulation_api._communication_task is None
-
-    simulation_api.connect()
-
-    assert simulation_api._communication_task is not None
-    assert simulation_api._communication_task.running()
-
-    simulation_api.disconnect()
-    assert simulation_api._communication_task is None
+@pytest.fixture
+def subband_monitor_data_callback() -> MagicMock:
+    """Create a callback that can be used for subband data monitoring."""
+    return MagicMock()
 
 
-def test_start_communicating_call_monitor(simulation_api: PstSmrbProcessApiSimulator) -> None:
-    """Assert the background task used is the monitor method."""
-    simulation_api._monitor_action = MagicMock(name="_monitor_task")  # type: ignore
-
-    simulation_api._monitor_action.assert_not_called()
-
-    simulation_api.connect()
-    time.sleep(0.01)
-    simulation_api._monitor_action.assert_called()
-
-
-def test_monitor_function_gets_values_from_simulator(
-    simulation_api: PstSmrbProcessApiSimulator, simulator: PstSmrbSimulator
+@pytest.mark.parametrize("stub_background_processing", [False])
+def test_simulated_monitor_calls_callback(
+    simulation_api: PstSmrbProcessApiSimulator,
+    subband_monitor_data_callback: MagicMock,
+    abort_event: threading.Event,
+    logger: logging.Logger,
 ) -> None:
-    """Assert that the API values get data from simulator when monitor action called."""
-    with unittest.mock.patch.object(simulator, "get_data", wraps=simulator.get_data) as get_data:
-        simulation_api._monitor_action()
-        get_data.assert_called_once()
+    """Test simulatued monitoring calls subband_monitor_data_callback."""
+    simulation_api.monitor(
+        subband_monitor_data_callback=subband_monitor_data_callback,
+        polling_rate=500,
+        monitor_abort_event=abort_event,
+    )
+    time.sleep(0.6)
+    abort_event.set()
 
-
-def test_get_data_returns_empty_data_if_not_monitoring(simulation_api: PstSmrbProcessApiSimulator) -> None:
-    """Test that the data returned when API is not scanning is the default data."""
-    assert simulation_api.data is None
-
-    actual: SharedMemoryRingBufferData = simulation_api.monitor_data
-    assert actual is not None
-
-    expected: SharedMemoryRingBufferData = SharedMemoryRingBufferData.defaults()
-
-    assert actual == expected
+    calls = [
+        call(subband_id=subband_id, subband_data=subband_data)
+        for (subband_id, subband_data) in simulation_api._simulator.get_subband_data().items()
+    ]
+    subband_monitor_data_callback.assert_has_calls(calls=calls)
 
 
 def test_assign_resources(

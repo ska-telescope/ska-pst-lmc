@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import collections
 import logging
+import threading
 import time
 from typing import Any, Callable, Generator
 from unittest.mock import MagicMock
@@ -254,27 +255,55 @@ def tango_change_event_helper(
 @pytest.fixture()
 def logger() -> logging.Logger:
     """Fixture that returns a default logger for tests."""
-    return logging.Logger("Test logger")
+    logger = logging.Logger("Test logger")
+    logger.setLevel(logging.DEBUG)
+
+    return logger
+
+
+@pytest.fixture
+def abort_event() -> threading.Event:
+    """Get fixture to handle aborting threads."""
+    return threading.Event()
+
+
+@pytest.fixture
+def stub_background_processing() -> bool:
+    """Fixture used to make background processing synchronous."""
+    return True
 
 
 @pytest.fixture
 def background_task_processor(
-    logger: logging.Logger, monkeypatch: pytest.MonkeyPatch
+    logger: logging.Logger,
+    stub_background_processing: bool,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> BackgroundTaskProcessor:
-    """Create mock for background task processing."""
+    """Fixture to create background task processor.
 
-    def _submit_task(
-        action_fn: Callable,
-        *args: Any,
-        **kwargs: Any,
-    ) -> MagicMock:
-        action_fn()
-        return MagicMock()
-
-    # need to stub the submit_task and replace
+    This can be used in synchronous or background processing if
+    a stub_background_processing returns True or False, the default
+    is to always stub.
+    """
     processor = BackgroundTaskProcessor(default_logger=logger)
-    monkeypatch.setattr(processor, "submit_task", _submit_task)
+
+    if stub_background_processing:
+        # need to stub the submit_task and replace
+        print("Stubbing background processing")
+
+        def _submit_task(
+            action_fn: Callable,
+            *args: Any,
+            **kwargs: Any,
+        ) -> MagicMock:
+            action_fn()
+            return MagicMock()
+
+        monkeypatch.setattr(processor, "submit_task", _submit_task)
+
     return processor
+
+    return BackgroundTaskProcessor(default_logger=logger)
 
 
 @pytest.fixture

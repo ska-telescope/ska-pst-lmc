@@ -11,11 +11,13 @@ from __future__ import annotations
 
 import functools
 import logging
+import threading
 from typing import Any, Callable, List, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
 from ska_pst_lmc.component.component_manager import PstApiComponentManager, TaskResponse
+from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData, SmrbMonitorDataStore, SubbandMonitorData
 from ska_pst_lmc.smrb.smrb_process_api import (
     PstSmrbProcessApi,
     PstSmrbProcessApiGrpc,
@@ -36,6 +38,7 @@ class PstSmrbComponentManager(PstApiComponentManager):
         device_name: str,
         process_api_endpoint: str,
         logger: logging.Logger,
+        monitor_data_callback: Callable[[SmrbMonitorData], None],
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable[[bool, PowerState], None],
         api: Optional[PstSmrbProcessApi] = None,
@@ -48,14 +51,16 @@ class PstSmrbComponentManager(PstApiComponentManager):
             is used within the gRPC process to identify who is
             doing the calling.
         :param process_api_endpoint: the endpoint of the gRPC process.
-        :param simulation_mode: enum to track if component should be
-            in simulation mode or not.
-        :param logger: a logger for this object to use
-        :param communication_status_changed_callback: callback to be
+        :param logger: a logger for this object is to use.
+        :param monitor_data_callback: the callback that monitoring data
+            should call when data has been received. This should be
+            used by the Tango device to be notified when data has been
+            updated.
+        :param communication_state_callback: callback to be
             called when the status of the communications channel between
-            the component manager and its component changes
-        :param component_fault_callback: callback to be called when the
-            component faults (or stops faulting)
+            the component manager and its component changes.
+        :param component_state_callback: callback to be called when the
+            component state changes.
         """
         logger.debug(
             f"Setting up SMRB component manager with device_name='{device_name}'"
@@ -66,6 +71,13 @@ class PstSmrbComponentManager(PstApiComponentManager):
             logger=logger,
             component_state_callback=component_state_callback,
         )
+
+        # need a lock for updating component data
+        self._monitor_lock = threading.Lock()
+        self._monitor_data_store = SmrbMonitorDataStore()
+        self._monitor_data = SmrbMonitorData()
+        self._monitor_data_callback = monitor_data_callback
+
         super().__init__(
             device_name,
             api,
@@ -120,7 +132,7 @@ class PstSmrbComponentManager(PstApiComponentManager):
         :returns: the percentage of the ring buffer elements that are full of data.
         :rtype: float
         """
-        return self._api.monitor_data.ring_buffer_utilisation
+        return self._monitor_data.ring_buffer_utilisation
 
     @property
     def ring_buffer_size(self: PstSmrbComponentManager) -> int:
@@ -129,7 +141,7 @@ class PstSmrbComponentManager(PstApiComponentManager):
         :returns: the capacity of the ring buffer, in bytes.
         :rtype: int
         """
-        return self._api.monitor_data.ring_buffer_size
+        return self._monitor_data.ring_buffer_size
 
     @property
     def number_subbands(self: PstSmrbComponentManager) -> int:
@@ -138,7 +150,25 @@ class PstSmrbComponentManager(PstApiComponentManager):
         :returns: the number of sub-bands.
         :rtype: int
         """
-        return self._api.monitor_data.number_subbands
+        return self._monitor_data.number_subbands
+
+    @property
+    def ring_buffer_read(self: PstSmrbComponentManager) -> int:
+        """Get the amount of data, in bytes, that has been read.
+
+        :returns: the amount of data that has been read.
+        :rtype: int
+        """
+        return self._monitor_data.ring_buffer_read
+
+    @property
+    def ring_buffer_written(self: PstSmrbComponentManager) -> int:
+        """Get the amount of data, in bytes, that has been written.
+
+        :returns: the amount of data that has been written.
+        :rtype: int
+        """
+        return self._monitor_data.ring_buffer_written
 
     @property
     def subband_ring_buffer_utilisations(self: PstSmrbComponentManager) -> List[float]:
@@ -147,7 +177,7 @@ class PstSmrbComponentManager(PstApiComponentManager):
         :returns: the percentage of full ring buffer elements for each sub-band.
         :rtype: List[float]
         """
-        return self._api.monitor_data.subband_ring_buffer_utilisations
+        return self._monitor_data.subband_ring_buffer_utilisations
 
     @property
     def subband_ring_buffer_sizes(self: PstSmrbComponentManager) -> List[int]:
@@ -156,7 +186,25 @@ class PstSmrbComponentManager(PstApiComponentManager):
         :returns: the capacity of ring buffers, in bytes, for each sub-band.
         :rtype: List[int]
         """
-        return self._api.monitor_data.subband_ring_buffer_sizes
+        return self._monitor_data.subband_ring_buffer_sizes
+
+    @property
+    def subband_ring_buffer_read(self: PstSmrbComponentManager) -> List[int]:
+        """Get the capacity of ring buffers for each sub-band.
+
+        :returns: the capacity of ring buffers, in bytes, for each sub-band.
+        :rtype: List[int]
+        """
+        return self._monitor_data.subband_ring_buffer_read
+
+    @property
+    def subband_ring_buffer_written(self: PstSmrbComponentManager) -> List[int]:
+        """Get the capacity of ring buffers for each sub-band.
+
+        :returns: the capacity of ring buffers, in bytes, for each sub-band.
+        :rtype: List[int]
+        """
+        return self._monitor_data.subband_ring_buffer_written
 
     def _simulation_mode_changed(self: PstSmrbComponentManager) -> None:
         """Handle change of simulation mode."""
@@ -195,3 +243,41 @@ class PstSmrbComponentManager(PstApiComponentManager):
             functools.partial(self._api.assign_resources, resources=smrb_resources[1]),
             task_callback=task_callback,
         )
+
+    def scan(self: PstSmrbComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+        """Start scanning."""
+
+        def _task(task_callback: Callable[..., None]) -> None:
+            self._api.scan(args, task_callback)
+            self._api.monitor(
+                # for now only handling 1 subband
+                subband_monitor_data_callback=self._handle_subband_monitor_data
+            )
+
+        return self._submit_background_task(_task, task_callback=task_callback)
+
+    def end_scan(self: PstSmrbComponentManager, task_callback: Callable) -> TaskResponse:
+        """End scanning."""
+
+        def _task(task_callback: Callable[..., None]) -> None:
+            self._api.end_scan(task_callback=task_callback)
+
+            # reset the monitoring data
+            self._monitor_data = SmrbMonitorData()
+            self._monitor_data_callback(self._monitor_data)
+
+        return self._submit_background_task(_task, task_callback=task_callback)
+
+    def _handle_subband_monitor_data(
+        self: PstSmrbComponentManager,
+        *args: Any,
+        subband_id: int,
+        subband_data: SubbandMonitorData,
+        **kwargs: dict,
+    ) -> None:
+        """Handle receiving of a sub-band monitor data update."""
+        self.logger.info(f"Received subband data for subband {subband_id}. Data=\n{subband_data}")
+        with self._monitor_lock:
+            self._monitor_data_store.subband_data[subband_id] = subband_data
+            self._monitor_data = self._monitor_data_store.get_smrb_monitor_data()
+            self._monitor_data_callback(self._monitor_data)

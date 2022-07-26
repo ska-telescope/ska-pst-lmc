@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from typing import List, Optional
 
 import tango
@@ -19,6 +20,7 @@ from tango.server import attribute, command, device_property, run
 import ska_pst_lmc.release as release
 from ska_pst_lmc.component.pst_device import PstBaseDevice
 from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
+from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData
 
 __all__ = ["PstSmrb", "main"]
 
@@ -35,6 +37,10 @@ class PstSmrb(PstBaseDevice):
     # -----------------
     process_api_endpoint = device_property(
         dtype=str,
+    )
+
+    monitor_polling_rate = device_property(
+        dtype=int, default_value=5000, doc="Rate at which monitor polling should happen, in milliseconds."
     )
 
     # ---------------
@@ -62,6 +68,7 @@ class PstSmrb(PstBaseDevice):
         """
         return PstSmrbComponentManager(
             device_name=self.get_name(),
+            monitor_data_callback=self._update_monitor_data,
             process_api_endpoint=self.process_api_endpoint,
             simulation_mode=SimulationMode.TRUE,
             logger=self.logger,
@@ -80,6 +87,11 @@ class PstSmrb(PstBaseDevice):
         destructor and by the device Init command.
         """
 
+    def _update_monitor_data(self: PstSmrb, data: SmrbMonitorData) -> None:
+        for (key, value) in dataclasses.asdict(data).items():
+            self.push_change_event(key, value)
+            self.push_archive_event(key, value)
+
     # ------------------
     # Attributes
     # ------------------
@@ -89,8 +101,10 @@ class PstSmrb(PstBaseDevice):
         label="Utilisation",
         unit="Percentage",
         display_unit="%",
-        polling_period=5000,
         max_value=100,
+        min_value=0,
+        max_alarm=90,
+        max_warning=80,
         doc="Percentage of the ring buffer elements that are full of data",
     )
     def ring_buffer_utilisation(self: PstSmrb) -> float:
@@ -107,7 +121,6 @@ class PstSmrb(PstBaseDevice):
         unit="Bytes",
         standard_unit="Bytes",
         display_unit="B",
-        polling_period=5000,
         doc="Capacity of ring buffer in bytes",
     )
     def ring_buffer_size(self: PstSmrb) -> int:
@@ -119,8 +132,39 @@ class PstSmrb(PstBaseDevice):
         return self.component_manager.ring_buffer_size
 
     @attribute(
+        dtype="DevULong64",
+        label="Ring Buffer Read",
+        unit="Bytes",
+        standard_unit="Bytes",
+        display_unit="B",
+        doc="Amount of data read from ring buffer",
+    )
+    def ring_buffer_read(self: PstSmrb) -> int:
+        """Get the amount of data read from ring buffer, in bytes.
+
+        :returns: the amount of data read from ring buffer, in bytes.
+        :rtype: int
+        """
+        return self.component_manager.ring_buffer_read
+
+    @attribute(
+        dtype="DevULong64",
+        label="Ring Buffer Written",
+        unit="Bytes",
+        standard_unit="Bytes",
+        display_unit="B",
+        doc="Amount of data written to ring buffer",
+    )
+    def ring_buffer_written(self: PstSmrb) -> int:
+        """Get the amount of data written to ring buffer, in bytes.
+
+        :returns: the amount of data written to ring buffer, in bytes.
+        :rtype: int
+        """
+        return self.component_manager.ring_buffer_written
+
+    @attribute(
         dtype="DevUShort",
-        polling_period=5000,
         doc="Number of sub-bands",
     )
     def number_subbands(self: PstSmrb) -> int:
@@ -137,7 +181,6 @@ class PstSmrb(PstBaseDevice):
         unit="Percent",
         standard_unit="Percent",
         display_unit="%",
-        polling_period=5000,
         max_value=100,
         min_value=0,
         max_alarm=90,
@@ -159,7 +202,6 @@ class PstSmrb(PstBaseDevice):
         unit="Bytes",
         standard_unit="Bytes",
         display_unit="B",
-        polling_period=5000,
         doc="Capacity of ring buffers, in bytes, for each sub-band",
     )
     def subband_ring_buffer_sizes(self: PstSmrb) -> List[int]:
@@ -169,6 +211,40 @@ class PstSmrb(PstBaseDevice):
         :rtype: List[int]
         """
         return self.component_manager.subband_ring_buffer_sizes
+
+    @attribute(
+        dtype=("DevULong64",),
+        max_dim_x=4,
+        label="Sub-band ring buffer read",
+        unit="Bytes",
+        standard_unit="Bytes",
+        display_unit="B",
+        doc="Amount of data read, in bytes, for each sub-band",
+    )
+    def subband_ring_buffer_read(self: PstSmrb) -> List[int]:
+        """Get the amount of data read, in bytes, for each sub-band.
+
+        :returns: the amount of data read, in bytes, for each sub-band.
+        :rtype: List[int]
+        """
+        return self.component_manager.subband_ring_buffer_read
+
+    @attribute(
+        dtype=("DevULong64",),
+        max_dim_x=4,
+        label="Sub-band ring buffer written",
+        unit="Bytes",
+        standard_unit="Bytes",
+        display_unit="B",
+        doc="Amount of data written, in bytes, for each sub-band",
+    )
+    def subband_ring_buffer_written(self: PstSmrb) -> List[int]:
+        """Get the amount of data written, in bytes, for each sub-band.
+
+        :returns: the amount of data written, in bytes, for each sub-band.
+        :rtype: List[int]
+        """
+        return self.component_manager.subband_ring_buffer_written
 
     # --------
     # Commands
