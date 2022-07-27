@@ -10,13 +10,12 @@
 from __future__ import annotations
 
 import logging
+import time
 from concurrent import futures
 from dataclasses import dataclass
-from types import TracebackType
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 import grpc
-import tango
 from grpc import ServicerContext
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesRequest,
@@ -32,7 +31,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ScanResponse,
     Status,
 )
-from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer, add_PstLmcServiceServicer_to_server
+from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer
 
 from ska_pst_lmc.component.grpc_lmc_client import GRPC_STATUS_DETAILS_METADATA_KEY
 
@@ -89,7 +88,11 @@ class TestMockServicer(PstLmcServiceServicer):
     # Disable PyTest thinking class is test suite class
     __test__: bool = False
 
-    def __init__(self: TestMockServicer, context: Any) -> None:
+    def __init__(
+        self: TestMockServicer,
+        context: Any,
+        logger: logging.Logger,
+    ) -> None:
         """Initialise the test mock servicer.
 
         All requests will be delegated to the context parameter which
@@ -100,17 +103,20 @@ class TestMockServicer(PstLmcServiceServicer):
             to assert or create errors (i.e. a mock).
         """
         self._context = context
+        self._logger = logger
 
     def connect(
         self: TestMockServicer, request: ConnectionRequest, context: ServicerContext
     ) -> ConnectionResponse:
         """Handle connection request from client."""
+        self._logger.debug("connect request")
         return self._context.connect(request)
 
     def assign_resources(
         self: TestMockServicer, request: AssignResourcesRequest, context: ServicerContext
     ) -> AssignResourcesResponse:
         """Handle assign resources."""
+        self._logger.debug("assign_resources request")
         try:
             return self._context.assign_resources(request)
         except TestMockException as e:
@@ -121,6 +127,7 @@ class TestMockServicer(PstLmcServiceServicer):
         self: TestMockServicer, request: ReleaseResourcesRequest, context: ServicerContext
     ) -> ReleaseResourcesResponse:
         """Handle release resources."""
+        self._logger.debug("release_resources request")
         try:
             return self._context.release_resources(request)
         except TestMockException as e:
@@ -129,6 +136,7 @@ class TestMockServicer(PstLmcServiceServicer):
 
     def scan(self: TestMockServicer, request: ScanRequest, context: ServicerContext) -> ScanResponse:
         """Handle scan."""
+        self._logger.debug("scan request")
         try:
             return self._context.scan(request)
         except TestMockException as e:
@@ -139,6 +147,7 @@ class TestMockServicer(PstLmcServiceServicer):
         self: TestMockServicer, request: EndScanRequest, context: ServicerContext
     ) -> EndScanResponse:
         """Handle end scan."""
+        self._logger.debug("end_scan request")
         try:
             return self._context.end_scan(request)
         except TestMockException as e:
@@ -161,10 +170,7 @@ class TestPstLmcService:
 
     def __init__(
         self: TestPstLmcService,
-        servicer: PstLmcServiceServicer,
-        port: int,
-        interface: str = "0.0.0.0",
-        max_workers: int = 10,
+        grpc_server: grpc.Server,
         logger: Optional[logging.Logger] = None,
         **kwargs: Any,
     ) -> None:
@@ -182,55 +188,34 @@ class TestPstLmcService:
         :param max_workers: the maximum number of workers the thread pool will use.
         :param logger: the logger to use with the class.
         """
-        self._thread_pool = futures.ThreadPoolExecutor(max_workers=max_workers)
-        self._server = grpc.server(self._thread_pool)
-        self._port = port
-        self._interface = interface
         self._logger = logger or logging.getLogger(__name__)
-        add_PstLmcServiceServicer_to_server(servicer=servicer, server=self._server)
-        self._future: Optional[futures.Future] = None
+        self._server = grpc_server
+        self._running = False
 
     def __del__(self: TestPstLmcService) -> None:
         """Drop of the instance has been requested."""
         self.stop()
 
-    def __enter__(self: TestPstLmcService) -> TestPstLmcService:
-        """Use service as a context manager."""
-        self.serve()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc: Optional[BaseException],
-        traceback: Optional[TracebackType],
-    ) -> None:
-        """Exit from context manager."""
-        self.stop()
-
-    def _serve(self: TestPstLmcService) -> None:
+    def serve(self: TestPstLmcService) -> None:
         """Start the gRPC to serve."""
         self._logger.info("Starting server")
         try:
-            self._server.add_insecure_port(f"{self._interface}:{self._port}")
             self._server.start()
+            self._running = True
             self._server.wait_for_termination()
+            self._running = False
+            self._logger.debug("Server has terminated")
         except futures.CancelledError:
             self._logger.debug("Serve task has been cancelled.")
         except KeyboardInterrupt:
             self._logger.debug("Interrupt has been requested. Exiting serve")
         except Exception:
             self._logger.error("Unknown exception has happened while serving.", exc_info=True)
-        finally:
-            self._future = None
-
-    def serve(self: TestPstLmcService) -> None:
-        """Start the background serving of requests."""
-        with tango.EnsureOmniThread():
-            self._future = self._thread_pool.submit(self._serve)
 
     def stop(self: TestPstLmcService) -> None:
         """Stop the background serving of requests."""
-        self._server.stop(0.1)
-        if self._future:
-            self._future.cancel()
+        if self._running:
+            self._logger.debug("Stopping test gRPC service.")
+            self._server.stop(grace=0.1)
+            time.sleep(0.2)
+            self._logger.debug("Service stopped.")

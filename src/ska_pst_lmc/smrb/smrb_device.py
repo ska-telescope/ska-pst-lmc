@@ -58,6 +58,10 @@ class PstSmrb(PstBaseDevice):
         self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
         self._version_id = release.VERSION
 
+        for f in dataclasses.fields(SmrbMonitorData):
+            self.set_change_event(f.name, True, True)
+            self.set_archive_event(f.name, True)
+
     def create_component_manager(
         self: PstSmrb,
     ) -> PstSmrbComponentManager:
@@ -74,6 +78,7 @@ class PstSmrb(PstBaseDevice):
             logger=self.logger,
             communication_state_callback=self._communication_state_changed,
             component_state_callback=self._component_state_changed,
+            monitor_polling_rate=self.monitor_polling_rate,
         )
 
     def always_executed_hook(self: PstSmrb) -> None:

@@ -5,12 +5,14 @@ import collections
 import logging
 import threading
 import time
-from typing import Any, Callable, Generator
+from concurrent import futures
+from typing import Any, Callable, Dict, Generator
 from unittest.mock import MagicMock
 
+import grpc
 import pytest
 import tango
-from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer
+from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer, add_PstLmcServiceServicer_to_server
 from ska_tango_base.control_model import SimulationMode
 from ska_tango_base.testing.mock import MockCallable, MockChangeEventCallback
 from tango import DeviceProxy
@@ -46,15 +48,21 @@ def device_properties() -> dict:
 
 
 @pytest.fixture()
-def tango_context(device_test_config: dict) -> Generator[DeviceTestContext, None, None]:
+def tango_context(
+    device_test_config: dict,
+) -> Generator[DeviceTestContext, None, None]:
     """Return a Tango test context object, in which the device under test is running."""
     component_manager_patch = device_test_config.pop("component_manager_patch", None)
     if component_manager_patch is not None:
         device_test_config["device"].create_component_manager = component_manager_patch
 
+    if "timeout" not in device_test_config:
+        device_test_config["timeout"] = 1
+    device_test_config["process"] = True
+
     tango_context = DeviceTestContext(**device_test_config)
-    DeviceProxyFactory._proxy_supplier = tango_context.get_device
     tango_context.start()
+    DeviceProxyFactory._proxy_supplier = tango_context.get_device
     yield tango_context
     tango_context.stop()
 
@@ -76,13 +84,13 @@ def _generate_port() -> int:
         return s.getsockname()[1]
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture
 def grpc_port() -> int:
     """Fixture to generate port for gRPC."""
     return _generate_port()
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture
 def client_id() -> str:
     """Generate a random client_id string."""
     import random
@@ -92,7 +100,7 @@ def client_id() -> str:
     return "".join(random.choice(letters) for i in range(10))
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture
 def device_name(client_id: str) -> str:
     """Generate a random device name."""
     import random
@@ -100,46 +108,71 @@ def device_name(client_id: str) -> str:
     return f"test/{client_id}/{random.randint(0,16)}"
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture
 def grpc_endpoint(grpc_port: int) -> str:
     """Return the endpoint of the gRPC server."""
     return f"127.0.0.1:{grpc_port}"
 
 
-@pytest.fixture(scope="class")
-def grpc_servicer(mock_servicer_context: MagicMock) -> TestMockServicer:
+@pytest.fixture
+def grpc_servicer(mock_servicer_context: MagicMock, logger: logging.Logger) -> TestMockServicer:
     """Create a test mock servicer given mock context."""
-    return TestMockServicer(context=mock_servicer_context)
+    return TestMockServicer(
+        context=mock_servicer_context,
+        logger=logger,
+    )
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture
+def grpc_service(
+    grpc_port: int,
+    grpc_servicer: PstLmcServiceServicer,
+) -> grpc.Server:
+    """Create instance of gRPC server."""
+    grpc_tpe = futures.ThreadPoolExecutor(max_workers=10)
+    server = grpc.server(grpc_tpe)
+    server.add_insecure_port(f"0.0.0.0:{grpc_port}")
+    add_PstLmcServiceServicer_to_server(servicer=grpc_servicer, server=server)
+
+    return server
+
+
+@pytest.fixture
 def pst_lmc_service(
-    grpc_port: int, grpc_servicer: PstLmcServiceServicer
+    grpc_service: grpc.Server,
+    logger: logging.Logger,
 ) -> Generator[TestPstLmcService, None, None]:
     """Yield an instance of a PstLmcServiceServicer for testing."""
     service = TestPstLmcService(
-        servicer=grpc_servicer,
-        port=grpc_port,
+        grpc_server=grpc_service,
+        logger=logger,
     )
-    with service as s:
-        yield s
+    t = threading.Thread(target=service.serve, daemon=True)
+    t.start()
+    time.sleep(0.5)
+    yield service
+    service.stop()
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture
 def mock_servicer_context() -> MagicMock:
     """Generate a mock gRPC servicer context to use with testing of gRPC calls."""
     return MagicMock()
 
 
-@pytest.fixture(scope="class")
-def multidevice_test_context(server_configuration: dict) -> Generator[MultiDeviceTestContext, None, None]:
+@pytest.fixture
+def multidevice_test_context(
+    server_configuration: dict, logger: logging.Logger
+) -> Generator[MultiDeviceTestContext, None, None]:
     """Get generator for MultiDeviceTestContext."""
     if "host" not in server_configuration:
         server_configuration["host"] = get_host_ip()
     if "port" not in server_configuration:
         server_configuration["port"] = _generate_port()
     if "timeout" not in server_configuration:
-        server_configuration["timeout"] = 10
+        server_configuration["timeout"] = 1
+    if "daemon" not in server_configuration:
+        server_configuration["daemon"] = True
 
     def device_proxy_supplier(fqdn: str, *args: Any, **kwargs: Any) -> tango.DeviceProxy:
         if not fqdn.startswith("tango://"):
@@ -152,8 +185,10 @@ def multidevice_test_context(server_configuration: dict) -> Generator[MultiDevic
 
     DeviceProxyFactory._proxy_supplier = device_proxy_supplier
 
+    logger.debug(f"Creating multidevice_test_context {server_configuration}")
     with MultiDeviceTestContext(**server_configuration) as context:
-        time.sleep(0.15)
+        logger.debug("Created multidevice_test_context")
+        time.sleep(0.5)
         yield context
 
 
@@ -170,7 +205,7 @@ def device_under_test(tango_context: DeviceTestContext) -> DeviceProxy:
     :rtype: :py:class:`tango.DeviceProxy`
     """
     # Give the PushChanges polled command time to run once.
-    time.sleep(0.15)
+    time.sleep(0.2)
 
     return tango_context.device
 
@@ -195,7 +230,7 @@ class ChangeEventDict:
     def __getitem__(self: ChangeEventDict, key: Any) -> MockChangeEventCallback:
         """Get a mock change event callback to be used in testing."""
         if key not in self._dict:
-            self._dict[key] = MockChangeEventCallback(key)
+            self._dict[key] = MockChangeEventCallback(key, filter_for_change=True)
         return self._dict[key]
 
 
@@ -214,11 +249,20 @@ class TangoChangeEventHelper:
     """Internal testing class used for handling change events."""
 
     def __init__(
-        self: TangoChangeEventHelper, device_under_test: DeviceProxy, change_event_callbacks: ChangeEventDict
+        self: TangoChangeEventHelper,
+        device_under_test: DeviceProxy,
+        change_event_callbacks: ChangeEventDict,
+        logger: logging.Logger,
     ) -> None:
         """Initialise change event helper."""
         self.device_under_test = device_under_test
         self.change_event_callbacks = change_event_callbacks
+        self.subscriptions: Dict[str, int] = {}
+        self.logger = logger
+
+    def __del__(self: TangoChangeEventHelper) -> None:
+        """Free resources held."""
+        self.release()
 
     def subscribe(self: TangoChangeEventHelper, attribute_name: str) -> MockChangeEventCallback:
         """Subscribe to change events of an attribute.
@@ -226,17 +270,26 @@ class TangoChangeEventHelper:
         This returns a :py:class:`MockChangeEventCallback` that can
         then be used to verify changes.
         """
-        self.device_under_test.subscribe_event(
+        subscription_id = self.device_under_test.subscribe_event(
             attribute_name,
             tango.EventType.CHANGE_EVENT,
             self.change_event_callbacks[attribute_name],
         )
+        self.logger.debug(f"Subscribed to events of '{attribute_name}'. subscription_id = {subscription_id}")
+        self.subscriptions[attribute_name] = subscription_id
         return self.change_event_callbacks[attribute_name]
+
+    def release(self: TangoChangeEventHelper) -> None:
+        """Release any subscriptions that are held."""
+        for (name, subscription_id) in self.subscriptions.items():
+            self.logger.debug(f"Unsubscribing to '{name}' with subscription_id = {subscription_id}")
+            self.device_under_test.unsubscribe_event(subscription_id)
+        self.subscriptions.clear()
 
 
 @pytest.fixture()
 def tango_change_event_helper(
-    device_under_test: DeviceProxy, change_event_callbacks: ChangeEventDict
+    device_under_test: DeviceProxy, change_event_callbacks: ChangeEventDict, logger: logging.Logger
 ) -> TangoChangeEventHelper:
     """
     Return a helper to simplify subscription to the device under test with a callback.
@@ -249,15 +302,15 @@ def tango_change_event_helper(
     return TangoChangeEventHelper(
         device_under_test=device_under_test,
         change_event_callbacks=change_event_callbacks,
+        logger=logger,
     )
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def logger() -> logging.Logger:
     """Fixture that returns a default logger for tests."""
-    logger = logging.Logger("Test logger")
+    logger = logging.getLogger("TEST_LOGGER")
     logger.setLevel(logging.DEBUG)
-
     return logger
 
 
@@ -289,7 +342,7 @@ def background_task_processor(
 
     if stub_background_processing:
         # need to stub the submit_task and replace
-        print("Stubbing background processing")
+        logger.debug("Stubbing background processing")
 
         def _submit_task(
             action_fn: Callable,
