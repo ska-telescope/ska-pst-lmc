@@ -23,7 +23,7 @@ from tango import DeviceProxy, DevState
 
 from ska_pst_lmc.smrb.smrb_device import PstSmrb
 from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
-from tests.conftest import ChangeEventDict, TangoChangeEventHelper
+from tests.conftest import TangoChangeEventHelper
 
 
 class TestPstSmrb:
