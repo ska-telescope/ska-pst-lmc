@@ -24,6 +24,7 @@ from ska_pst_lmc.receive import generate_random_update
 from ska_pst_lmc.receive.receive_model import ReceiveData
 from tests.conftest import TangoChangeEventHelper
 
+
 @pytest.fixture()
 def receive_device() -> Generator[DeviceProxy, None, None]:
     """Create text fixture that yields a DeviceProxy for RECV TANGO device."""
