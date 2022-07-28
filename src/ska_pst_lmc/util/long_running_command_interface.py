@@ -14,7 +14,8 @@ from dataclasses import dataclass
 from threading import Lock
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from tango import EventData, EventType
+import backoff
+from tango import DeviceProxy, EventData, EventType
 
 from ska_pst_lmc.device_proxy import PstDeviceProxy
 
@@ -73,21 +74,30 @@ class LongRunningCommandInterface:
 
     def setup(self: LongRunningCommandInterface) -> None:
         """Only create the device proxy and subscribe when a command is invoked."""
+
+        @backoff.on_exception(
+            backoff.expo,
+            Exception,
+            factor=1,
+            max_time=5.0,
+        )
+        def _subscribe(device_proxy: DeviceProxy) -> int:
+            return device_proxy.subscribe_event(
+                "longrunningcommandresult",
+                EventType.CHANGE_EVENT,
+                self,
+                stateless=True,
+            )
+
         if not self._result_subscriptions:
             for device_proxy in self._tango_devices:
                 try:
-                    self._result_subscriptions.append(
-                        device_proxy.subscribe_event(
-                            "longrunningcommandresult",
-                            EventType.CHANGE_EVENT,
-                            self,
-                            stateless=True,
-                        )
-                    )
-                except Exception:
+                    self._result_subscriptions.append(_subscribe(device_proxy))
+                except Exception as e:
                     self._logger.warning(
                         f"Error setting up longRunningCommandResult for {device_proxy.fqdn}", exc_info=True
                     )
+                    raise e
 
     def push_event(self: LongRunningCommandInterface, ev: EventData) -> None:
         """
