@@ -126,31 +126,11 @@ class TestPstBeam:
         logger: logging.Logger,
     ) -> None:
         """Test state model of PstReceive."""
-        long_running_command_status_callback = tango_change_event_helper.subscribe("longRunningCommandStatus")
-
-        @backoff.on_exception(
-            backoff.expo,
-            AssertionError,
-            factor=1,
-            max_time=1.0,
-        )
-        def assert_command_status(command_id: str, status: str) -> None:
-            evt = long_running_command_status_callback.get_next_change_event()
-
-            # need to covert to map
-            evt_iter = iter(evt)
-            evt_map: Dict[str, str] = {k: v for (k, v) in zip(evt_iter, evt_iter)}
-
-            logger.debug(f"Trying to assert command {command_id} has status {status}")
-            logger.debug(f"Events map = {evt_map}")
-
-            assert command_id in evt_map
-            logger.debug(f"Command {command_id} is in event map, has status {evt_map[command_id]}")
-            assert evt_map[command_id] == status
-
         # need to go through state mode
         recv_proxy = multidevice_test_context.get_device("test/recv/1")
         smrb_proxy = multidevice_test_context.get_device("test/smrb/1")
+        # trying to avoid potential race condition inside TANGO
+        time.sleep(0.1)
 
         def assert_state(state: DevState) -> None:
             assert device_under_test.state() == state
@@ -170,6 +150,26 @@ class TestPstBeam:
 
         def _event_callback(ev: Any) -> None:
             logger.warning(f"Recevied event: {ev}")
+
+        long_running_command_status_callback = tango_change_event_helper.subscribe("longRunningCommandStatus")
+
+        @backoff.on_exception(
+            backoff.expo,
+            AssertionError,
+            factor=1,
+            max_time=1.0,
+        )
+        def assert_command_status(command_id: str, status: str) -> None:
+            evt = long_running_command_status_callback.get_next_change_event()
+
+            # need to covert to map
+            evt_iter = iter(evt)
+            evt_map: Dict[str, str] = {k: v for (k, v) in zip(evt_iter, evt_iter)}
+
+            logger.debug(f"Trying to assert command {command_id} has status {status}")
+            assert command_id in evt_map
+            logger.debug(f"Command {command_id} is in event map, has status {evt_map[command_id]}")
+            assert evt_map[command_id] == status
 
         device_under_test.adminMode = AdminMode.ONLINE
         time.sleep(0.1)
