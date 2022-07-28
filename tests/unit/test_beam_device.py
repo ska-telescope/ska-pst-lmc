@@ -116,7 +116,7 @@ class TestPstBeam:
         assert len(version_info) == 1
         assert re.match(version_pattern, version_info[0])
 
-    @pytest.mark.skip(reason="This fails on CI server but not locally.")
+    # @pytest.mark.skip(reason="This fails on CI server but not locally.")
     @pytest.mark.forked
     def test_configure_then_scan_then_stop(
         self: TestPstBeam,
