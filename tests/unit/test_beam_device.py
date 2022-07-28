@@ -132,7 +132,7 @@ class TestPstBeam:
             backoff.expo,
             AssertionError,
             factor=1,
-            max_time=5.0,
+            max_time=1.0,
         )
         def assert_command_status(command_id: str, status: str) -> None:
             evt = long_running_command_status_callback.get_next_change_event()
@@ -141,7 +141,11 @@ class TestPstBeam:
             evt_iter = iter(evt)
             evt_map: Dict[str, str] = {k: v for (k, v) in zip(evt_iter, evt_iter)}
 
+            logger.debug(f"Trying to assert command {command_id} has status {status}")
+            logger.debug(f"Events map = {evt_map}")
+
             assert command_id in evt_map
+            logger.debug(f"Command {command_id} is in event map, has status {evt_map[command_id]}")
             assert evt_map[command_id] == status
 
         # need to go through state mode
