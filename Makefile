@@ -68,6 +68,9 @@ python-post-lint:
 local-oci-scan:
 	docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $(strip $(OCI_IMAGE)):$(VERSION)
 
+python-pre-test:
+	free -h
+
 python-pre-generate-code:
 	@echo "Installing dev dependencies for Python gRPC/Protobuf code generation."
 	pip3 install grpcio grpcio-tools protobuf-init
