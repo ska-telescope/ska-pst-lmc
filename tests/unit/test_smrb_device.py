@@ -108,7 +108,6 @@ class TestPstSmrb:
         [[result], [command_id]] = device_under_test.On()
         assert result == TaskStatus.IN_PROGRESS
 
-        # long_running_command_result_callback.assert_next_change_event((command_id, 'QUEUED'))
         assert_command_status(command_id, "QUEUED")
         assert_command_status(command_id, "IN_PROGRESS")
         assert_command_status(command_id, "COMPLETED")

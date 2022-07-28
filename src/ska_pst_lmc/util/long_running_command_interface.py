@@ -174,11 +174,12 @@ class LongRunningCommandInterface:
         if on_completion_callback:
             self._stored_callbacks[unique_id] = on_completion_callback
         self._stored_commands[unique_id] = []
-        for device_proxy in self._tango_devices:
-            (_, [command_id]) = command(device_proxy)
-            self._stored_commands[unique_id].append(
-                StoredCommand(
-                    command_id,
-                    False,
+        with self._lock:
+            for device_proxy in self._tango_devices:
+                (_, [command_id]) = command(device_proxy)
+                self._stored_commands[unique_id].append(
+                    StoredCommand(
+                        command_id,
+                        False,
+                    )
                 )
-            )
