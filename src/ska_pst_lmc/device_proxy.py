@@ -217,7 +217,7 @@ class PstDeviceProxy:
         else:
             setattr(self._device, name, value)
 
-    def __getattr__(self, name: str) -> Any:
+    def __getattr__(self: PstDeviceProxy, name: str) -> Any:
         """Get attribute value.
 
         :param name: the name of attribute to get.
@@ -228,6 +228,11 @@ class PstDeviceProxy:
             return self.__dict__[f"_{name}"]
         else:
             return getattr(self._device, name)
+
+    @property
+    def device(self: PstDeviceProxy) -> DeviceProxy:
+        """Get Tango Device Proxy object."""
+        return self._device
 
 
 class DeviceProxyFactory:

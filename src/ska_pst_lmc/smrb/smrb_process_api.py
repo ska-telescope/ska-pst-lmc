@@ -103,7 +103,6 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         if self._monitor_abort_event is not None:
             self._monitor_abort_event.set()
 
-    @background_task
     def assign_resources(self: PstSmrbProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
         """Assign resources.
 
@@ -118,7 +117,6 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         self._component_state_callback(resourced=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
     def release_resources(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
         """Release all resources.
 
@@ -166,7 +164,6 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         self._component_state_callback(configured=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
     def scan(self: PstSmrbProcessApiSimulator, args: dict, task_callback: Callable) -> None:
         """Run a scan.
 
@@ -181,7 +178,6 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         self._component_state_callback(scanning=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
     def end_scan(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
         """End a scan.
 
@@ -228,6 +224,7 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
             used to signal to stop monitoring. If not set then the background task
             will create one.
         """
+        self._logger.debug(f"Starting to monitor at {polling_rate}")
         try:
             if monitor_abort_event is None:
                 self._monitor_abort_event = threading.Event()
@@ -441,6 +438,7 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
             used to signal to stop monitoring. If not set then the background task
             will create one.
         """
+        self._logger.debug(f"Starting to monitor at {polling_rate}")
         self._monitor_abort_event = monitor_abort_event or threading.Event()
         try:
             for d in self._grpc_client.monitor(
