@@ -12,16 +12,14 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Dict
 
 import backoff
 import pytest
 from ska_tango_base.control_model import AdminMode, ObsState
-from ska_tango_base.executor import TaskStatus
 from tango import DevState
 
 from ska_pst_lmc import DeviceProxyFactory
-from tests.conftest import ChangeEventDict, TangoChangeEventHelper
+from tests.conftest import ChangeEventDict, TangoChangeEventHelper, TangoDeviceCommandChecker
 
 
 @pytest.mark.integration
@@ -45,24 +43,10 @@ class TestPstBeam:
             change_event_callbacks=change_event_callbacks,
             logger=logger,
         )
-
-        long_running_command_status_callback = tango_change_event_helper.subscribe("longRunningCommandStatus")
-
-        @backoff.on_exception(
-            backoff.expo,
-            AssertionError,
-            factor=1,
-            max_time=5.0,
+        tango_device_command_checker = TangoDeviceCommandChecker(
+            tango_change_event_helper=tango_change_event_helper,
+            logger=logger,
         )
-        def assert_command_status(command_id: str, status: str) -> None:
-            evt = long_running_command_status_callback.get_next_change_event()
-
-            # need to covert to map
-            evt_iter = iter(evt)
-            evt_map: Dict[str, str] = {k: v for (k, v) in zip(evt_iter, evt_iter)}
-
-            assert command_id in evt_map
-            assert evt_map[command_id] == status
 
         def assert_state(state: DevState) -> None:
             assert beam_proxy.state() == state
@@ -91,58 +75,55 @@ class TestPstBeam:
         assert_state(DevState.OFF)
 
         try:
-            [[result], [command_id]] = beam_proxy.On()
-            assert result == TaskStatus.IN_PROGRESS
-
-            assert_command_status(command_id, "QUEUED")
-            assert_command_status(command_id, "IN_PROGRESS")
-            assert_command_status(command_id, "COMPLETED")
+            tango_device_command_checker.assert_command(
+                lambda: beam_proxy.On(), expected_obs_state_events=[ObsState.EMPTY]
+            )
             assert_state(DevState.ON)
 
             # need to assign resources
             assert_obstate(ObsState.EMPTY)
 
             resources = json.dumps(assign_resources_request)
-            [[result], [command_id]] = beam_proxy.AssignResources(resources)
-
-            assert result == TaskStatus.IN_PROGRESS
-
-            assert_command_status(command_id, "QUEUED")
-            assert_command_status(command_id, "IN_PROGRESS")
-            assert beam_proxy.obsState == ObsState.RESOURCING
-
-            assert_command_status(command_id, "COMPLETED")
+            tango_device_command_checker.assert_command(
+                lambda: beam_proxy.AssignResources(resources),
+                expected_obs_state_events=[
+                    ObsState.RESOURCING,
+                    ObsState.IDLE,
+                ],
+            )
             assert_obstate(ObsState.IDLE)
 
             configuration = json.dumps({"nchan": 1024})
-            [[result], [command_id]] = beam_proxy.Configure(configuration)
-            assert result == TaskStatus.IN_PROGRESS
-
-            assert_command_status(command_id, "IN_PROGRESS")
-            assert_command_status(command_id, "COMPLETED")
+            tango_device_command_checker.assert_command(
+                lambda: beam_proxy.Configure(configuration),
+                expected_obs_state_events=[
+                    ObsState.CONFIGURING,
+                    ObsState.READY,
+                ],
+            )
             assert_obstate(ObsState.READY)
 
             scan = json.dumps({"cat": "dog"})
-            [[result], [command_id]] = beam_proxy.Scan(scan)
-            assert result == TaskStatus.IN_PROGRESS
-
-            assert_command_status(command_id, "QUEUED")
-            assert_command_status(command_id, "IN_PROGRESS")
-            assert_command_status(command_id, "COMPLETED")
+            tango_device_command_checker.assert_command(
+                lambda: beam_proxy.Scan(scan),
+                expected_obs_state_events=[
+                    ObsState.SCANNING,
+                ],
+            )
             assert_obstate(ObsState.SCANNING)
 
-            [[result], [command_id]] = beam_proxy.EndScan()
-            assert result == TaskStatus.IN_PROGRESS
-
-            assert_command_status(command_id, "QUEUED")
-            assert_command_status(command_id, "IN_PROGRESS")
-            assert_command_status(command_id, "COMPLETED")
-            assert_obstate(ObsState.READY)
+            tango_device_command_checker.assert_command(
+                lambda: beam_proxy.EndScan(),
+                expected_obs_state_events=[
+                    ObsState.READY,
+                ],
+            )
 
             logger.info("Device is now in ready state.")
 
-            beam_proxy.Off()
-            time.sleep(0.5)
+            tango_device_command_checker.assert_command(
+                lambda: beam_proxy.Off(),
+            )
             assert_state(DevState.OFF)
         finally:
             beam_proxy.Off()

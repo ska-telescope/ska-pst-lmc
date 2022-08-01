@@ -13,7 +13,7 @@ import logging
 import time
 from concurrent import futures
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Generator, Optional
 
 import grpc
 from grpc import ServicerContext
@@ -25,6 +25,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     EndScanRequest,
     EndScanResponse,
     ErrorCode,
+    MonitorRequest,
+    MonitorResponse,
     ReleaseResourcesRequest,
     ReleaseResourcesResponse,
     ScanRequest,
@@ -150,6 +152,17 @@ class TestMockServicer(PstLmcServiceServicer):
         self._logger.debug("end_scan request")
         try:
             return self._context.end_scan(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
+
+    def monitor(
+        self: TestMockServicer, request: MonitorRequest, context: ServicerContext
+    ) -> Generator[MonitorResponse, None, None]:
+        """Handle monitor."""
+        self._logger.debug("monitor request")
+        try:
+            return self._context.monitor(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"

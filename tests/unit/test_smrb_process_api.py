@@ -13,8 +13,9 @@ import logging
 import threading
 import time
 import unittest
-from typing import Callable
-from unittest.mock import MagicMock, call
+from random import randint
+from typing import Callable, Generator
+from unittest.mock import ANY, MagicMock, call
 
 import grpc
 import pytest
@@ -26,14 +27,18 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     EndScanRequest,
     EndScanResponse,
     ErrorCode,
+    MonitorResponse,
     ReleaseResourcesRequest,
     ReleaseResourcesResponse,
     ScanRequest,
     ScanResponse,
+    SmrbMonitorData,
     SmrbResources,
+    SmrbStatitics,
 )
 from ska_tango_base.commands import TaskStatus
 
+from ska_pst_lmc.smrb.smrb_model import SubbandMonitorData
 from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApiGrpc, PstSmrbProcessApiSimulator
 from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
 from ska_pst_lmc.smrb.smrb_util import calculate_smrb_subband_resources
@@ -81,7 +86,6 @@ def subband_monitor_data_callback() -> MagicMock:
     return MagicMock()
 
 
-@pytest.mark.parametrize("stub_background_processing", [False])
 def test_simulated_monitor_calls_callback(
     simulation_api: PstSmrbProcessApiSimulator,
     subband_monitor_data_callback: MagicMock,
@@ -89,13 +93,23 @@ def test_simulated_monitor_calls_callback(
     logger: logging.Logger,
 ) -> None:
     """Test simulatued monitoring calls subband_monitor_data_callback."""
+
+    def _abort_monitor() -> None:
+        logger.debug("Test sleeping 600ms")
+        time.sleep(0.6)
+        logger.debug("Aborting monitoring.")
+        abort_event.set()
+
+    abort_thread = threading.Thread(target=_abort_monitor, daemon=True)
+    abort_thread.start()
+
     simulation_api.monitor(
         subband_monitor_data_callback=subband_monitor_data_callback,
         polling_rate=500,
         monitor_abort_event=abort_event,
     )
-    time.sleep(0.6)
-    abort_event.set()
+    abort_thread.join()
+    logger.debug("Abort thread finished.")
 
     calls = [
         call(subband_id=subband_id, subband_data=subband_data)
@@ -337,7 +351,7 @@ def test_smrb_grpc_assign_resources_when_already_assigned(
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(status=TaskStatus.FAILED, result="Resources have already been assigned"),
+        call(status=TaskStatus.FAILED, result="Resources have already been assigned", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()
@@ -375,7 +389,7 @@ def test_smrb_grpc_assign_resources_when_throws_exception(
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(status=TaskStatus.FAILED, result="Internal server error occurred"),
+        call(status=TaskStatus.FAILED, result="Internal server error occurred", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()
@@ -470,7 +484,7 @@ def test_smrb_grpc_release_resources_when_throws_exception(
     mock_servicer_context.release_resources.assert_called_once_with(ReleaseResourcesRequest())
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(status=TaskStatus.FAILED, result="Oops there was a problem"),
+        call(status=TaskStatus.FAILED, result="Oops there was a problem", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()
@@ -565,7 +579,7 @@ def test_smrb_grpc_scan_when_throws_exception(
     mock_servicer_context.scan.assert_called_once_with(ScanRequest())
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(status=TaskStatus.FAILED, result="Oops there was a problem"),
+        call(status=TaskStatus.FAILED, result="Oops there was a problem", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()
@@ -660,7 +674,94 @@ def test_smrb_grpc_end_scan_when_exception_thrown(
     mock_servicer_context.end_scan.assert_called_once_with(EndScanRequest())
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(status=TaskStatus.FAILED, result="Something is wrong!"),
+        call(status=TaskStatus.FAILED, result="Something is wrong!", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()
+
+
+def test_smrb_grpc_simulated_monitor_calls_callback(
+    mock_servicer_context: MagicMock,
+    grpc_port: int,
+    client_id: str,
+    component_state_callback: MagicMock,
+    pst_lmc_service: TestPstLmcService,
+    subband_monitor_data_callback: MagicMock,
+    abort_event: threading.Event,
+    logger: logging.Logger,
+) -> None:
+    """Test simulatued monitoring calls subband_monitor_data_callback."""
+    nbufs = randint(1, 100)
+    data_stats_bufsz = randint(100, 200)
+    weights_stats_bufsz = randint(10, 20)
+    written = randint(2, 100)
+    read = written - 1
+    full = randint(0, nbufs)
+
+    def response_generator() -> Generator[MonitorResponse, None, None]:
+        while True:
+            data = SmrbStatitics(
+                nbufs=nbufs,
+                bufsz=data_stats_bufsz,
+                written=written,
+                read=read,
+                full=full,
+                clear=nbufs - full,
+                available=nbufs - full,
+            )
+            weights = SmrbStatitics(
+                nbufs=nbufs,
+                bufsz=weights_stats_bufsz,
+                written=written,
+                read=read,
+                full=full,
+                clear=nbufs - full,
+                available=nbufs - full,
+            )
+
+            logger.debug("Yielding monitor data")
+            yield MonitorResponse(smrb=SmrbMonitorData(data=data, weights=weights))
+            time.sleep(0.5)
+
+    mock_servicer_context.monitor = MagicMock()
+    mock_servicer_context.monitor.return_value = response_generator()
+
+    api = PstSmrbProcessApiGrpc(
+        client_id=client_id,
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        logger=logger,
+        component_state_callback=component_state_callback,
+    )
+
+    def _abort_monitor() -> None:
+        logger.debug("Test sleeping 1s")
+        time.sleep(1)
+        logger.debug("Aborting monitoring.")
+        abort_event.set()
+
+    abort_thread = threading.Thread(target=_abort_monitor, daemon=True)
+    abort_thread.start()
+
+    api.monitor(
+        subband_monitor_data_callback=subband_monitor_data_callback,
+        polling_rate=500,
+        monitor_abort_event=abort_event,
+    )
+    abort_thread.join()
+    logger.debug("Abort thread finished.")
+
+    buffer_size = data_stats_bufsz + weights_stats_bufsz
+    total_written = buffer_size * written
+    total_read = buffer_size * read
+    calls = [
+        call(
+            data=SubbandMonitorData(
+                buffer_size=buffer_size,
+                total_written=total_written,
+                total_read=total_read,
+                full=full,
+                num_of_buffers=nbufs,
+            )
+        )
+    ]
+    subband_monitor_data_callback.assert_has_calls(calls=calls)

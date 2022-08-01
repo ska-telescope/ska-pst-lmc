@@ -68,7 +68,7 @@ class _RemoteJob:
         except Exception as e:
             self._logger.warning("Error in submitting long running commands to remote devices", exc_info=True)
             if task_callback:
-                task_callback(status=TaskStatus.FAILED, result=str(e))
+                task_callback(status=TaskStatus.FAILED, result=str(e), exception=e)
 
 
 class PstBeamComponentManager(PstComponentManager):
