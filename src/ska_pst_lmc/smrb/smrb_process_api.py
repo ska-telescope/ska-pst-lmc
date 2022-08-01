@@ -312,10 +312,10 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except ResourcesAlreadyAssignedException as e:
             self._logger.error(e.message)
-            task_callback(result=e.message, status=TaskStatus.FAILED)
+            task_callback(result=e.message, status=TaskStatus.FAILED, exception=e)
         except BaseGrpcException as e:
             self._logger.error("Problem processing assign_resources request for SMRB.", exc_info=True)
-            task_callback(status=TaskStatus.FAILED, result=e.message)
+            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def release_resources(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
         """Release all resources.
@@ -335,7 +335,7 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result=e.message)
         except BaseGrpcException as e:
             self._logger.error("Problem processing release_resources request for SMRB.", exc_info=True)
-            task_callback(status=TaskStatus.FAILED, result=e.message)
+            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def configure(self: PstSmrbProcessApiGrpc, configuration: dict, task_callback: Callable) -> None:
         """Configure as scan.
@@ -383,7 +383,7 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error("Problem processing scan request for SMRB.", exc_info=True)
-            task_callback(status=TaskStatus.FAILED, result=e.message)
+            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def end_scan(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
         """End a scan.
@@ -402,7 +402,7 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error("Problem processing end_scan request for SMRB.", exc_info=True)
-            task_callback(status=TaskStatus.FAILED, result=e.message)
+            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     @background_task
     def abort(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
@@ -438,15 +438,13 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
             used to signal to stop monitoring. If not set then the background task
             will create one.
         """
-        self._logger.debug(f"Starting to monitor at {polling_rate}")
         self._monitor_abort_event = monitor_abort_event or threading.Event()
         try:
             for d in self._grpc_client.monitor(
                 polling_rate=polling_rate, abort_event=self._monitor_abort_event
             ):
-                assert d.has_smrb(), "Expected SMRB field in monitor data"
-                smrb_data_stats = d.smrb.data_stats
-                smrb_weights_stats = d.smrb.weights_stats
+                smrb_data_stats = d.smrb.data
+                smrb_weights_stats = d.smrb.weights
 
                 # assume the number of written and read are the same for data and weights
                 # so total written/read size in bytes is the total buffer size * written/read
@@ -464,4 +462,4 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
                     )
                 )
         except Exception:
-            pass
+            self._logger.warning("Error while handing monitoring.", exc_info=True)
