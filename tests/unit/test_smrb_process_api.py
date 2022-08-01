@@ -604,6 +604,28 @@ def test_smrb_grpc_abort(
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_once_with(scanning=False)
 
+def test_smrb_grpc_abort_throws_exception(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC abort."""
+    mock_servicer_context.abort.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.INTERNAL,
+        message="We have an issue!",
+    )
+
+    grpc_api.abort(task_callback=task_callback)
+
+    mock_servicer_context.abort.assert_called_once_with(AbortRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="We have an issue!", exception=ANY),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
 def test_smrb_grpc_simulated_monitor_calls_callback(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,

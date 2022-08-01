@@ -16,7 +16,7 @@ from unittest.mock import MagicMock
 import pytest
 import tango
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionResponse
-from ska_tango_base.commands import TaskStatus
+from ska_tango_base.commands import TaskStatus, ResultCode
 from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
 
@@ -147,6 +147,64 @@ class TestPstSmrb:
 
         tango_device_command_checker.assert_command(lambda: device_under_test.Off())
         assert device_under_test.state() == DevState.OFF
+
+    @pytest.mark.forked
+    def test_abort_when_scanning(
+        self: TestPstSmrb,
+        device_under_test: DeviceProxy,
+        assign_resources_request: dict,
+        tango_device_command_checker: TangoDeviceCommandChecker,
+    ) -> None:
+        """Test that when device is SCANNING and abort is requested."""
+        assert device_under_test.state() == DevState.OFF
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+        )
+        assert device_under_test.state() == DevState.ON
+
+        resources = json.dumps(assign_resources_request)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.AssignResources(resources),
+            expected_obs_state_events=[
+                ObsState.RESOURCING,
+                ObsState.IDLE,
+            ],
+        )
+
+        configuration = json.dumps({"nchan": 1024})
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Configure(configuration),
+            expected_command_status_events=[
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+            ],
+            expected_obs_state_events=[
+                ObsState.CONFIGURING,
+                ObsState.READY,
+            ],
+        )
+
+        scan = json.dumps({"cat": "dog"})
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Scan(scan),
+            expected_obs_state_events=[
+                ObsState.SCANNING,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Abort(),
+            expected_result_code=ResultCode.STARTED,
+            expected_command_status_events=[
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+            ],
+            expected_obs_state_events=[
+                ObsState.ABORTING,
+                ObsState.ABORTED,
+            ],
+        )
 
     def test_simulation_mode(
         self: TestPstSmrb,

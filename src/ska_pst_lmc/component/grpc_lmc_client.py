@@ -16,6 +16,7 @@ from typing import Any, Dict, Generator, NoReturn, Optional, Type
 import grpc
 from grpc import Channel
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    AbortRequest,
     AssignResourcesRequest,
     ConnectionRequest,
     EndScanRequest,
@@ -258,6 +259,14 @@ class PstGrpcLmcClient:
         try:
             result: GetStateResponse = self._service.get_state(GetStateRequest())
             return ObsState(result.state)
+        except grpc.RpcError as e:
+            _handle_grpc_error(e)
+
+    def abort(self: PstGrpcLmcClient) -> None:
+        """Abort scanning."""
+        self._logger.debug("Calling abort")
+        try:
+            self._service.abort(AbortRequest())
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 
