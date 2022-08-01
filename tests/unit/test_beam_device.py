@@ -12,17 +12,16 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Any, Dict, List
+from typing import List
 
 import backoff
 import pytest
-from ska_tango_base.commands import TaskStatus
 from ska_tango_base.control_model import AdminMode, ObsState
 from tango import DeviceProxy, DevState
 from tango.test_context import MultiDeviceTestContext
 
 from ska_pst_lmc import PstBeam, PstReceive, PstSmrb
-from tests.conftest import TangoChangeEventHelper
+from tests.conftest import TangoDeviceCommandChecker
 
 
 @pytest.fixture()
@@ -123,7 +122,7 @@ class TestPstBeam:
         device_under_test: DeviceProxy,
         multidevice_test_context: MultiDeviceTestContext,
         assign_resources_request: dict,
-        tango_change_event_helper: TangoChangeEventHelper,
+        tango_device_command_checker: TangoDeviceCommandChecker,
         logger: logging.Logger,
     ) -> None:
         """Test state model of PstReceive."""
@@ -149,29 +148,6 @@ class TestPstBeam:
             assert recv_proxy.obsState == obsState
             assert smrb_proxy.obsState == obsState
 
-        def _event_callback(ev: Any) -> None:
-            logger.warning(f"Recevied event: {ev}")
-
-        long_running_command_status_callback = tango_change_event_helper.subscribe("longRunningCommandStatus")
-
-        @backoff.on_exception(
-            backoff.expo,
-            AssertionError,
-            factor=1,
-            max_time=1.0,
-        )
-        def assert_command_status(command_id: str, status: str) -> None:
-            evt = long_running_command_status_callback.get_next_change_event()
-
-            # need to covert to map
-            evt_iter = iter(evt)
-            evt_map: Dict[str, str] = {k: v for (k, v) in zip(evt_iter, evt_iter)}
-
-            logger.debug(f"Trying to assert command {command_id} has status {status}")
-            assert command_id in evt_map
-            logger.debug(f"Command {command_id} is in event map, has status {evt_map[command_id]}")
-            assert evt_map[command_id] == status
-
         device_under_test.adminMode = AdminMode.ONLINE
         time.sleep(0.1)
         assert recv_proxy.adminMode == AdminMode.ONLINE
@@ -179,54 +155,53 @@ class TestPstBeam:
 
         assert_state(DevState.OFF)
 
-        [[result], [command_id]] = device_under_test.On()
-        assert_command_status(command_id, "QUEUED")
-        assert_command_status(command_id, "IN_PROGRESS")
-        assert_command_status(command_id, "COMPLETED")
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+        )
         assert_state(DevState.ON)
 
         # need to assign resources
         assert_obstate(ObsState.EMPTY)
 
         resources = json.dumps(assign_resources_request)
-        [[result], [command_id]] = device_under_test.AssignResources(resources)
-
-        assert result == TaskStatus.IN_PROGRESS
-
-        assert_command_status(command_id, "QUEUED")
-        assert_command_status(command_id, "IN_PROGRESS")
-        assert device_under_test.obsState == ObsState.RESOURCING
-
-        assert_command_status(command_id, "COMPLETED")
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.AssignResources(resources),
+            expected_obs_state_events=[
+                ObsState.RESOURCING,
+                ObsState.IDLE,
+            ],
+        )
         assert_obstate(ObsState.IDLE)
 
         configuration = json.dumps({"nchan": 1024})
-        [[result], [command_id]] = device_under_test.Configure(configuration)
-        assert result == TaskStatus.IN_PROGRESS
-
-        assert_command_status(command_id, "IN_PROGRESS")
-        assert_command_status(command_id, "COMPLETED")
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Configure(configuration),
+            expected_obs_state_events=[
+                ObsState.CONFIGURING,
+                ObsState.READY,
+            ],
+        )
         assert_obstate(ObsState.READY)
 
         scan = json.dumps({"cat": "dog"})
-        [[result], [command_id]] = device_under_test.Scan(scan)
-        assert result == TaskStatus.IN_PROGRESS
-
-        assert_command_status(command_id, "QUEUED")
-        assert_command_status(command_id, "IN_PROGRESS")
-        assert_command_status(command_id, "COMPLETED")
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Scan(scan),
+            expected_obs_state_events=[
+                ObsState.SCANNING,
+            ],
+        )
         assert_obstate(ObsState.SCANNING)
 
-        [[result], [command_id]] = device_under_test.EndScan()
-        assert result == TaskStatus.IN_PROGRESS
-
-        assert_command_status(command_id, "QUEUED")
-        assert_command_status(command_id, "IN_PROGRESS")
-        assert_command_status(command_id, "COMPLETED")
-        assert_obstate(ObsState.READY)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.EndScan(),
+            expected_obs_state_events=[
+                ObsState.READY,
+            ],
+        )
 
         logger.info("Device is now in ready state.")
 
-        device_under_test.Off()
-        time.sleep(0.5)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Off(),
+        )
         assert_state(DevState.OFF)

@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 import time
-from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
@@ -23,7 +22,7 @@ from tango import DeviceProxy, DevState
 
 from ska_pst_lmc.smrb.smrb_device import PstSmrb
 from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
-from tests.conftest import TangoChangeEventHelper
+from tests.conftest import TangoDeviceCommandChecker
 
 
 class TestPstSmrb:
@@ -85,72 +84,45 @@ class TestPstSmrb:
         self: TestPstSmrb,
         device_under_test: DeviceProxy,
         assign_resources_request: dict,
-        tango_change_event_helper: TangoChangeEventHelper,
+        tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
         """Test state model of PstSmrb."""
-        long_running_command_result_callback = tango_change_event_helper.subscribe("longRunningCommandResult")
-        long_running_command_result_callback.assert_next_change_event(("", ""))
-
-        long_running_command_status_callback = tango_change_event_helper.subscribe("longRunningCommandStatus")
-
-        def assert_command_status(command_id: str, status: str) -> None:
-            evt = long_running_command_status_callback.get_next_change_event()
-
-            # need to covert to map
-            evt_iter = iter(evt)
-            evt_map: Dict[str, str] = {k: v for (k, v) in zip(evt_iter, evt_iter)}
-
-            assert command_id in evt_map
-            assert evt_map[command_id] == status
-
         assert device_under_test.state() == DevState.OFF
 
-        [[result], [command_id]] = device_under_test.On()
-        assert result == TaskStatus.IN_PROGRESS
-
-        assert_command_status(command_id, "QUEUED")
-        assert_command_status(command_id, "IN_PROGRESS")
-        assert_command_status(command_id, "COMPLETED")
-        long_running_command_result_callback.assert_next_change_event((command_id, '"Completed"'))
-
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+        )
         assert device_under_test.state() == DevState.ON
 
-        assert device_under_test.obsState == ObsState.EMPTY
-
         resources = json.dumps(assign_resources_request)
-        [[result], [command_id]] = device_under_test.AssignResources(resources)
-
-        assert result == TaskStatus.IN_PROGRESS
-
-        assert_command_status(command_id, "QUEUED")
-        assert_command_status(command_id, "IN_PROGRESS")
-        assert device_under_test.obsState == ObsState.RESOURCING
-
-        assert_command_status(command_id, "COMPLETED")
-        long_running_command_result_callback.assert_next_change_event((command_id, '"Completed"'))
-
-        assert device_under_test.obsState == ObsState.IDLE
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.AssignResources(resources),
+            expected_obs_state_events=[
+                ObsState.RESOURCING,
+                ObsState.IDLE,
+            ],
+        )
 
         configuration = json.dumps({"nchan": 1024})
-        [[result], [command_id]] = device_under_test.Configure(configuration)
-        assert result == TaskStatus.IN_PROGRESS
-
-        assert_command_status(command_id, "IN_PROGRESS")
-        assert device_under_test.obsState == ObsState.CONFIGURING
-
-        assert_command_status(command_id, "COMPLETED")
-        long_running_command_result_callback.assert_next_change_event((command_id, '"Completed"'))
-        assert device_under_test.obsState == ObsState.READY
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Configure(configuration),
+            expected_command_status_events=[
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+            ],
+            expected_obs_state_events=[
+                ObsState.CONFIGURING,
+                ObsState.READY,
+            ],
+        )
 
         scan = json.dumps({"cat": "dog"})
-        [[result], [command_id]] = device_under_test.Scan(scan)
-        assert result == TaskStatus.IN_PROGRESS
-
-        assert_command_status(command_id, "QUEUED")
-        assert_command_status(command_id, "IN_PROGRESS")
-        assert_command_status(command_id, "COMPLETED")
-        long_running_command_result_callback.assert_next_change_event((command_id, '"Completed"'))
-        assert device_under_test.obsState == ObsState.SCANNING
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Scan(scan),
+            expected_obs_state_events=[
+                ObsState.SCANNING,
+            ],
+        )
 
         # still need to sleep. Wait for 2 polling periods
         time.sleep(0.2)
@@ -166,22 +138,14 @@ class TestPstSmrb:
             assert device_under_test.subband_ring_buffer_read[i] >= 0
             assert device_under_test.subband_ring_buffer_written[i] >= 0
 
-        [[result], [command_id]] = device_under_test.EndScan()
-        assert result == TaskStatus.IN_PROGRESS
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.EndScan(),
+            expected_obs_state_events=[
+                ObsState.READY,
+            ],
+        )
 
-        assert_command_status(command_id, "QUEUED")
-        assert_command_status(command_id, "IN_PROGRESS")
-        assert device_under_test.obsState == ObsState.SCANNING
-        assert_command_status(command_id, "COMPLETED")
-        long_running_command_result_callback.assert_next_change_event((command_id, '"Completed"'))
-        assert device_under_test.obsState == ObsState.READY
-
-        [[result], [command_id]] = device_under_test.Off()
-        assert_command_status(command_id, "QUEUED")
-        assert_command_status(command_id, "IN_PROGRESS")
-        assert result == TaskStatus.IN_PROGRESS
-        assert_command_status(command_id, "COMPLETED")
-        long_running_command_result_callback.assert_next_change_event((command_id, '"Completed"'))
+        tango_device_command_checker.assert_command(lambda: device_under_test.Off())
         assert device_under_test.state() == DevState.OFF
 
     def test_simulation_mode(

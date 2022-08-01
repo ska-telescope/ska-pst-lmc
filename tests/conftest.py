@@ -6,14 +6,16 @@ import logging
 import threading
 import time
 from concurrent import futures
-from typing import Any, Callable, Dict, Generator
+from typing import Any, Callable, Dict, Generator, List
 from unittest.mock import MagicMock
 
 import grpc
 import pytest
 import tango
 from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer, add_PstLmcServiceServicer_to_server
-from ska_tango_base.control_model import SimulationMode
+from ska_tango_base.commands import ResultCode
+from ska_tango_base.control_model import ObsState, SimulationMode
+from ska_tango_base.executor import TaskStatus
 from ska_tango_base.testing.mock import MockCallable, MockChangeEventCallback
 from tango import DeviceProxy
 from tango.test_context import DeviceTestContext, MultiDeviceTestContext, get_host_ip
@@ -302,6 +304,108 @@ def tango_change_event_helper(
     return TangoChangeEventHelper(
         device_under_test=device_under_test,
         change_event_callbacks=change_event_callbacks,
+        logger=logger,
+    )
+
+
+class TangoDeviceCommandChecker:
+    """A convinence class used to help check a Tango Device command.
+
+    This class can be used to check that a command executed on a
+    :py:class:`DeviceProxy` fires the correct change events
+    for task status, the completion state, and any changes through
+    the :py:class:`ObsState`.
+    """
+
+    def __init__(
+        self: TangoDeviceCommandChecker,
+        tango_change_event_helper: TangoChangeEventHelper,
+        logger: logging.Logger,
+    ) -> None:
+        """Initialise command checker."""
+        self.long_running_command_result_callback = tango_change_event_helper.subscribe(
+            "longRunningCommandResult"
+        )
+        self.long_running_command_result_callback.assert_next_change_event(("", ""))
+
+        self.long_running_command_status_callback = tango_change_event_helper.subscribe(
+            "longRunningCommandStatus"
+        )
+        self.obs_state_callback = tango_change_event_helper.subscribe("obsState")
+        self._logger = logger
+
+    def assert_command(
+        self: TangoDeviceCommandChecker,
+        command: Callable,
+        expected_result_code: ResultCode = ResultCode.QUEUED,
+        expected_command_result: str = '"Completed"',
+        expected_command_status_events: List[TaskStatus] = [
+            TaskStatus.QUEUED,
+            TaskStatus.IN_PROGRESS,
+            TaskStatus.COMPLETED,
+        ],
+        expected_obs_state_events: List[ObsState] = [],
+    ) -> None:
+        """Assert that the command has the correct result and events.
+
+        This method has sensible defaults of the expected result code,
+        the overall result, and the status events that the command
+        goes through, and by default asserts that the ObsState model
+        doesn't change.
+
+        :param command: a callable on the device proxy.
+        :param expected_result_code: the expected result code returned
+            from the call. The default is ResultCode.QUEUED.
+        :param expected_command_result: the expected command result
+            when the command completes. The default is "Completed".
+        :param expected_command_status_events: a list of expected
+            status events of the command, these should be in the
+            order the events happen. Default expected events are:
+            [TaskStatus.QUEUED, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED]
+        :param expected_obs_state_events: the expected events of the ObsState
+            model. The default is an empty list, meaning no events expected.
+        """
+        [[result], [command_id]] = command()
+        assert result == expected_result_code
+
+        def assert_command_status(status: TaskStatus) -> None:
+            self._logger.debug(f"Checking next command status event is {status.name}")
+            evt = self.long_running_command_status_callback.get_next_change_event()
+
+            # need to covert to map
+            evt_iter = iter(evt)
+            evt_map: Dict[str, str] = {k: TaskStatus[v] for (k, v) in zip(evt_iter, evt_iter)}
+
+            assert command_id in evt_map
+            assert evt_map[command_id] == status
+
+        if expected_command_status_events:
+            for expected_command_status in expected_command_status_events:
+                assert_command_status(expected_command_status)
+        else:
+            self.long_running_command_status_callback.assert_not_called()
+
+        self.long_running_command_result_callback.assert_next_change_event(
+            (command_id, expected_command_result)
+        )
+
+        if expected_obs_state_events:
+            for expected_obs_state in expected_obs_state_events:
+                self._logger.debug(f"Checking next obsState event is {expected_obs_state.name}")
+                self.obs_state_callback.assert_next_change_event(expected_obs_state)
+        else:
+            self._logger.debug("Checking obsState does not change.")
+            self.obs_state_callback.assert_not_called()
+
+
+@pytest.fixture
+def tango_device_command_checker(
+    tango_change_event_helper: TangoChangeEventHelper,
+    logger: logging.Logger,
+) -> TangoDeviceCommandChecker:
+    """Fixture that returns a TangoChangeEventHelper."""
+    return TangoDeviceCommandChecker(
+        tango_change_event_helper=tango_change_event_helper,
         logger=logger,
     )
 
