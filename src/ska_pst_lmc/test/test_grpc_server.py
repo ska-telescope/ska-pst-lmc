@@ -18,6 +18,8 @@ from typing import Any, Generator, Optional
 import grpc
 from grpc import ServicerContext
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    AbortRequest,
+    AbortResponse,
     AssignResourcesRequest,
     AssignResourcesResponse,
     ConnectionRequest,
@@ -152,6 +154,17 @@ class TestMockServicer(PstLmcServiceServicer):
         self._logger.debug("end_scan request")
         try:
             return self._context.end_scan(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
+
+    def abort(
+        self: TestMockServicer, request: AbortRequest, context: ServicerContext
+    ) -> AbortResponse:
+        """Handle end scan."""
+        self._logger.debug("abort requested")
+        try:
+            return self._context.abort(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"

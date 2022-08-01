@@ -20,6 +20,8 @@ from unittest.mock import ANY, MagicMock, call
 import grpc
 import pytest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    AbortRequest,
+    AbortResponse,
     AssignResourcesRequest,
     AssignResourcesResponse,
     ConnectionRequest,
@@ -81,6 +83,7 @@ def grpc_api(
     logger: logging.Logger,
     component_state_callback: MagicMock,
     pst_lmc_service: TestPstLmcService,
+    background_task_processor: BackgroundTaskProcessor,
 ) -> PstSmrbProcessApiGrpc:
     """Fixture to create instance of a gRPC API with client."""
     return PstSmrbProcessApiGrpc(
@@ -88,6 +91,7 @@ def grpc_api(
         grpc_endpoint=f"127.0.0.1:{grpc_port}",
         logger=logger,
         component_state_callback=component_state_callback,
+        background_task_processor=background_task_processor,
     )
 
 
@@ -579,6 +583,26 @@ def test_smrb_grpc_end_scan_when_exception_thrown(
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()
 
+
+def test_smrb_grpc_abort(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC abort."""
+    response = AbortResponse()
+    mock_servicer_context.abort = MagicMock(return_value=response)
+
+    grpc_api.abort(task_callback=task_callback)
+
+    mock_servicer_context.abort.assert_called_once_with(AbortRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(scanning=False)
 
 def test_smrb_grpc_simulated_monitor_calls_callback(
     grpc_api: PstSmrbProcessApiGrpc,
