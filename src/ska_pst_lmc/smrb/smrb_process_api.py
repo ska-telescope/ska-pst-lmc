@@ -453,13 +453,14 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
                 total_read = buffer_size * smrb_data_stats.read
 
                 subband_monitor_data_callback(
-                    data=SubbandMonitorData(
+                    subband_id=1,
+                    subband_data=SubbandMonitorData(
                         buffer_size=buffer_size,
                         total_written=total_written,
                         total_read=total_read,
                         full=smrb_data_stats.full,
                         num_of_buffers=smrb_data_stats.nbufs,
-                    )
+                    ),
                 )
         except Exception:
             self._logger.warning("Error while handing monitoring.", exc_info=True)

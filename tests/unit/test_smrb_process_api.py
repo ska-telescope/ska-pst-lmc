@@ -755,13 +755,14 @@ def test_smrb_grpc_simulated_monitor_calls_callback(
     total_read = buffer_size * read
     calls = [
         call(
-            data=SubbandMonitorData(
+            subband_id=1,
+            subband_data=SubbandMonitorData(
                 buffer_size=buffer_size,
                 total_written=total_written,
                 total_read=total_read,
                 full=full,
                 num_of_buffers=nbufs,
-            )
+            ),
         )
     ]
     subband_monitor_data_callback.assert_has_calls(calls=calls)
