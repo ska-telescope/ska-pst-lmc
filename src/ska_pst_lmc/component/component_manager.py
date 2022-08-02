@@ -371,7 +371,6 @@ class PstApiComponentManager(PstComponentManager):
         self._api.abort(task_callback=task_callback)
         return TaskStatus.IN_PROGRESS, "Aborting"
 
-
     def _submit_background_task(
         self: PstApiComponentManager, task: Callable, task_callback: Callable
     ) -> TaskResponse:

@@ -269,6 +269,17 @@ class PstSmrbComponentManager(PstApiComponentManager):
 
         return self._submit_background_task(_task, task_callback=task_callback)
 
+    def obsreset(self: PstSmrbComponentManager, task_callback: Callable) -> TaskResponse:
+        """Handle observation reset.
+
+        This occurs when the device is in ABORTED or FAULT state. This is used to make
+        sure that the device is put back in to an IDLE state.
+        """
+        return self._submit_background_task(
+            functools.partial(self._api.reset),
+            task_callback=task_callback,
+        )
+
     def _handle_subband_monitor_data(
         self: PstSmrbComponentManager,
         *args: Any,

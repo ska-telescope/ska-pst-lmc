@@ -28,6 +28,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     MonitorRequest,
     MonitorResponse,
     ReleaseResourcesRequest,
+    ResetRequest,
+    RestartRequest,
     ScanRequest,
     Status,
 )
@@ -267,6 +269,17 @@ class PstGrpcLmcClient:
         self._logger.debug("Calling abort")
         try:
             self._service.abort(AbortRequest())
+        except grpc.RpcError as e:
+            _handle_grpc_error(e)
+
+    def reset(self: PstGrpcLmcClient) -> None:
+        """Reset service.
+
+        This method is to be used by the LMC device that is currently in an
+        ABORTED or FAULT state to reset the service.
+        """
+        try:
+            self._service.reset(ResetRequest())
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 

@@ -16,7 +16,7 @@ from unittest.mock import MagicMock
 import pytest
 import tango
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionResponse
-from ska_tango_base.commands import TaskStatus, ResultCode
+from ska_tango_base.commands import ResultCode, TaskStatus
 from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
 
@@ -203,6 +203,14 @@ class TestPstSmrb:
             expected_obs_state_events=[
                 ObsState.ABORTING,
                 ObsState.ABORTED,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.ObsReset(),
+            expected_obs_state_events=[
+                ObsState.RESETTING,
+                ObsState.IDLE,
             ],
         )
 

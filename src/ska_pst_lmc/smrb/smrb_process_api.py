@@ -192,7 +192,6 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         self._component_state_callback(scanning=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
     def abort(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
         """Abort a scan.
 
@@ -203,6 +202,19 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         time.sleep(0.1)
         task_callback(progress=59)
         self._component_state_callback(scanning=False)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+    def reset(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
+        """End a scan.
+
+        :param task_callback: callable to connect back to the component manager.
+        """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=37)
+        time.sleep(0.1)
+        task_callback(progress=63)
+        self._component_state_callback(configured=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
@@ -276,7 +288,9 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
         logger.info("Creating instance of gRPC Process API")
         self._grpc_client = PstGrpcLmcClient(client_id=client_id, endpoint=grpc_endpoint, logger=logger)
         self._simulator = simulator or PstSmrbSimulator()
-        self._background_task_processor = background_task_processor or BackgroundTaskProcessor(default_logger=logger)
+        self._background_task_processor = background_task_processor or BackgroundTaskProcessor(
+            default_logger=logger
+        )
         self._monitor_abort_event: Optional[threading.Event] = None
         self._connected = False
 
@@ -405,7 +419,6 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
             self._logger.error("Problem processing end_scan request for SMRB.", exc_info=True)
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
-    @background_task
     def abort(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
         """Abort a scan.
 
@@ -421,6 +434,20 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error("Problem in aborting request for SMRB.", exc_info=True)
+            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
+
+    def reset(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
+        """Reset service.
+
+        :param task_callback: callabke to connect back to the component manager.
+        """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        try:
+            self._grpc_client.reset()
+            self._component_state_callback(configured=False)
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+        except BaseGrpcException as e:
+            self._logger.error("Error raised while resetting SMRB", exc_info=True)
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
 

@@ -31,6 +31,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     MonitorResponse,
     ReleaseResourcesRequest,
     ReleaseResourcesResponse,
+    ResetRequest,
+    ResetResponse,
     ScanRequest,
     ScanResponse,
     Status,
@@ -158,13 +160,20 @@ class TestMockServicer(PstLmcServiceServicer):
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
 
-    def abort(
-        self: TestMockServicer, request: AbortRequest, context: ServicerContext
-    ) -> AbortResponse:
+    def abort(self: TestMockServicer, request: AbortRequest, context: ServicerContext) -> AbortResponse:
         """Handle end scan."""
         self._logger.debug("abort requested")
         try:
             return self._context.abort(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
+
+    def reset(self: TestMockServicer, request: ResetRequest, context: ServicerContext) -> ResetResponse:
+        """Handle reset."""
+        self._logger.debug("reset requested")
+        try:
+            return self._context.reset(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
