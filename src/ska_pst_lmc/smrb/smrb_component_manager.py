@@ -280,6 +280,18 @@ class PstSmrbComponentManager(PstApiComponentManager):
             task_callback=task_callback,
         )
 
+    def restart(self: PstSmrbComponentManager, task_callback: Callable) -> TaskResponse:
+        """Handle device restart command.
+
+        This occurs when the device is in ABORTED or FAULT state but the operator wants
+        to also release all the resources of device. Calling this will ensure that the
+        device is deconfigured and resources are deallocated.
+        """
+        return self._submit_background_task(
+            functools.partial(self._api.restart),
+            task_callback=task_callback,
+        )
+
     def _handle_subband_monitor_data(
         self: PstSmrbComponentManager,
         *args: Any,

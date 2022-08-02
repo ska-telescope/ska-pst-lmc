@@ -214,6 +214,48 @@ class TestPstSmrb:
             ],
         )
 
+        configuration = json.dumps({"nchan": 1024})
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Configure(configuration),
+            expected_command_status_events=[
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+            ],
+            expected_obs_state_events=[
+                ObsState.CONFIGURING,
+                ObsState.READY,
+            ],
+        )
+
+        scan = json.dumps({"cat": "dog"})
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Scan(scan),
+            expected_obs_state_events=[
+                ObsState.SCANNING,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Abort(),
+            expected_result_code=ResultCode.STARTED,
+            expected_command_status_events=[
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+            ],
+            expected_obs_state_events=[
+                ObsState.ABORTING,
+                ObsState.ABORTED,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Restart(),
+            expected_obs_state_events=[
+                ObsState.RESTARTING,
+                ObsState.EMPTY,
+            ],
+        )
+
     def test_simulation_mode(
         self: TestPstSmrb,
         device_under_test: DeviceProxy,

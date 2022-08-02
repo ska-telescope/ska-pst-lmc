@@ -217,6 +217,19 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         self._component_state_callback(configured=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
+    def restart(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
+        """End a scan.
+
+        :param task_callback: callable to connect back to the component manager.
+        """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=40)
+        time.sleep(0.1)
+        task_callback(progress=62)
+        self._component_state_callback(configured=False, resourced=False)
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
     @background_task
     def monitor(
         self: PstSmrbProcessApiSimulator,
@@ -450,6 +463,22 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
             self._logger.error("Error raised while resetting SMRB", exc_info=True)
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
+    def restart(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
+        """Restart service.
+
+        For SMRB we don't restart the actual process. We make sure that the service
+        is put into a EMPTY state by first deconfiguring and then releasing resources.
+
+        :param task_callback: callabke to connect back to the component manager.
+        """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        try:
+            self._grpc_client.restart()
+            self._component_state_callback(configured=False, resourced=False)
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+        except BaseGrpcException as e:
+            self._logger.error("Error raised while restarting SMRB", exc_info=True)
+            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def _stop_monitoring(self: PstSmrbProcessApiGrpc) -> None:
         if self._monitor_abort_event is not None:
