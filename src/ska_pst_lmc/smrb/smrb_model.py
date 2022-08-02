@@ -45,7 +45,7 @@ class SmrbMonitorDataStore:
             # no ringbuffer has been allocated, so return empty data
             return SmrbMonitorData()
 
-        total_full_in_bytes = 0
+        total_utilised_bytes: float = 0.0
 
         for subband_id, data in self.subband_data.items():
             # need a zero offset
@@ -53,9 +53,7 @@ class SmrbMonitorDataStore:
             ring_buffer_size += data.buffer_size
             ring_buffer_read += data.total_read
             ring_buffer_written += data.total_written
-            # SubbandData full is unitless, need to buffer size
-            # to get how full in bytes it is.
-            total_full_in_bytes += data.full * data.buffer_size
+            total_utilised_bytes += data.utilised_bytes
 
             subband_ring_buffer_utilisations[idx] = data.utilisation
             subband_ring_buffer_sizes[idx] = data.buffer_size
@@ -65,7 +63,7 @@ class SmrbMonitorDataStore:
         if ring_buffer_size > 0:
             # avoid true divide by zero.  This should not happen
             # if the ring buffers have been allocated.
-            ring_buffer_utilisation = total_full_in_bytes / ring_buffer_size
+            ring_buffer_utilisation = total_utilised_bytes / ring_buffer_size * 100.0
 
         return SmrbMonitorData(
             ring_buffer_utilisation=ring_buffer_utilisation,
@@ -141,6 +139,15 @@ class SubbandMonitorData:
     def utilisation(self: SubbandMonitorData) -> float:
         """Return the current utilisation of the subband ring buffer.
 
-        This is full/number_of_buffers as a percentage.
+        This is full/num_of_buffers as a percentage.
         """
         return self.full / self.num_of_buffers * 100.0
+
+    @property
+    def utilised_bytes(self: SubbandMonitorData) -> float:
+        """Return the number of utilised bytes.
+
+        This is utiltisation (as float not percentage) * buffer_size.
+        Which is equivalent to full/num_of_buffers * buffer_size.
+        """
+        return self.full / self.num_of_buffers * self.buffer_size
