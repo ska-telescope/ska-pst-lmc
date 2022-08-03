@@ -269,6 +269,3 @@ def test_not_communicating_switching_simulation_mode_not_try_to_establish_connec
 
     component_manager.simulation_mode = SimulationMode.TRUE
     update_communication_state.assert_not_called()
-
-
-# need test to see that it uses the API's

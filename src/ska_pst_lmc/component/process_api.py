@@ -98,3 +98,17 @@ class PstProcessApi:
         :param task_callback: callable to connect back to the component manager.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
+
+    def reset(self: PstProcessApi, task_callback: Callable) -> None:
+        """Reset the component.
+
+        :param task_callback: callable to connect back to the component manager.
+        """
+        raise NotImplementedError("PstProcessApi is abstract class")
+
+    def restart(self: PstProcessApi, task_callback: Callable) -> None:
+        """Perform a restart of the component.
+
+        :param task_callback: callable to connect back to the component manager.
+        """
+        raise NotImplementedError("PstProcessApi is abstract class")

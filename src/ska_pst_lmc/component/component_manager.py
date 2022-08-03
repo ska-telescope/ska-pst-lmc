@@ -363,6 +363,14 @@ class PstApiComponentManager(PstComponentManager):
         """End scanning."""
         return self._submit_background_task(self._api.end_scan, task_callback=task_callback)
 
+    def abort(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
+        """Abort current process.
+
+        The only long lived process for API based devices is that of SCANNING.
+        """
+        self._api.abort(task_callback=task_callback)
+        return TaskStatus.IN_PROGRESS, "Aborting"
+
     def _submit_background_task(
         self: PstApiComponentManager, task: Callable, task_callback: Callable
     ) -> TaskResponse:
