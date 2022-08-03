@@ -265,7 +265,17 @@ class PstGrpcLmcClient:
             _handle_grpc_error(e)
 
     def abort(self: PstGrpcLmcClient) -> None:
-        """Abort scanning."""
+        """Abort scanning.
+
+        This method is to be used by the LMC device that needs to abort
+        a long running action, in particular scan. The ObsState model
+        allows for this to be called if in IDLE (resources assigned),
+        CONFIGURING (configuring a scan), READY (configured for a scan but
+        not scanning), SCANNING (a scan is running), or RESETTING (is
+        trying to reset from ABORTED/FAULT state).
+
+        After this call the state of the service should be ABORTED.
+        """
         self._logger.debug("Calling abort")
         try:
             self._service.abort(AbortRequest())
@@ -276,7 +286,9 @@ class PstGrpcLmcClient:
         """Reset service.
 
         This method is to be used by the LMC device that is currently in an
-        ABORTED or FAULT state to reset the service.
+        ABORTED or FAULT state to reset the service. After this call the
+        state of the service should be in IDLE (resources assigned and not
+        configured for a scan).
         """
         try:
             self._service.reset(ResetRequest())

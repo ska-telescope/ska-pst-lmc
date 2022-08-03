@@ -452,7 +452,7 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
     def reset(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
         """Reset service.
 
-        :param task_callback: callabke to connect back to the component manager.
+        :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
         try:
@@ -469,7 +469,7 @@ class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
         For SMRB we don't restart the actual process. We make sure that the service
         is put into a EMPTY state by first deconfiguring and then releasing resources.
 
-        :param task_callback: callabke to connect back to the component manager.
+        :param task_callback: callback to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
         try:
