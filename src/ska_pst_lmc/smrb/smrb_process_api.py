@@ -18,18 +18,10 @@ import threading
 import time
 from typing import Callable, Dict, Generator, Optional
 
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import AssignResourcesRequest, SmrbResources
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import AssignResourcesRequest, MonitorResponse, SmrbResources
 from ska_tango_base.commands import TaskStatus
 
-from ska_pst_lmc.component.grpc_lmc_client import (
-    AlreadyScanningException,
-    BaseGrpcException,
-    NotScanningException,
-    PstGrpcLmcClient,
-    ResourcesAlreadyAssignedException,
-    ResourcesNotAssignedException,
-)
-from ska_pst_lmc.component.process_api import PstProcessApi
+from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc
 from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData, SubbandMonitorData
 from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor, background_task
@@ -49,27 +41,6 @@ class PstSmrbProcessApi(PstProcessApi):
     provides the specific method of getting the monitoring
     data.
     """
-
-    @background_task
-    def monitor(
-        self: PstSmrbProcessApi,
-        subband_monitor_data_callback: Callable[..., None],
-        polling_rate: int = 5000,
-        monitor_abort_event: Optional[threading.Event] = None,
-    ) -> None:
-        """Monitor data of remote service.
-
-        This needs to be implemented as a background task
-
-        :param subband_monitor_data_callback: callback to use when there is an
-            update of the sub-band monitor data.
-        :param polling_rate: the rate, in milliseconds, at which the monitoring
-            should poll. The default value is 5000ms (i.e. 5 seconds).
-        :param monitor_abort_event: a :py:class:`threading.Event` that can be
-            used to signal to stop monitoring. If not set then the background task
-            will create one.
-        """
-        raise NotImplementedError("PstSmrbProcessApi is abstract class")
 
 
 class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
@@ -275,255 +246,36 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
             self._logger.error("error while monitoring.", exc_info=True)
 
 
-class PstSmrbProcessApiGrpc(PstSmrbProcessApi):
-    """An interface for the gRPC implemenation version of the  API of `PstSmrbProcessApi`.
+class PstSmrbProcessApiGrpc(PstProcessApiGrpc, PstSmrbProcessApi):
+    """This is an gRPC implementation of the `PstSmrbProcessApi` API.
 
-    At the moment this performs the same as the `PstSmrbProcessApiSimulator` but as
-    the gRPC service is implemented this functionality will be migrated across.
+    This uses an instance of a `PstGrpcLmcClient` to send requests through
+    to the SMRB.RB application. Instances of this class should be per
+    subband, rather than one for all of RECV as a whole.
     """
 
-    def __init__(
-        self: PstSmrbProcessApiGrpc,
-        client_id: str,
-        grpc_endpoint: str,
-        logger: logging.Logger,
-        component_state_callback: Callable,
-        simulator: Optional[PstSmrbSimulator] = None,
-        background_task_processor: Optional[BackgroundTaskProcessor] = None,
-    ) -> None:
-        """Initialise the API.
+    def _get_assign_resources_request(self: PstSmrbProcessApiGrpc, resources: dict) -> AssignResourcesRequest:
+        return AssignResourcesRequest(smrb=SmrbResources(**resources))
 
-        :param logger: the logger to use for the API.
-        :param component_state_callback: this allows the API to call back to the
-            component manager / TANGO device to deal with state model changes.
-        :param simulator: the simulator instance to use in the API.
-        """
-        logger.info("Creating instance of gRPC Process API")
-        self._grpc_client = PstGrpcLmcClient(client_id=client_id, endpoint=grpc_endpoint, logger=logger)
-        self._simulator = simulator or PstSmrbSimulator()
-        self._background_task_processor = background_task_processor or BackgroundTaskProcessor(
-            default_logger=logger
+    def _handle_monitor_response(
+        self: PstSmrbProcessApiGrpc, data: MonitorResponse, monitor_data_callback: Callable[..., None]
+    ) -> None:
+        smrb_data_stats = data.smrb.data
+        smrb_weights_stats = data.smrb.weights
+
+        # assume the number of written and read are the same for data and weights
+        # so total written/read size in bytes is the total buffer size * written/read
+        buffer_size = smrb_data_stats.bufsz + smrb_weights_stats.bufsz
+        total_written = buffer_size * smrb_data_stats.written
+        total_read = buffer_size * smrb_data_stats.read
+
+        monitor_data_callback(
+            subband_id=1,
+            subband_data=SubbandMonitorData(
+                buffer_size=buffer_size,
+                total_written=total_written,
+                total_read=total_read,
+                full=smrb_data_stats.full,
+                num_of_buffers=smrb_data_stats.nbufs,
+            ),
         )
-        self._monitor_abort_event: Optional[threading.Event] = None
-        self._connected = False
-
-        super().__init__(logger=logger, component_state_callback=component_state_callback)
-
-    def connect(self: PstSmrbProcessApiGrpc) -> None:
-        """Connect to the external process.
-
-        Connects to the remote gRPC service. It also establishes a
-        """
-        self._logger.info("About to call gRPC client connect")
-        self._connected = self._grpc_client.connect()
-
-    def disconnect(self: PstSmrbProcessApiGrpc) -> None:
-        """Disconnect from the external process."""
-        if self._monitor_abort_event is not None:
-            self._monitor_abort_event.set()
-
-    def assign_resources(self: PstSmrbProcessApiGrpc, resources: dict, task_callback: Callable) -> None:
-        """Assign resources.
-
-        :param resources: dictionary of resources to allocate.
-        :param task_callback: callable to connect back to the component manager.
-        """
-        self._logger.info(f"Assigning resources for SMRB. {resources}")
-        task_callback(status=TaskStatus.IN_PROGRESS)
-
-        smrb_resources = SmrbResources(**resources)
-        request = AssignResourcesRequest(smrb=smrb_resources)
-        try:
-            self._grpc_client.assign_resources(request=request)
-
-            self._component_state_callback(resourced=True)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-        except ResourcesAlreadyAssignedException as e:
-            self._logger.error(e.message)
-            task_callback(result=e.message, status=TaskStatus.FAILED, exception=e)
-        except BaseGrpcException as e:
-            self._logger.error("Problem processing assign_resources request for SMRB.", exc_info=True)
-            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
-
-    def release_resources(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
-        """Release all resources.
-
-        :param task_callback: callable to connect back to the component manager.
-        """
-        task_callback(status=TaskStatus.IN_PROGRESS)
-
-        try:
-            self._grpc_client.release_resources()
-
-            self._component_state_callback(resourced=False)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-        except ResourcesNotAssignedException as e:
-            self._logger.warning(e.message)
-            self._component_state_callback(resourced=False)
-            task_callback(status=TaskStatus.COMPLETED, result=e.message)
-        except BaseGrpcException as e:
-            self._logger.error("Problem processing release_resources request for SMRB.", exc_info=True)
-            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
-
-    def configure(self: PstSmrbProcessApiGrpc, configuration: dict, task_callback: Callable) -> None:
-        """Configure as scan.
-
-        For SMRB this is a no-op command. There is nothing on the server that would be
-        performed and executing this will do nothing.
-
-        :param configuration: the configuration of for the scan.
-        :param task_callback: callable to connect back to the component manager.
-        """
-        task_callback(status=TaskStatus.IN_PROGRESS)
-        self._component_state_callback(configured=True)
-        task_callback(status=TaskStatus.COMPLETED, result="Completed")
-
-    def deconfigure(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
-        """Deconfiure a scan.
-
-        For SMRB this is a no-op command. There is nothin on the server that would be
-        performed and executing this will do nothing.
-
-        :param task_callback: callable to connect back to the component manager.
-        """
-        task_callback(status=TaskStatus.IN_PROGRESS)
-        self._component_state_callback(configured=False)
-        task_callback(status=TaskStatus.COMPLETED, result="Completed")
-
-    def scan(
-        self: PstSmrbProcessApiGrpc,
-        args: dict,
-        task_callback: Callable,
-    ) -> None:
-        """Run a scan.
-
-        :param args: arguments for the scan.
-        :param task_callback: callable to connect back to the component manager.
-        """
-        task_callback(status=TaskStatus.IN_PROGRESS)
-        try:
-            self._grpc_client.scan()
-            self._component_state_callback(scanning=True)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-        except AlreadyScanningException as e:
-            self._logger.warning(e.message)
-            self._component_state_callback(scanning=True)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-        except BaseGrpcException as e:
-            self._logger.error("Problem processing scan request for SMRB.", exc_info=True)
-            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
-
-    def end_scan(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
-        """End a scan.
-
-        :param task_callback: callable to connect back to the component manager.
-        """
-        task_callback(status=TaskStatus.IN_PROGRESS)
-        try:
-            self._stop_monitoring()
-            self._grpc_client.end_scan()
-            self._component_state_callback(scanning=False)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-        except NotScanningException as e:
-            self._logger.warning(e.message)
-            self._component_state_callback(scanning=False)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-        except BaseGrpcException as e:
-            self._logger.error("Problem processing end_scan request for SMRB.", exc_info=True)
-            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
-
-    def abort(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
-        """Abort a scan.
-
-        :param task_callback: callable to connect back to the component manager.
-        """
-        task_callback(status=TaskStatus.IN_PROGRESS)
-        try:
-            # stop monitoring if monitoring is happening. This would be the
-            # case if our state was SCANNING.
-            self._stop_monitoring()
-            self._grpc_client.abort()
-            self._component_state_callback(scanning=False)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-        except BaseGrpcException as e:
-            self._logger.error("Problem in aborting request for SMRB.", exc_info=True)
-            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
-
-    def reset(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
-        """Reset service.
-
-        :param task_callback: callable to connect back to the component manager.
-        """
-        task_callback(status=TaskStatus.IN_PROGRESS)
-        try:
-            self._grpc_client.reset()
-            self._component_state_callback(configured=False)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-        except BaseGrpcException as e:
-            self._logger.error("Error raised while resetting SMRB", exc_info=True)
-            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
-
-    def restart(self: PstSmrbProcessApiGrpc, task_callback: Callable) -> None:
-        """Restart service.
-
-        For SMRB we don't restart the actual process. We make sure that the service
-        is put into a EMPTY state by first deconfiguring and then releasing resources.
-
-        :param task_callback: callback to connect back to the component manager.
-        """
-        task_callback(status=TaskStatus.IN_PROGRESS)
-        try:
-            self._grpc_client.restart()
-            self._component_state_callback(configured=False, resourced=False)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-        except BaseGrpcException as e:
-            self._logger.error("Error raised while restarting SMRB", exc_info=True)
-            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
-
-    def _stop_monitoring(self: PstSmrbProcessApiGrpc) -> None:
-        if self._monitor_abort_event is not None:
-            self._monitor_abort_event.set()
-
-    @background_task
-    def monitor(
-        self: PstSmrbProcessApiGrpc,
-        subband_monitor_data_callback: Callable[..., None],
-        polling_rate: int = 5000,
-        monitor_abort_event: Optional[threading.Event] = None,
-    ) -> None:
-        """Monitor data of remote service.
-
-        :param subband_monitor_data_callback: callback to use when there is an
-            update of the sub-band monitor data.
-        :param polling_rate: the rate, in milliseconds, at which the monitoring
-            should poll. The default value is 5000ms (i.e. 5 seconds).
-        :param monitor_abort_event: a :py:class:`threading.Event` that can be
-            used to signal to stop monitoring. If not set then the background task
-            will create one.
-        """
-        self._monitor_abort_event = monitor_abort_event or threading.Event()
-        try:
-            for d in self._grpc_client.monitor(
-                polling_rate=polling_rate, abort_event=self._monitor_abort_event
-            ):
-                smrb_data_stats = d.smrb.data
-                smrb_weights_stats = d.smrb.weights
-
-                # assume the number of written and read are the same for data and weights
-                # so total written/read size in bytes is the total buffer size * written/read
-                buffer_size = smrb_data_stats.bufsz + smrb_weights_stats.bufsz
-                total_written = buffer_size * smrb_data_stats.written
-                total_read = buffer_size * smrb_data_stats.read
-
-                subband_monitor_data_callback(
-                    subband_id=1,
-                    subband_data=SubbandMonitorData(
-                        buffer_size=buffer_size,
-                        total_written=total_written,
-                        total_read=total_read,
-                        full=smrb_data_stats.full,
-                        num_of_buffers=smrb_data_stats.nbufs,
-                    ),
-                )
-        except Exception:
-            self._logger.warning("Error while handing monitoring.", exc_info=True)
