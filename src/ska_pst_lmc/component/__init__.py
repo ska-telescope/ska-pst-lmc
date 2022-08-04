@@ -11,11 +11,12 @@ __all__ = [
     "PstApiComponentManager",
     "PstComponentManager",
     "PstProcessApi",
+    "PstProcessApiGrpc",
     "PstGrpcLmcClient",
     "PstBaseDevice",
 ]
 
 from .component_manager import PstApiComponentManager, PstComponentManager
-from .process_api import PstProcessApi
+from .process_api import PstProcessApi, PstProcessApiGrpc
 from .pst_device import PstBaseDevice
 from .grpc_lmc_client import PstGrpcLmcClient
