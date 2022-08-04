@@ -13,6 +13,7 @@ __all__ = [
     "ReceiveData",
     "PstReceiveSimulator",
     "PstReceiveProcessApi",
+    "PstReceiveProcessApiGrpc",
     "PstReceiveProcessApiSimulator",
     "generate_random_update",
 ]
@@ -20,5 +21,5 @@ __all__ = [
 from .receive_device import PstReceive
 from .receive_component_manager import PstReceiveComponentManager
 from .receive_model import ReceiveData
-from .receive_process_api import PstReceiveProcessApi, PstReceiveProcessApiSimulator
+from .receive_process_api import PstReceiveProcessApi, PstReceiveProcessApiSimulator, PstReceiveProcessApiGrpc
 from .receive_simulator import PstReceiveSimulator, generate_random_update

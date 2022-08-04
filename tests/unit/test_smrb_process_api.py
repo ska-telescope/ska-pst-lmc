@@ -14,7 +14,7 @@ import threading
 import time
 import unittest
 from random import randint
-from typing import Callable, Generator
+from typing import Generator
 from unittest.mock import ANY, MagicMock, call
 
 import grpc
@@ -50,18 +50,6 @@ from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
 from ska_pst_lmc.smrb.smrb_util import calculate_smrb_subband_resources
 from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
-
-
-@pytest.fixture
-def component_state_callback() -> Callable:
-    """Create a mock component state callback to test actions."""
-    return MagicMock()
-
-
-@pytest.fixture
-def task_callback() -> Callable:
-    """Create a mock component to validate task callbacks."""
-    return MagicMock()
 
 
 @pytest.fixture

@@ -20,9 +20,10 @@ import logging
 import time
 from typing import Callable, Optional
 
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import AssignResourcesRequest, ReceiveResources
 from ska_tango_base.commands import TaskStatus
 
-from ska_pst_lmc.component.process_api import PstProcessApi
+from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc
 from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_simulator import PstReceiveSimulator
 from ska_pst_lmc.util.background_task import BackgroundTask, BackgroundTaskProcessor, background_task
@@ -30,6 +31,7 @@ from ska_pst_lmc.util.background_task import BackgroundTask, BackgroundTaskProce
 __all__ = [
     "PstReceiveProcessApi",
     "PstReceiveProcessApiSimulator",
+    "PstReceiveProcessApiGrpc",
 ]
 
 
@@ -208,3 +210,13 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
     def _monitor_action(self: PstReceiveProcessApiSimulator) -> None:
         """Monitor RECV process to get the telemetry information."""
         self.data = self._simulator.get_data()
+
+
+class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
+    """This is an gRPC implementation of the `PstReceiveProcessApi`.
+
+    This uses an instance of a `PstGrpcLmcClient` to send requests through
+    to the RECV.CORE application. Instances of this class should be per
+    subband, rather than one for all of RECV as a whole.
+    """
+

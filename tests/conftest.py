@@ -476,6 +476,12 @@ def component_state_callback() -> Callable:
 
 
 @pytest.fixture
+def task_callback() -> Callable:
+    """Create a mock component to validate task callbacks."""
+    return MagicMock()
+
+
+@pytest.fixture
 def simulation_mode(request: pytest.FixtureRequest) -> SimulationMode:
     """Set simulation mode for test."""
     try:
