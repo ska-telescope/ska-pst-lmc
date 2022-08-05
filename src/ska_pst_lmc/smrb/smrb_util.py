@@ -7,6 +7,12 @@
 
 """Module for providing utility methods of SMRB."""
 
+__all__ = [
+    "generate_data_key",
+    "generate_weights_key",
+    "calculate_smrb_subband_resources",
+]
+
 from typing import Dict
 
 DATA_KEY_SUFFIX: int = 0
@@ -21,6 +27,37 @@ DATA_BUFFER_BUFSZ_FACTOR: int = 1
 WEIGHTS_NBITS = 16
 WEIGHTS_BUFFER_NBUFS: int = 4
 WEIGHTS_BUFFER_BUFSZ_FACTOR: int = 1
+
+
+def generate_data_key(beam_id: int, subband_id: int) -> str:
+    """Generate a data header key.
+
+    The format of this is a string of 4 chars long. The first two
+    chars is the beam_id represented in hexadecimal with left zero
+    padding, the next is subband_id, and finally a suffix of 0.
+
+    :param beam_id: the beam_id that this LMC component is for.
+    :param subband_id: the id of the subband to generate the key for.
+    :returns: the encoded key to be used for the data header ringbuffer.
+    """
+    return "{0:02x}{1}{2}".format(beam_id, subband_id, DATA_KEY_SUFFIX)
+
+
+def generate_weights_key(beam_id: int, subband_id: int) -> str:
+    """Generate a weights header key.
+
+    The format of this is a string of 4 chars long. The first two
+    chars is the beam_id represented in hexadecimal with left zero
+    padding, the next is subband_id, and finally a suffix of 2.
+
+    NOTE: the weights key is 2 more than the data key, needed because
+    SMRB.CORE has 2 keys for each ring buffer.
+
+    :param beam_id: the beam_id that this LMC component is for.
+    :param subband_id: the id of the subband to generate the key for.
+    :returns: the encoded key to be used for the data header ringbuffer.
+    """
+    return "{0:02x}{1}{2}".format(beam_id, subband_id, WEIGHTS_KEY_SUFFIX)
 
 
 def calculate_smrb_subband_resources(beam_id: int, request_params: dict) -> Dict[int, dict]:
@@ -66,8 +103,8 @@ def calculate_smrb_subband_resources(beam_id: int, request_params: dict) -> Dict
 
     return {
         1: {
-            "data_key": "{0:02x}{1}{2}".format(beam_id, 1, DATA_KEY_SUFFIX),
-            "weights_key": "{0:02x}{1}{2}".format(beam_id, 1, WEIGHTS_KEY_SUFFIX),
+            "data_key": generate_data_key(beam_id=beam_id, subband_id=1),
+            "weights_key": generate_weights_key(beam_id=beam_id, subband_id=1),
             "hb_nbufs": HEADER_BUFFER_NBUFS,
             "hb_bufsz": HEADER_BUFFER_BUFSZ,
             "db_nbufs": DATA_BUFFER_NBUFS,
