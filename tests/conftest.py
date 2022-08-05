@@ -24,30 +24,31 @@ from ska_pst_lmc.device_proxy import DeviceProxyFactory
 from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
+
 @pytest.fixture(scope="module")
 def assign_resources_request() -> dict:
     """Return a valid assign resources object."""
     return {
-        # CSP JSON fields                   # PST fields
-        "num_frequency_channels": 8192,     # nchan
-        "num_of_polarizations": 2,          # npol
-        "bits_per_sample": 32,              # this is NDIM * NBITS -> ndim == 2
-        "udp_nsamp": 32,                    # udp_nsamp
-        "wt_nsamp": 32,                     # wt_nsamp
-        "udp_nchan": 4,                     # udp_nchan
-        "centre_frequency": 100000000.0,    # frequency
-        "total_bandwidth": 361689.8148,     # bandwidth
-        "timing_beam_id": "beam1",          # frontend
-        "feed_polarization": "CIRC",        # fd_poln
-        "feed_handedness": 1,               # fn_hand
-        "feed_angle": 1.234,                # fn_sang
-        "feed_tracking_mode": "FA",         # fd_mode
-        "feed_position_angle": 10.0,        # fa_req
-        "rececptors": [ "receptor1", "receptor2"],  # antennnas / also nant is the length of this
-        "receptor_weights": [0.4, 0.6],     # ant_weights
-        "oversampling_ratio": [8, 7],       # ovrsamp
-                                            # tsamp - this is calculated
-                                            # nsubband - this is determined by SMRB.MGMT
+        # CSP JSON fields / PST fields
+        "num_frequency_channels": 8192,  # nchan
+        "num_of_polarizations": 2,  # npol
+        "bits_per_sample": 32,  # this is NDIM * NBITS -> ndim == 2
+        "udp_nsamp": 32,  # udp_nsamp
+        "wt_nsamp": 32,  # wt_nsamp
+        "udp_nchan": 4,  # udp_nchan
+        "centre_frequency": 100000000.0,  # frequency
+        "total_bandwidth": 361689.8148,  # bandwidth
+        "timing_beam_id": "beam1",  # frontend
+        "feed_polarization": "CIRC",  # fd_poln
+        "feed_handedness": 1,  # fn_hand
+        "feed_angle": 1.234,  # fn_sang
+        "feed_tracking_mode": "FA",  # fd_mode
+        "feed_position_angle": 10.0,  # fa_req
+        "rececptors": ["receptor1", "receptor2"],  # antennnas / also nant is the length of this
+        "receptor_weights": [0.4, 0.6],  # ant_weights
+        "oversampling_ratio": [8, 7],  # ovrsamp
+        # tsamp - this is calculated
+        # nsubband - this is determined by SMRB.MGMT
     }
 
 

@@ -20,7 +20,11 @@ import logging
 import time
 from typing import Callable, Optional
 
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import AssignResourcesRequest, ReceiveResources
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    AssignResourcesRequest,
+    ReceiveResources,
+    ReceiveSubbandResources,
+)
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc
@@ -220,3 +224,10 @@ class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
     subband, rather than one for all of RECV as a whole.
     """
 
+    def _get_assign_resources_request(
+        self: PstReceiveProcessApiGrpc, resources: dict
+    ) -> AssignResourcesRequest:
+        subband_resources = ReceiveSubbandResources(**resources["subband"])
+        return AssignResourcesRequest(
+            receive=ReceiveResources(subband_resources=subband_resources, **resources["common"])
+        )

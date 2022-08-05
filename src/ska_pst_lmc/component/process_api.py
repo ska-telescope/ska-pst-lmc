@@ -184,7 +184,7 @@ class PstProcessApiGrpc(PstProcessApi):
         :param background_task_processor: an optional background processor that
             will run background tasks like `monitor`.
         """
-        logger.info(f"Creating instance of gRPC Process API for SMRB {client_id}")
+        logger.info(f"Creating instance of gRPC Process API for '{client_id}'")
         self._client_id = client_id
         self._grpc_client = PstGrpcLmcClient(client_id=client_id, endpoint=grpc_endpoint, logger=logger)
         self._background_task_processor = background_task_processor or BackgroundTaskProcessor(
@@ -218,7 +218,7 @@ class PstProcessApiGrpc(PstProcessApi):
         :param resources: dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
         """
-        self._logger.info(f"Assigning resources for SMRB. {resources}")
+        self._logger.debug(f"Assigning resources for '{self._client_id}': {resources}")
         task_callback(status=TaskStatus.IN_PROGRESS)
 
         request = self._get_assign_resources_request(resources)
@@ -353,7 +353,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self._component_state_callback(configured=False)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
-            self._logger.error("Error raised while resetting SMRB", exc_info=True)
+            self._logger.error(f"Error raised while resetting '{self._client_id}'", exc_info=True)
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def restart(self: PstProcessApiGrpc, task_callback: Callable) -> None:
@@ -370,7 +370,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self._component_state_callback(configured=False, resourced=False)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
-            self._logger.error("Error raised while restarting SMRB", exc_info=True)
+            self._logger.error(f"Error raised while restarting '{self._client_id}'", exc_info=True)
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def _stop_monitoring(self: PstProcessApiGrpc) -> None:
