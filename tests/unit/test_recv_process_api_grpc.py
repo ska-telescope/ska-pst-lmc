@@ -74,10 +74,14 @@ def subband_id() -> int:
 
 @pytest.fixture
 def calculated_receive_subband_resources(
+    beam_id: int,
     assign_resources_request: dict,
 ) -> dict:
     """Calculate RECV subband resources."""
-    return calculate_receive_subband_resources(assign_resources_request)
+    return calculate_receive_subband_resources(
+        beam_id=beam_id,
+        request_params=assign_resources_request,
+    )
 
 
 @pytest.fixture
