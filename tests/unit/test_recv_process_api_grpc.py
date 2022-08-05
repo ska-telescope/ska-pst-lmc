@@ -22,6 +22,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ErrorCode,
     ReceiveResources,
     ReceiveSubbandResources,
+    ReleaseResourcesRequest,
+    ReleaseResourcesResponse,
 )
 from ska_tango_base.commands import TaskStatus
 
@@ -55,7 +57,7 @@ def test_receive_grpc_sends_connect_request(
     mock_servicer_context: MagicMock,
     client_id: str,
 ) -> None:
-    """Test that SMRB gRPC API connects to the server."""
+    """Test that RECV gRPC API connects to the server."""
     response = ConnectionResponse()
     mock_servicer_context.connect = MagicMock(return_value=response)
 
@@ -111,7 +113,7 @@ def test_receive_grpc_assign_resources(
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
-    """Test that SMRB gRPC assign resources."""
+    """Test that RECV gRPC assign resources."""
     response = AssignResourcesResponse()
     mock_servicer_context.assign_resources = MagicMock(return_value=response)
 
@@ -164,7 +166,7 @@ def test_receive_grpc_assign_resources_when_throws_exception(
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
-    """Test that SMRB gRPC assign resources throws an exception."""
+    """Test that RECV gRPC assign resources throws an exception."""
     mock_servicer_context.assign_resources.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.INTERNAL_ERROR,
@@ -178,6 +180,74 @@ def test_receive_grpc_assign_resources_when_throws_exception(
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
         call(status=TaskStatus.FAILED, result="Internal server error occurred", exception=ANY),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_receive_grpc_release_resources(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that RECV gRPC release resources."""
+    response = ReleaseResourcesResponse()
+    mock_servicer_context.release_resources = MagicMock(return_value=response)
+
+    grpc_api.release_resources(task_callback=task_callback)
+
+    mock_servicer_context.release_resources.assert_called_once_with(ReleaseResourcesRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(resourced=False)
+
+
+def test_receive_grpc_release_resources_when_no_resources_assigned(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that RECV release resources when there are not resources assigned."""
+    mock_servicer_context.release_resources.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.RESOURCES_NOT_ASSIGNED,
+        message="No resources have been assigned",
+    )
+
+    grpc_api.release_resources(task_callback=task_callback)
+
+    mock_servicer_context.release_resources.assert_called_once_with(ReleaseResourcesRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="No resources have been assigned"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(resourced=False)
+
+
+def test_receive_grpc_release_resources_when_throws_exception(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that RECV release resources when an exception is thrown."""
+    mock_servicer_context.release_resources.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.INTERNAL,
+        message="Oops there was a problem",
+    )
+
+    grpc_api.release_resources(task_callback=task_callback)
+
+    mock_servicer_context.release_resources.assert_called_once_with(ReleaseResourcesRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Oops there was a problem", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()
