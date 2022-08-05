@@ -15,7 +15,9 @@ from typing import Any, Callable, List, Optional
 from ska_tango_base.control_model import CommunicationStatus, PowerState
 
 from ska_pst_lmc.component import PstApiComponentManager
+from ska_pst_lmc.component.component_manager import TaskResponse
 from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApi, PstReceiveProcessApiSimulator
+from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources
 
 
 class PstReceiveComponentManager(PstApiComponentManager):
@@ -81,6 +83,15 @@ class PstReceiveComponentManager(PstApiComponentManager):
         self._api.disconnect()
         self._update_communication_state(CommunicationStatus.DISABLED)
         self._component_state_callback(fault=None, power=PowerState.UNKNOWN)
+
+    @property
+    def beam_id(self: PstReceiveComponentManager) -> int:
+        """Return the beam id for the current RECV component.
+
+        This should be determined from the FQDN as that should have
+        the beam 1 encoded in it.
+        """
+        return 1
 
     @property
     def received_rate(self: PstReceiveComponentManager) -> float:
@@ -153,3 +164,30 @@ class PstReceiveComponentManager(PstApiComponentManager):
         :rtype: list(float)
         """
         return self._api.monitor_data.relative_weights
+
+    def assign(self: PstReceiveComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+        """
+        Assign resources to the component.
+
+        :param resources: resources to be assigned
+        """
+        recv_resources = calculate_receive_subband_resources(self.beam_id, request_params=resources)
+        self.logger.debug(f"Submitting API with recv_resources={recv_resources}")
+
+        # deal only with subband 1 for now. otherwise we have to deal with tracking
+        # multiple long running tasks.
+        def _task(task_callback: Callable) -> None:
+            common_resources = recv_resources["common"]
+            subband_resources = recv_resources["subbands"][1]
+
+            resources = {
+                "common": common_resources,
+                "subband": subband_resources,
+            }
+
+            self._api.assign_resources(resources=resources, task_callback=task_callback)
+
+        return self._submit_background_task(
+            _task,
+            task_callback=task_callback,
+        )
