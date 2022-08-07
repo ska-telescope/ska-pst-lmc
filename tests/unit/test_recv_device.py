@@ -97,6 +97,7 @@ class TestPstReceive:
         self: TestPstReceive,
         device_under_test: DeviceProxy,
         tango_device_command_checker: TangoDeviceCommandChecker,
+        assign_resources_request: dict,
     ) -> None:
         """Test state model of PstReceive."""
         # need to go through state mode
@@ -107,13 +108,9 @@ class TestPstReceive:
         )
         assert device_under_test.state() == DevState.ON
 
-        resources = json.dumps({"foo": "bar"})
+        resources = json.dumps(assign_resources_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.AssignResources(resources),
-            expected_command_status_events=[
-                TaskStatus.IN_PROGRESS,
-                TaskStatus.COMPLETED,
-            ],
             expected_obs_state_events=[
                 ObsState.RESOURCING,
                 ObsState.IDLE,
