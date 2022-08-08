@@ -11,6 +11,8 @@ __all__ = [
     "calculate_receive_subband_resources",
 ]
 
+from typing import Optional
+
 from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 
 MEGA_HERTZ = 1e6
@@ -18,6 +20,25 @@ MEGA_HERTZ = 1e6
 
 NUM_DIMENSIONS = 2
 """While PST can handle real and complex data, SKA is using only complex."""
+
+LOW_PST = "LowPST"
+
+MID_UDP_FORMATS = {
+    "1": "MidPSTBand1",
+    "2": "MidPSTBand2",
+    "3": "MidPSTBand3",
+    "4": "MidPSTBand4",
+    "5a": "MidPSTBand5",
+    "5b": "MidPSTBand5",
+}
+
+
+def get_udp_format(frequency_band: Optional[str] = None, **kwargs: dict) -> str:
+    """Get UDP_FORMAT to be used in processing."""
+    if frequency_band in MID_UDP_FORMATS:
+        return MID_UDP_FORMATS[frequency_band]
+
+    return LOW_PST
 
 
 def calculate_receive_subband_resources(beam_id: int, request_params: dict) -> dict:
@@ -35,23 +56,15 @@ def calculate_receive_subband_resources(beam_id: int, request_params: dict) -> d
         is as follows::
         TODO - update docs
     """
-    # will build up request via unit tests
-    # "bits_per_sample": 32,  # this is NDIM * NBITS -> ndim == 2
-    # "oversampling_ratio": [8, 7],  # ovrsamp
-    # # tsamp - this is calculated
-
-    # // sampling time, inferred from the bandwidth, nchan and oversample
-    # float tsamp                 = 18;
-    # // oversampling rate
-    # repeated uint64 ovrsamp     = 19;
-    # // number of subbands
-    # uint64 nsubband             = 20;
+    udp_format = get_udp_format(**request_params)
 
     nchan = request_params["num_frequency_channels"]
     oversampling_ratio = request_params["oversampling_ratio"]
     bandwidth = request_params["total_bandwidth"]
-    tsamp = (
-        1.0 / (bandwidth / nchan * oversampling_ratio[0] / oversampling_ratio[1]) / 1_000_000
+    bandwidth_mhz = bandwidth / MEGA_HERTZ
+
+    tsamp = 1.0 / (
+        bandwidth_mhz / nchan * oversampling_ratio[0] / oversampling_ratio[1]
     )  # need this in samples / microsecs
 
     return {
@@ -62,7 +75,7 @@ def calculate_receive_subband_resources(beam_id: int, request_params: dict) -> d
             "wt_nsamp": request_params["wt_nsamp"],
             "udp_nchan": request_params["udp_nchan"],
             "frequency": request_params["centre_frequency"] / MEGA_HERTZ,
-            "bandwidth": bandwidth / MEGA_HERTZ,
+            "bandwidth": bandwidth_mhz,
             "frontend": request_params["timing_beam_id"],
             "fd_poln": request_params["feed_polarization"],
             "fn_hand": request_params["feed_handedness"],
@@ -70,13 +83,14 @@ def calculate_receive_subband_resources(beam_id: int, request_params: dict) -> d
             "fd_mode": request_params["feed_tracking_mode"],
             "fa_req": request_params["feed_position_angle"],
             "nant": len(request_params["receptors"]),
-            "antennnas": request_params["receptors"],
-            "ant_weights": request_params["receptor_weights"],
+            "antennas": ",".join(request_params["receptors"]),
+            "ant_weights": ",".join(map(str, request_params["receptor_weights"])),
             "npol": request_params["num_of_polarizations"],
             "nbits": request_params["bits_per_sample"] // NUM_DIMENSIONS,
             "ndim": NUM_DIMENSIONS,
             "tsamp": tsamp,
-            "ovrsamp": oversampling_ratio,
+            "ovrsamp": "/".join(map(str, oversampling_ratio)),
+            "udp_format": udp_format,
         },
         "subbands": {
             1: {
@@ -85,8 +99,10 @@ def calculate_receive_subband_resources(beam_id: int, request_params: dict) -> d
                 "bandwidth": bandwidth / MEGA_HERTZ,
                 "nchan": nchan,
                 "frequency": request_params["centre_frequency"] / MEGA_HERTZ,
-                "chan_range": [1, nchan],
-                "chan_out_range": [1, nchan],
+                "start_channel": 0,
+                "end_channel": nchan - 1,
+                "start_channel_out": 0,
+                "end_channel_out": nchan - 1,
                 "nchan_out": nchan,
                 "bandwidth_out": bandwidth / MEGA_HERTZ,
                 "frequency_out": request_params["centre_frequency"] / MEGA_HERTZ,

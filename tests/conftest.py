@@ -31,19 +31,19 @@ def beam_id() -> int:
     return 1
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def assign_resources_request() -> dict:
     """Return a valid assign resources object."""
     return {
         # CSP JSON fields / PST fields
-        "num_frequency_channels": 8192,  # nchan
+        "num_frequency_channels": 6475,  # nchan
         "num_of_polarizations": 2,  # npol
         "bits_per_sample": 32,  # this is NDIM * NBITS -> ndim == 2
         "udp_nsamp": 32,  # udp_nsamp
         "wt_nsamp": 32,  # wt_nsamp
         "udp_nchan": 4,  # udp_nchan
         "centre_frequency": 100000000.0,  # frequency
-        "total_bandwidth": 361689.8148,  # bandwidth
+        "total_bandwidth": 348096000,  # bandwidth
         "timing_beam_id": "beam1",  # frontend
         "feed_polarization": "CIRC",  # fd_poln
         "feed_handedness": 1,  # fn_hand
