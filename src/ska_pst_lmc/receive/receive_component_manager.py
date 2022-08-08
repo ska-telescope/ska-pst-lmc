@@ -12,11 +12,15 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, List, Optional
 
-from ska_tango_base.control_model import CommunicationStatus, PowerState
+from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
 from ska_pst_lmc.component import PstApiComponentManager
 from ska_pst_lmc.component.component_manager import TaskResponse
-from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApi, PstReceiveProcessApiSimulator
+from ska_pst_lmc.receive.receive_process_api import (
+    PstReceiveProcessApi,
+    PstReceiveProcessApiGrpc,
+    PstReceiveProcessApiSimulator,
+)
 from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources
 
 
@@ -28,9 +32,10 @@ class PstReceiveComponentManager(PstApiComponentManager):
     def __init__(
         self: PstReceiveComponentManager,
         device_name: str,
+        process_api_endpoint: str,
         logger: logging.Logger,
         communication_state_callback: Callable[[CommunicationStatus], None],
-        component_state_callback: Callable,
+        component_state_callback: Callable[[bool, PowerState], None],
         api: Optional[PstReceiveProcessApi] = None,
         *args: Any,
         **kwargs: Any,
@@ -47,6 +52,11 @@ class PstReceiveComponentManager(PstApiComponentManager):
             component faults (or stops faulting)
         :param api: optional API instance, used to override during testing.
         """
+        logger.debug(
+            f"Setting up RECV component manager with device_name='{device_name}'"
+            + "and api_endpoint='{process_api_endpoint}'"
+        )
+        self.api_endpoint = process_api_endpoint
         api = api or PstReceiveProcessApiSimulator(
             logger=logger,
             component_state_callback=component_state_callback,
@@ -64,25 +74,20 @@ class PstReceiveComponentManager(PstApiComponentManager):
             **kwargs,
         )
 
-    def _handle_communication_state_change(
-        self: PstReceiveComponentManager, communication_state: CommunicationStatus
-    ) -> None:
-        if communication_state == CommunicationStatus.NOT_ESTABLISHED:
-            self._connect_to_receive()
-        elif communication_state == CommunicationStatus.DISABLED:
-            self._disconnect_from_receive()
-
-    def _connect_to_receive(self: PstReceiveComponentManager) -> None:
-        """Establish connection to RECV component."""
-        self._update_communication_state(CommunicationStatus.NOT_ESTABLISHED)
-        self._api.connect()
-        self._update_communication_state(CommunicationStatus.ESTABLISHED)
-        self._component_state_callback(fault=None, power=PowerState.OFF)
-
-    def _disconnect_from_receive(self: PstReceiveComponentManager) -> None:
-        self._api.disconnect()
-        self._update_communication_state(CommunicationStatus.DISABLED)
-        self._component_state_callback(fault=None, power=PowerState.UNKNOWN)
+    def _update_api(self: PstReceiveComponentManager) -> None:
+        """Update instance of API based on simulation mode."""
+        if self._simuation_mode == SimulationMode.TRUE:
+            self._api = PstReceiveProcessApiSimulator(
+                logger=self.logger,
+                component_state_callback=self._component_state_callback,
+            )
+        else:
+            self._api = PstReceiveProcessApiGrpc(
+                client_id=self._device_name,
+                grpc_endpoint=self.api_endpoint,
+                logger=self.logger,
+                component_state_callback=self._component_state_callback,
+            )
 
     @property
     def beam_id(self: PstReceiveComponentManager) -> int:

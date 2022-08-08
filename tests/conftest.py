@@ -56,7 +56,7 @@ def assign_resources_request() -> dict:
     }
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture
 def device_properties() -> dict:
     """
     Fixture that returns device_properties to be provided to the device under test.
