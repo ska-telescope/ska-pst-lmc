@@ -100,7 +100,6 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         self._component_state_callback(resourced=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
     def configure(self: PstSmrbProcessApiSimulator, configuration: dict, task_callback: Callable) -> None:
         """Configure as scan.
 
@@ -117,7 +116,6 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         self._component_state_callback(configured=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
     def deconfigure(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
         """Deconfiure a scan.
 

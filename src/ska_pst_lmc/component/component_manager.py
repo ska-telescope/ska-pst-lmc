@@ -392,13 +392,15 @@ class PstApiComponentManager(PstComponentManager):
         :param configuration: the configuration to be configured
         :type configuration: dict
         """
-        self._api.configure(configuration, task_callback)
-        return TaskStatus.QUEUED, "Releasing all"
+        return self._submit_background_task(
+            functools.partial(self._api.configure, configuration), task_callback=task_callback
+        )
 
     def deconfigure(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
         """Deconfigure this component."""
-        self._api.deconfigure(task_callback)
-        return TaskStatus.QUEUED, "Deconfiguring"
+        return self._submit_background_task(
+            self._api.deconfigure, task_callback=task_callback
+        )
 
     def scan(self: PstApiComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
         """Start scanning."""

@@ -128,7 +128,6 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         self._component_state_callback(resourced=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
     def configure(self: PstReceiveProcessApiSimulator, configuration: dict, task_callback: Callable) -> None:
         """Configure as scan.
 
@@ -145,7 +144,6 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         self._component_state_callback(configured=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
     def deconfigure(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
         """Deconfiure a scan.
 

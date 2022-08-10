@@ -134,10 +134,6 @@ class TestPstReceive:
         configuration = json.dumps({"nchan": 1024})
         tango_device_command_checker.assert_command(
             lambda: device_under_test.Configure(configuration),
-            expected_command_status_events=[
-                TaskStatus.IN_PROGRESS,
-                TaskStatus.COMPLETED,
-            ],
             expected_obs_state_events=[
                 ObsState.CONFIGURING,
                 ObsState.READY,
