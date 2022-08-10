@@ -312,6 +312,54 @@ class PstApiComponentManager(PstComponentManager):
             device_name, logger, communication_state_callback, component_state_callback, *args, **kwargs
         )
 
+    def _handle_communication_state_change(
+        self: PstApiComponentManager, communication_state: CommunicationStatus
+    ) -> None:
+        """Handle change in communication state."""
+        if communication_state == CommunicationStatus.NOT_ESTABLISHED:
+            self._connect_to_api()
+        elif communication_state == CommunicationStatus.DISABLED:
+            self._disconnect_from_api()
+
+    def _connect_to_api(self: PstApiComponentManager) -> None:
+        """Establish connection to API component."""
+        self._update_communication_state(CommunicationStatus.NOT_ESTABLISHED)
+        self._api.connect()
+        self._update_communication_state(CommunicationStatus.ESTABLISHED)
+        self._component_state_callback(fault=None, power=PowerState.OFF)
+
+    def _disconnect_from_api(self: PstApiComponentManager) -> None:
+        """Establish connection to API component."""
+        self._api.disconnect()
+        self._update_communication_state(CommunicationStatus.DISABLED)
+        self._component_state_callback(fault=None, power=PowerState.UNKNOWN)
+
+    def _simulation_mode_changed(self: PstApiComponentManager) -> None:
+        """Handle change of simulation mode."""
+        curr_communication_state = self.communication_state
+        if curr_communication_state == CommunicationStatus.ESTABLISHED:
+            self.logger.debug(
+                f"{self._device_name} simulation mode changed while "
+                + "communicating so stopping communication."
+            )
+            self.stop_communicating()
+
+        self._update_api()
+
+        if curr_communication_state == CommunicationStatus.ESTABLISHED:
+            self.logger.debug(
+                f"{self._device_name} simulation mode changed while "
+                + "communicating so restarting communication."
+            )
+            self.start_communicating()
+
+    def _update_api(self: PstApiComponentManager) -> None:
+        """Update API used by component manager.
+
+        This is called when there is a change in the simulation mode.
+        """
+        raise NotImplementedError("PstApiComponentManager is abstract.")
+
     def assign(self: PstApiComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
         """
         Assign resources to the component.

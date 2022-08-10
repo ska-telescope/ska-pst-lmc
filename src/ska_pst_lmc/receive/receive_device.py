@@ -14,7 +14,7 @@ from typing import List, Optional
 import tango
 from ska_tango_base.control_model import SimulationMode
 from tango import DebugIt
-from tango.server import attribute, command, run
+from tango.server import attribute, command, device_property, run
 
 import ska_pst_lmc.release as release
 from ska_pst_lmc.component.pst_device import PstBaseDevice
@@ -29,6 +29,14 @@ class PstReceive(PstBaseDevice):
     # -----------------
     # Device Properties
     # -----------------
+    process_api_endpoint = device_property(dtype=str, doc="Endpoint for the RECV.CORE service.")
+
+    network_interface = device_property(
+        dtype=str, default_value="0.0.0.0", doc="Network interface for RECV to listen on."
+    )
+
+    # the default value here is just a placeholder, this can be changed in the future.
+    udp_port = device_property(dtype=int, default_value=20000, doc="The UDP port for RECV to listen on.")
 
     # ---------------
     # General methods
@@ -55,10 +63,13 @@ class PstReceive(PstBaseDevice):
         """
         return PstReceiveComponentManager(
             device_name=self.get_name(),
+            process_api_endpoint=self.process_api_endpoint,
             simulation_mode=SimulationMode.TRUE,
             logger=self.logger,
             communication_state_callback=self._communication_state_changed,
             component_state_callback=self._component_state_changed,
+            network_interface=self.network_interface,
+            udp_port=self.udp_port,
         )
 
     def always_executed_hook(self: PstReceive) -> None:
@@ -204,28 +215,6 @@ class PstReceive(PstBaseDevice):
         :rtype: list(float)
         """
         return self.component_manager.relative_weights
-
-    @attribute(
-        dtype=SimulationMode,
-        memorized=True,
-        hw_memorized=True,
-    )
-    def simulationMode(self: PstReceive) -> SimulationMode:
-        """
-        Report the simulation mode of the device.
-
-        :return: the current simulation mode
-        """
-        return self.component_manager.simulation_mode
-
-    @simulationMode.write  # type: ignore[no-redef]
-    def simulationMode(self: PstReceive, value: SimulationMode) -> None:
-        """
-        Set the simulation mode.
-
-        :param value: The simulation mode, as a SimulationMode value
-        """
-        self.component_manager.simulation_mode = value
 
     # --------
     # Commands

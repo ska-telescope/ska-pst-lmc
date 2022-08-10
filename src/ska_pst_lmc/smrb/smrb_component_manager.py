@@ -92,28 +92,6 @@ class PstSmrbComponentManager(PstApiComponentManager):
             **kwargs,
         )
 
-    def _handle_communication_state_change(
-        self: PstSmrbComponentManager, communication_state: CommunicationStatus
-    ) -> None:
-        """Handle change in communication state."""
-        if communication_state == CommunicationStatus.NOT_ESTABLISHED:
-            self._connect_to_smrb()
-        elif communication_state == CommunicationStatus.DISABLED:
-            self._disconnect_from_smrb()
-
-    def _connect_to_smrb(self: PstSmrbComponentManager) -> None:
-        """Establish connection to SMRB component."""
-        self._update_communication_state(CommunicationStatus.NOT_ESTABLISHED)
-        self._api.connect()
-        self._update_communication_state(CommunicationStatus.ESTABLISHED)
-        self._component_state_callback(fault=None, power=PowerState.OFF)
-
-    def _disconnect_from_smrb(self: PstSmrbComponentManager) -> None:
-        """Establish connection to SMRB component."""
-        self._api.disconnect()
-        self._update_communication_state(CommunicationStatus.DISABLED)
-        self._component_state_callback(fault=None, power=PowerState.UNKNOWN)
-
     @property
     def beam_id(self: PstSmrbComponentManager) -> int:
         """Return the beam id for the current SMRB component.
@@ -204,13 +182,8 @@ class PstSmrbComponentManager(PstApiComponentManager):
         """
         return self._monitor_data.subband_ring_buffer_written
 
-    def _simulation_mode_changed(self: PstSmrbComponentManager) -> None:
-        """Handle change of simulation mode."""
-        curr_communication_state = self.communication_state
-        if curr_communication_state == CommunicationStatus.ESTABLISHED:
-            self.logger.debug("SMRB simulation mode changed while communicating so stopping communication.")
-            self.stop_communicating()
-
+    def _update_api(self: PstSmrbComponentManager) -> None:
+        """Update instance of API based on simulation mode."""
         if self._simuation_mode == SimulationMode.TRUE:
             self._api = PstSmrbProcessApiSimulator(
                 logger=self.logger,
@@ -223,10 +196,6 @@ class PstSmrbComponentManager(PstApiComponentManager):
                 logger=self.logger,
                 component_state_callback=self._component_state_callback,
             )
-
-        if curr_communication_state == CommunicationStatus.ESTABLISHED:
-            self.logger.debug("SMRB simulation mode changed while communicating so restarting communication.")
-            self.start_communicating()
 
     def assign(self: PstSmrbComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
         """

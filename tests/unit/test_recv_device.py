@@ -12,16 +12,20 @@ from __future__ import annotations
 import json
 import time
 from typing import Generator
+from unittest.mock import MagicMock
 
 import pytest
+import tango
+from ska_pst_lmc_proto import ConnectionRequest, ConnectionResponse
 from ska_tango_base.commands import TaskStatus
-from ska_tango_base.control_model import AdminMode, ObsState
+from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
 from tango.test_context import DeviceTestContext
 
 from ska_pst_lmc import PstReceive
 from ska_pst_lmc.receive import generate_random_update
 from ska_pst_lmc.receive.receive_model import ReceiveData
+from ska_pst_lmc.test import TestPstLmcService
 from tests.conftest import TangoDeviceCommandChecker
 
 
@@ -43,10 +47,20 @@ def receive_data() -> ReceiveData:
     return generate_random_update()
 
 
+@pytest.fixture
+def device_properties(
+    grpc_endpoint: str,
+) -> dict:
+    """Fixture that returns device_properties to be provided to the device under test."""
+    return {
+        "process_api_endpoint": grpc_endpoint,
+    }
+
+
 class TestPstReceive:
     """Test class used for testing the PstReceive TANGO device."""
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def device_test_config(self: TestPstReceive, device_properties: dict) -> dict:
         """
         Specify device configuration, including properties and memorized attributes.
@@ -97,6 +111,7 @@ class TestPstReceive:
         self: TestPstReceive,
         device_under_test: DeviceProxy,
         tango_device_command_checker: TangoDeviceCommandChecker,
+        assign_resources_request: dict,
     ) -> None:
         """Test state model of PstReceive."""
         # need to go through state mode
@@ -107,13 +122,9 @@ class TestPstReceive:
         )
         assert device_under_test.state() == DevState.ON
 
-        resources = json.dumps({"foo": "bar"})
+        resources = json.dumps(assign_resources_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.AssignResources(resources),
-            expected_command_status_events=[
-                TaskStatus.IN_PROGRESS,
-                TaskStatus.COMPLETED,
-            ],
             expected_obs_state_events=[
                 ObsState.RESOURCING,
                 ObsState.IDLE,
@@ -164,3 +175,78 @@ class TestPstReceive:
             lambda: device_under_test.Off(),
         )
         assert device_under_test.state() == DevState.OFF
+
+    def test_simulation_mode(
+        self: TestPstReceive,
+        device_under_test: DeviceProxy,
+        pst_lmc_service: TestPstLmcService,
+        mock_servicer_context: MagicMock,
+    ) -> None:
+        """Test state model of PstReceive."""
+        device_under_test.loggingLevel = 5
+
+        device_under_test.simulationMode = SimulationMode.TRUE
+        assert device_under_test.simulationMode == SimulationMode.TRUE
+
+        response = ConnectionResponse()
+        mock_servicer_context.connect = MagicMock(return_value=response)
+
+        device_under_test.simulationMode = SimulationMode.FALSE
+        mock_servicer_context.connect.assert_called_once_with(
+            ConnectionRequest(client_id=device_under_test.name())
+        )
+        assert device_under_test.simulationMode == SimulationMode.FALSE
+
+        device_under_test.simulationMode = SimulationMode.TRUE
+        assert device_under_test.simulationMode == SimulationMode.TRUE
+
+    def test_simulation_mode_when_not_in_empty_obs_state(
+        self: TestPstReceive,
+        device_under_test: DeviceProxy,
+        assign_resources_request: dict,
+    ) -> None:
+        """Test state model of PstReceive."""
+        device_under_test.simulationMode = SimulationMode.TRUE
+        assert device_under_test.simulationMode == SimulationMode.TRUE
+
+        device_under_test.adminMode = AdminMode.ONLINE
+        device_under_test.On()
+        time.sleep(0.1)
+        assert device_under_test.state() == DevState.ON
+
+        resources = json.dumps(assign_resources_request)
+        device_under_test.AssignResources(resources)
+        time.sleep(0.5)
+        assert device_under_test.obsState == ObsState.IDLE
+
+        with pytest.raises(tango.DevFailed) as exc_info:
+            device_under_test.simulationMode = SimulationMode.FALSE
+
+        assert device_under_test.simulationMode == SimulationMode.TRUE
+        exc_info.value.args[
+            0
+        ].desc == "ValueError: Unable to change simulation mode unless in EMPTY observation state"
+
+    def test_simulation_mode_when_in_empty_obs_state(
+        self: TestPstReceive,
+        device_under_test: DeviceProxy,
+        pst_lmc_service: TestPstLmcService,
+        mock_servicer_context: MagicMock,
+    ) -> None:
+        """Test state model of PstReceive."""
+        response = ConnectionResponse()
+        mock_servicer_context.connect = MagicMock(return_value=response)
+        assert device_under_test.obsState == ObsState.EMPTY
+
+        device_under_test.simulationMode = SimulationMode.TRUE
+        assert device_under_test.simulationMode == SimulationMode.TRUE
+
+        device_under_test.adminMode = AdminMode.ONLINE
+        device_under_test.On()
+        time.sleep(0.1)
+        assert device_under_test.state() == DevState.ON
+        assert device_under_test.obsState == ObsState.EMPTY
+
+        device_under_test.simulationMode = SimulationMode.FALSE
+        time.sleep(0.1)
+        assert device_under_test.simulationMode == SimulationMode.FALSE

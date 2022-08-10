@@ -25,11 +25,22 @@ from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
 from tests.conftest import TangoDeviceCommandChecker
 
 
+@pytest.fixture
+def device_properties(
+    grpc_endpoint: str,
+) -> dict:
+    """Fixture that returns device_properties to be provided to the device under test."""
+    return {
+        "process_api_endpoint": grpc_endpoint,
+        "monitor_polling_rate": 100,
+    }
+
+
 class TestPstSmrb:
     """Test class used for testing the PstReceive TANGO device."""
 
     @pytest.fixture
-    def device_test_config(self: TestPstSmrb, device_properties: dict, grpc_endpoint: str) -> dict:
+    def device_test_config(self: TestPstSmrb, device_properties: dict) -> dict:
         """
         Specify device configuration, including properties and memorized attributes.
 
@@ -42,15 +53,10 @@ class TestPstSmrb:
         :return: specification of how the device under test should be
             configured
         """
-        properties = {
-            **device_properties,
-            "process_api_endpoint": grpc_endpoint,
-            "monitor_polling_rate": 100,
-        }
         return {
             "device": PstSmrb,
             "process": True,
-            "properties": properties,
+            "properties": device_properties,
             "memorized": {"adminMode": str(AdminMode.ONLINE.value)},
         }
 

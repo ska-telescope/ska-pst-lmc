@@ -6,6 +6,7 @@ import logging
 import threading
 import time
 from concurrent import futures
+from random import randint
 from typing import Any, Callable, Dict, Generator, List
 from unittest.mock import MagicMock
 
@@ -25,19 +26,38 @@ from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcServic
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
+def beam_id() -> int:
+    """Return beam ID for tests."""
+    return 1
+
+
+@pytest.fixture
 def assign_resources_request() -> dict:
     """Return a valid assign resources object."""
     return {
-        "num_frequency_channels": 8192,
-        "num_of_polarizations": 2,
-        "bits_per_sample": 32,
-        "udp_nsamp": 32,
-        "wt_nsamp": 32,
+        # CSP JSON fields / PST fields
+        "num_frequency_channels": 6475,  # nchan
+        "num_of_polarizations": 2,  # npol
+        "bits_per_sample": 32,  # this is NDIM * NBITS -> ndim == 2
+        "udp_nsamp": 32,  # udp_nsamp
+        "wt_nsamp": 32,  # wt_nsamp
+        "udp_nchan": 4,  # udp_nchan
+        "centre_frequency": 100000000.0,  # frequency
+        "total_bandwidth": 348096000,  # bandwidth
+        "timing_beam_id": "beam1",  # frontend
+        "feed_polarization": "CIRC",  # fd_poln
+        "feed_handedness": 1,  # fn_hand
+        "feed_angle": 1.234,  # fn_sang
+        "feed_tracking_mode": "FA",  # fd_mode
+        "feed_position_angle": 10.0,  # fa_req
+        "receptors": ["receptor1", "receptor2"],  # antennnas / also nant is the length of this
+        "receptor_weights": [0.4, 0.6],  # ant_weights
+        "oversampling_ratio": [8, 7],  # ovrsamp
     }
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture
 def device_properties() -> dict:
     """
     Fixture that returns device_properties to be provided to the device under test.
@@ -476,9 +496,27 @@ def component_state_callback() -> Callable:
 
 
 @pytest.fixture
+def task_callback() -> Callable:
+    """Create a mock component to validate task callbacks."""
+    return MagicMock()
+
+
+@pytest.fixture
 def simulation_mode(request: pytest.FixtureRequest) -> SimulationMode:
     """Set simulation mode for test."""
     try:
         return request.param.get("simulation_mode", SimulationMode.TRUE)  # type: ignore
     except Exception:
         return SimulationMode.TRUE
+
+
+@pytest.fixture
+def recv_network_interface() -> str:
+    """Get network interface for RECV to listen on."""
+    return "0.0.0.0"
+
+
+@pytest.fixture
+def recv_udp_port() -> int:
+    """Get UDP port for RECV to listen on."""
+    return randint(20000, 30000)
