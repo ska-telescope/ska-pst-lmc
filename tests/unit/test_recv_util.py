@@ -18,9 +18,16 @@ from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 def test_calculate_receive_subband_resources(
     beam_id: int,
     assign_resources_request: dict,
+    recv_network_interface: str,
+    recv_udp_port: int,
 ) -> None:
     """Test that the correct RECV subband resources request is created."""
-    actual = calculate_receive_subband_resources(beam_id=beam_id, request_params=assign_resources_request)
+    actual = calculate_receive_subband_resources(
+        beam_id=beam_id,
+        request_params=assign_resources_request,
+        data_host=recv_network_interface,
+        data_port=recv_udp_port,
+    )
 
     assert "common" in actual
     assert "subbands" in actual
@@ -38,8 +45,8 @@ def test_calculate_receive_subband_resources(
     assert actual_common["nchan"] == assign_resources_request["num_frequency_channels"]
     assert actual_common["frontend"] == assign_resources_request["timing_beam_id"]
     assert actual_common["fd_poln"] == assign_resources_request["feed_polarization"]
-    assert actual_common["fn_hand"] == assign_resources_request["feed_handedness"]
-    assert actual_common["fn_sang"] == assign_resources_request["feed_angle"]
+    assert actual_common["fd_hand"] == assign_resources_request["feed_handedness"]
+    assert actual_common["fd_sang"] == assign_resources_request["feed_angle"]
     assert actual_common["fd_mode"] == assign_resources_request["feed_tracking_mode"]
     assert actual_common["fa_req"] == assign_resources_request["feed_position_angle"]
     assert actual_common["nant"] == len(assign_resources_request["receptors"])
@@ -90,11 +97,16 @@ def test_udp_format_set_in_calculated_resources(
     assign_resources_request: dict,
     frequency_band: str,
     expected_udp_format: str,
+    recv_network_interface: str,
+    recv_udp_port: int,
 ) -> None:
     """Test that we add the correct udp_format field."""
     assign_resources_request["frequency_band"] = frequency_band
     calculated_resources = calculate_receive_subband_resources(
-        beam_id=beam_id, request_params=assign_resources_request
+        beam_id=beam_id,
+        request_params=assign_resources_request,
+        data_host=recv_network_interface,
+        data_port=recv_udp_port,
     )
 
     assert "udp_format" in calculated_resources["common"]
@@ -119,6 +131,8 @@ def test_recv_util_calc_tsamp(
     num_frequency_channels: int,
     oversampling_ratio: List[int],
     expected_tsamp: float,
+    recv_network_interface: str,
+    recv_udp_port: int,
 ) -> None:
     """Test calculations for tsamp.
 
@@ -131,8 +145,61 @@ def test_recv_util_calc_tsamp(
     assign_resources_request["oversampling_ratio"] = oversampling_ratio
 
     calculated_resources = calculate_receive_subband_resources(
-        beam_id=beam_id, request_params=assign_resources_request
+        beam_id=beam_id,
+        request_params=assign_resources_request,
+        data_host=recv_network_interface,
+        data_port=recv_udp_port,
     )
 
     assert "tsamp" in calculated_resources["common"]
     assert abs(calculated_resources["common"]["tsamp"] - expected_tsamp) < 1e-6
+
+
+@pytest.mark.parametrize(
+    "bandwidth_mhz, num_frequency_channels, npol, nbits, oversampling_ratio, expected_bytes_per_second",
+    [
+        (22.22222222, 6144, 2, 16, [4, 3], 237037037.013),  # LowPST
+        (59.6736, 1110, 2, 16, [8, 7], 545587200.000),  # MidPSTBand1
+        (198.912, 3700, 2, 16, [8, 7], 1818624000.000),  # MidPSTBand2
+        (348.096, 6475, 2, 12, [8, 7], 2386944000.000),  # MidPSTBand3
+        (596.736, 11100, 2, 8, [8, 7], 2727936000.000),  # MidPSTBand4
+        (626.5728, 11655, 2, 8, [8, 7], 2864332800.000),  # MidPSTBand5
+    ],
+)
+def test_recv_util_calc_bytes_per_seconds(
+    beam_id: int,
+    assign_resources_request: dict,
+    bandwidth_mhz: float,
+    num_frequency_channels: int,
+    npol: int,
+    nbits: int,
+    oversampling_ratio: List[int],
+    expected_bytes_per_second: float,
+    recv_network_interface: str,
+    recv_udp_port: int,
+) -> None:
+    """Test calculations for bytes_per_seconds.
+
+    Test input values are based on the different telescopes bandwidths.
+    Values for these parameterised tests come from the example RECV config
+    files in the ska-pst-recv repository.
+    """
+    assign_resources_request["total_bandwidth"] = bandwidth_mhz * 1_000_000
+    assign_resources_request["num_frequency_channels"] = num_frequency_channels
+    assign_resources_request["oversampling_ratio"] = oversampling_ratio
+    assign_resources_request["num_of_polarizations"] = npol
+    assign_resources_request["bits_per_sample"] = 2 * nbits
+
+    calculated_resources = calculate_receive_subband_resources(
+        beam_id=beam_id,
+        request_params=assign_resources_request,
+        data_host=recv_network_interface,
+        data_port=recv_udp_port,
+    )
+
+    assert "bytes_per_second" in calculated_resources["common"]
+    assert (
+        abs(calculated_resources["common"]["bytes_per_second"] - expected_bytes_per_second)
+        / expected_bytes_per_second
+        < 1e-6
+    )

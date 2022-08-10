@@ -6,6 +6,7 @@ import logging
 import threading
 import time
 from concurrent import futures
+from random import randint
 from typing import Any, Callable, Dict, Generator, List
 from unittest.mock import MagicMock
 
@@ -507,3 +508,15 @@ def simulation_mode(request: pytest.FixtureRequest) -> SimulationMode:
         return request.param.get("simulation_mode", SimulationMode.TRUE)  # type: ignore
     except Exception:
         return SimulationMode.TRUE
+
+
+@pytest.fixture
+def recv_network_interface() -> str:
+    """Get network interface for RECV to listen on."""
+    return "0.0.0.0"
+
+
+@pytest.fixture
+def recv_udp_port() -> int:
+    """Get UDP port for RECV to listen on."""
+    return randint(20000, 30000)

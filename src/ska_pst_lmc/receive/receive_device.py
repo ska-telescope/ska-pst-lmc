@@ -29,7 +29,14 @@ class PstReceive(PstBaseDevice):
     # -----------------
     # Device Properties
     # -----------------
-    process_api_endpoint = device_property(dtype=str, doc="Endpoint for the SMRB.CORE service.")
+    process_api_endpoint = device_property(dtype=str, doc="Endpoint for the RECV.CORE service.")
+
+    network_interface = device_property(
+        dtype=str, default_value="0.0.0.0", doc="Network interface for RECV to listen on."
+    )
+
+    # the default value here is just a placeholder, this can be changed in the future.
+    udp_port = device_property(dtype=int, default_value=20000, doc="The UDP port for RECV to listen on.")
 
     # ---------------
     # General methods
@@ -61,6 +68,8 @@ class PstReceive(PstBaseDevice):
             logger=self.logger,
             communication_state_callback=self._communication_state_changed,
             component_state_callback=self._component_state_changed,
+            network_interface=self.network_interface,
+            udp_port=self.udp_port,
         )
 
     def always_executed_hook(self: PstReceive) -> None:

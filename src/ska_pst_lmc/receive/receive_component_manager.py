@@ -36,8 +36,10 @@ class PstReceiveComponentManager(PstApiComponentManager):
         logger: logging.Logger,
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable[[bool, PowerState], None],
-        api: Optional[PstReceiveProcessApi] = None,
+        network_interface: str,
+        udp_port: int,
         *args: Any,
+        api: Optional[PstReceiveProcessApi] = None,
         **kwargs: Any,
     ):
         """Initialise instance of the component manager.
@@ -50,6 +52,9 @@ class PstReceiveComponentManager(PstApiComponentManager):
             the component manager and its component changes
         :param component_fault_callback: callback to be called when the
             component faults (or stops faulting)
+        :param network_interface: the network interface for the RECV subband
+            to listen to.
+        :param udp_port: the UDP port for RECV subband to listen to.
         :param api: optional API instance, used to override during testing.
         """
         logger.debug(
@@ -61,6 +66,8 @@ class PstReceiveComponentManager(PstApiComponentManager):
             logger=logger,
             component_state_callback=component_state_callback,
         )
+        self._network_interface = network_interface
+        self._udp_port = udp_port
 
         super().__init__(
             device_name,
@@ -176,7 +183,12 @@ class PstReceiveComponentManager(PstApiComponentManager):
 
         :param resources: resources to be assigned
         """
-        recv_resources = calculate_receive_subband_resources(self.beam_id, request_params=resources)
+        recv_resources = calculate_receive_subband_resources(
+            self.beam_id,
+            request_params=resources,
+            data_host=self._network_interface,
+            data_port=self._udp_port,
+        )
         self.logger.debug(f"Submitting API with recv_resources={recv_resources}")
 
         # deal only with subband 1 for now. otherwise we have to deal with tracking

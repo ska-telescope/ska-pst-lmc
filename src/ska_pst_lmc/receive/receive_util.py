@@ -15,7 +15,7 @@ from typing import Optional
 
 from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 
-MEGA_HERTZ = 1e6
+MEGA_HERTZ = 1_000_000
 """CSP sends values in SI units, including frequencies as Hz."""
 
 NUM_DIMENSIONS = 2
@@ -41,7 +41,13 @@ def get_udp_format(frequency_band: Optional[str] = None, **kwargs: dict) -> str:
     return LOW_PST
 
 
-def calculate_receive_subband_resources(beam_id: int, request_params: dict) -> dict:
+def calculate_receive_subband_resources(
+    beam_id: int,
+    request_params: dict,
+    data_host: str,
+    data_port: int,
+    **kwargs: dict,
+) -> dict:
     """Calculate the RECV resources from request.
 
     This is a common method to map a CSP JSON request to the appropriate
@@ -59,13 +65,17 @@ def calculate_receive_subband_resources(beam_id: int, request_params: dict) -> d
     udp_format = get_udp_format(**request_params)
 
     nchan = request_params["num_frequency_channels"]
+    npol = request_params["num_of_polarizations"]
+    nbits = request_params["bits_per_sample"] // NUM_DIMENSIONS
     oversampling_ratio = request_params["oversampling_ratio"]
     bandwidth = request_params["total_bandwidth"]
     bandwidth_mhz = bandwidth / MEGA_HERTZ
 
-    tsamp = 1.0 / (
+    tsamp = 1 / (
         bandwidth_mhz / nchan * oversampling_ratio[0] / oversampling_ratio[1]
     )  # need this in samples / microsecs
+
+    bytes_per_second = nchan * npol * nbits * NUM_DIMENSIONS / 8 * 1_000_000 / tsamp
 
     return {
         "common": {
@@ -78,19 +88,20 @@ def calculate_receive_subband_resources(beam_id: int, request_params: dict) -> d
             "bandwidth": bandwidth_mhz,
             "frontend": request_params["timing_beam_id"],
             "fd_poln": request_params["feed_polarization"],
-            "fn_hand": request_params["feed_handedness"],
-            "fn_sang": request_params["feed_angle"],
+            "fd_hand": request_params["feed_handedness"],
+            "fd_sang": request_params["feed_angle"],
             "fd_mode": request_params["feed_tracking_mode"],
             "fa_req": request_params["feed_position_angle"],
             "nant": len(request_params["receptors"]),
             "antennas": ",".join(request_params["receptors"]),
             "ant_weights": ",".join(map(str, request_params["receptor_weights"])),
-            "npol": request_params["num_of_polarizations"],
-            "nbits": request_params["bits_per_sample"] // NUM_DIMENSIONS,
+            "npol": npol,
+            "nbits": nbits,
             "ndim": NUM_DIMENSIONS,
             "tsamp": tsamp,
             "ovrsamp": "/".join(map(str, oversampling_ratio)),
             "udp_format": udp_format,
+            "bytes_per_second": bytes_per_second,
         },
         "subbands": {
             1: {
@@ -106,6 +117,8 @@ def calculate_receive_subband_resources(beam_id: int, request_params: dict) -> d
                 "nchan_out": nchan,
                 "bandwidth_out": bandwidth / MEGA_HERTZ,
                 "frequency_out": request_params["centre_frequency"] / MEGA_HERTZ,
+                "data_host": data_host,
+                "data_port": data_port,
             },
         },
     }

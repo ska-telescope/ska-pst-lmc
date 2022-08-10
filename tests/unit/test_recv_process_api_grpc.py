@@ -76,11 +76,15 @@ def subband_id() -> int:
 def calculated_receive_subband_resources(
     beam_id: int,
     assign_resources_request: dict,
+    recv_network_interface: str,
+    recv_udp_port: int,
 ) -> dict:
     """Calculate RECV subband resources."""
     return calculate_receive_subband_resources(
         beam_id=beam_id,
         request_params=assign_resources_request,
+        data_host=recv_network_interface,
+        data_port=recv_udp_port,
     )
 
 

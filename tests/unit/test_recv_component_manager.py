@@ -36,6 +36,8 @@ def component_manager(
     api: PstReceiveProcessApi,
     communication_state_callback: Callable[[CommunicationStatus], None],
     component_state_callback: Callable,
+    recv_network_interface: str,
+    recv_udp_port: int,
 ) -> PstReceiveComponentManager:
     """Create instance of a component manager."""
     return PstReceiveComponentManager(
@@ -46,6 +48,8 @@ def component_manager(
         communication_state_callback=communication_state_callback,
         component_state_callback=component_state_callback,
         api=api,
+        network_interface=recv_network_interface,
+        udp_port=recv_udp_port,
     )
 
 
@@ -81,9 +85,19 @@ def monitor_data() -> ReceiveData:
 
 
 @pytest.fixture
-def calculated_receive_subband_resources(beam_id: int, assign_resources_request: dict) -> dict:
+def calculated_receive_subband_resources(
+    beam_id: int,
+    assign_resources_request: dict,
+    recv_network_interface: str,
+    recv_udp_port: int,
+) -> dict:
     """Calculate expected subband resources."""
-    return calculate_receive_subband_resources(beam_id=beam_id, request_params=assign_resources_request)
+    return calculate_receive_subband_resources(
+        beam_id=beam_id,
+        request_params=assign_resources_request,
+        data_host=recv_network_interface,
+        data_port=recv_udp_port,
+    )
 
 
 def test_start_communicating_calls_connect_on_api(
@@ -137,6 +151,8 @@ def test_assign_resources(
     assign_resources_request: dict,
     task_callback: Callable,
     calculated_receive_subband_resources: dict,
+    recv_network_interface: str,
+    recv_udp_port: int,
 ) -> None:
     """Test that assign resources calls the API correctly."""
     api = MagicMock()
