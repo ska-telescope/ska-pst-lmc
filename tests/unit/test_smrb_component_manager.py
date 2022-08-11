@@ -289,3 +289,21 @@ def test_configure_scan(
         configuration=configure_scan_request,
         task_callback=task_callback,
     )
+
+
+def test_deconfigure(
+    component_manager: PstSmrbComponentManager,
+    task_callback: Callable,
+) -> None:
+    """Test that the component manager calls the API for configure."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback,
+    )
+
+    component_manager.deconfigure(task_callback=task_callback)
+
+    api.deconfigure.assert_called_once_with(
+        task_callback=task_callback,
+    )

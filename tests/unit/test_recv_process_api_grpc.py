@@ -21,6 +21,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ConfigureResponse,
     ConnectionRequest,
     ConnectionResponse,
+    DeconfigureRequest,
+    DeconfigureResponse,
     ErrorCode,
     ReceiveResources,
     ReceiveScanConfiguration,
@@ -288,7 +290,7 @@ def test_recv_grpc_configure(
     expected_receive_configure_protobuf: ReceiveScanConfiguration,
     task_callback: MagicMock,
 ) -> None:
-    """Test that SMRB gRPC calls configure on remote service."""
+    """Test that RECV gRPC calls configure on remote service."""
     response = ConfigureResponse()
     mock_servicer_context.configure = MagicMock(return_value=response)
 
@@ -313,7 +315,7 @@ def test_recv_grpc_configure_when_already_configured(
     expected_receive_configure_protobuf: ReceiveScanConfiguration,
     task_callback: MagicMock,
 ) -> None:
-    """Test that SMRB gRPC configure and already configured."""
+    """Test that RECV gRPC configure and already configured."""
     mock_servicer_context.configure.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.SCAN_CONFIGURED_ALREADY,
@@ -340,7 +342,7 @@ def test_recv_grpc_configure_when_throws_exception(
     expected_receive_configure_protobuf: ReceiveScanConfiguration,
     task_callback: MagicMock,
 ) -> None:
-    """Test that SMRB gRPC assign resources throws an exception."""
+    """Test that RECV gRPC assign resources throws an exception."""
     mock_servicer_context.configure.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.INTERNAL_ERROR,
@@ -350,6 +352,76 @@ def test_recv_grpc_configure_when_throws_exception(
 
     expected_request = ConfigureRequest(receive=expected_receive_configure_protobuf)
     mock_servicer_context.configure.assert_called_once_with(expected_request)
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Internal server error occurred", exception=ANY),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_smrb_grpc_deconfigure(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that RECV gRPC calls configure on remote service."""
+    response = DeconfigureResponse()
+    mock_servicer_context.deconfigure = MagicMock(return_value=response)
+
+    grpc_api.deconfigure(task_callback=task_callback)
+
+    mock_servicer_context.deconfigure.assert_called_once_with(DeconfigureRequest())
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(configured=False)
+
+
+def test_smrb_grpc_deconfigure_when_not_configured_for_scan(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that RECV gRPC deconfigure and currently not configured."""
+    mock_servicer_context.deconfigure.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.NOT_CONFIGURED_FOR_SCAN,
+        message="Not configured for scan.",
+    )
+    grpc_api.deconfigure(task_callback=task_callback)
+
+    mock_servicer_context.deconfigure.assert_called_once_with(DeconfigureRequest())
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Not configured for scan."),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(configured=False)
+
+
+def test_smrb_grpc_deconfigure_when_throws_exception(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that RECV gRPC deconfigure throws an exception."""
+    mock_servicer_context.deconfigure.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.INTERNAL_ERROR,
+        message="Internal server error occurred",
+    )
+    grpc_api.deconfigure(task_callback=task_callback)
+
+    mock_servicer_context.deconfigure.assert_called_once_with(DeconfigureRequest())
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
