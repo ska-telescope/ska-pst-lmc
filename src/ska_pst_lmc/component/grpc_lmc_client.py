@@ -18,6 +18,7 @@ from grpc import Channel
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AbortRequest,
     AssignResourcesRequest,
+    ConfigureRequest,
     ConnectionRequest,
     EndScanRequest,
     ErrorCode,
@@ -92,6 +93,23 @@ class ResourcesNotAssignedException(BaseGrpcException):
     """
 
 
+class ScanConfiguredAlreadyException(BaseGrpcException):
+    """Exception for when scan has already been configured.
+
+    Raised when the server is in a READY state and is already configured
+    for scan. This request should have not been made.
+    """
+
+
+class NotConfiguredForScanException(BaseGrpcException):
+    """Exception for when server has no scan configuration.
+
+    Raised when the server does not have a scan configuration but
+    as request to deconfigure, scan, or get scan configuration
+    was made but no configuration existed.
+    """
+
+
 class InvalidRequestException(BaseGrpcException):
     """Exception with the actual request parameters.
 
@@ -134,6 +152,8 @@ ERROR_CODE_EXCEPTION_MAP: Dict[ErrorCode, Type[BaseGrpcException]] = {
     ErrorCode.INVALID_REQUEST: InvalidRequestException,
     ErrorCode.RESOURCES_ALREADY_ASSIGNED: ResourcesAlreadyAssignedException,
     ErrorCode.RESOURCES_NOT_ASSIGNED: ResourcesNotAssignedException,
+    ErrorCode.SCAN_CONFIGURED_ALREADY: ScanConfiguredAlreadyException,
+    ErrorCode.NOT_CONFIGURED_FOR_SCAN: NotConfiguredForScanException,
 }
 
 
@@ -234,6 +254,15 @@ class PstGrpcLmcClient:
         try:
             request: GetAssignedResourcesRequest = GetAssignedResourcesRequest()
             return self._service.get_assigned_resources(request)
+        except grpc.RpcError as e:
+            _handle_grpc_error(e)
+
+    def configure(self: PstGrpcLmcClient, request: ConfigureRequest) -> bool:
+        """Call configure on remote gRPC service."""
+        self._logger.debug("Calling configure on remote service.")
+        try:
+            self._service.configure(request)
+            return True
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 

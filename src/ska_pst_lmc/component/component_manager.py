@@ -398,9 +398,7 @@ class PstApiComponentManager(PstComponentManager):
 
     def deconfigure(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
         """Deconfigure this component."""
-        return self._submit_background_task(
-            self._api.deconfigure, task_callback=task_callback
-        )
+        return self._submit_background_task(self._api.deconfigure, task_callback=task_callback)
 
     def scan(self: PstApiComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
         """Start scanning."""

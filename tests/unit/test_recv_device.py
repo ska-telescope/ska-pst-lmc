@@ -17,7 +17,6 @@ from unittest.mock import MagicMock
 import pytest
 import tango
 from ska_pst_lmc_proto import ConnectionRequest, ConnectionResponse
-from ska_tango_base.commands import TaskStatus
 from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
 from tango.test_context import DeviceTestContext

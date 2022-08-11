@@ -21,7 +21,12 @@ import logging
 import threading
 from typing import Callable, Optional
 
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import AssignResourcesRequest, MonitorResponse
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    AssignResourcesRequest,
+    ConfigureRequest,
+    MonitorResponse,
+    ScanRequest,
+)
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.component.grpc_lmc_client import (
@@ -31,6 +36,7 @@ from ska_pst_lmc.component.grpc_lmc_client import (
     PstGrpcLmcClient,
     ResourcesAlreadyAssignedException,
     ResourcesNotAssignedException,
+    ScanConfiguredAlreadyException,
 )
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor, background_task
 
@@ -212,6 +218,10 @@ class PstProcessApiGrpc(PstProcessApi):
         """Convert resources dictionary to instance of `AssignResourcesRequest`."""
         raise NotImplementedError("PstProcessApiGrpc is an abstract class.")
 
+    def _get_configure_scan_request(self: PstProcessApiGrpc, configure_parameters: dict) -> ConfigureRequest:
+        """Conver scan parameters dictionary to instance of `ConfigureRequest`."""
+        raise NotImplementedError("PstProcessApiGrpc is an abstract class.")
+
     def assign_resources(self: PstProcessApiGrpc, resources: dict, task_callback: Callable) -> None:
         """Assign resources.
 
@@ -268,8 +278,21 @@ class PstProcessApiGrpc(PstProcessApi):
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        self._component_state_callback(configured=True)
-        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+        request = self._get_configure_scan_request(configuration)
+        try:
+            self._grpc_client.configure(request)
+
+            self._component_state_callback(configured=True)
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+        except ScanConfiguredAlreadyException as e:
+            self._logger.error(e.message)
+            task_callback(result=e.message, status=TaskStatus.FAILED, exception=e)
+        except BaseGrpcException as e:
+            self._logger.error(
+                f"Problem processing 'configure' request for '{self._client_id}'", exc_info=True
+            )
+            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def deconfigure(self: PstProcessApiGrpc, task_callback: Callable) -> None:
         """Deconfiure a scan.

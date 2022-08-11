@@ -18,7 +18,13 @@ import threading
 import time
 from typing import Callable, Dict, Generator, Optional
 
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import AssignResourcesRequest, MonitorResponse, SmrbResources
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    AssignResourcesRequest,
+    ConfigureRequest,
+    MonitorResponse,
+    SmrbResources,
+    SmrbScanConfiguration,
+)
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc
@@ -277,3 +283,6 @@ class PstSmrbProcessApiGrpc(PstProcessApiGrpc, PstSmrbProcessApi):
                 num_of_buffers=smrb_data_stats.nbufs,
             ),
         )
+
+    def _get_configure_scan_request(self: PstProcessApiGrpc, configure_parameters: dict) -> ConfigureRequest:
+        return ConfigureRequest(smrb=SmrbScanConfiguration())

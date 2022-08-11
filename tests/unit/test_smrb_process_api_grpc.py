@@ -23,6 +23,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AbortResponse,
     AssignResourcesRequest,
     AssignResourcesResponse,
+    ConfigureRequest,
+    ConfigureResponse,
     ConnectionRequest,
     ConnectionResponse,
     EndScanRequest,
@@ -39,6 +41,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ScanResponse,
     SmrbMonitorData,
     SmrbResources,
+    SmrbScanConfiguration,
     SmrbStatitics,
 )
 from ska_tango_base.commands import TaskStatus
@@ -236,6 +239,82 @@ def test_smrb_grpc_release_resources_when_throws_exception(
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
         call(status=TaskStatus.FAILED, result="Oops there was a problem", exception=ANY),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_smrb_grpc_configure(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    configure_scan_request: dict,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC calls configure on remote service."""
+    response = ConfigureResponse()
+    mock_servicer_context.configure = MagicMock(return_value=response)
+
+    grpc_api.configure(configure_scan_request, task_callback=task_callback)
+
+    expected_request = ConfigureRequest(smrb=SmrbScanConfiguration())
+    mock_servicer_context.configure.assert_called_once_with(expected_request)
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(configured=True)
+
+
+def test_smrb_grpc_configure_when_already_configured(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    configure_scan_request: dict,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC configure and already configured."""
+    mock_servicer_context.configure.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.SCAN_CONFIGURED_ALREADY,
+        message="Scan has already been configured.",
+    )
+    grpc_api.configure(configure_scan_request, task_callback=task_callback)
+
+    expected_request = ConfigureRequest(smrb=SmrbScanConfiguration())
+    mock_servicer_context.configure.assert_called_once_with(expected_request)
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Scan has already been configured.", exception=ANY),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_smrb_grpc_configure_when_throws_exception(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    configure_scan_request: dict,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC assign resources throws an exception."""
+    mock_servicer_context.configure.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.INTERNAL_ERROR,
+        message="Internal server error occurred",
+    )
+    grpc_api.configure(configure_scan_request, task_callback=task_callback)
+
+    expected_request = ConfigureRequest(smrb=SmrbScanConfiguration())
+    mock_servicer_context.configure.assert_called_once_with(expected_request)
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Internal server error occurred", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()

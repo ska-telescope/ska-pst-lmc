@@ -58,6 +58,12 @@ def assign_resources_request() -> dict:
 
 
 @pytest.fixture
+def configure_scan_request() -> dict:
+    """Return a valid configure object."""
+    return {}
+
+
+@pytest.fixture
 def device_properties() -> dict:
     """
     Fixture that returns device_properties to be provided to the device under test.
