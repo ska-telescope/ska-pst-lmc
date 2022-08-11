@@ -22,7 +22,9 @@ from typing import Callable, Optional
 
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesRequest,
+    ConfigureRequest,
     ReceiveResources,
+    ReceiveScanConfiguration,
     ReceiveSubbandResources,
 )
 from ska_tango_base.commands import TaskStatus
@@ -31,6 +33,8 @@ from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc
 from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_simulator import PstReceiveSimulator
 from ska_pst_lmc.util.background_task import BackgroundTask, BackgroundTaskProcessor, background_task
+
+from .receive_util import map_configure_request
 
 __all__ = [
     "PstReceiveProcessApi",
@@ -228,4 +232,11 @@ class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
         subband_resources = ReceiveSubbandResources(**resources["subband"])
         return AssignResourcesRequest(
             receive=ReceiveResources(subband_resources=subband_resources, **resources["common"])
+        )
+
+    def _get_configure_scan_request(
+        self: PstReceiveProcessApiGrpc, configure_parameters: dict
+    ) -> ConfigureRequest:
+        return ConfigureRequest(
+            receive=ReceiveScanConfiguration(**map_configure_request(configure_parameters))
         )

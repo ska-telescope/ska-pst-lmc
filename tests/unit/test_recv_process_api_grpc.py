@@ -17,10 +17,13 @@ import pytest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesRequest,
     AssignResourcesResponse,
+    ConfigureRequest,
+    ConfigureResponse,
     ConnectionRequest,
     ConnectionResponse,
     ErrorCode,
     ReceiveResources,
+    ReceiveScanConfiguration,
     ReceiveSubbandResources,
     ReleaseResourcesRequest,
     ReleaseResourcesResponse,
@@ -28,7 +31,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApi, PstReceiveProcessApiGrpc
-from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources
+from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources, map_configure_request
 from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
@@ -89,6 +92,14 @@ def calculated_receive_subband_resources(
 
 
 @pytest.fixture
+def mapped_configure_request(
+    configure_scan_request: dict,
+) -> dict:
+    """Map configure scan request to RECV properties."""
+    return map_configure_request(request_params=configure_scan_request)
+
+
+@pytest.fixture
 def subband_assign_resources_request(
     subband_id: int,
     calculated_receive_subband_resources: dict,
@@ -111,6 +122,14 @@ def expected_receive_resources_protobuf(
             **subband_assign_resources_request["subband"],
         ),
     )
+
+
+@pytest.fixture
+def expected_receive_configure_protobuf(
+    mapped_configure_request: dict,
+) -> ReceiveScanConfiguration:
+    """Fixture to build expected RECV scan configuration request."""
+    return ReceiveScanConfiguration(**mapped_configure_request)
 
 
 def test_receive_grpc_assign_resources(
@@ -256,6 +275,85 @@ def test_receive_grpc_release_resources_when_throws_exception(
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
         call(status=TaskStatus.FAILED, result="Oops there was a problem", exception=ANY),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_recv_grpc_configure(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    configure_scan_request: dict,
+    expected_receive_configure_protobuf: ReceiveScanConfiguration,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC calls configure on remote service."""
+    response = ConfigureResponse()
+    mock_servicer_context.configure = MagicMock(return_value=response)
+
+    grpc_api.configure(configure_scan_request, task_callback=task_callback)
+
+    expected_request = ConfigureRequest(receive=expected_receive_configure_protobuf)
+    mock_servicer_context.configure.assert_called_once_with(expected_request)
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(configured=True)
+
+
+def test_recv_grpc_configure_when_already_configured(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    configure_scan_request: dict,
+    expected_receive_configure_protobuf: ReceiveScanConfiguration,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC configure and already configured."""
+    mock_servicer_context.configure.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.SCAN_CONFIGURED_ALREADY,
+        message="Scan has already been configured.",
+    )
+    grpc_api.configure(configure_scan_request, task_callback=task_callback)
+
+    expected_request = ConfigureRequest(receive=expected_receive_configure_protobuf)
+    mock_servicer_context.configure.assert_called_once_with(expected_request)
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Scan has already been configured.", exception=ANY),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_recv_grpc_configure_when_throws_exception(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    configure_scan_request: dict,
+    expected_receive_configure_protobuf: ReceiveScanConfiguration,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC assign resources throws an exception."""
+    mock_servicer_context.configure.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.INTERNAL_ERROR,
+        message="Internal server error occurred",
+    )
+    grpc_api.configure(configure_scan_request, task_callback=task_callback)
+
+    expected_request = ConfigureRequest(receive=expected_receive_configure_protobuf)
+    mock_servicer_context.configure.assert_called_once_with(expected_request)
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Internal server error occurred", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()
