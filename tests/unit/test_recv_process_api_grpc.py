@@ -23,6 +23,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ConnectionResponse,
     DeconfigureRequest,
     DeconfigureResponse,
+    EndScanRequest,
+    EndScanResponse,
     ErrorCode,
     ReceiveResources,
     ReceiveScanConfiguration,
@@ -502,6 +504,74 @@ def test_recv_grpc_scan_when_throws_exception(
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
         call(status=TaskStatus.FAILED, result="Oops there was a problem", exception=ANY),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_recv_grpc_end_scan(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that RECV gRPC end scan."""
+    response = EndScanResponse()
+    mock_servicer_context.end_scan = MagicMock(return_value=response)
+
+    grpc_api.end_scan(task_callback=task_callback)
+
+    mock_servicer_context.end_scan.assert_called_once_with(EndScanRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(scanning=False)
+
+
+def test_recv_grpc_end_scan_when_not_scanning(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that RECV gRPC end scan when not scanning."""
+    mock_servicer_context.end_scan.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.NOT_SCANNING,
+        message="We're not scanning. End Scan doesn't need to do anything",
+    )
+
+    grpc_api.end_scan(task_callback=task_callback)
+
+    mock_servicer_context.end_scan.assert_called_once_with(EndScanRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(scanning=False)
+
+
+def test_recv_grpc_end_scan_when_exception_thrown(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that RECV gRPC end scan when an exception is thrown."""
+    mock_servicer_context.end_scan.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.INTERNAL,
+        message="Something is wrong!",
+    )
+
+    grpc_api.end_scan(task_callback=task_callback)
+
+    mock_servicer_context.end_scan.assert_called_once_with(EndScanRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Something is wrong!", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()

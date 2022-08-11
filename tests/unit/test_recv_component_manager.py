@@ -193,7 +193,7 @@ def test_recv_configure_scan(
     configure_scan_request: dict,
     task_callback: Callable,
 ) -> None:
-    """Test that the component manager calls the API for configure."""
+    """Test that the component manager calls the API for configure service."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
@@ -212,7 +212,7 @@ def test_recv_deconfigure(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
-    """Test that the component manager calls the API for configure."""
+    """Test that the component manager calls the API to deconfigure service."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
@@ -231,7 +231,7 @@ def test_recv_scan(
     scan_request: dict,
     task_callback: Callable,
 ) -> None:
-    """Test that the component manager calls the API for configure."""
+    """Test that the component manager calls the API start a scan."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
@@ -242,6 +242,24 @@ def test_recv_scan(
 
     api.scan.assert_called_once_with(
         scan_request,
+        task_callback=task_callback,
+    )
+
+
+def test_recv_end_scan(
+    component_manager: PstReceiveComponentManager,
+    task_callback: Callable,
+) -> None:
+    """Test that the component manager calls the API to end scan."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback,
+    )
+
+    component_manager.end_scan(task_callback=task_callback)
+
+    api.end_scan.assert_called_once_with(
         task_callback=task_callback,
     )
 

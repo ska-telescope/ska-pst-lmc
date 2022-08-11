@@ -356,6 +356,10 @@ class PstProcessApiGrpc(PstProcessApi):
     def end_scan(self: PstProcessApiGrpc, task_callback: Callable) -> None:
         """End a scan.
 
+        This will call out to the remote service to end a scan.  It will also
+        stop monitoring as monitoring is only valid if the service is in a
+        scan.
+
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)

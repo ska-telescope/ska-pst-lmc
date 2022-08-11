@@ -13,6 +13,7 @@ from unittest.mock import MagicMock
 import grpc
 import pytest
 import tango
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ScanRequest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer, add_PstLmcServiceServicer_to_server
 from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import ObsState, SimulationMode
@@ -24,8 +25,6 @@ from tango.test_context import DeviceTestContext, MultiDeviceTestContext, get_ho
 from ska_pst_lmc.device_proxy import DeviceProxyFactory
 from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
-
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ScanRequest
 
 
 @pytest.fixture(scope="module")
