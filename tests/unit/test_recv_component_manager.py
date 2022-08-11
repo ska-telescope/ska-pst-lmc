@@ -100,7 +100,7 @@ def calculated_receive_subband_resources(
     )
 
 
-def test_start_communicating_calls_connect_on_api(
+def test_recv_start_communicating_calls_connect_on_api(
     component_manager: PstReceiveComponentManager,
     api: PstReceiveProcessApi,
 ) -> None:
@@ -129,7 +129,7 @@ def test_start_communicating_calls_connect_on_api(
         ("relative_weights"),
     ],
 )
-def test_properties_come_from_api_monitor_data(
+def test_recv_properties_come_from_api_monitor_data(
     component_manager: PstReceiveComponentManager,
     api: PstReceiveProcessApi,
     monitor_data: ReceiveData,
@@ -146,7 +146,7 @@ def test_properties_come_from_api_monitor_data(
     assert actual == expected
 
 
-def test_assign_resources(
+def test_recv_assign_resources(
     component_manager: PstReceiveComponentManager,
     assign_resources_request: dict,
     task_callback: Callable,
@@ -172,7 +172,7 @@ def test_assign_resources(
     api.assign_resources.assert_called_once_with(resources=expected_request, task_callback=task_callback)
 
 
-def test_release_resources(
+def test_recv_release_resources(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -188,7 +188,7 @@ def test_release_resources(
     api.release_resources.assert_called_once_with(task_callback=task_callback)
 
 
-def test_configure_scan(
+def test_recv_configure_scan(
     component_manager: PstReceiveComponentManager,
     configure_scan_request: dict,
     task_callback: Callable,
@@ -208,7 +208,7 @@ def test_configure_scan(
     )
 
 
-def test_deconfigure(
+def test_recv_deconfigure(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -222,6 +222,26 @@ def test_deconfigure(
     component_manager.deconfigure(task_callback=task_callback)
 
     api.deconfigure.assert_called_once_with(
+        task_callback=task_callback,
+    )
+
+
+def test_recv_scan(
+    component_manager: PstReceiveComponentManager,
+    scan_request: dict,
+    task_callback: Callable,
+) -> None:
+    """Test that the component manager calls the API for configure."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback,
+    )
+
+    component_manager.scan(scan_request, task_callback=task_callback)
+
+    api.scan.assert_called_once_with(
+        scan_request,
         task_callback=task_callback,
     )
 

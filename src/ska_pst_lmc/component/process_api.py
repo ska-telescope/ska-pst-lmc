@@ -220,16 +220,16 @@ class PstProcessApiGrpc(PstProcessApi):
         raise NotImplementedError("PstProcessApiGrpc is an abstract class.")
 
     def _get_configure_scan_request(self: PstProcessApiGrpc, configure_parameters: dict) -> ConfigureRequest:
-        """Conver scan parameters dictionary to instance of `ConfigureRequest`."""
+        """Convert scan parameters dictionary to instance of `ConfigureRequest`."""
         raise NotImplementedError("PstProcessApiGrpc is an abstract class.")
 
     def _get_scan_request(self: PstProcessApiGrpc, scan_parameters: dict) -> ScanRequest:
-        """Conver scan parameters dictionary to instance of `ScanRequest`.
+        """Convert scan parameters dictionary to instance of `ScanRequest`.
 
         For now this is an empty request, however, in the future it is possible that this
         request will have parameters and could be specific to the component.
         """
-        return ScanRequest()
+        return ScanRequest(**scan_parameters)
 
     def assign_resources(self: PstProcessApiGrpc, resources: dict, task_callback: Callable) -> None:
         """Assign resources.

@@ -166,14 +166,14 @@ def test_deconfigure(
 def test_scan(
     simulation_api: PstSmrbProcessApiSimulator,
     simulator: PstSmrbSimulator,
+    scan_request: dict,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
     """Test that release_all simulator calls task."""
-    args = {"cat": "dog"}
     with unittest.mock.patch.object(simulator, "scan", wraps=simulator.scan) as scan:
-        simulation_api.scan(args, task_callback)
-        scan.assert_called_with(args)
+        simulation_api.scan(scan_request, task_callback)
+        scan.assert_called_with(scan_request)
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),

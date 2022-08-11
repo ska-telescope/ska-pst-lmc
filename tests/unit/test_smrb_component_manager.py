@@ -81,12 +81,14 @@ def api(
 
 
 @pytest.fixture
-def monitor_data() -> SmrbMonitorData:
+def monitor_data(
+    scan_request: dict,
+) -> SmrbMonitorData:
     """Create an an instance of ReceiveData for monitor data."""
     from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
 
     simulator = PstSmrbSimulator()
-    simulator.scan(args={})
+    simulator.scan(args=scan_request)
 
     return simulator.get_data()
 

@@ -42,9 +42,12 @@ def test_default_values(simulator: PstReceiveSimulator) -> None:
     assert expected == simulator._relative_weights
 
 
-def test_get_data_will_update_data_when_scanning(simulator: PstReceiveSimulator) -> None:
+def test_get_data_will_update_data_when_scanning(
+    simulator: PstReceiveSimulator,
+    scan_request: dict,
+) -> None:
     """Test to assert that simulator updates data."""
-    simulator.scan(args={})
+    simulator.scan(args=scan_request)
 
     empty: ReceiveData = ReceiveData(
         received_data=0,
@@ -61,9 +64,12 @@ def test_get_data_will_update_data_when_scanning(simulator: PstReceiveSimulator)
     assert actual != empty
 
 
-def test_get_data_wont_update_data_when_scanning_stops(simulator: PstReceiveSimulator) -> None:
+def test_get_data_wont_update_data_when_scanning_stops(
+    simulator: PstReceiveSimulator,
+    scan_request: dict,
+) -> None:
     """Test to assert that simulator updates data."""
-    simulator.scan(args={})
+    simulator.scan(args=scan_request)
 
     empty: ReceiveData = ReceiveData(
         received_data=0,

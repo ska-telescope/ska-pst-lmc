@@ -25,6 +25,8 @@ from ska_pst_lmc.device_proxy import DeviceProxyFactory
 from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ScanRequest
+
 
 @pytest.fixture(scope="module")
 def beam_id() -> int:
@@ -110,6 +112,20 @@ def configure_scan_request() -> dict:
             "target_snr": 0.0,
         },
     }
+
+
+@pytest.fixture
+def scan_request() -> dict:
+    """Fixture for scan requests."""
+    return {}
+
+
+@pytest.fixture
+def expected_scan_request_protobuf(
+    scan_request: dict,
+) -> ScanRequest:
+    """Fixture for build expected RECV scan request."""
+    return ScanRequest(**scan_request)
 
 
 @pytest.fixture
