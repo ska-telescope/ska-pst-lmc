@@ -31,6 +31,12 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     EndScanRequest,
     EndScanResponse,
     ErrorCode,
+    GetAssignedResourcesRequest,
+    GetAssignedResourcesResponse,
+    GetScanConfigurationRequest,
+    GetScanConfigurationResponse,
+    GetStateRequest,
+    GetStateResponse,
     MonitorRequest,
     MonitorResponse,
     ReleaseResourcesRequest,
@@ -146,6 +152,17 @@ class TestMockServicer(PstLmcServiceServicer):
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
 
+    def get_assigned_resources(
+        self: TestMockServicer, request: GetAssignedResourcesRequest, context: ServicerContext
+    ) -> GetAssignedResourcesResponse:
+        """Handle getting the assigned resources."""
+        self._logger.debug("get_assigned_resources called.")
+        try:
+            return self._context.get_assigned_resources(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
+
     def configure(
         self: TestMockServicer, request: ConfigureRequest, context: ServicerContext
     ) -> ConfigureResponse:
@@ -164,6 +181,17 @@ class TestMockServicer(PstLmcServiceServicer):
         self._logger.debug("configure request")
         try:
             return self._context.deconfigure(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
+
+    def get_scan_configuration(
+        self: TestMockServicer, request: GetScanConfigurationRequest, context: ServicerContext
+    ) -> GetScanConfigurationResponse:
+        """Handle getting the scan configuration."""
+        self._logger.debug("get_scan_configuration called.")
+        try:
+            return self._context.get_scan_configuration(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
@@ -211,6 +239,17 @@ class TestMockServicer(PstLmcServiceServicer):
         self._logger.debug("restart requested")
         try:
             return self._context.restart(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
+
+    def get_state(
+        self: TestMockServicer, request: GetStateRequest, context: ServicerContext
+    ) -> GetStateResponse:
+        """Handle getting the state of the service."""
+        self._logger.debug("get_state called.")
+        try:
+            return self._context.get_state(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"

@@ -223,6 +223,14 @@ class PstProcessApiGrpc(PstProcessApi):
         """Conver scan parameters dictionary to instance of `ConfigureRequest`."""
         raise NotImplementedError("PstProcessApiGrpc is an abstract class.")
 
+    def _get_scan_request(self: PstProcessApiGrpc, scan_parameters: dict) -> ScanRequest:
+        """Conver scan parameters dictionary to instance of `ScanRequest`.
+
+        For now this is an empty request, however, in the future it is possible that this
+        request will have parameters and could be specific to the component.
+        """
+        return ScanRequest()
+
     def assign_resources(self: PstProcessApiGrpc, resources: dict, task_callback: Callable) -> None:
         """Assign resources.
 
@@ -331,8 +339,10 @@ class PstProcessApiGrpc(PstProcessApi):
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
+
+        request = self._get_scan_request(args)
         try:
-            self._grpc_client.scan()
+            self._grpc_client.scan(request)
             self._component_state_callback(scanning=True)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except AlreadyScanningException as e:

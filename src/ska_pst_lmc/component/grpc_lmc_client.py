@@ -25,6 +25,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ErrorCode,
     GetAssignedResourcesRequest,
     GetAssignedResourcesResponse,
+    GetScanConfigurationRequest,
+    GetScanConfigurationResponse,
     GetStateRequest,
     GetStateResponse,
     MonitorRequest,
@@ -253,8 +255,7 @@ class PstGrpcLmcClient:
         """Call get_assigned_resources on remote gRPC service."""
         self._logger.debug("Getting assigned resources.")
         try:
-            request: GetAssignedResourcesRequest = GetAssignedResourcesRequest()
-            return self._service.get_assigned_resources(request)
+            return self._service.get_assigned_resources(GetAssignedResourcesRequest())
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 
@@ -276,11 +277,19 @@ class PstGrpcLmcClient:
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 
-    def scan(self: PstGrpcLmcClient) -> bool:
+    def get_scan_configuration(self: PstGrpcLmcClient) -> GetScanConfigurationResponse:
+        """Call deconfigure on remote gRPC service."""
+        self._logger.debug("Calling remote service for its scan configuration.")
+        try:
+            return self._service.get_scan_configuration(GetScanConfigurationRequest())
+        except grpc.RpcError as e:
+            _handle_grpc_error(e)
+
+    def scan(self: PstGrpcLmcClient, request: ScanRequest) -> bool:
         """Call scan on remote gRPC service."""
         self._logger.debug("Calling scan")
         try:
-            self._service.scan(ScanRequest())
+            self._service.scan(request)
             return True
         except grpc.RpcError as e:
             _handle_grpc_error(e)

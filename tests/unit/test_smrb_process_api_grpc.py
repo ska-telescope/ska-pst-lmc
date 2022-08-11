@@ -343,6 +343,7 @@ def test_smrb_grpc_deconfigure(
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_once_with(configured=False)
 
+
 def test_smrb_grpc_deconfigure_when_not_configured_for_scan(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
@@ -366,6 +367,7 @@ def test_smrb_grpc_deconfigure_when_not_configured_for_scan(
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_once_with(configured=False)
 
+
 def test_smrb_grpc_deconfigure_when_throws_exception(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
@@ -388,6 +390,7 @@ def test_smrb_grpc_deconfigure_when_throws_exception(
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()
+
 
 def test_smrb_grpc_scan(
     grpc_api: PstSmrbProcessApiGrpc,
