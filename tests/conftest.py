@@ -60,8 +60,55 @@ def assign_resources_request() -> dict:
 @pytest.fixture
 def configure_scan_request() -> dict:
     """Return a valid configure object."""
+    # this has been copied from the SKA Telmodel
+    # see https://developer.skao.int/projects/ska-telmodel/en/latest/schemas/ska-csp-configure.html
     return {
-        "nchan": 1024,
+        "activation_time": "2022-01-19T23:07:45Z",
+        "timing_beam_id": "beam1",
+        "capability": "capability1",
+        "scan_id": 1,
+        "bits_per_sample": 24,
+        "num_of_polarizations": 2,
+        "udp_nsamp": 32,
+        "wt_nsamp": 32,
+        "udp_nchan": 24,
+        "num_frequency_channels": 2,
+        "centre_frequency": 100000000.0,
+        "total_bandwidth": 361689.8148,
+        "observation_mode": "PULSAR_TIMING",
+        "observer_id": "jdoe",
+        "project_id": "project1",
+        "pointing_id": "pointing1",
+        "subarray_id": "subarray42",
+        "source": "J1921+2153",
+        "itrf": [5109360.133, 2006852.586, -3238948.127],
+        "receiver_id": "receiver3",
+        "feed_polarization": "CIRC",
+        "feed_handedness": 1,
+        "feed_angle": 1.234,
+        "feed_tracking_mode": "FA",
+        "feed_position_angle": 10.0,
+        "oversampling_ratio": [8, 7],
+        "coordinates": {"ra": "19:21:44.815", "dec": "21.884"},
+        "max_scan_length": 10000.5,
+        "subint_duration": 30.0,
+        "receptors": ["receptor1", "receptor2"],
+        "receptor_weights": [0.4, 0.6],
+        "num_rfi_frequency_masks": 1,
+        "rfi_frequency_masks": [[1.0, 1.1]],
+        "destination_address": ["192.168.178.26", 9021],
+        "test_vector_id": "test_vector_id",
+        "pt": {
+            "dispersion_measure": 100.0,
+            "rotation_measure": 0.0,
+            "ephemeris": "",
+            "pulsar_phase_predictor": "",
+            "output_frequency_channels": 1,
+            "output_phase_bins": 64,
+            "num_sk_config": 1,
+            "sk_config": [{"sk_range": [0.8, 0.9], "sk_integration_limit": 100, "sk_excision_limit": 25.0}],
+            "target_snr": 0.0,
+        },
     }
 
 
