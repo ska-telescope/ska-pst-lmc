@@ -393,7 +393,7 @@ class PstApiComponentManager(PstComponentManager):
         :type configuration: dict
         """
         return self._submit_background_task(
-            functools.partial(self._api.configure, configuration), task_callback=task_callback
+            functools.partial(self._api.configure, configuration=configuration), task_callback=task_callback
         )
 
     def deconfigure(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
