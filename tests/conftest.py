@@ -60,7 +60,9 @@ def assign_resources_request() -> dict:
 @pytest.fixture
 def configure_scan_request() -> dict:
     """Return a valid configure object."""
-    return {}
+    return {
+        "nchan": 1024,
+    }
 
 
 @pytest.fixture

@@ -124,13 +124,12 @@ def test_configure(
     simulator: PstSmrbSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
+    configure_scan_request: dict,
 ) -> None:
     """Test that release_all simulator calls task."""
-    configuration: dict = {"nchan": 512}
-
     with unittest.mock.patch.object(simulator, "configure", wraps=simulator.configure) as configure:
-        simulation_api.configure(configuration, task_callback)
-        configure.assert_called_with(configuration=configuration)
+        simulation_api.configure(configure_scan_request, task_callback)
+        configure.assert_called_with(configuration=configure_scan_request)
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),

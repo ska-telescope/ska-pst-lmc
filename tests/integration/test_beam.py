@@ -30,6 +30,7 @@ class TestPstBeam:
     def test_configure_then_scan_then_stop(
         self: TestPstBeam,
         assign_resources_request: dict,
+        configure_scan_request: dict,
         change_event_callbacks: ChangeEventDict,
         logger: logging.Logger,
     ) -> None:
@@ -93,7 +94,7 @@ class TestPstBeam:
             )
             assert_obstate(ObsState.IDLE)
 
-            configuration = json.dumps({"nchan": 1024})
+            configuration = json.dumps(configure_scan_request)
             tango_device_command_checker.assert_command(
                 lambda: beam_proxy.Configure(configuration),
                 expected_obs_state_events=[
