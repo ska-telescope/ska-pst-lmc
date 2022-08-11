@@ -26,6 +26,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ConfigureResponse,
     ConnectionRequest,
     ConnectionResponse,
+    DeconfigureRequest,
+    DeconfigureResponse,
     EndScanRequest,
     EndScanResponse,
     ErrorCode,
@@ -147,10 +149,21 @@ class TestMockServicer(PstLmcServiceServicer):
     def configure(
         self: TestMockServicer, request: ConfigureRequest, context: ServicerContext
     ) -> ConfigureResponse:
-        """Handle assign resources."""
+        """Handle configure request."""
         self._logger.debug("configure request")
         try:
             return self._context.configure(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
+
+    def deconfigure(
+        self: TestMockServicer, request: DeconfigureRequest, context: ServicerContext
+    ) -> DeconfigureResponse:
+        """Handle deconfigure request."""
+        self._logger.debug("configure request")
+        try:
+            return self._context.deconfigure(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"

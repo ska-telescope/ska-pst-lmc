@@ -20,6 +20,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesRequest,
     ConfigureRequest,
     ConnectionRequest,
+    DeconfigureRequest,
     EndScanRequest,
     ErrorCode,
     GetAssignedResourcesRequest,
@@ -262,6 +263,15 @@ class PstGrpcLmcClient:
         self._logger.debug("Calling configure on remote service.")
         try:
             self._service.configure(request)
+            return True
+        except grpc.RpcError as e:
+            _handle_grpc_error(e)
+
+    def deconfigure(self: PstGrpcLmcClient) -> bool:
+        """Call deconfigure on remote gRPC service."""
+        self._logger.debug("Calling deconfigure on remote service.")
+        try:
+            self._service.deconfigure(DeconfigureRequest())
             return True
         except grpc.RpcError as e:
             _handle_grpc_error(e)

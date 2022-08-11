@@ -32,6 +32,7 @@ from ska_tango_base.commands import TaskStatus
 from ska_pst_lmc.component.grpc_lmc_client import (
     AlreadyScanningException,
     BaseGrpcException,
+    NotConfiguredForScanException,
     NotScanningException,
     PstGrpcLmcClient,
     ResourcesAlreadyAssignedException,
@@ -303,8 +304,21 @@ class PstProcessApiGrpc(PstProcessApi):
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        self._component_state_callback(configured=False)
-        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+        try:
+            self._grpc_client.deconfigure()
+
+            self._component_state_callback(configured=False)
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+        except NotConfiguredForScanException as e:
+            self._logger.warning(e.message)
+            self._component_state_callback(configured=False)
+            task_callback(status=TaskStatus.COMPLETED, result=e.message)
+        except BaseGrpcException as e:
+            self._logger.error(
+                f"Problem processing 'deconfigure' request for '{self._client_id}'", exc_info=True
+            )
+            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def scan(
         self: PstProcessApiGrpc,
