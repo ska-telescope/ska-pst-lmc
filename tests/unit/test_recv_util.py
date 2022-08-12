@@ -11,7 +11,7 @@ from typing import List
 
 import pytest
 
-from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources
+from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources, map_configure_request
 from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 
 
@@ -203,3 +203,46 @@ def test_recv_util_calc_bytes_per_seconds(
         / expected_bytes_per_second
         < 1e-6
     )
+
+
+def test_map_configure_request(
+    configure_scan_request: dict,
+) -> None:
+    """Test that the correct RECV subband resources request is created."""
+    actual = map_configure_request(configure_scan_request)
+
+    assert actual["activation_time"] == configure_scan_request["activation_time"]
+    assert actual["scan_id"] == configure_scan_request["scan_id"]
+    assert actual["observer"] == configure_scan_request["observer_id"]
+    assert actual["projid"] == configure_scan_request["project_id"]
+    assert actual["pnt_id"] == configure_scan_request["pointing_id"]
+    assert actual["subarray_id"] == configure_scan_request["subarray_id"]
+    assert actual["source"] == configure_scan_request["source"]
+    assert actual["itrf"] == ",".join(map(str, configure_scan_request["itrf"]))
+    assert actual["coord_md"] == "J2000"
+    assert actual["equinox"] == str(configure_scan_request["coordinates"].get("equinox", "2000.0"))
+    assert actual["stt_crd1"] == configure_scan_request["coordinates"]["ra"]
+    assert actual["stt_crd2"] == configure_scan_request["coordinates"]["dec"]
+    assert actual["trk_mode"] == "TRACK"
+    assert actual["scanlen_max"] == int(configure_scan_request["max_scan_length"])
+    assert actual["test_vector"] == configure_scan_request["test_vector_id"]
+
+
+def test_map_configure_request_test_equinox(
+    configure_scan_request: dict,
+) -> None:
+    """Test that the correct RECV subband resources request is created."""
+    configure_scan_request["coordinates"]["equinox"] = 2000.0
+    actual = map_configure_request(configure_scan_request)
+
+    assert actual["equinox"] == "2000.0"
+
+
+def test_map_configure_request_test_vector_not_set(
+    configure_scan_request: dict,
+) -> None:
+    """Test that the correct RECV subband resources request is created."""
+    del configure_scan_request["test_vector_id"]
+    actual = map_configure_request(configure_scan_request)
+
+    assert "test_vector" not in actual

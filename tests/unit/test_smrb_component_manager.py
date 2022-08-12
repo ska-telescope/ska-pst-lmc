@@ -269,3 +269,41 @@ def test_not_communicating_switching_simulation_mode_not_try_to_establish_connec
 
     component_manager.simulation_mode = SimulationMode.TRUE
     update_communication_state.assert_not_called()
+
+
+def test_configure_scan(
+    component_manager: PstSmrbComponentManager,
+    configure_scan_request: dict,
+    task_callback: Callable,
+) -> None:
+    """Test that the component manager calls the API for configure."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback,
+    )
+
+    component_manager.configure(configuration=configure_scan_request, task_callback=task_callback)
+
+    api.configure.assert_called_once_with(
+        configuration=configure_scan_request,
+        task_callback=task_callback,
+    )
+
+
+def test_deconfigure(
+    component_manager: PstSmrbComponentManager,
+    task_callback: Callable,
+) -> None:
+    """Test that the component manager calls the API for configure."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback,
+    )
+
+    component_manager.deconfigure(task_callback=task_callback)
+
+    api.deconfigure.assert_called_once_with(
+        task_callback=task_callback,
+    )

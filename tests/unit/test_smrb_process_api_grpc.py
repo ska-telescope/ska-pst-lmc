@@ -12,7 +12,6 @@ from __future__ import annotations
 import logging
 import threading
 import time
-import unittest
 from random import randint
 from typing import Generator
 from unittest.mock import ANY, MagicMock, call
@@ -24,8 +23,12 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AbortResponse,
     AssignResourcesRequest,
     AssignResourcesResponse,
+    ConfigureRequest,
+    ConfigureResponse,
     ConnectionRequest,
     ConnectionResponse,
+    DeconfigureRequest,
+    DeconfigureResponse,
     EndScanRequest,
     EndScanResponse,
     ErrorCode,
@@ -40,32 +43,16 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ScanResponse,
     SmrbMonitorData,
     SmrbResources,
+    SmrbScanConfiguration,
     SmrbStatitics,
 )
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.smrb.smrb_model import SubbandMonitorData
-from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApiGrpc, PstSmrbProcessApiSimulator
-from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
+from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApiGrpc
 from ska_pst_lmc.smrb.smrb_util import calculate_smrb_subband_resources
 from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
-
-
-@pytest.fixture
-def simulation_api(
-    simulator: PstSmrbSimulator,
-    logger: logging.Logger,
-    component_state_callback: MagicMock,
-    background_task_processor: BackgroundTaskProcessor,
-) -> PstSmrbProcessApiSimulator:
-    """Create an instance of the Simluator API."""
-    api = PstSmrbProcessApiSimulator(
-        simulator=simulator, logger=logger, component_state_callback=component_state_callback
-    )
-    api._background_task_processor = background_task_processor
-
-    return api
 
 
 @pytest.fixture
@@ -88,190 +75,9 @@ def grpc_api(
 
 
 @pytest.fixture
-def simulator() -> PstSmrbSimulator:
-    """Create instance of a simulator to be used within the API."""
-    return PstSmrbSimulator()
-
-
-@pytest.fixture
 def subband_monitor_data_callback() -> MagicMock:
     """Create a callback that can be used for subband data monitoring."""
     return MagicMock()
-
-
-def test_simulated_monitor_calls_callback(
-    simulation_api: PstSmrbProcessApiSimulator,
-    subband_monitor_data_callback: MagicMock,
-    abort_event: threading.Event,
-    logger: logging.Logger,
-) -> None:
-    """Test simulatued monitoring calls subband_monitor_data_callback."""
-
-    def _abort_monitor() -> None:
-        logger.debug("Test sleeping 600ms")
-        time.sleep(0.6)
-        logger.debug("Aborting monitoring.")
-        abort_event.set()
-
-    abort_thread = threading.Thread(target=_abort_monitor, daemon=True)
-    abort_thread.start()
-
-    simulation_api.monitor(
-        subband_monitor_data_callback=subband_monitor_data_callback,
-        polling_rate=500,
-        monitor_abort_event=abort_event,
-    )
-    abort_thread.join()
-    logger.debug("Abort thread finished.")
-
-    calls = [
-        call(subband_id=subband_id, subband_data=subband_data)
-        for (subband_id, subband_data) in simulation_api._simulator.get_subband_data().items()
-    ]
-    subband_monitor_data_callback.assert_has_calls(calls=calls)
-
-
-def test_assign_resources(
-    simulation_api: PstSmrbProcessApiSimulator,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that assign resources simulator calls task."""
-    resources: dict = {}
-
-    simulation_api.assign_resources(resources, task_callback)
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(progress=50),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_with(resourced=True)
-
-
-def test_release_resources(
-    simulation_api: PstSmrbProcessApiSimulator,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that release resources simulator calls task."""
-    simulation_api.release_resources(task_callback)
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(progress=45),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_with(resourced=False)
-
-
-def test_configure(
-    simulation_api: PstSmrbProcessApiSimulator,
-    simulator: PstSmrbSimulator,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that release_all simulator calls task."""
-    configuration: dict = {"nchan": 512}
-
-    with unittest.mock.patch.object(simulator, "configure", wraps=simulator.configure) as configure:
-        simulation_api.configure(configuration, task_callback)
-        configure.assert_called_with(configuration=configuration)
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(progress=42),
-        call(progress=58),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_with(configured=True)
-
-
-def test_deconfigure(
-    simulation_api: PstSmrbProcessApiSimulator,
-    simulator: PstSmrbSimulator,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that release_all simulator calls task."""
-    with unittest.mock.patch.object(simulator, "deconfigure", wraps=simulator.deconfigure) as deconfigure:
-        simulation_api.deconfigure(task_callback)
-        deconfigure.assert_called_once()
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(progress=20),
-        call(progress=50),
-        call(progress=80),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_with(configured=False)
-
-
-def test_scan(
-    simulation_api: PstSmrbProcessApiSimulator,
-    simulator: PstSmrbSimulator,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that release_all simulator calls task."""
-    args = {"cat": "dog"}
-    with unittest.mock.patch.object(simulator, "scan", wraps=simulator.scan) as scan:
-        simulation_api.scan(args, task_callback)
-        scan.assert_called_with(args)
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(progress=55),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_with(scanning=True)
-
-
-def test_end_scan(
-    simulation_api: PstSmrbProcessApiSimulator,
-    simulator: PstSmrbSimulator,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that end_scan simulator calls task."""
-    with unittest.mock.patch.object(simulator, "end_scan", wraps=simulator.end_scan) as end_scan:
-        simulation_api.end_scan(task_callback)
-        end_scan.assert_called_once()
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(progress=37),
-        call(progress=63),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_with(scanning=False)
-
-
-def test_abort(
-    simulation_api: PstSmrbProcessApiSimulator,
-    simulator: PstSmrbSimulator,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that abort simulator calls task."""
-    with unittest.mock.patch.object(simulator, "abort", wraps=simulator.abort) as abort:
-        simulation_api.abort(task_callback)
-        abort.assert_called_once()
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(progress=59),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_with(scanning=False)
 
 
 def test_smrb_grpc_sends_connect_request(
@@ -435,6 +241,152 @@ def test_smrb_grpc_release_resources_when_throws_exception(
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
         call(status=TaskStatus.FAILED, result="Oops there was a problem", exception=ANY),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_smrb_grpc_configure(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    configure_scan_request: dict,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC calls configure on remote service."""
+    response = ConfigureResponse()
+    mock_servicer_context.configure = MagicMock(return_value=response)
+
+    grpc_api.configure(configure_scan_request, task_callback=task_callback)
+
+    expected_request = ConfigureRequest(smrb=SmrbScanConfiguration())
+    mock_servicer_context.configure.assert_called_once_with(expected_request)
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(configured=True)
+
+
+def test_smrb_grpc_configure_when_already_configured(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    configure_scan_request: dict,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC configure and already configured."""
+    mock_servicer_context.configure.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.SCAN_CONFIGURED_ALREADY,
+        message="Scan has already been configured.",
+    )
+    grpc_api.configure(configure_scan_request, task_callback=task_callback)
+
+    expected_request = ConfigureRequest(smrb=SmrbScanConfiguration())
+    mock_servicer_context.configure.assert_called_once_with(expected_request)
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Scan has already been configured.", exception=ANY),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_smrb_grpc_configure_when_throws_exception(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    configure_scan_request: dict,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC assign resources throws an exception."""
+    mock_servicer_context.configure.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.INTERNAL_ERROR,
+        message="Internal server error occurred",
+    )
+    grpc_api.configure(configure_scan_request, task_callback=task_callback)
+
+    expected_request = ConfigureRequest(smrb=SmrbScanConfiguration())
+    mock_servicer_context.configure.assert_called_once_with(expected_request)
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Internal server error occurred", exception=ANY),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_smrb_grpc_deconfigure(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC calls configure on remote service."""
+    response = DeconfigureResponse()
+    mock_servicer_context.deconfigure = MagicMock(return_value=response)
+
+    grpc_api.deconfigure(task_callback=task_callback)
+
+    mock_servicer_context.deconfigure.assert_called_once_with(DeconfigureRequest())
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(configured=False)
+
+
+def test_smrb_grpc_deconfigure_when_not_configured_for_scan(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC deconfigure and currently not configured."""
+    mock_servicer_context.deconfigure.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.NOT_CONFIGURED_FOR_SCAN,
+        message="Not configured for scan.",
+    )
+    grpc_api.deconfigure(task_callback=task_callback)
+
+    mock_servicer_context.deconfigure.assert_called_once_with(DeconfigureRequest())
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Not configured for scan."),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(configured=False)
+
+
+def test_smrb_grpc_deconfigure_when_throws_exception(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC deconfigure throws an exception."""
+    mock_servicer_context.deconfigure.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.INTERNAL_ERROR,
+        message="Internal server error occurred",
+    )
+    grpc_api.deconfigure(task_callback=task_callback)
+
+    mock_servicer_context.deconfigure.assert_called_once_with(DeconfigureRequest())
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Internal server error occurred", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()

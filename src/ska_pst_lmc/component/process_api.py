@@ -21,16 +21,23 @@ import logging
 import threading
 from typing import Callable, Optional
 
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import AssignResourcesRequest, MonitorResponse
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    AssignResourcesRequest,
+    ConfigureRequest,
+    MonitorResponse,
+    ScanRequest,
+)
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.component.grpc_lmc_client import (
     AlreadyScanningException,
     BaseGrpcException,
+    NotConfiguredForScanException,
     NotScanningException,
     PstGrpcLmcClient,
     ResourcesAlreadyAssignedException,
     ResourcesNotAssignedException,
+    ScanConfiguredAlreadyException,
 )
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor, background_task
 
@@ -212,6 +219,18 @@ class PstProcessApiGrpc(PstProcessApi):
         """Convert resources dictionary to instance of `AssignResourcesRequest`."""
         raise NotImplementedError("PstProcessApiGrpc is an abstract class.")
 
+    def _get_configure_scan_request(self: PstProcessApiGrpc, configure_parameters: dict) -> ConfigureRequest:
+        """Conver scan parameters dictionary to instance of `ConfigureRequest`."""
+        raise NotImplementedError("PstProcessApiGrpc is an abstract class.")
+
+    def _get_scan_request(self: PstProcessApiGrpc, scan_parameters: dict) -> ScanRequest:
+        """Conver scan parameters dictionary to instance of `ScanRequest`.
+
+        For now this is an empty request, however, in the future it is possible that this
+        request will have parameters and could be specific to the component.
+        """
+        return ScanRequest()
+
     def assign_resources(self: PstProcessApiGrpc, resources: dict, task_callback: Callable) -> None:
         """Assign resources.
 
@@ -268,8 +287,21 @@ class PstProcessApiGrpc(PstProcessApi):
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        self._component_state_callback(configured=True)
-        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+        request = self._get_configure_scan_request(configuration)
+        try:
+            self._grpc_client.configure(request)
+
+            self._component_state_callback(configured=True)
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+        except ScanConfiguredAlreadyException as e:
+            self._logger.error(e.message)
+            task_callback(result=e.message, status=TaskStatus.FAILED, exception=e)
+        except BaseGrpcException as e:
+            self._logger.error(
+                f"Problem processing 'configure' request for '{self._client_id}'", exc_info=True
+            )
+            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def deconfigure(self: PstProcessApiGrpc, task_callback: Callable) -> None:
         """Deconfiure a scan.
@@ -280,8 +312,21 @@ class PstProcessApiGrpc(PstProcessApi):
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        self._component_state_callback(configured=False)
-        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+        try:
+            self._grpc_client.deconfigure()
+
+            self._component_state_callback(configured=False)
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+        except NotConfiguredForScanException as e:
+            self._logger.warning(e.message)
+            self._component_state_callback(configured=False)
+            task_callback(status=TaskStatus.COMPLETED, result=e.message)
+        except BaseGrpcException as e:
+            self._logger.error(
+                f"Problem processing 'deconfigure' request for '{self._client_id}'", exc_info=True
+            )
+            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def scan(
         self: PstProcessApiGrpc,
@@ -294,8 +339,10 @@ class PstProcessApiGrpc(PstProcessApi):
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
+
+        request = self._get_scan_request(args)
         try:
-            self._grpc_client.scan()
+            self._grpc_client.scan(request)
             self._component_state_callback(scanning=True)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except AlreadyScanningException as e:

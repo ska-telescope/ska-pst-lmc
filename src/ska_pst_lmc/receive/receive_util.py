@@ -32,6 +32,21 @@ MID_UDP_FORMATS = {
     "5b": "MidPSTBand5",
 }
 
+DEFAULT_COORD_MODE = "J2000"
+"""Default coordinate mode.
+
+Currently only J2000 is supported but in future other modes coulde be supported.
+"""
+
+DEFAULT_EQUINOX = 2000.0
+"""Default equinox for equitorial/J2000 coordinate mode."""
+
+DEFAULT_TRACKING_MODE = "TRACK"
+"""Default tracking mode.
+
+Currently only TRACK is supported but other modes could be supported in the future.
+"""
+
 
 def get_udp_format(frequency_band: Optional[str] = None, **kwargs: dict) -> str:
     """Get UDP_FORMAT to be used in processing."""
@@ -39,6 +54,41 @@ def get_udp_format(frequency_band: Optional[str] = None, **kwargs: dict) -> str:
         return MID_UDP_FORMATS[frequency_band]
 
     return LOW_PST
+
+
+def map_configure_request(
+    request_params: dict,
+) -> dict:
+    """Map the LMC configure request to what is needed by RECV.CORE.
+
+    This is a common method to map a CSP JSON configure scan request
+    to the appropriate RECV.CORE parameters.
+
+    :param request_params: a dictionary of request parameters that is
+        used to configure PST for a scan.
+    :returns: the RECV.CORE parameters to be used in the gRPC request.
+    """
+    result = {
+        "activation_time": request_params["activation_time"],
+        "scan_id": request_params["scan_id"],
+        "observer": request_params["observer_id"],
+        "projid": request_params["project_id"],
+        "pnt_id": request_params["pointing_id"],
+        "subarray_id": request_params["subarray_id"],
+        "source": request_params["source"],
+        "itrf": ",".join(map(str, request_params["itrf"])),
+        "coord_md": DEFAULT_COORD_MODE,
+        "equinox": str(request_params["coordinates"].get("equinox", DEFAULT_EQUINOX)),
+        "stt_crd1": request_params["coordinates"]["ra"],
+        "stt_crd2": request_params["coordinates"]["dec"],
+        "trk_mode": DEFAULT_TRACKING_MODE,
+        "scanlen_max": int(request_params["max_scan_length"]),
+    }
+
+    if "test_vector_id" in request_params:
+        result["test_vector"] = request_params["test_vector_id"]
+
+    return result
 
 
 def calculate_receive_subband_resources(

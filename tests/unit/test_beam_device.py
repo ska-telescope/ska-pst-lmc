@@ -122,6 +122,7 @@ class TestPstBeam:
         device_under_test: DeviceProxy,
         multidevice_test_context: MultiDeviceTestContext,
         assign_resources_request: dict,
+        configure_scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
         logger: logging.Logger,
     ) -> None:
@@ -173,7 +174,7 @@ class TestPstBeam:
         )
         assert_obstate(ObsState.IDLE)
 
-        configuration = json.dumps({"nchan": 1024})
+        configuration = json.dumps(configure_scan_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.Configure(configuration),
             expected_obs_state_events=[
