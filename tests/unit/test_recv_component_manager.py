@@ -151,8 +151,6 @@ def test_recv_assign_resources(
     assign_resources_request: dict,
     task_callback: Callable,
     calculated_receive_subband_resources: dict,
-    recv_network_interface: str,
-    recv_udp_port: int,
 ) -> None:
     """Test that assign resources calls the API correctly."""
     api = MagicMock()
