@@ -193,16 +193,18 @@ def test_component_manager_calls_abort_on_subdevices(
 def request_params(
     method_name: str,
     assign_resources_request: dict,
+    configure_scan_request: dict,
+    scan_request: dict,
 ) -> Optional[Any]:
     """Get request parameters for a given method name."""
     if method_name == "assign":
         return assign_resources_request
     elif method_name == "configure":
-        return {"cat": "dog"}
+        return configure_scan_request
     elif method_name == "release":
-        return {"red": "green"}
+        return {}
     elif method_name == "scan":
-        return {"foo": "bar"}
+        return scan_request
     else:
         return None
 
@@ -250,7 +252,7 @@ def test_remote_actions(
     )
 
     func = getattr(component_manager, method_name)
-    if request_params:
+    if request_params is not None:
         (status, message) = func(request_params, task_callback=task_callback)
     else:
         (status, message) = func(task_callback=task_callback)
@@ -260,7 +262,7 @@ def test_remote_actions(
 
     time.sleep(0.1)
 
-    if request_params:
+    if request_params is not None:
         params_str = json.dumps(request_params)
         [
             remote_action_supplier(d).assert_called_once_with(params_str)  # type: ignore

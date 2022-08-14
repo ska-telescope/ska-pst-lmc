@@ -13,6 +13,7 @@ from unittest.mock import MagicMock
 import grpc
 import pytest
 import tango
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ScanRequest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer, add_PstLmcServiceServicer_to_server
 from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import ObsState, SimulationMode
@@ -110,6 +111,20 @@ def configure_scan_request() -> dict:
             "target_snr": 0.0,
         },
     }
+
+
+@pytest.fixture
+def scan_request() -> dict:
+    """Fixture for scan requests."""
+    return {}
+
+
+@pytest.fixture
+def expected_scan_request_protobuf(
+    scan_request: dict,
+) -> ScanRequest:
+    """Fixture for build expected RECV scan request."""
+    return ScanRequest(**scan_request)
 
 
 @pytest.fixture

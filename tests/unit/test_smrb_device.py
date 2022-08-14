@@ -91,6 +91,7 @@ class TestPstSmrb:
         device_under_test: DeviceProxy,
         assign_resources_request: dict,
         configure_scan_request: dict,
+        scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
         """Test state model of PstSmrb."""
@@ -119,7 +120,7 @@ class TestPstSmrb:
             ],
         )
 
-        scan = json.dumps({"cat": "dog"})
+        scan = json.dumps(scan_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.Scan(scan),
             expected_obs_state_events=[
@@ -157,6 +158,7 @@ class TestPstSmrb:
         device_under_test: DeviceProxy,
         assign_resources_request: dict,
         configure_scan_request: dict,
+        scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
         """Test that when device is SCANNING and abort is requested."""
@@ -185,7 +187,7 @@ class TestPstSmrb:
             ],
         )
 
-        scan = json.dumps({"cat": "dog"})
+        scan = json.dumps(scan_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.Scan(scan),
             expected_obs_state_events=[
@@ -223,7 +225,7 @@ class TestPstSmrb:
             ],
         )
 
-        scan = json.dumps({"cat": "dog"})
+        scan = json.dumps(scan_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.Scan(scan),
             expected_obs_state_events=[

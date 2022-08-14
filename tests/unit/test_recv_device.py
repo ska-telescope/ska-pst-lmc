@@ -112,6 +112,7 @@ class TestPstReceive:
         tango_device_command_checker: TangoDeviceCommandChecker,
         assign_resources_request: dict,
         configure_scan_request: dict,
+        scan_request: dict,
     ) -> None:
         """Test state model of PstReceive."""
         # need to go through state mode
@@ -140,7 +141,7 @@ class TestPstReceive:
             ],
         )
 
-        scan = json.dumps({"cat": "dog"})
+        scan = json.dumps(scan_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.Scan(scan),
             expected_obs_state_events=[

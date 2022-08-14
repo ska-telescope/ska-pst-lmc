@@ -85,7 +85,10 @@ def test_configure_handles_no_subbands_configuration(simulator: PstSmrbSimulator
     assert data.ring_buffer_size == sum(data.subband_ring_buffer_sizes)
 
 
-def test_until_scan_get_data_returns_initial_data(simulator: PstSmrbSimulator) -> None:
+def test_until_scan_get_data_returns_initial_data(
+    simulator: PstSmrbSimulator,
+    scan_request: dict,
+) -> None:
     """Test that scan/end_scan will only update data while scanning."""
     initial_data = simulator.get_data()
 
@@ -93,7 +96,7 @@ def test_until_scan_get_data_returns_initial_data(simulator: PstSmrbSimulator) -
 
     assert initial_data == next_data
 
-    simulator.scan(args={})
+    simulator.scan(args=scan_request)
     prev_data = next_data = simulator.get_data()
 
     assert initial_data != next_data

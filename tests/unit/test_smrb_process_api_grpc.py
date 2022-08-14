@@ -395,6 +395,8 @@ def test_smrb_grpc_deconfigure_when_throws_exception(
 def test_smrb_grpc_scan(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
+    scan_request: dict,
+    expected_scan_request_protobuf: ScanRequest,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
@@ -402,9 +404,9 @@ def test_smrb_grpc_scan(
     response = ScanResponse()
     mock_servicer_context.scan = MagicMock(return_value=response)
 
-    grpc_api.scan(args={}, task_callback=task_callback)
+    grpc_api.scan(args=scan_request, task_callback=task_callback)
 
-    mock_servicer_context.scan.assert_called_once_with(ScanRequest())
+    mock_servicer_context.scan.assert_called_once_with(expected_scan_request_protobuf)
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
         call(status=TaskStatus.COMPLETED, result="Completed"),
@@ -416,6 +418,8 @@ def test_smrb_grpc_scan(
 def test_smrb_grpc_scan_when_already_scanning(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
+    scan_request: dict,
+    expected_scan_request_protobuf: ScanRequest,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
@@ -426,9 +430,9 @@ def test_smrb_grpc_scan_when_already_scanning(
         message="We are already scanning",
     )
 
-    grpc_api.scan(args={}, task_callback=task_callback)
+    grpc_api.scan(args=scan_request, task_callback=task_callback)
 
-    mock_servicer_context.scan.assert_called_once_with(ScanRequest())
+    mock_servicer_context.scan.assert_called_once_with(expected_scan_request_protobuf)
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
         call(status=TaskStatus.COMPLETED, result="Completed"),
@@ -440,6 +444,8 @@ def test_smrb_grpc_scan_when_already_scanning(
 def test_smrb_grpc_scan_when_throws_exception(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
+    scan_request: dict,
+    expected_scan_request_protobuf: ScanRequest,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
@@ -449,9 +455,9 @@ def test_smrb_grpc_scan_when_throws_exception(
         message="Oops there was a problem",
     )
 
-    grpc_api.scan(args={}, task_callback=task_callback)
+    grpc_api.scan(args=scan_request, task_callback=task_callback)
 
-    mock_servicer_context.scan.assert_called_once_with(ScanRequest())
+    mock_servicer_context.scan.assert_called_once_with(expected_scan_request_protobuf)
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
         call(status=TaskStatus.FAILED, result="Oops there was a problem", exception=ANY),

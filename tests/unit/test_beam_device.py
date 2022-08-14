@@ -123,6 +123,7 @@ class TestPstBeam:
         multidevice_test_context: MultiDeviceTestContext,
         assign_resources_request: dict,
         configure_scan_request: dict,
+        scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
         logger: logging.Logger,
     ) -> None:
@@ -184,7 +185,7 @@ class TestPstBeam:
         )
         assert_obstate(ObsState.READY)
 
-        scan = json.dumps({"cat": "dog"})
+        scan = json.dumps(scan_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.Scan(scan),
             expected_obs_state_events=[

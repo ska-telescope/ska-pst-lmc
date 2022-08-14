@@ -217,7 +217,7 @@ class PstSmrbComponentManager(PstApiComponentManager):
         """Start scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
-            self._api.scan(args, task_callback)
+            self._api.scan(args, task_callback=task_callback)
             self._api.monitor(
                 # for now only handling 1 subband
                 subband_monitor_data_callback=self._handle_subband_monitor_data,

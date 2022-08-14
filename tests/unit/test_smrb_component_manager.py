@@ -24,6 +24,7 @@ from ska_pst_lmc.smrb.smrb_process_api import (
     PstSmrbProcessApiGrpc,
     PstSmrbProcessApiSimulator,
 )
+from ska_pst_lmc.smrb.smrb_util import calculate_smrb_subband_resources
 from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
 
 
@@ -81,14 +82,26 @@ def api(
 
 
 @pytest.fixture
-def monitor_data() -> SmrbMonitorData:
+def monitor_data(
+    scan_request: dict,
+) -> SmrbMonitorData:
     """Create an an instance of ReceiveData for monitor data."""
     from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
 
     simulator = PstSmrbSimulator()
-    simulator.scan(args={})
+    simulator.scan(args=scan_request)
 
     return simulator.get_data()
+
+
+@pytest.fixture
+def calculated_smrb_subband_resources(beam_id: int, assign_resources_request: dict) -> dict:
+    """Fixture to calculate expected smrb subband resources."""
+    resources = calculate_smrb_subband_resources(
+        beam_id=beam_id,
+        request_params=assign_resources_request,
+    )
+    return resources[1]
 
 
 def test_start_communicating_calls_connect_on_api(
@@ -271,6 +284,43 @@ def test_not_communicating_switching_simulation_mode_not_try_to_establish_connec
     update_communication_state.assert_not_called()
 
 
+def test_recv_assign_resources(
+    component_manager: PstSmrbComponentManager,
+    assign_resources_request: dict,
+    task_callback: Callable,
+    calculated_smrb_subband_resources: dict,
+) -> None:
+    """Test that assign resources calls the API correctly."""
+    api = MagicMock()
+    component_manager._api = api
+    # override the background processing.
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback
+    )
+
+    component_manager.assign(resources=assign_resources_request, task_callback=task_callback)
+
+    api.assign_resources.assert_called_once_with(
+        resources=calculated_smrb_subband_resources, task_callback=task_callback
+    )
+
+
+def test_recv_release_resources(
+    component_manager: PstSmrbComponentManager,
+    task_callback: Callable,
+) -> None:
+    """Test that assign resources calls the API correctly."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback
+    )
+
+    component_manager.release_all(task_callback=task_callback)
+
+    api.release_resources.assert_called_once_with(task_callback=task_callback)
+
+
 def test_configure_scan(
     component_manager: PstSmrbComponentManager,
     configure_scan_request: dict,
@@ -307,3 +357,48 @@ def test_deconfigure(
     api.deconfigure.assert_called_once_with(
         task_callback=task_callback,
     )
+
+
+def test_smrb_scan(
+    component_manager: PstSmrbComponentManager,
+    scan_request: dict,
+    task_callback: Callable,
+) -> None:
+    """Test that the component manager calls the API start a scan."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback,
+    )
+
+    component_manager.scan(scan_request, task_callback=task_callback)
+
+    api.scan.assert_called_once_with(
+        scan_request,
+        task_callback=task_callback,
+    )
+    api.monitor.assert_called_once_with(
+        subband_monitor_data_callback=component_manager._handle_subband_monitor_data,
+        polling_rate=component_manager._monitor_polling_rate,
+    )
+
+
+def test_smrb_end_scan(
+    component_manager: PstSmrbComponentManager,
+    task_callback: Callable,
+    monitor_data_callback: MagicMock,
+) -> None:
+    """Test that the component manager calls the API to end scan."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback,
+    )
+
+    component_manager.end_scan(task_callback=task_callback)
+
+    api.end_scan.assert_called_once_with(
+        task_callback=task_callback,
+    )
+    assert component_manager._monitor_data == SmrbMonitorData()
+    monitor_data_callback.assert_called_once_with(SmrbMonitorData())

@@ -31,6 +31,7 @@ class TestPstBeam:
         self: TestPstBeam,
         assign_resources_request: dict,
         configure_scan_request: dict,
+        scan_request: dict,
         change_event_callbacks: ChangeEventDict,
         logger: logging.Logger,
     ) -> None:
@@ -104,7 +105,7 @@ class TestPstBeam:
             )
             assert_obstate(ObsState.READY)
 
-            scan = json.dumps({"cat": "dog"})
+            scan = json.dumps(scan_request)
             tango_device_command_checker.assert_command(
                 lambda: beam_proxy.Scan(scan),
                 expected_obs_state_events=[
