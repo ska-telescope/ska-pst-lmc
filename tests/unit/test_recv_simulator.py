@@ -20,16 +20,6 @@ def simulator() -> PstReceiveSimulator:
     return PstReceiveSimulator()
 
 
-def test_default_values(simulator: PstReceiveSimulator) -> None:
-    """Test to see if that the simulator is initialised with defaults."""
-    assert simulator._received_data == 0
-    assert simulator._received_rate == 0.0
-    assert simulator._dropped_data == 0.0
-    assert simulator._dropped_rate == 0.0
-    assert simulator._nchan >= 128
-    assert simulator._misordered_packets == 0
-
-
 def test_get_data_will_update_data_when_scanning(
     simulator: PstReceiveSimulator,
     scan_request: dict,

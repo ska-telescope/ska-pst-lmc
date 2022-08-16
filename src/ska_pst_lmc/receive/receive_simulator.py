@@ -10,17 +10,13 @@
 from __future__ import annotations
 
 from random import randint, random
+from typing import Any, Dict, Optional
 
 from ska_pst_lmc.receive.receive_model import ReceiveData
 
 
-def generate_random_update(nchan: int = 128) -> ReceiveData:
-    """Generate a random update of ReceivedData.
-
-    :param nchans: number of channels for relative weights.
-    :type nchans: int
-    :returns: a randomly generated receive data.
-    """
+def generate_random_update() -> ReceiveData:
+    """Generate a random update of ReceivedData."""
     received_rate: float = 1.0 * randint(0, 90)
     received_data: int = int(received_rate * 1e9 / 8)
     dropped_rate: float = received_rate / 1000.0 * random()
@@ -45,20 +41,15 @@ class PstReceiveSimulator:
     process and the TANGO will connect via an API.
     """
 
-    # ----------
-    # Attributes
-    # ----------
+    _subband_data: Dict[int, ReceiveData]
 
-    _received_data: int = 0
-    _received_rate: float = 0.0
-    _dropped_data: int = 0
-    _dropped_rate: float = 0.0
-    _nchan: int = 0
-    _misordered_packets: int = 0
-
-    def __init__(self: PstReceiveSimulator, *args: list, **kwargs: dict) -> None:
+    def __init__(self: PstReceiveSimulator, num_subbands: Optional[int] = None, **kwargs: dict) -> None:
         """Initialise the simulator."""
-        self._nchan = randint(128, 1024)
+        configuration: Dict[str, Any] = {}
+        if num_subbands is not None:
+            configuration["num_subbands"] = num_subbands
+
+        self.configure(configuration=configuration)
         self._scan = False
 
     def configure(self: PstReceiveSimulator, configuration: dict) -> None:
@@ -70,10 +61,12 @@ class PstReceiveSimulator:
         :param configuration: the configuration to be configured
         :type configuration: dict
         """
-        if "nchan" in configuration:
-            self._nchan = configuration["nchan"]
+        if "num_subbands" in configuration:
+            self.num_subbands = configuration["num_subbands"]
         else:
-            self._nchan = randint(128, 1024)
+            self.num_subbands = randint(1, 4)
+
+        self._subband_data = {subband_id: ReceiveData() for subband_id in range(1, self.num_subbands + 1)}
 
     def deconfigure(self: PstReceiveSimulator) -> None:
         """Simulate deconfigure."""
@@ -96,13 +89,14 @@ class PstReceiveSimulator:
 
     def _update(self: PstReceiveSimulator) -> None:
         """Simulate the update of RECV data."""
-        update: ReceiveData = generate_random_update(self._nchan)
+        for subband_data in self._subband_data.values():
+            update: ReceiveData = generate_random_update()
 
-        self._received_rate += update.received_rate
-        self._received_data += update.received_data
-        self._dropped_rate = update.dropped_rate
-        self._dropped_data += update.dropped_data
-        self._misordered_packets += update.misordered_packets
+            subband_data.received_rate = update.received_rate
+            subband_data.received_data += update.received_data
+            subband_data.dropped_rate = update.dropped_rate
+            subband_data.dropped_data += update.dropped_data
+            subband_data.misordered_packets += update.misordered_packets
 
     def get_data(self: PstReceiveSimulator) -> ReceiveData:
         """
@@ -116,10 +110,19 @@ class PstReceiveSimulator:
         if self._scan:
             self._update()
 
-        return ReceiveData(
-            received_data=self._received_data,
-            received_rate=self._received_rate,
-            dropped_data=self._dropped_data,
-            dropped_rate=self._dropped_rate,
-            misordered_packets=self._misordered_packets,
-        )
+        data = ReceiveData()
+        for subband_data in self._subband_data.values():
+            data.dropped_data += subband_data.dropped_data
+            data.dropped_rate += subband_data.dropped_rate
+            data.misordered_packets += subband_data.misordered_packets
+            data.received_data += data.received_data
+            data.received_rate += data.received_rate
+
+        return data
+
+    def get_subband_data(self: PstReceiveSimulator) -> Dict[int, ReceiveData]:
+        """Get simulated subband data."""
+        if self._scan:
+            self._update()
+
+        return self._subband_data

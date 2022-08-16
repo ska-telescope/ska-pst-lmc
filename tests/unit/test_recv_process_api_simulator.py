@@ -8,6 +8,7 @@
 """This module contains tests for the RECV API."""
 
 import logging
+import threading
 import time
 import unittest
 from typing import Any, Callable
@@ -17,7 +18,6 @@ import pytest
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc import PstReceiveSimulator
-from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApiSimulator
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
@@ -76,49 +76,36 @@ def simulator() -> PstReceiveSimulator:
     return PstReceiveSimulator()
 
 
-def test_communication_task_on_connect_disconnect(simulation_api: PstReceiveProcessApiSimulator) -> None:
-    """Assert start communicating starts a background task."""
-    assert simulation_api._communication_task is None
-
-    simulation_api.connect()
-
-    assert simulation_api._communication_task is not None
-    assert simulation_api._communication_task.running()
-
-    simulation_api.disconnect()
-    assert simulation_api._communication_task is None
-
-
-def test_start_communicating_call_monitor(simulation_api: PstReceiveProcessApiSimulator) -> None:
-    """Assert the background task used is the monitor method."""
-    simulation_api._monitor_action = MagicMock(name="_monitor_task")  # type: ignore
-
-    simulation_api._monitor_action.assert_not_called()
-
-    simulation_api.connect()
-    time.sleep(0.01)
-    simulation_api._monitor_action.assert_called()
-
-
-def test_monitor_function_gets_values_from_simulator(
-    simulation_api: PstReceiveProcessApiSimulator, simulator: PstReceiveSimulator
+def test_simulated_monitor_calls_callback(
+    simulation_api: PstReceiveProcessApiSimulator,
+    subband_monitor_data_callback: MagicMock,
+    abort_event: threading.Event,
+    logger: logging.Logger,
 ) -> None:
-    """Assert that the API values get data from simulator when monitor action called."""
-    with unittest.mock.patch.object(simulator, "get_data", wraps=simulator.get_data) as get_data:
-        simulation_api._monitor_action()
-        get_data.assert_called_once()
+    """Test simulatued monitoring calls subband_monitor_data_callback."""
 
+    def _abort_monitor() -> None:
+        logger.debug("Test sleeping 600ms")
+        time.sleep(0.6)
+        logger.debug("Aborting monitoring.")
+        abort_event.set()
 
-def test_get_data_returns_empty_data_if_not_monitoring(simulation_api: PstReceiveProcessApiSimulator) -> None:
-    """Test that the data returned when API is not scanning is the default data."""
-    assert simulation_api.data is None
+    abort_thread = threading.Thread(target=_abort_monitor, daemon=True)
+    abort_thread.start()
 
-    actual: ReceiveData = simulation_api.monitor_data
-    assert actual is not None
+    simulation_api.monitor(
+        subband_monitor_data_callback=subband_monitor_data_callback,
+        polling_rate=500,
+        monitor_abort_event=abort_event,
+    )
+    abort_thread.join()
+    logger.debug("Abort thread finished.")
 
-    expected: ReceiveData = ReceiveData()
-
-    assert actual == expected
+    calls = [
+        call(subband_id=subband_id, subband_data=subband_data)
+        for (subband_id, subband_data) in simulation_api._simulator.get_subband_data().items()
+    ]
+    subband_monitor_data_callback.assert_has_calls(calls=calls)
 
 
 def test_assign_resources(

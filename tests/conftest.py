@@ -596,3 +596,9 @@ def recv_udp_port() -> int:
 def subband_monitor_data_callback() -> MagicMock:
     """Create a callback that can be used for subband data monitoring."""
     return MagicMock()
+
+
+@pytest.fixture
+def monitor_data_callback() -> MagicMock:
+    """Create fixture for monitor data callback testing."""
+    return MagicMock()
