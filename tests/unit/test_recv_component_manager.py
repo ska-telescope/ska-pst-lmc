@@ -124,9 +124,6 @@ def test_recv_start_communicating_calls_connect_on_api(
         ("dropped_rate"),
         ("dropped_data"),
         ("misordered_packets"),
-        ("malformed_packets"),
-        ("relative_weight"),
-        ("relative_weights"),
     ],
 )
 def test_recv_properties_come_from_api_monitor_data(

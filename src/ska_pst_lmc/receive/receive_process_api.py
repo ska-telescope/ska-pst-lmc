@@ -211,7 +211,7 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
 
         :returns: current monitoring data.
         """
-        return self.data or ReceiveData.defaults()
+        return self.data or ReceiveData()
 
     def _monitor_action(self: PstReceiveProcessApiSimulator) -> None:
         """Monitor RECV process to get the telemetry information."""

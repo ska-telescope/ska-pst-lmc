@@ -116,7 +116,7 @@ def test_get_data_returns_empty_data_if_not_monitoring(simulation_api: PstReceiv
     actual: ReceiveData = simulation_api.monitor_data
     assert actual is not None
 
-    expected: ReceiveData = ReceiveData.defaults()
+    expected: ReceiveData = ReceiveData()
 
     assert actual == expected
 

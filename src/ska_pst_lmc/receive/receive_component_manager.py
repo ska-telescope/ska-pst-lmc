@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
@@ -149,33 +149,6 @@ class PstReceiveComponentManager(PstApiComponentManager):
         :rtype: int
         """
         return self._api.monitor_data.misordered_packets
-
-    @property
-    def malformed_packets(self: PstReceiveComponentManager) -> int:
-        """Get the total number of malformed packets received during the current scan.
-
-        :returns: total number of malformed packets received during the current scan.
-        :rtype: int
-        """
-        return self._api.monitor_data.malformed_packets
-
-    @property
-    def relative_weight(self: PstReceiveComponentManager) -> float:
-        """Get the time averages of all relative weights for the current scan.
-
-        :returns: time average of all relative weights for the current scan.
-        :rtype: float
-        """
-        return self._api.monitor_data.relative_weight
-
-    @property
-    def relative_weights(self: PstReceiveComponentManager) -> List[float]:
-        """Get the time average of relative weights for each channel in the current scan.
-
-        :returns: time average of relative weights for each channel in the current scan.
-        :rtype: list(float)
-        """
-        return self._api.monitor_data.relative_weights
 
     def assign(self: PstReceiveComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
         """

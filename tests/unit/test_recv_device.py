@@ -158,9 +158,6 @@ class TestPstReceive:
         # assert device_under_test.dropped_rate > 0.0
         # assert device_under_test.dropped_data > 0
         # assert device_under_test.misordered_packets >= 0
-        # assert device_under_test.malformed_packets >= 0
-        # assert device_under_test.relative_weight > 0.0
-        # assert len(device_under_test.relative_weights) == 1024
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.EndScan(),

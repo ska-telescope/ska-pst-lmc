@@ -175,47 +175,6 @@ class PstReceive(PstBaseDevice):
         """
         return self.component_manager.misordered_packets
 
-    @attribute(
-        dtype="DevULong64",
-        polling_period=5000,
-        doc="Total number of malformed packets received during the current scan",
-    )
-    def malformed_packets(self: PstReceive) -> int:
-        """Get the total number of malformed packets received during the current scan.
-
-        :returns: total number of malformed packets received during the current scan.
-        :rtype: int
-        """
-        return self.component_manager.malformed_packets
-
-    @attribute(
-        dtype="DevFloat",
-        polling_period=5000,
-        doc="Time average of all relative weights for the current scan",
-    )
-    def relative_weight(self: PstReceive) -> float:
-        """Get the time averages of all relative weights for the current scan.
-
-        :returns: time average of all relative weights for the current scan.
-        :rtype: float
-        """
-        return self.component_manager.relative_weight
-
-    @attribute(
-        dtype=("DevFloat",),
-        max_dim_x=1024,
-        polling_period=5000,
-        min_value=0,
-        doc="Time average of relative weights for each channel in the current scan",
-    )
-    def relative_weights(self: PstReceive) -> List[float]:
-        """Get the time average of relative weights for each channel in the current scan.
-
-        :returns: time average of relative weights for each channel in the current scan.
-        :rtype: list(float)
-        """
-        return self.component_manager.relative_weights
-
     # --------
     # Commands
     # --------

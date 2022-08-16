@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 from random import randint, random
-from typing import List
 
 from ska_pst_lmc.receive.receive_model import ReceiveData
 
@@ -27,11 +26,6 @@ def generate_random_update(nchan: int = 128) -> ReceiveData:
     dropped_rate: float = received_rate / 1000.0 * random()
     dropped_data: int = int(dropped_rate * 1e9 / 8)
     misordered_packets: int = randint(0, 3)
-    malformed_packets: int = randint(0, 3)
-    relative_weights: List[float] = nchan * [0.0]
-    for i in range(nchan):
-        relative_weights[i] = 1.0 * randint(0, 128)
-    relative_weight = sum(relative_weights) / nchan
 
     return ReceiveData(
         received_data=received_data,
@@ -39,9 +33,6 @@ def generate_random_update(nchan: int = 128) -> ReceiveData:
         dropped_data=dropped_data,
         dropped_rate=dropped_rate,
         misordered_packets=misordered_packets,
-        malformed_packets=malformed_packets,
-        relative_weights=relative_weights,
-        relative_weight=relative_weight,
     )
 
 
@@ -64,14 +55,10 @@ class PstReceiveSimulator:
     _dropped_rate: float = 0.0
     _nchan: int = 0
     _misordered_packets: int = 0
-    _malformed_packets: int = 0
-    _relative_weights: List[float] = []
-    _relative_weight: float = 0.0
 
     def __init__(self: PstReceiveSimulator, *args: list, **kwargs: dict) -> None:
         """Initialise the simulator."""
         self._nchan = randint(128, 1024)
-        self._relative_weights = [0] * self._nchan
         self._scan = False
 
     def configure(self: PstReceiveSimulator, configuration: dict) -> None:
@@ -87,7 +74,6 @@ class PstReceiveSimulator:
             self._nchan = configuration["nchan"]
         else:
             self._nchan = randint(128, 1024)
-        self._relative_weights = self._nchan * [0.0]
 
     def deconfigure(self: PstReceiveSimulator) -> None:
         """Simulate deconfigure."""
@@ -117,9 +103,6 @@ class PstReceiveSimulator:
         self._dropped_rate = update.dropped_rate
         self._dropped_data += update.dropped_data
         self._misordered_packets += update.misordered_packets
-        self._malformed_packets += update.malformed_packets
-        self._relative_weights = update.relative_weights
-        self._relative_weight = update.relative_weight
 
     def get_data(self: PstReceiveSimulator) -> ReceiveData:
         """
@@ -139,7 +122,4 @@ class PstReceiveSimulator:
             dropped_data=self._dropped_data,
             dropped_rate=self._dropped_rate,
             misordered_packets=self._misordered_packets,
-            malformed_packets=self._malformed_packets,
-            relative_weights=self._relative_weights,
-            relative_weight=self._relative_weight,
         )
