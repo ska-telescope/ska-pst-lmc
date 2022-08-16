@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Callable, Optional
+from typing import Any, Callable, Dict, Generator, Optional
 
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesRequest,
@@ -40,6 +40,7 @@ from ska_pst_lmc.component.grpc_lmc_client import (
     ScanConfiguredAlreadyException,
 )
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor, background_task
+from ska_pst_lmc.util.timeout_iterator import TimeoutIterator
 
 
 class PstProcessApi:
@@ -154,6 +155,76 @@ class PstProcessApi:
             will create one.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
+
+
+class PstProcessApiSimulator(PstProcessApi):
+    """Abstract class for the Simulated API of the PST.LMC processes like RECV, SMRB, etc."""
+
+    def __init__(
+        self: PstProcessApiSimulator,
+        logger: logging.Logger,
+        component_state_callback: Callable,
+        **kwargs: dict,
+    ) -> None:
+        """Initialise the API."""
+        self._monitor_abort_event: Optional[threading.Event] = None
+        super().__init__(logger=logger, component_state_callback=component_state_callback, **kwargs)
+
+    def connect(self: PstProcessApiSimulator) -> None:
+        """Connect to the external process."""
+
+    def disconnect(self: PstProcessApiSimulator) -> None:
+        """Disconnect from the external process."""
+        if self._monitor_abort_event is not None:
+            self._monitor_abort_event.set()
+
+    def _simulated_monitor_data_generator(
+        self: PstProcessApiSimulator, polling_rate: int
+    ) -> Generator[Dict[int, Any], None, None]:
+        """Create a generator of simulated monitoring data.
+
+        This is an abstract method.  Subclasses need to implement this.
+
+        :param polling_rate: the rate, in milliseconds, at which the monitoring should generated data.
+        """
+        raise NotImplementedError("PstProcessApiSimulator is abstract class")
+
+    @background_task
+    def monitor(
+        self: PstProcessApiSimulator,
+        subband_monitor_data_callback: Callable[..., None],
+        polling_rate: int = 5000,
+        monitor_abort_event: Optional[threading.Event] = None,
+    ) -> None:
+        """Monitor data of remote service.
+
+        This needs to be implemented as a background task
+
+        :param subband_monitor_data_callback: callback to use when there is an
+            update of the sub-band monitor data.
+        :param polling_rate: the rate, in milliseconds, at which the monitoring
+            should poll. The default value is 5000ms (i.e. 5 seconds).
+        :param monitor_abort_event: a :py:class:`threading.Event` that can be
+            used to signal to stop monitoring. If not set then the background task
+            will create one.
+        """
+        self._logger.debug(f"Starting to monitor at {polling_rate}")
+        try:
+            if monitor_abort_event is None:
+                self._monitor_abort_event = threading.Event()
+            else:
+                self._monitor_abort_event = monitor_abort_event
+
+            for data in TimeoutIterator(
+                self._simulated_monitor_data_generator(polling_rate=polling_rate),
+                abort_event=self._monitor_abort_event,
+                timeout=2 * polling_rate / 1000.0,
+                expected_rate=polling_rate / 1000.0,
+            ):
+                for (subband_id, subband_data) in data.items():
+                    subband_monitor_data_callback(subband_id=subband_id, subband_data=subband_data)
+        except Exception:
+            self._logger.error("error while monitoring.", exc_info=True)
 
 
 class PstProcessApiGrpc(PstProcessApi):
