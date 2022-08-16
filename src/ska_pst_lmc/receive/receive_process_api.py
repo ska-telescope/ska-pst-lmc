@@ -23,6 +23,8 @@ from typing import Callable, Optional
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesRequest,
     ConfigureRequest,
+    MonitorResponse,
+    ReceiveMonitorData,
     ReceiveResources,
     ReceiveScanConfiguration,
     ReceiveSubbandResources,
@@ -239,4 +241,19 @@ class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
     ) -> ConfigureRequest:
         return ConfigureRequest(
             receive=ReceiveScanConfiguration(**map_configure_request(configure_parameters))
+        )
+
+    def _handle_monitor_response(
+        self: PstProcessApiGrpc, data: MonitorResponse, monitor_data_callback: Callable[..., None]
+    ) -> None:
+        receive_monitor_data: ReceiveMonitorData = data.receive
+        monitor_data_callback(
+            subband_id=1,
+            subband_data=ReceiveData(
+                received_data=receive_monitor_data.data_received,
+                received_rate=receive_monitor_data.receive_rate,
+                dropped_data=receive_monitor_data.data_dropped,
+                dropped_rate=receive_monitor_data.data_drop_rate,
+                misordered_packets=receive_monitor_data.misordered_packets,
+            ),
         )

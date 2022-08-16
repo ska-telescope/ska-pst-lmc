@@ -74,12 +74,6 @@ def grpc_api(
     )
 
 
-@pytest.fixture
-def subband_monitor_data_callback() -> MagicMock:
-    """Create a callback that can be used for subband data monitoring."""
-    return MagicMock()
-
-
 def test_smrb_grpc_sends_connect_request(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
