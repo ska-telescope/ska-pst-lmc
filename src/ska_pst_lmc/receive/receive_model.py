@@ -9,11 +9,12 @@
 
 from __future__ import annotations
 
-from typing import List, NamedTuple
+from dataclasses import dataclass
 
 
-class ReceiveData(NamedTuple):
-    """Named tuple used to transfer current RECV data between the process and the component manager.
+@dataclass
+class ReceiveData:
+    """A data class to transfer current RECV data between the process and the component manager.
 
     :ivar received_data: amount of data received during current scan, in bytes.
     :vartype received_data: int
@@ -23,38 +24,12 @@ class ReceiveData(NamedTuple):
     :vartype dropped_data: int
     :ivar dropped_rate: the rate of data dropped during current scan, in Gb/s.
     :vartype dropped_rate: float
-    :ivar malformed_packets: the number of malformed packets received during current scan.
-    :vartype malformed_packets: int
     :ivar misordered_packets: the number of misordered packets received during current scan.
     :vartype misordered_packets: int
-    :ivar relative_weights: the relative weights for each channel.
-    :vartype relative_weights: List[float]
-    :ivar relative_weight: the average relative weight over all channels.
-    :vartype relative_weight: float
     """
 
-    received_data: int
-    received_rate: float
-    dropped_data: int
-    dropped_rate: float
-    malformed_packets: int
-    misordered_packets: int
-    relative_weights: List[float]
-    relative_weight: float
-
-    @staticmethod
-    def defaults() -> ReceiveData:
-        """Return a default ReceiveData object.
-
-        This is used when the API is not connected or scanning.
-        """
-        return ReceiveData(
-            received_data=0,
-            received_rate=0.0,
-            dropped_data=0,
-            dropped_rate=0.0,
-            misordered_packets=0,
-            malformed_packets=0,
-            relative_weights=[],
-            relative_weight=0.0,
-        )
+    received_data: int = 0
+    received_rate: float = 0.0
+    dropped_data: int = 0
+    dropped_rate: float = 0.0
+    misordered_packets: int = 0

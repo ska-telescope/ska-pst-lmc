@@ -14,9 +14,8 @@ simulation.)
 from __future__ import annotations
 
 import logging
-import threading
 import time
-from typing import Callable, Dict, Generator, Optional
+from typing import Any, Callable, Dict, Generator, Optional
 
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesRequest,
@@ -27,11 +26,10 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
 )
 from ska_tango_base.commands import TaskStatus
 
-from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc
+from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc, PstProcessApiSimulator
 from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData, SubbandMonitorData
 from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
-from ska_pst_lmc.util.background_task import BackgroundTaskProcessor, background_task
-from ska_pst_lmc.util.timeout_iterator import TimeoutIterator
+from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
 __all__ = [
     "PstSmrbProcessApi",
@@ -49,7 +47,7 @@ class PstSmrbProcessApi(PstProcessApi):
     """
 
 
-class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
+class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
     """A simulator implemenation version of the  API of `PstSmrbProcessApi`."""
 
     def __init__(
@@ -68,17 +66,8 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         self._simulator = simulator or PstSmrbSimulator()
         self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
         self.data: Optional[SmrbMonitorData] = None
-        self._monitor_abort_event: Optional[threading.Event] = None
 
         super().__init__(logger=logger, component_state_callback=component_state_callback)
-
-    def connect(self: PstSmrbProcessApiSimulator) -> None:
-        """Connect to the external process."""
-
-    def disconnect(self: PstSmrbProcessApiSimulator) -> None:
-        """Disconnect from the external process."""
-        if self._monitor_abort_event is not None:
-            self._monitor_abort_event.set()
 
     def assign_resources(self: PstSmrbProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
         """Assign resources.
@@ -205,49 +194,14 @@ class PstSmrbProcessApiSimulator(PstSmrbProcessApi):
         self._component_state_callback(configured=False, resourced=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @background_task
-    def monitor(
-        self: PstSmrbProcessApiSimulator,
-        subband_monitor_data_callback: Callable[..., None],
-        polling_rate: int = 5000,
-        monitor_abort_event: Optional[threading.Event] = None,
-    ) -> None:
-        """Monitor data of remote service.
-
-        This needs to be implemented as a background task
-
-        :param subband_monitor_data_callback: callback to use when there is an
-            update of the sub-band monitor data.
-        :param polling_rate: the rate, in milliseconds, at which the monitoring
-            should poll. The default value is 5000ms (i.e. 5 seconds).
-        :param monitor_abort_event: a :py:class:`threading.Event` that can be
-            used to signal to stop monitoring. If not set then the background task
-            will create one.
-        """
-        self._logger.debug(f"Starting to monitor at {polling_rate}")
-        try:
-            if monitor_abort_event is None:
-                self._monitor_abort_event = threading.Event()
-            else:
-                self._monitor_abort_event = monitor_abort_event
-
-            def _generator() -> Generator[Dict[int, SubbandMonitorData], None, None]:
-                while True:
-                    self._logger.debug("Background generator is creating data")
-                    yield self._simulator.get_subband_data()
-                    self._logger.debug(f"Sleeping {polling_rate}ms")
-                    time.sleep(polling_rate / 1000.0)
-
-            for data in TimeoutIterator(
-                _generator(),
-                abort_event=self._monitor_abort_event,
-                timeout=2 * polling_rate / 1000.0,
-                expected_rate=polling_rate / 1000.0,
-            ):
-                for (subband_id, subband_data) in data.items():
-                    subband_monitor_data_callback(subband_id=subband_id, subband_data=subband_data)
-        except Exception:
-            self._logger.error("error while monitoring.", exc_info=True)
+    def _simulated_monitor_data_generator(
+        self: PstSmrbProcessApiSimulator, polling_rate: int
+    ) -> Generator[Dict[int, Any], None, None]:
+        while True:
+            self._logger.debug("Background generator is creating data")
+            yield self._simulator.get_subband_data()
+            self._logger.debug(f"Sleeping {polling_rate}ms")
+            time.sleep(polling_rate / 1000.0)
 
 
 class PstSmrbProcessApiGrpc(PstProcessApiGrpc, PstSmrbProcessApi):

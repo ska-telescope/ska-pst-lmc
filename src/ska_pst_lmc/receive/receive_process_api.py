@@ -18,18 +18,20 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Callable, Optional
+from typing import Any, Callable, Dict, Generator, Optional
 
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesRequest,
     ConfigureRequest,
+    MonitorResponse,
+    ReceiveMonitorData,
     ReceiveResources,
     ReceiveScanConfiguration,
     ReceiveSubbandResources,
 )
 from ska_tango_base.commands import TaskStatus
 
-from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc
+from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc, PstProcessApiSimulator
 from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_simulator import PstReceiveSimulator
 from ska_pst_lmc.util.background_task import BackgroundTask, BackgroundTaskProcessor, background_task
@@ -51,20 +53,8 @@ class PstReceiveProcessApi(PstProcessApi):
     data.
     """
 
-    @property
-    def monitor_data(self: PstReceiveProcessApi) -> ReceiveData:
-        """Get the current monitoring data.
 
-        If the process is not scanning this needs to return an default
-        :py:class:`ReceiveData` so that the client does not need to know
-        the default vaules.
-
-        :returns: current monitoring data.
-        """
-        raise NotImplementedError("PstReceiveProcessApi is abstract class")
-
-
-class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
+class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi):
     """A simulator implemenation version of the  API of `PstReceiveProcessApi`."""
 
     def __init__(
@@ -86,22 +76,6 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         self.data: Optional[ReceiveData] = None
 
         super().__init__(logger=logger, component_state_callback=component_state_callback)
-
-    def connect(self: PstReceiveProcessApiSimulator) -> None:
-        """Connect to the external process."""
-        self._communication_task = self._background_task_processor.submit_task(
-            action_fn=self._monitor_action,
-            frequency=1.0,
-        )
-
-    def disconnect(self: PstReceiveProcessApiSimulator) -> None:
-        """Disconnect from the external process."""
-        if self._communication_task is not None:
-            try:
-                self._communication_task.stop()
-                self._communication_task = None
-            except Exception as e:
-                self._logger.warning("Error while shutting down communication", e)
 
     def assign_resources(
         self: PstReceiveProcessApiSimulator, resources: dict, task_callback: Callable
@@ -205,17 +179,14 @@ class PstReceiveProcessApiSimulator(PstReceiveProcessApi):
         self._simulator.abort()
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    @property
-    def monitor_data(self: PstReceiveProcessApiSimulator) -> ReceiveData:
-        """Get the current monitoring data.
-
-        :returns: current monitoring data.
-        """
-        return self.data or ReceiveData.defaults()
-
-    def _monitor_action(self: PstReceiveProcessApiSimulator) -> None:
-        """Monitor RECV process to get the telemetry information."""
-        self.data = self._simulator.get_data()
+    def _simulated_monitor_data_generator(
+        self: PstReceiveProcessApiSimulator, polling_rate: int
+    ) -> Generator[Dict[int, Any], None, None]:
+        while True:
+            self._logger.debug("Background generator is creating data")
+            yield self._simulator.get_subband_data()
+            self._logger.debug(f"Sleeping {polling_rate}ms")
+            time.sleep(polling_rate / 1000.0)
 
 
 class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
@@ -239,4 +210,19 @@ class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
     ) -> ConfigureRequest:
         return ConfigureRequest(
             receive=ReceiveScanConfiguration(**map_configure_request(configure_parameters))
+        )
+
+    def _handle_monitor_response(
+        self: PstProcessApiGrpc, data: MonitorResponse, monitor_data_callback: Callable[..., None]
+    ) -> None:
+        receive_monitor_data: ReceiveMonitorData = data.receive
+        monitor_data_callback(
+            subband_id=1,
+            subband_data=ReceiveData(
+                received_data=receive_monitor_data.data_received,
+                received_rate=receive_monitor_data.receive_rate,
+                dropped_data=receive_monitor_data.data_dropped,
+                dropped_rate=receive_monitor_data.data_drop_rate,
+                misordered_packets=receive_monitor_data.misordered_packets,
+            ),
         )

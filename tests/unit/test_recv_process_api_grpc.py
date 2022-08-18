@@ -10,6 +10,10 @@
 from __future__ import annotations
 
 import logging
+import threading
+import time
+from random import randint, random
+from typing import Generator
 from unittest.mock import ANY, MagicMock, call
 
 import grpc
@@ -26,6 +30,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     EndScanRequest,
     EndScanResponse,
     ErrorCode,
+    MonitorResponse,
+    ReceiveMonitorData,
     ReceiveResources,
     ReceiveScanConfiguration,
     ReceiveSubbandResources,
@@ -36,6 +42,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
 )
 from ska_tango_base.commands import TaskStatus
 
+from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApi, PstReceiveProcessApiGrpc
 from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources, map_configure_request
 from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
@@ -575,3 +582,102 @@ def test_recv_grpc_end_scan_when_exception_thrown(
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()
+
+
+def test_recv_grpc_handle_monitor_response(
+    grpc_api: PstReceiveProcessApiGrpc,
+    subband_monitor_data_callback: MagicMock,
+) -> None:
+    """Test the handling of monitor data."""
+    receive_rate = random()
+    data_received = randint(1, 100)
+    data_drop_rate = random()
+    data_dropped = randint(1, 100)
+    misordered_packets = randint(1, 100)
+
+    response_message = MonitorResponse(
+        receive=ReceiveMonitorData(
+            receive_rate=receive_rate,
+            data_received=data_received,
+            data_drop_rate=data_drop_rate,
+            data_dropped=data_dropped,
+            misordered_packets=misordered_packets,
+        )
+    )
+
+    grpc_api._handle_monitor_response(response_message, subband_monitor_data_callback)
+
+    subband_monitor_data_callback.assert_called_once_with(
+        subband_id=1,
+        subband_data=ReceiveData(
+            # grab from the protobuf message given there can be rounding issues.
+            received_data=response_message.receive.data_received,
+            received_rate=response_message.receive.receive_rate,
+            dropped_data=response_message.receive.data_dropped,
+            dropped_rate=response_message.receive.data_drop_rate,
+            misordered_packets=response_message.receive.misordered_packets,
+        ),
+    )
+
+
+def test_recv_grpc_simulated_monitor_calls_callback(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    subband_monitor_data_callback: MagicMock,
+    abort_event: threading.Event,
+    logger: logging.Logger,
+) -> None:
+    """Test simulatued monitoring calls subband_monitor_data_callback."""
+    receive_rate = random()
+    data_received = randint(1, 100)
+    data_drop_rate = random()
+    data_dropped = randint(1, 100)
+    misordered_packets = randint(1, 100)
+
+    monitior_data = ReceiveMonitorData(
+        receive_rate=receive_rate,
+        data_received=data_received,
+        data_drop_rate=data_drop_rate,
+        data_dropped=data_dropped,
+        misordered_packets=misordered_packets,
+    )
+
+    def response_generator() -> Generator[MonitorResponse, None, None]:
+        while True:
+            logger.debug("Yielding monitor data")
+            yield MonitorResponse(receive=monitior_data)
+            time.sleep(0.5)
+
+    mock_servicer_context.monitor = MagicMock()
+    mock_servicer_context.monitor.return_value = response_generator()
+
+    def _abort_monitor() -> None:
+        logger.debug("Test sleeping 1s")
+        time.sleep(1)
+        logger.debug("Aborting monitoring.")
+        abort_event.set()
+
+    abort_thread = threading.Thread(target=_abort_monitor, daemon=True)
+    abort_thread.start()
+
+    grpc_api.monitor(
+        subband_monitor_data_callback=subband_monitor_data_callback,
+        polling_rate=500,
+        monitor_abort_event=abort_event,
+    )
+    abort_thread.join()
+    logger.debug("Abort thread finished.")
+
+    calls = [
+        call(
+            subband_id=1,
+            subband_data=ReceiveData(
+                received_data=monitior_data.data_received,
+                received_rate=monitior_data.receive_rate,
+                dropped_data=monitior_data.data_dropped,
+                dropped_rate=monitior_data.data_drop_rate,
+                misordered_packets=monitior_data.misordered_packets,
+            ),
+        )
+    ]
+    subband_monitor_data_callback.assert_has_calls(calls=calls)

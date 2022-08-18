@@ -53,6 +53,7 @@ def device_properties(
     """Fixture that returns device_properties to be provided to the device under test."""
     return {
         "process_api_endpoint": grpc_endpoint,
+        "monitor_polling_rate": 100,
     }
 
 
@@ -150,17 +151,12 @@ class TestPstReceive:
         )
 
         # shoud now be able to get some properties
-        # when we add polling parameter to RECV we can reduce this timeout
-        # Until we do monitoring this will be disabled.
-        # time.sleep(5.5)
-        # assert device_under_test.received_rate > 0.0
-        # assert device_under_test.received_data > 0
-        # assert device_under_test.dropped_rate > 0.0
-        # assert device_under_test.dropped_data > 0
-        # assert device_under_test.misordered_packets >= 0
-        # assert device_under_test.malformed_packets >= 0
-        # assert device_under_test.relative_weight > 0.0
-        # assert len(device_under_test.relative_weights) == 1024
+        time.sleep(0.2)
+        assert device_under_test.received_rate > 0.0
+        assert device_under_test.received_data > 0
+        assert device_under_test.dropped_rate > 0.0
+        assert device_under_test.dropped_data > 0
+        assert device_under_test.misordered_packets >= 0
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.EndScan(),

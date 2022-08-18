@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from typing import List, Optional
 
 import tango
@@ -19,6 +20,7 @@ from tango.server import attribute, command, device_property, run
 import ska_pst_lmc.release as release
 from ska_pst_lmc.component.pst_device import PstBaseDevice
 from ska_pst_lmc.receive.receive_component_manager import PstReceiveComponentManager
+from ska_pst_lmc.receive.receive_model import ReceiveData
 
 __all__ = ["PstReceive", "main"]
 
@@ -38,6 +40,10 @@ class PstReceive(PstBaseDevice):
     # the default value here is just a placeholder, this can be changed in the future.
     udp_port = device_property(dtype=int, default_value=20000, doc="The UDP port for RECV to listen on.")
 
+    monitor_polling_rate = device_property(
+        dtype=int, default_value=5000, doc="Rate at which monitor polling should happen, in milliseconds."
+    )
+
     # ---------------
     # General methods
     # ---------------
@@ -52,6 +58,10 @@ class PstReceive(PstBaseDevice):
         super().init_device()
         self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
         self._version_id = release.VERSION
+
+        for f in dataclasses.fields(ReceiveData):
+            self.set_change_event(f.name, True, True)
+            self.set_archive_event(f.name, True)
 
     def create_component_manager(
         self: PstReceive,
@@ -70,6 +80,8 @@ class PstReceive(PstBaseDevice):
             component_state_callback=self._component_state_changed,
             network_interface=self.network_interface,
             udp_port=self.udp_port,
+            monitor_polling_rate=self.monitor_polling_rate,
+            monitor_data_callback=self._update_monitor_data,
         )
 
     def always_executed_hook(self: PstReceive) -> None:
@@ -83,6 +95,11 @@ class PstReceive(PstBaseDevice):
         destructor and by the device Init command.
         """
 
+    def _update_monitor_data(self: PstReceive, data: ReceiveData) -> None:
+        for (key, value) in dataclasses.asdict(data).items():
+            self.push_change_event(key, value)
+            self.push_archive_event(key, value)
+
     # ----------
     # Attributes
     # ----------
@@ -92,7 +109,6 @@ class PstReceive(PstBaseDevice):
         unit="Gigabits per second",
         standard_unit="Gigabits per second",
         display_unit="Gb/s",
-        polling_period=5000,
         max_value=200,
         min_value=0,
         doc="Current data receive rate from the CBF interface",
@@ -110,7 +126,6 @@ class PstReceive(PstBaseDevice):
         unit="Bytes",
         standard_unit="Bytes",
         display_unit="B",
-        polling_period=5000,
         doc="Total number of bytes received from the CBF in the current scan",
     )
     def received_data(self: PstReceive) -> int:
@@ -127,7 +142,6 @@ class PstReceive(PstBaseDevice):
         unit="Megabits per second",
         standard_unit="Megabits per second",
         display_unit="MB/s",
-        polling_period=5000,
         max_value=200,
         min_value=-1,
         max_alarm=10,
@@ -150,7 +164,6 @@ class PstReceive(PstBaseDevice):
         unit="Bytes",
         standard_unit="Bytes",
         display_unit="B",
-        polling_period=5000,
         doc="Total number of bytes dropped in the current scan",
     )
     def dropped_data(self: PstReceive) -> int:
@@ -164,7 +177,6 @@ class PstReceive(PstBaseDevice):
     @attribute(
         dtype="DevULong64",
         label="Out of order packets",
-        polling_period=5000,
         doc="The total number of packets received out of order in the current scan",
     )
     def misordered_packets(self: PstReceive) -> int:
@@ -174,47 +186,6 @@ class PstReceive(PstBaseDevice):
         :rtype: int
         """
         return self.component_manager.misordered_packets
-
-    @attribute(
-        dtype="DevULong64",
-        polling_period=5000,
-        doc="Total number of malformed packets received during the current scan",
-    )
-    def malformed_packets(self: PstReceive) -> int:
-        """Get the total number of malformed packets received during the current scan.
-
-        :returns: total number of malformed packets received during the current scan.
-        :rtype: int
-        """
-        return self.component_manager.malformed_packets
-
-    @attribute(
-        dtype="DevFloat",
-        polling_period=5000,
-        doc="Time average of all relative weights for the current scan",
-    )
-    def relative_weight(self: PstReceive) -> float:
-        """Get the time averages of all relative weights for the current scan.
-
-        :returns: time average of all relative weights for the current scan.
-        :rtype: float
-        """
-        return self.component_manager.relative_weight
-
-    @attribute(
-        dtype=("DevFloat",),
-        max_dim_x=1024,
-        polling_period=5000,
-        min_value=0,
-        doc="Time average of relative weights for each channel in the current scan",
-    )
-    def relative_weights(self: PstReceive) -> List[float]:
-        """Get the time average of relative weights for each channel in the current scan.
-
-        :returns: time average of relative weights for each channel in the current scan.
-        :rtype: list(float)
-        """
-        return self.component_manager.relative_weights
 
     # --------
     # Commands

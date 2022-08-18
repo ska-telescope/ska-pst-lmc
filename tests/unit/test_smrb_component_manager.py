@@ -29,12 +29,6 @@ from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
 
 
 @pytest.fixture
-def monitor_data_callback() -> MagicMock:
-    """Create fixture for monitor data callback testing."""
-    return MagicMock()
-
-
-@pytest.fixture
 def component_manager(
     device_name: str,
     grpc_endpoint: str,

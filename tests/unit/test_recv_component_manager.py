@@ -38,6 +38,7 @@ def component_manager(
     component_state_callback: Callable,
     recv_network_interface: str,
     recv_udp_port: int,
+    monitor_data_callback: Callable,
 ) -> PstReceiveComponentManager:
     """Create instance of a component manager."""
     return PstReceiveComponentManager(
@@ -50,6 +51,7 @@ def component_manager(
         api=api,
         network_interface=recv_network_interface,
         udp_port=recv_udp_port,
+        monitor_data_callback=monitor_data_callback,
     )
 
 
@@ -124,21 +126,16 @@ def test_recv_start_communicating_calls_connect_on_api(
         ("dropped_rate"),
         ("dropped_data"),
         ("misordered_packets"),
-        ("malformed_packets"),
-        ("relative_weight"),
-        ("relative_weights"),
     ],
 )
-def test_recv_properties_come_from_api_monitor_data(
+def test_recv_properties_comes_from_monitor_data(
     component_manager: PstReceiveComponentManager,
     api: PstReceiveProcessApi,
     monitor_data: ReceiveData,
     property: str,
 ) -> None:
     """Test properties are coming from API monitor data."""
-    api = MagicMock()
-    type(api).monitor_data = monitor_data
-    component_manager._api = api
+    component_manager._monitor_data = monitor_data
 
     actual = getattr(component_manager, property)
     expected = getattr(monitor_data, property)

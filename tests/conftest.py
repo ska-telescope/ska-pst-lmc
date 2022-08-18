@@ -590,3 +590,15 @@ def recv_network_interface() -> str:
 def recv_udp_port() -> int:
     """Get UDP port for RECV to listen on."""
     return randint(20000, 30000)
+
+
+@pytest.fixture
+def subband_monitor_data_callback() -> MagicMock:
+    """Create a callback that can be used for subband data monitoring."""
+    return MagicMock()
+
+
+@pytest.fixture
+def monitor_data_callback() -> MagicMock:
+    """Create fixture for monitor data callback testing."""
+    return MagicMock()

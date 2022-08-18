@@ -45,12 +45,6 @@ def simulator() -> PstSmrbSimulator:
     return PstSmrbSimulator()
 
 
-@pytest.fixture
-def subband_monitor_data_callback() -> MagicMock:
-    """Create a callback that can be used for subband data monitoring."""
-    return MagicMock()
-
-
 def test_simulated_monitor_calls_callback(
     simulation_api: PstSmrbProcessApiSimulator,
     subband_monitor_data_callback: MagicMock,
