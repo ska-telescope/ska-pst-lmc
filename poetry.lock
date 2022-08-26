@@ -320,6 +320,19 @@ pygments = "*"
 restructuredtext-lint = "*"
 
 [[package]]
+name = "gitchangelog"
+version = "3.0.4"
+description = "gitchangelog generates a changelog thanks to git log."
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.extras]
+Mako = ["mako"]
+Mustache = ["pystache"]
+test = ["mako", "minimock", "nose", "pystache"]
+
+[[package]]
 name = "glob2"
 version = "0.7"
 description = "Version of the glob module that can capture patterns and supports recursive wildcards"
@@ -1385,7 +1398,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "b195de8a31075156066ff99f9c874329ad3d0b7610e6a851ee1106a79056c320"
+content-hash = "0c675c43b0a0fe7284c1be5ad410bf80eba785b44cce92f471743ef29af0a351"
 
 [metadata.files]
 alabaster = [
@@ -1495,6 +1508,7 @@ flake8-formatter-junit-xml = [
     {file = "flake8_formatter_junit_xml-0.0.6.tar.gz", hash = "sha256:1ddd9356bb30ba736c3f14c769c837cfacf4f79c3d383ab963ef9d38eea05a9c"},
 ]
 flake8-rst-docstrings = []
+gitchangelog = []
 glob2 = [
     {file = "glob2-0.7.tar.gz", hash = "sha256:85c3dbd07c8aa26d63d7aacee34fa86e9a91a3873bc30bf62ec46e531f92ab8c"},
 ]
