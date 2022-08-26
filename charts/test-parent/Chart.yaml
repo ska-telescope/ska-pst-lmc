@@ -13,7 +13,7 @@ dependencies:
   version: 0.3.10
   repository: https://artefact.skao.int/repository/helm-internal
 - name: ska-pst-lmc
-  version: 0.1.0
+  version: 0.2.1
   repository: file://../ska-pst-lmc
   alias: ska_pst_lmc
 - name: ska-taranta
