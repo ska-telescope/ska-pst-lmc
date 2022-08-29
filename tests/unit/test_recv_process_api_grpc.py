@@ -19,6 +19,8 @@ from unittest.mock import ANY, MagicMock, call
 import grpc
 import pytest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    AbortRequest,
+    AbortResponse,
     AssignResourcesRequest,
     AssignResourcesResponse,
     ConfigureRequest,
@@ -37,6 +39,10 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ReceiveSubbandResources,
     ReleaseResourcesRequest,
     ReleaseResourcesResponse,
+    ResetRequest,
+    ResetResponse,
+    RestartRequest,
+    RestartResponse,
     ScanRequest,
     ScanResponse,
 )
@@ -681,3 +687,135 @@ def test_recv_grpc_simulated_monitor_calls_callback(
         )
     ]
     subband_monitor_data_callback.assert_has_calls(calls=calls)
+
+
+def test_smrb_grpc_abort(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC abort."""
+    response = AbortResponse()
+    mock_servicer_context.abort = MagicMock(return_value=response)
+
+    grpc_api.abort(task_callback=task_callback)
+
+    mock_servicer_context.abort.assert_called_once_with(AbortRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(scanning=False)
+
+
+def test_smrb_grpc_abort_throws_exception(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC abort when an exception is thrown."""
+    mock_servicer_context.abort.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.INTERNAL,
+        message="We have an issue!",
+    )
+
+    grpc_api.abort(task_callback=task_callback)
+
+    mock_servicer_context.abort.assert_called_once_with(AbortRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="We have an issue!", exception=ANY),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_smrb_grpc_reset(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC reset."""
+    response = ResetResponse()
+    mock_servicer_context.reset = MagicMock(return_value=response)
+
+    grpc_api.reset(task_callback=task_callback)
+
+    mock_servicer_context.reset.assert_called_once_with(ResetRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(configured=False)
+
+
+def test_smrb_grpc_reset_when_exception_thrown(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC reset when exception is thrown."""
+    mock_servicer_context.reset.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.INTERNAL,
+        message="Resetting error!",
+    )
+
+    grpc_api.reset(task_callback=task_callback)
+
+    mock_servicer_context.reset.assert_called_once_with(ResetRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Resetting error!", exception=ANY),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()
+
+
+def test_smrb_grpc_restart(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC abort."""
+    response = RestartResponse()
+    mock_servicer_context.restart = MagicMock(return_value=response)
+
+    grpc_api.restart(task_callback=task_callback)
+
+    mock_servicer_context.restart.assert_called_once_with(RestartRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(configured=False, resourced=False)
+
+
+def test_smrb_grpc_restart_when_exception_thrown(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that SMRB gRPC reset when exception is thrown."""
+    mock_servicer_context.restart.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.INTERNAL,
+        message="Resetting error!",
+    )
+
+    grpc_api.restart(task_callback=task_callback)
+
+    mock_servicer_context.restart.assert_called_once_with(RestartRequest())
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, result="Resetting error!", exception=ANY),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_not_called()

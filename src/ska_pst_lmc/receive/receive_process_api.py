@@ -179,6 +179,30 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         self._simulator.abort()
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
+    def reset(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
+        """Reset a scan.
+
+        :param task_callback: callable to connect back to the component manager.
+        """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=47)
+        self._component_state_callback(configured=False)
+        self._simulator.reset()
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+    def restart(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
+        """Reset a scan.
+
+        :param task_callback: callable to connect back to the component manager.
+        """
+        task_callback(status=TaskStatus.IN_PROGRESS)
+        time.sleep(0.1)
+        task_callback(progress=55)
+        self._component_state_callback(configured=False, resourced=False)
+        self._simulator.restart()
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
     def _simulated_monitor_data_generator(
         self: PstReceiveProcessApiSimulator, polling_rate: int
     ) -> Generator[Dict[int, Any], None, None]:

@@ -414,10 +414,29 @@ class PstApiComponentManager(PstComponentManager):
     def abort(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
         """Abort current process.
 
-        The only long lived process for API based devices is that of SCANNING.
+        The only long lived process for API based devices is that of SCANNING. However,
+        if another system fails this can be used to put all the subsystems into an ABORTED
+        state.
         """
         self._api.abort(task_callback=task_callback)
         return TaskStatus.IN_PROGRESS, "Aborting"
+
+    def obsreset(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
+        """Reset service.
+
+        This is used to reset a service in ABORTED or FAULT states back to an IDLE state.
+        This will deconfigure a scan if already configured but will keep the assigned
+        resources.
+        """
+        return self._submit_background_task(self._api.reset, task_callback=task_callback)
+
+    def restart(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
+        """Restart service.
+
+        This is used to reset a service in ABORTED or FAULT states back to an EMPTY state.
+        This will deconfigure a scan and release all the resources the service has.
+        """
+        return self._submit_background_task(self._api.restart, task_callback=task_callback)
 
     def _submit_background_task(
         self: PstApiComponentManager, task: Callable, task_callback: Callable
