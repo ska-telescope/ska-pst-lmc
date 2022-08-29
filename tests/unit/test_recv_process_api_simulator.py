@@ -277,7 +277,7 @@ def test_recv_simulator_api_restart(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that reset simulator calls task."""
+    """Test that restart simulator calls task."""
     with unittest.mock.patch.object(simulator, "restart", wraps=simulator.restart) as restart:
         simulation_api.restart(task_callback)
         restart.assert_called_once()
