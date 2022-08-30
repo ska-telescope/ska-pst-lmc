@@ -278,7 +278,7 @@ def test_not_communicating_switching_simulation_mode_not_try_to_establish_connec
     update_communication_state.assert_not_called()
 
 
-def test_recv_assign_resources(
+def test_smrb_assign_resources(
     component_manager: PstSmrbComponentManager,
     assign_resources_request: dict,
     task_callback: Callable,
@@ -299,7 +299,7 @@ def test_recv_assign_resources(
     )
 
 
-def test_recv_release_resources(
+def test_smrb_release_resources(
     component_manager: PstSmrbComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -396,3 +396,57 @@ def test_smrb_end_scan(
     )
     assert component_manager._monitor_data == SmrbMonitorData()
     monitor_data_callback.assert_called_once_with(SmrbMonitorData())
+
+
+def test_smrb_abort(
+    component_manager: PstSmrbComponentManager,
+    task_callback: Callable,
+) -> None:
+    """Test that the component manager calls the API to abort on service."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback,
+    )
+
+    component_manager.abort(task_callback=task_callback)
+
+    api.abort.assert_called_once_with(
+        task_callback=task_callback,
+    )
+
+
+def test_smrb_obsreset(
+    component_manager: PstSmrbComponentManager,
+    task_callback: Callable,
+) -> None:
+    """Test that the component manager calls the API to reset service in ABORTED or FAULT state."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback,
+    )
+
+    component_manager.obsreset(task_callback=task_callback)
+
+    api.reset.assert_called_once_with(
+        task_callback=task_callback,
+    )
+
+
+def test_smrb_restart(
+    component_manager: PstSmrbComponentManager,
+    task_callback: Callable,
+) -> None:
+    """Test that the component manager calls the API to restart service in ABORTED or FAULT state."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback,
+    )
+
+    component_manager.restart(task_callback=task_callback)
+
+    api.restart.assert_called_once_with(
+        task_callback=task_callback,
+    )

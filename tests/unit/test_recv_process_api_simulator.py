@@ -76,7 +76,7 @@ def simulator() -> PstReceiveSimulator:
     return PstReceiveSimulator()
 
 
-def test_simulated_monitor_calls_callback(
+def test_recv_simulator_api_simulated_monitor_calls_callback(
     simulation_api: PstReceiveProcessApiSimulator,
     subband_monitor_data_callback: MagicMock,
     abort_event: threading.Event,
@@ -108,7 +108,7 @@ def test_simulated_monitor_calls_callback(
     subband_monitor_data_callback.assert_has_calls(calls=calls)
 
 
-def test_assign_resources(
+def test_recv_simulator_api_assign_resources(
     simulation_api: PstReceiveProcessApiSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
@@ -128,7 +128,7 @@ def test_assign_resources(
     component_state_callback.assert_called_with(resourced=True)
 
 
-def test_release_resources(
+def test_recv_simulator_api_release_resources(
     simulation_api: PstReceiveProcessApiSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
@@ -145,7 +145,7 @@ def test_release_resources(
     component_state_callback.assert_called_with(resourced=False)
 
 
-def test_configure(
+def test_recv_simulator_api_configure(
     simulation_api: PstReceiveProcessApiSimulator,
     simulator: PstReceiveSimulator,
     component_state_callback: MagicMock,
@@ -167,7 +167,7 @@ def test_configure(
     component_state_callback.assert_called_with(configured=True)
 
 
-def test_deconfigure(
+def test_recv_simulator_api_deconfigure(
     simulation_api: PstReceiveProcessApiSimulator,
     simulator: PstReceiveSimulator,
     component_state_callback: MagicMock,
@@ -188,7 +188,7 @@ def test_deconfigure(
     component_state_callback.assert_called_with(configured=False)
 
 
-def test_scan(
+def test_recv_simulator_api_scan(
     simulation_api: PstReceiveProcessApiSimulator,
     simulator: PstReceiveSimulator,
     component_state_callback: MagicMock,
@@ -210,7 +210,7 @@ def test_scan(
     component_state_callback.assert_called_with(scanning=True)
 
 
-def test_end_scan(
+def test_recv_simulator_api_end_scan(
     simulation_api: PstReceiveProcessApiSimulator,
     simulator: PstReceiveSimulator,
     component_state_callback: MagicMock,
@@ -231,7 +231,7 @@ def test_end_scan(
     component_state_callback.assert_called_with(scanning=False)
 
 
-def test_abort(
+def test_recv_simulator_api_abort(
     simulation_api: PstReceiveProcessApiSimulator,
     simulator: PstReceiveSimulator,
     component_state_callback: MagicMock,
@@ -249,3 +249,43 @@ def test_abort(
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(scanning=False)
+
+
+def test_recv_simulator_api_reset(
+    simulation_api: PstReceiveProcessApiSimulator,
+    simulator: PstReceiveSimulator,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that reset simulator calls task."""
+    with unittest.mock.patch.object(simulator, "reset", wraps=simulator.reset) as reset:
+        simulation_api.reset(task_callback)
+        reset.assert_called_once()
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(progress=47),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_with(configured=False)
+
+
+def test_recv_simulator_api_restart(
+    simulation_api: PstReceiveProcessApiSimulator,
+    simulator: PstReceiveSimulator,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that restart simulator calls task."""
+    with unittest.mock.patch.object(simulator, "restart", wraps=simulator.restart) as restart:
+        simulation_api.restart(task_callback)
+        restart.assert_called_once()
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(progress=55),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_with(configured=False, resourced=False)

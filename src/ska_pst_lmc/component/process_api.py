@@ -447,6 +447,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self._logger.error(f"Problem processing end_scan request for '{self._client_id}'", exc_info=True)
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
+    @background_task
     def abort(self: PstProcessApiGrpc, task_callback: Callable) -> None:
         """Abort a scan.
 

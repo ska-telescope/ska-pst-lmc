@@ -259,6 +259,60 @@ def test_recv_end_scan(
     )
 
 
+def test_recv_abort(
+    component_manager: PstReceiveComponentManager,
+    task_callback: Callable,
+) -> None:
+    """Test that the component manager calls the API to abort processes."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback,
+    )
+
+    component_manager.abort(task_callback=task_callback)
+
+    api.abort.assert_called_once_with(
+        task_callback=task_callback,
+    )
+
+
+def test_recv_obsreset(
+    component_manager: PstReceiveComponentManager,
+    task_callback: Callable,
+) -> None:
+    """Test that the component manager calls the API reset service in ABORTED or FAULT state."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback,
+    )
+
+    component_manager.obsreset(task_callback=task_callback)
+
+    api.reset.assert_called_once_with(
+        task_callback=task_callback,
+    )
+
+
+def test_recv_restart(
+    component_manager: PstReceiveComponentManager,
+    task_callback: Callable,
+) -> None:
+    """Test that the component manager calls the API restart service in ABORTED or FAULT states."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback,
+    )
+
+    component_manager.restart(task_callback=task_callback)
+
+    api.restart.assert_called_once_with(
+        task_callback=task_callback,
+    )
+
+
 def test_api_instance_changes_depending_on_simulation_mode(
     component_manager: PstReceiveComponentManager,
 ) -> None:
