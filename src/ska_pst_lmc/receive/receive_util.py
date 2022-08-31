@@ -161,9 +161,9 @@ def calculate_receive_subband_resources(
                 "nchan": nchan,
                 "frequency": request_params["centre_frequency"] / MEGA_HERTZ,
                 "start_channel": 0,
-                "end_channel": nchan - 1,
+                "end_channel": nchan,  # using exclusive range
                 "start_channel_out": 0,
-                "end_channel_out": nchan - 1,
+                "end_channel_out": nchan,  # using exclusive range
                 "nchan_out": nchan,
                 "bandwidth_out": bandwidth / MEGA_HERTZ,
                 "frequency_out": request_params["centre_frequency"] / MEGA_HERTZ,
