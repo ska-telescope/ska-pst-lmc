@@ -51,20 +51,20 @@ resources:
 ska_pst_lmc:
   enabled: true
   image:
-    registry: artefact.skao.int
+    registry: registry.gitlab.com/ska-telescope/pst/ska-pst-lmc
     image: ska-pst-lmc
     tag: 0.2.1
     pullPolicy: IfNotPresent
   simulationMode: 1
+  monitor_polling_rate: 5000
+  smrb_process_api_endpoint: ska-pst-smrb:8080 # these should come from pod name and port configs
+  recv_process_api_endpoint: ska-pst-recv:8080 # these should come from pod name and port configs
 
 # Default ska-pst-lmc device server instances
 deviceServers:
   # controller has only one instance
-  simple:
-    instances: ["simple-01"]
-    file: "data/simple.yaml"
-  beam:
-    instances: ["beam-01"]
+  low-pst-beam:
+    instances: ["0001"]
     file: "data/beam.yaml"
 
 livenessProbe:

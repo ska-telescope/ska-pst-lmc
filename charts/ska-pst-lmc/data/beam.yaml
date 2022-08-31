@@ -1,7 +1,7 @@
-name: "simple-{{.Release.Name}}"
+name: "beam-{{.Release.Name}}"
 function: ska-pst-lmc-test
 domain: ska-pst-lmc
-instances: ["beam-01"]
+instances: ["0001"]
 entrypoints:
   - name: "receive_device.PstReceive"
     path: "/app/src/ska_pst_lmc/receive/receive_device.py"
@@ -10,13 +10,20 @@ entrypoints:
   - name: "beam.PstBeam"
     path: "/app/src/ska_pst_lmc/beam/beam_device.py"
 server:
-  name: "beam"
+  name: "low-pst-beam"
   instances:
-    - name: "beam-01"
+    - name: "0001"
       classes:
       - name: "PstReceive"
         devices:
-        - name: "test/receive/1"
+        - name: "low_pst/recv/0001"
+          properties:
+          - name: "process_api_endpoint"
+            values:
+            - "{{.Release.Name}}-{{.Values.ska_pst_lmc.recv_process_api_endpoint}}"
+          - name: "monitoring_polling_rate"
+            values:
+            - "{{.Values.ska_pst_lmc.monitor_polling_rate}}"
           attribute_properties:
           - attribute: "simulationMode"
             properties:
@@ -25,11 +32,14 @@ server:
               - "{{.Values.ska_pst_lmc.simulationMode}}"
       - name: "PstSmrb"
         devices:
-        - name: "test/smrb/1"
+        - name: "low_pst/smrb/0001"
           properties:
           - name: "process_api_endpoint"
             values:
-            - "test-ska-pst-smrb:8080"
+            - "{{.Release.Name}}-{{.Values.ska_pst_lmc.smrb_process_api_endpoint}}"
+          - name: "monitoring_polling_rate"
+            values:
+            - "{{.Values.ska_pst_lmc.monitor_polling_rate}}"
           attribute_properties:
           - attribute: "simulationMode"
             properties:
@@ -38,23 +48,23 @@ server:
               - "{{.Values.ska_pst_lmc.simulationMode}}"
       - name: "PstBeam"
         devices:
-        - name: "test/beam/1"
+        - name: "low_pst/beam/0001"
           properties:
           - name: "beam_id"
             values:
             - "1"
           - name: "RecvFQDN"
             values:
-            - "test/receive/1"
+            - "low_pst/recv/0001"
           - name: "SmrbFQDN"
             values:
-            - "test/smrb/1"
+            - "low_pst/smrb/0001"
           - name: "DspFQDN"
             values:
-            - "test/dsp/1"
+            - "low_pst/dsp/0001"
           - name: "SendFQDN"
             values:
-            - "test/send/1"
+            - "low_pst/send/0001"
           attribute_properties:
           - attribute: "simulationMode"
             properties:
