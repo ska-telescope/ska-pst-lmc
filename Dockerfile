@@ -9,8 +9,9 @@ FROM $BUILD_IMAGE AS buildenv
 WORKDIR /app
 
 COPY --from=proto /app/protobuf/ska/pst/lmc/ska_pst_lmc.proto /app/protobuf/ska_pst_lmc_proto/ska_pst_lmc.proto
-RUN apk add --no-cache protobuf-dev grpc-dev && \
-  mkdir -p /app/generated
+RUN apk add --no-cache protobuf-dev grpc-dev curl python3 && \
+  mkdir -p /app/generated && \
+  curl -sSL https://install.python-poetry.org | python3 -
 
 COPY pyproject.toml poetry.lock* /app/
 
@@ -35,8 +36,6 @@ USER root
 
 # Tar is needed for how the k8s-test runs
 RUN apk --update add --no-cache tar protobuf grpc
-
-RUN poetry config virtualenvs.create false
 
 WORKDIR /app
 

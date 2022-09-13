@@ -2,7 +2,7 @@ variables:
   # Needed if you want automatic submodule checkout
   # For details see https://docs.gitlab.com/ee/ci/yaml/README.html#git-submodule-strategy
   GIT_SUBMODULE_STRATEGY: recursive
-  SKA_PST_PYTHON_BUILDER_IMAGE: artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.30
+  SKA_PST_PYTHON_BUILDER_IMAGE: artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.33
   SKA_PST_COMMON_PROTOBUF_IMAGE: artefact.skao.int/ska-pst-common-proto:0.1.0
   OCI_IMAGE_BUILD_CONTEXT: $(PWD)
   K8S_TEST_CLUSTER_TAG: k8srunner # k8srunner-psi-low
@@ -90,6 +90,7 @@ python-generate-code:
     - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile; exit 1")'
     - 'make help | grep python-build'
     - 'echo "python-generate-code: updating pip3"; time pip3 install --upgrade pip'
+    - pip3 install poetry
     - poetry config virtualenvs.create false
   script:
     - make PROTOBUF_DIR="$(pwd)/build/protobuf" GENERATED_PATH="$(pwd)/generated" python-generate-code
@@ -195,6 +196,7 @@ python-test:
     - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile; exit 1")'
     - 'make help | grep python-test'
     - 'echo "python-test: updating pip3"; time pip3 install --upgrade pip'
+    - pip3 install poetry
     - poetry config virtualenvs.create false
     - poetry export --format requirements.txt --output requirements.txt --without-hashes --dev
     - time pip3 install -r requirements.txt
