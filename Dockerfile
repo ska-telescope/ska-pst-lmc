@@ -35,7 +35,8 @@ FROM $BASE_IMAGE
 USER root
 
 # Tar is needed for how the k8s-test runs
-RUN apk --update add --no-cache tar protobuf grpc
+RUN apk -U upgrade \
+  && apk --update add --no-cache tar protobuf grpc
 
 WORKDIR /app
 
