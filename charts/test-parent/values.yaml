@@ -36,7 +36,9 @@ ska-tango-base:
         successThreshold: 1
         failureThreshold: 3
 
-ska_pst_lmc:
+ska-pst-lmc:
+  image:
+    registry: registry.gitlab.com/ska-telescope/pst/ska-pst-lmc
   deviceServers:
     low-pst-beam:
       instances: ["0001"]
@@ -72,9 +74,6 @@ ska-taranta-auth:
 ska-pst-smrb:
   enabled: true
   hostIPC: true
-  image:
-    repository: registry.gitlab.com/ska-telescope/pst/ska-pst-smrb/ska-pst-smrb
-    tag: 0.0.0
   tolerations: []
   config:
     smrb:
@@ -86,9 +85,6 @@ ska-pst-recv:
   hostIPC: true
   service:
     protocol: TCP
-  image:
-    repository: registry.gitlab.com/ska-telescope/pst/ska-pst-recv/ska-pst-recv
-    tag: 0.3.0
   tolerations: []
   envFrom:
     - type: "configMapRef"

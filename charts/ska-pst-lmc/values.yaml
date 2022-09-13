@@ -6,6 +6,11 @@ display: ":0"
 xauthority: "~/.Xauthority"
 
 enabled: true
+image:
+  registry: artefact.skao.int
+  image: ska-pst-lmc
+  tag: 0.2.1
+  pullPolicy: IfNotPresent
 
 system: SW-infrastructure
 subsystem: ska-pst-lmc
@@ -23,6 +28,19 @@ global:
   retry:
   - "--tries=10"
   - "--sleep=5"
+
+beam:
+  simulationMode: 1
+
+smrb:
+  simulationMode: 1
+  monitor_polling_rate: 5000
+  smrb_process_api_endpoint: ska-pst-smrb:8080 # these should come from pod name and port configs
+
+recv:
+  simulationMode: 1
+  monitor_polling_rate: 5000
+  recv_process_api_endpoint: ska-pst-recv:8080 # these should come from pod name and port configs
 
 dsconfig:
   image:
@@ -45,20 +63,6 @@ resources:
   requests:
     cpu: 50m
     memory: 50Mi
-
-
-# Default docker image - used by all of PST.LMC
-ska_pst_lmc:
-  enabled: true
-  image:
-    registry: registry.gitlab.com/ska-telescope/pst/ska-pst-lmc
-    image: ska-pst-lmc
-    tag: 0.2.1
-    pullPolicy: IfNotPresent
-  simulationMode: 1
-  monitor_polling_rate: 5000
-  smrb_process_api_endpoint: ska-pst-smrb:8080 # these should come from pod name and port configs
-  recv_process_api_endpoint: ska-pst-recv:8080 # these should come from pod name and port configs
 
 # Default ska-pst-lmc device server instances
 deviceServers:

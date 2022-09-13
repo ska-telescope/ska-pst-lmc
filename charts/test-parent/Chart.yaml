@@ -15,7 +15,6 @@ dependencies:
 - name: ska-pst-lmc
   version: 0.2.1
   repository: file://../ska-pst-lmc
-  alias: ska_pst_lmc
 - name: ska-taranta
   version: 1.0.29
   repository: https://artefact.skao.int/repository/helm-internal
@@ -29,10 +28,10 @@ dependencies:
   repository: https://artefact.skao.int/repository/helm-internal
   condition: ska-dashboard-repo.enabled
 - name: ska-pst-smrb
-  version: 0.1.0-dev.c26420038
-  repository: https://gitlab.com/api/v4/projects/37036101/packages/helm/dev
+  version: 0.1.1
+  repository: https://artefact.skao.int/repository/helm-internal
   condition: ska-pst-smrb.enabled
 - name: ska-pst-recv
-  version: 0.3.0-dev.c94961e5a
-  repository: https://gitlab.com/api/v4/projects/34500358/packages/helm/dev
+  version: 0.4.0
+  repository: https://artefact.skao.int/repository/helm-internal
   condition: ska-pst-recv.enabled
