@@ -41,7 +41,7 @@ ska-pst-lmc:
     registry: registry.gitlab.com/ska-telescope/pst/ska-pst-lmc
   deviceServers:
     low-pst-beam:
-      instances: ["0001"]
+      instances: ["01"]
       polling: 600
 
 ska-dashboard-repo:
@@ -95,6 +95,6 @@ ska-pst-recv:
     command: ["bash"]
     args:
     - -c
-    - $(RECV_CMD) -v -c 8080
+    - $(RECV_CMD) -vvv -c 8080
     tty: true
     config: {}

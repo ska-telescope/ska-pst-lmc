@@ -36,9 +36,9 @@ class TestPstBeam:
         logger: logging.Logger,
     ) -> None:
         """Test state model of PstReceive."""
-        recv_proxy = DeviceProxyFactory.get_device("low_pst/recv/0001")
-        smrb_proxy = DeviceProxyFactory.get_device("low_pst/smrb/0001")
-        beam_proxy = DeviceProxyFactory.get_device("low_pst/beam/0001")
+        recv_proxy = DeviceProxyFactory.get_device("low-pst/recv/01")
+        smrb_proxy = DeviceProxyFactory.get_device("low-pst/smrb/01")
+        beam_proxy = DeviceProxyFactory.get_device("low-pst/beam/01")
 
         tango_change_event_helper = TangoChangeEventHelper(
             device_under_test=beam_proxy.device,

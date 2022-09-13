@@ -1,7 +1,7 @@
 name: "beam-{{.Release.Name}}"
 function: ska-pst-lmc-test
 domain: ska-pst-lmc
-instances: ["0001"]
+instances: ["01"]
 entrypoints:
   - name: "receive_device.PstReceive"
     path: "/app/src/ska_pst_lmc/receive/receive_device.py"
@@ -12,11 +12,11 @@ entrypoints:
 server:
   name: "low-pst-beam"
   instances:
-    - name: "0001"
+    - name: "01"
       classes:
       - name: "PstReceive"
         devices:
-        - name: "low_pst/recv/0001"
+        - name: "low-pst/recv/01"
           properties:
           - name: "process_api_endpoint"
             values:
@@ -32,7 +32,7 @@ server:
               - "{{.Values.recv.simulationMode}}"
       - name: "PstSmrb"
         devices:
-        - name: "low_pst/smrb/0001"
+        - name: "low-pst/smrb/01"
           properties:
           - name: "process_api_endpoint"
             values:
@@ -48,23 +48,23 @@ server:
               - "{{.Values.smrb.simulationMode}}"
       - name: "PstBeam"
         devices:
-        - name: "low_pst/beam/0001"
+        - name: "low-pst/beam/01"
           properties:
           - name: "beam_id"
             values:
             - "1"
           - name: "RecvFQDN"
             values:
-            - "low_pst/recv/0001"
+            - "low-pst/recv/01"
           - name: "SmrbFQDN"
             values:
-            - "low_pst/smrb/0001"
+            - "low-pst/smrb/01"
           - name: "DspFQDN"
             values:
-            - "low_pst/dsp/0001"
+            - "low-pst/dsp/01"
           - name: "SendFQDN"
             values:
-            - "low_pst/send/0001"
+            - "low-pst/send/01"
           attribute_properties:
           - attribute: "simulationMode"
             properties:

@@ -68,7 +68,7 @@ resources:
 deviceServers:
   # controller has only one instance
   low-pst-beam:
-    instances: ["0001"]
+    instances: ["01"]
     file: "data/beam.yaml"
 
 livenessProbe:
