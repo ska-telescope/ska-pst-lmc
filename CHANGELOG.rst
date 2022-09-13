@@ -7,6 +7,19 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.2.1 (2022-08-26)
 ------------------
+- AT3-262 ensure updating alpine packages as part of build [Will Gauvin]
+- AT3-262 ensure poetry is available in builder [Will Gauvin]
+- AT3-262 update base pytango images [Will Gauvin]
+- AT3-262 rename tango devices to match ADR-9 [Will Gauvin]
+- AT3-262 update deployment using released ska-pst-recv [Will Gauvin]
+- AT3-262 update helm configuration for test-parent to use recv and smrb [Will Gauvin]
+- AT3-262 update test request fixtures [Will Gauvin]
+- AT3-262 use exclusive range for start/end channels [Will Gauvin]
+- AT3-241 ensure RECV can handle abort/reset/restart commands [Will Gauvin]
+
+
+0.2.1 (2022-08-26)
+------------------
 - REL-217 update CHANGELOG.rst [Will Gauvin]
 - REL-217 bump patch version to 0.2.1. [Will Gauvin]
 
