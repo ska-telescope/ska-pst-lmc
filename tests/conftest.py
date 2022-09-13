@@ -38,23 +38,23 @@ def assign_resources_request() -> dict:
     """Return a valid assign resources object."""
     return {
         # CSP JSON fields / PST fields
-        "num_frequency_channels": 6475,  # nchan
+        "num_frequency_channels": 768,  # nchan
         "num_of_polarizations": 2,  # npol
         "bits_per_sample": 32,  # this is NDIM * NBITS -> ndim == 2
         "udp_nsamp": 32,  # udp_nsamp
         "wt_nsamp": 32,  # wt_nsamp
-        "udp_nchan": 4,  # udp_nchan
-        "centre_frequency": 100000000.0,  # frequency
-        "total_bandwidth": 348096000,  # bandwidth
+        "udp_nchan": 24,  # udp_nchan
+        "centre_frequency": 1000000000.0,  # frequency
+        "total_bandwidth": 800000000,  # bandwidth
         "timing_beam_id": "beam1",  # frontend
         "feed_polarization": "CIRC",  # fd_poln
         "feed_handedness": 1,  # fn_hand
-        "feed_angle": 1.234,  # fn_sang
+        "feed_angle": 10.0,  # fn_sang
         "feed_tracking_mode": "FA",  # fd_mode
-        "feed_position_angle": 10.0,  # fa_req
-        "receptors": ["receptor1", "receptor2"],  # antennnas / also nant is the length of this
-        "receptor_weights": [0.4, 0.6],  # ant_weights
-        "oversampling_ratio": [8, 7],  # ovrsamp
+        "feed_position_angle": 0.0,  # fa_req
+        "receptors": ["receptor1"],  # antennnas / also nant is the length of this
+        "receptor_weights": [1],  # ant_weights
+        "oversampling_ratio": [4, 3],  # ovrsamp
     }
 
 
@@ -68,14 +68,14 @@ def configure_scan_request() -> dict:
         "timing_beam_id": "beam1",
         "capability": "capability1",
         "scan_id": 1,
-        "bits_per_sample": 24,
+        "bits_per_sample": 32,
         "num_of_polarizations": 2,
         "udp_nsamp": 32,
         "wt_nsamp": 32,
         "udp_nchan": 24,
-        "num_frequency_channels": 2,
-        "centre_frequency": 100000000.0,
-        "total_bandwidth": 361689.8148,
+        "num_frequency_channels": 768,
+        "centre_frequency": 1000000000.0,
+        "total_bandwidth": 800000000,
         "observation_mode": "PULSAR_TIMING",
         "observer_id": "jdoe",
         "project_id": "project1",
@@ -84,17 +84,17 @@ def configure_scan_request() -> dict:
         "source": "J1921+2153",
         "itrf": [5109360.133, 2006852.586, -3238948.127],
         "receiver_id": "receiver3",
-        "feed_polarization": "CIRC",
-        "feed_handedness": 1,
-        "feed_angle": 1.234,
-        "feed_tracking_mode": "FA",
-        "feed_position_angle": 10.0,
-        "oversampling_ratio": [8, 7],
+        "feed_polarization": "CIRC",  # fd_poln
+        "feed_handedness": 1,  # fn_hand
+        "feed_angle": 10.0,  # fn_sang
+        "feed_tracking_mode": "FA",  # fd_mode
+        "feed_position_angle": 0.0,  # fa_req
+        "oversampling_ratio": [4, 3],
         "coordinates": {"ra": "19:21:44.815", "dec": "21.884"},
         "max_scan_length": 10000.5,
         "subint_duration": 30.0,
-        "receptors": ["receptor1", "receptor2"],
-        "receptor_weights": [0.4, 0.6],
+        "receptors": ["receptor1"],
+        "receptor_weights": [1],
         "num_rfi_frequency_masks": 1,
         "rfi_frequency_masks": [[1.0, 1.1]],
         "destination_address": ["192.168.178.26", 9021],

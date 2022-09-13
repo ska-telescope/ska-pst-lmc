@@ -6,6 +6,7 @@ PrivateRules.mak
 src/ska_pst_lmc_proto/
 generated/*
 protobuf/*
+charts/**/charts/
 
 ### Python ###
 # Byte-compiled / optimized / DLL files

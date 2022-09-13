@@ -1,5 +1,5 @@
-ARG BUILD_IMAGE="artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.30"
-ARG BASE_IMAGE="artefact.skao.int/ska-tango-images-pytango-runtime-alpine:9.3.18"
+ARG BUILD_IMAGE="artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.33"
+ARG BASE_IMAGE="artefact.skao.int/ska-tango-images-pytango-runtime-alpine:9.3.20"
 ARG PROTOBUF_IMAGE="artefact.skao.int/ska-pst-common-proto:0.2.0"
 
 FROM $PROTOBUF_IMAGE as proto
@@ -9,8 +9,9 @@ FROM $BUILD_IMAGE AS buildenv
 WORKDIR /app
 
 COPY --from=proto /app/protobuf/ska/pst/lmc/ska_pst_lmc.proto /app/protobuf/ska_pst_lmc_proto/ska_pst_lmc.proto
-RUN apk add --no-cache protobuf-dev grpc-dev && \
-  mkdir -p /app/generated
+RUN apk add --no-cache protobuf-dev grpc-dev curl python3 && \
+  mkdir -p /app/generated && \
+  curl -sSL https://install.python-poetry.org | python3 -
 
 COPY pyproject.toml poetry.lock* /app/
 
@@ -34,9 +35,8 @@ FROM $BASE_IMAGE
 USER root
 
 # Tar is needed for how the k8s-test runs
-RUN apk --update add --no-cache tar protobuf grpc
-
-RUN poetry config virtualenvs.create false
+RUN apk -U upgrade \
+  && apk --update add --no-cache tar protobuf grpc
 
 WORKDIR /app
 

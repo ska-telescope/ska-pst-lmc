@@ -1,7 +1,7 @@
-name: "simple-{{.Release.Name}}"
+name: "beam-{{.Release.Name}}"
 function: ska-pst-lmc-test
 domain: ska-pst-lmc
-instances: ["beam-01"]
+instances: ["01"]
 entrypoints:
   - name: "receive_device.PstReceive"
     path: "/app/src/ska_pst_lmc/receive/receive_device.py"
@@ -10,64 +10,74 @@ entrypoints:
   - name: "beam.PstBeam"
     path: "/app/src/ska_pst_lmc/beam/beam_device.py"
 server:
-  name: "beam"
+  name: "low-pst-beam"
   instances:
-    - name: "beam-01"
+    - name: "01"
       classes:
       - name: "PstReceive"
         devices:
-        - name: "test/receive/1"
-          attribute_properties:
-          - attribute: "simulationMode"
-            properties:
-            - name: "__value"
-              values:
-              - "{{.Values.ska_pst_lmc.simulationMode}}"
-      - name: "PstSmrb"
-        devices:
-        - name: "test/smrb/1"
+        - name: "low-pst/recv/01"
           properties:
           - name: "process_api_endpoint"
             values:
-            - "test-ska-pst-smrb:8080"
+            - "{{.Release.Name}}-{{.Values.recv.recv_process_api_endpoint}}"
+          - name: "monitoring_polling_rate"
+            values:
+            - "{{.Values.recv.monitor_polling_rate}}"
           attribute_properties:
           - attribute: "simulationMode"
             properties:
             - name: "__value"
               values:
-              - "{{.Values.ska_pst_lmc.simulationMode}}"
+              - "{{.Values.recv.simulationMode}}"
+      - name: "PstSmrb"
+        devices:
+        - name: "low-pst/smrb/01"
+          properties:
+          - name: "process_api_endpoint"
+            values:
+            - "{{.Release.Name}}-{{.Values.smrb.smrb_process_api_endpoint}}"
+          - name: "monitoring_polling_rate"
+            values:
+            - "{{.Values.smrb.monitor_polling_rate}}"
+          attribute_properties:
+          - attribute: "simulationMode"
+            properties:
+            - name: "__value"
+              values:
+              - "{{.Values.smrb.simulationMode}}"
       - name: "PstBeam"
         devices:
-        - name: "test/beam/1"
+        - name: "low-pst/beam/01"
           properties:
           - name: "beam_id"
             values:
             - "1"
           - name: "RecvFQDN"
             values:
-            - "test/receive/1"
+            - "low-pst/recv/01"
           - name: "SmrbFQDN"
             values:
-            - "test/smrb/1"
+            - "low-pst/smrb/01"
           - name: "DspFQDN"
             values:
-            - "test/dsp/1"
+            - "low-pst/dsp/01"
           - name: "SendFQDN"
             values:
-            - "test/send/1"
+            - "low-pst/send/01"
           attribute_properties:
           - attribute: "simulationMode"
             properties:
             - name: "__value"
               values:
-              - "{{.Values.ska_pst_lmc.simulationMode}}"
+              - "{{.Values.beam.simulationMode}}"
 depends_on:
   - device: sys/database/2
 image:
-  registry: "{{.Values.ska_pst_lmc.image.registry}}"
-  image: "{{.Values.ska_pst_lmc.image.image}}"
-  tag: "{{.Values.ska_pst_lmc.image.tag}}"
-  pullPolicy: "{{.Values.ska_pst_lmc.image.pullPolicy}}"
+  registry: "{{.Values.image.registry}}"
+  image: "{{.Values.image.image}}"
+  tag: "{{.Values.image.tag}}"
+  pullPolicy: "{{.Values.image.pullPolicy}}"
 livenessProbe:
 {{ toYaml .Values.livenessProbe | indent 2 }}
 readinessProbe:

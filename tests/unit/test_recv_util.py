@@ -63,21 +63,19 @@ def test_calculate_receive_subband_resources(
     assert actual_subband_1["weights_key"] == generate_weights_key(beam_id=beam_id, subband_id=1)
     assert actual_subband_1["bandwidth"] == actual_common["bandwidth"]
     assert actual_subband_1["nchan"] == actual_common["nchan"]
-    assert (
-        actual_subband_1["nchan"] == actual_subband_1["end_channel"] - actual_subband_1["start_channel"] + 1
-    )
+    assert actual_subband_1["nchan"] == actual_subband_1["end_channel"] - actual_subband_1["start_channel"]
     assert actual_subband_1["frequency"] == actual_common["frequency"]
     assert actual_subband_1["start_channel"] == 0
-    assert actual_subband_1["end_channel"] == assign_resources_request["num_frequency_channels"] - 1
+    assert actual_subband_1["end_channel"] == assign_resources_request["num_frequency_channels"]
     assert actual_subband_1["bandwidth_out"] == actual_common["bandwidth"]
     assert actual_subband_1["nchan_out"] == actual_common["nchan"]
     assert (
         actual_subband_1["nchan_out"]
-        == actual_subband_1["end_channel_out"] - actual_subband_1["start_channel_out"] + 1
+        == actual_subband_1["end_channel_out"] - actual_subband_1["start_channel_out"]
     )
     assert actual_subband_1["frequency_out"] == actual_common["frequency"]
     assert actual_subband_1["start_channel_out"] == 0
-    assert actual_subband_1["end_channel_out"] == assign_resources_request["num_frequency_channels"] - 1
+    assert actual_subband_1["end_channel_out"] == assign_resources_request["num_frequency_channels"]
 
 
 @pytest.mark.parametrize(
