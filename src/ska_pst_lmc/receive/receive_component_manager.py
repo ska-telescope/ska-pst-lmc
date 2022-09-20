@@ -38,7 +38,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
         logger: logging.Logger,
         monitor_data_callback: Callable[[ReceiveData], None],
         communication_state_callback: Callable[[CommunicationStatus], None],
-        component_state_callback: Callable[[bool, PowerState], None],
+        component_state_callback: Callable[..., None],
         network_interface: str,
         udp_port: int,
         api: Optional[PstReceiveProcessApi] = None,

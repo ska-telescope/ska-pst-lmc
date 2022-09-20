@@ -182,7 +182,7 @@ def test_smrb_grpc_assign_resources_when_throws_exception(
         call(status=TaskStatus.FAILED, result="Internal server error occurred", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_not_called()
+    component_state_callback.assert_called_once_with(obsfault=True)
 
 
 def test_smrb_grpc_release_resources(
@@ -754,6 +754,7 @@ def test_smrb_grpc_simulated_monitor_calls_callback(
 def test_smrb_grpc_go_to_fault(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
+    component_state_callback: MagicMock,
 ) -> None:
     """Test that SMRB gRPC go_to_fault."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
@@ -761,3 +762,4 @@ def test_smrb_grpc_go_to_fault(
     grpc_api.go_to_fault()
 
     mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
+    component_state_callback.assert_called_once_with(obsfault=True)

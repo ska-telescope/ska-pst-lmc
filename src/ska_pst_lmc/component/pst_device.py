@@ -9,6 +9,8 @@
 
 from __future__ import annotations
 
+from typing import Any, Optional
+
 import tango
 from ska_tango_base import SKASubarray
 from ska_tango_base.control_model import ObsState, SimulationMode
@@ -43,6 +45,26 @@ class PstBaseDevice(SKASubarray):
         init_device method to be released.  This method is called by the device
         destructor and by the device Init command.
         """
+
+    def _component_state_changed(
+        self: PstBaseDevice,
+        obsfault: Optional[bool] = None,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Handle change in this device's state.
+
+        This overrides the `ska_tango_base.SKASubarray` method to allow
+        for handling of when the device goes into a fault state.
+
+        :param obsfault: whether there is a fault. If set to true this
+            will put the system into a FAULT state.
+        """
+        super()._component_state_changed(**kwargs)
+
+        if obsfault is not None:
+            if obsfault:
+                self.obs_state_model.perform_action("component_obsfault")
 
     # ----------
     # Attributes

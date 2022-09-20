@@ -210,6 +210,8 @@ class PstProcessApiSimulator(PstProcessApi):
         if self._monitor_abort_event is not None:
             self._monitor_abort_event.set()
 
+        self._component_state_callback(obsfault=True)
+
     @background_task
     def monitor(
         self: PstProcessApiSimulator,
@@ -527,6 +529,7 @@ class PstProcessApiGrpc(PstProcessApi):
         the status of the LMC component.
         """
         try:
+            self._component_state_callback(obsfault=True)
             self._grpc_client.go_to_fault()
         except BaseGrpcException:
             self._logger.warn(

@@ -40,7 +40,7 @@ class PstSmrbComponentManager(PstApiComponentManager):
         logger: logging.Logger,
         monitor_data_callback: Callable[[SmrbMonitorData], None],
         communication_state_callback: Callable[[CommunicationStatus], None],
-        component_state_callback: Callable[[bool, PowerState], None],
+        component_state_callback: Callable[..., None],
         api: Optional[PstSmrbProcessApi] = None,
         monitor_polling_rate: int = 5000,
         *args: Any,

@@ -218,3 +218,38 @@ def test_abort(
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(scanning=False)
+
+
+def test_recv_simulator_api_go_to_fault(
+    simulation_api: PstSmrbProcessApiSimulator,
+    component_state_callback: MagicMock,
+) -> None:
+    """Test that go_to_fault for simulator."""
+    simulation_api.go_to_fault()
+    component_state_callback.assert_called_once_with(obsfault=True)
+
+
+def test_recv_simulator_api_go_to_fault_if_scanning(
+    simulation_api: PstSmrbProcessApiSimulator,
+    component_state_callback: MagicMock,
+) -> None:
+    """Test that go_to_fault for simulator."""
+    simulation_api._scanning = True
+
+    simulation_api.go_to_fault()
+    component_state_callback.assert_called_once_with(obsfault=True)
+
+    assert not simulation_api._scanning, "Expected scanning to stop"
+
+
+def test_recv_simulator_api_go_to_fault_if_monitoring_event_is_not_set(
+    simulation_api: PstSmrbProcessApiSimulator,
+    component_state_callback: MagicMock,
+) -> None:
+    """Test that go_to_fault for simulator."""
+    simulation_api._monitor_abort_event = threading.Event()
+
+    simulation_api.go_to_fault()
+    component_state_callback.assert_called_once_with(obsfault=True)
+
+    assert simulation_api._monitor_abort_event.is_set(), "Expected the monitoring event to be set"
