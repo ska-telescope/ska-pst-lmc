@@ -371,6 +371,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self._logger.error(
                 f"Problem processing release_resources request for '{self._client_id}'", exc_info=True
             )
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def configure(self: PstProcessApiGrpc, configuration: dict, task_callback: Callable) -> None:
@@ -398,6 +399,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self._logger.error(
                 f"Problem processing 'configure' request for '{self._client_id}'", exc_info=True
             )
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def deconfigure(self: PstProcessApiGrpc, task_callback: Callable) -> None:
@@ -423,6 +425,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self._logger.error(
                 f"Problem processing 'deconfigure' request for '{self._client_id}'", exc_info=True
             )
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def scan(
@@ -448,6 +451,7 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error(f"Problem processing scan request for '{self._client_id}'", exc_info=True)
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def end_scan(self: PstProcessApiGrpc, task_callback: Callable) -> None:
@@ -471,6 +475,7 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error(f"Problem processing end_scan request for '{self._client_id}'", exc_info=True)
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     @background_task
@@ -489,6 +494,7 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error(f"Problem in aborting request for '{self._client_id}'", exc_info=True)
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def reset(self: PstProcessApiGrpc, task_callback: Callable) -> None:
@@ -503,6 +509,7 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error(f"Error raised while resetting '{self._client_id}'", exc_info=True)
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def restart(self: PstProcessApiGrpc, task_callback: Callable) -> None:
@@ -520,6 +527,7 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error(f"Error raised while restarting '{self._client_id}'", exc_info=True)
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def go_to_fault(self: PstProcessApiGrpc) -> None:

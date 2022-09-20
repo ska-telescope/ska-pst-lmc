@@ -167,6 +167,21 @@ class TestPstReceive:
         )
 
         tango_device_command_checker.assert_command(
+            lambda: device_under_test.End(),
+            expected_obs_state_events=[
+                ObsState.IDLE,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.ReleaseAllResources(),
+            expected_obs_state_events=[
+                ObsState.RESOURCING,
+                ObsState.EMPTY,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
             lambda: device_under_test.Off(),
         )
         assert device_under_test.state() == DevState.OFF
@@ -273,6 +288,11 @@ class TestPstReceive:
             ],
         )
 
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Off(),
+        )
+        assert device_under_test.state() == DevState.OFF
+
     def test_simulation_mode(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
@@ -347,3 +367,167 @@ class TestPstReceive:
         device_under_test.simulationMode = SimulationMode.FALSE
         time.sleep(0.1)
         assert device_under_test.simulationMode == SimulationMode.FALSE
+
+    @pytest.mark.forked
+    def test_recv_go_to_fault_when_resources_assigned(
+        self: TestPstReceive,
+        device_under_test: DeviceProxy,
+        assign_resources_request: dict,
+        configure_scan_request: dict,
+        scan_request: dict,
+        tango_device_command_checker: TangoDeviceCommandChecker,
+    ) -> None:
+        """Test that when device is SCANNING and abort is requested."""
+        assert device_under_test.state() == DevState.OFF
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+        )
+        assert device_under_test.state() == DevState.ON
+
+        resources = json.dumps(assign_resources_request)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.AssignResources(resources),
+            expected_obs_state_events=[
+                ObsState.RESOURCING,
+                ObsState.IDLE,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.GoToFault(),
+            expected_obs_state_events=[
+                ObsState.FAULT,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.ObsReset(),
+            expected_obs_state_events=[
+                ObsState.RESETTING,
+                ObsState.IDLE,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Off(),
+        )
+        assert device_under_test.state() == DevState.OFF
+
+    @pytest.mark.forked
+    def test_recv_go_to_fault_when_configured(
+        self: TestPstReceive,
+        device_under_test: DeviceProxy,
+        assign_resources_request: dict,
+        configure_scan_request: dict,
+        scan_request: dict,
+        tango_device_command_checker: TangoDeviceCommandChecker,
+    ) -> None:
+        """Test that when device is SCANNING and abort is requested."""
+        assert device_under_test.state() == DevState.OFF
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+        )
+        assert device_under_test.state() == DevState.ON
+
+        resources = json.dumps(assign_resources_request)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.AssignResources(resources),
+            expected_obs_state_events=[
+                ObsState.RESOURCING,
+                ObsState.IDLE,
+            ],
+        )
+
+        configuration = json.dumps(configure_scan_request)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Configure(configuration),
+            expected_obs_state_events=[
+                ObsState.CONFIGURING,
+                ObsState.READY,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.GoToFault(),
+            expected_obs_state_events=[
+                ObsState.FAULT,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Restart(),
+            expected_obs_state_events=[
+                ObsState.RESTARTING,
+                ObsState.EMPTY,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Off(),
+        )
+        assert device_under_test.state() == DevState.OFF
+
+    @pytest.mark.forked
+    def test_recv_go_to_fault_when_scanning(
+        self: TestPstReceive,
+        device_under_test: DeviceProxy,
+        assign_resources_request: dict,
+        configure_scan_request: dict,
+        scan_request: dict,
+        tango_device_command_checker: TangoDeviceCommandChecker,
+    ) -> None:
+        """Test that when device is SCANNING and abort is requested."""
+        assert device_under_test.state() == DevState.OFF
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+        )
+        assert device_under_test.state() == DevState.ON
+
+        resources = json.dumps(assign_resources_request)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.AssignResources(resources),
+            expected_obs_state_events=[
+                ObsState.RESOURCING,
+                ObsState.IDLE,
+            ],
+        )
+
+        configuration = json.dumps(configure_scan_request)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Configure(configuration),
+            expected_obs_state_events=[
+                ObsState.CONFIGURING,
+                ObsState.READY,
+            ],
+        )
+
+        scan = json.dumps(scan_request)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Scan(scan),
+            expected_obs_state_events=[
+                ObsState.SCANNING,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.GoToFault(),
+            expected_obs_state_events=[
+                ObsState.FAULT,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Restart(),
+            expected_obs_state_events=[
+                ObsState.RESTARTING,
+                ObsState.EMPTY,
+            ],
+        )
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Off(),
+        )
+        assert device_under_test.state() == DevState.OFF

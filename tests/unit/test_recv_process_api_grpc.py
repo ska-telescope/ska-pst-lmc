@@ -309,7 +309,7 @@ def test_receive_grpc_release_resources_when_throws_exception(
         call(status=TaskStatus.FAILED, result="Oops there was a problem", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_not_called()
+    component_state_callback.assert_called_once_with(obsfault=True)
 
 
 def test_recv_grpc_configure(
@@ -394,7 +394,7 @@ def test_recv_grpc_configure_when_throws_exception(
         call(status=TaskStatus.FAILED, result="Internal server error occurred", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_not_called()
+    component_state_callback.assert_called_once_with(obsfault=True)
 
 
 def test_recv_grpc_deconfigure(
@@ -464,7 +464,7 @@ def test_recv_grpc_deconfigure_when_throws_exception(
         call(status=TaskStatus.FAILED, result="Internal server error occurred", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_not_called()
+    component_state_callback.assert_called_once_with(obsfault=True)
 
 
 def test_recv_grpc_scan(
@@ -538,7 +538,7 @@ def test_recv_grpc_scan_when_throws_exception(
         call(status=TaskStatus.FAILED, result="Oops there was a problem", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_not_called()
+    component_state_callback.assert_called_once_with(obsfault=True)
 
 
 def test_recv_grpc_end_scan(
@@ -606,7 +606,7 @@ def test_recv_grpc_end_scan_when_exception_thrown(
         call(status=TaskStatus.FAILED, result="Something is wrong!", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_not_called()
+    component_state_callback.assert_called_once_with(obsfault=True)
 
 
 def test_recv_grpc_handle_monitor_response(
@@ -751,7 +751,7 @@ def test_recv_grpc_abort_throws_exception(
         call(status=TaskStatus.FAILED, result="We have an issue!", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_not_called()
+    component_state_callback.assert_called_once_with(obsfault=True)
 
 
 def test_recv_grpc_reset(
@@ -795,7 +795,7 @@ def test_recv_grpc_reset_when_exception_thrown(
         call(status=TaskStatus.FAILED, result="Resetting error!", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_not_called()
+    component_state_callback.assert_called_once_with(obsfault=True)
 
 
 def test_recv_grpc_restart(
@@ -839,7 +839,7 @@ def test_recv_grpc_restart_when_exception_thrown(
         call(status=TaskStatus.FAILED, result="Resetting error!", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_not_called()
+    component_state_callback.assert_called_once_with(obsfault=True)
 
 
 def test_recv_grpc_go_to_fault(

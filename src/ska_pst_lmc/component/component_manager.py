@@ -438,6 +438,19 @@ class PstApiComponentManager(PstComponentManager):
         """
         return self._submit_background_task(self._api.restart, task_callback=task_callback)
 
+    def go_to_fault(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
+        """Put the service into a FAULT state."""
+
+        def _task(
+            *args: Any, task_callback: Callable, task_abort_event: Optional[Event] = None, **kwargs: Any
+        ) -> None:
+
+            task_callback(status=TaskStatus.IN_PROGRESS)
+            self._api.go_to_fault()
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+        return self._submit_background_task(_task, task_callback=task_callback)
+
     def _submit_background_task(
         self: PstApiComponentManager, task: Callable, task_callback: Callable
     ) -> TaskResponse:
