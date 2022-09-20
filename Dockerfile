@@ -20,7 +20,7 @@ RUN poetry config virtualenvs.create false
 RUN mkdir -p /app/tests && \
   pip install --upgrade pip && \
   poetry export --format requirements.txt --output requirements.txt --without-hashes && \
-  poetry export --format requirements.txt --output tests/requirements.txt --without-hashes --dev && \
+  poetry export --format requirements.txt --output tests/requirements.txt --without-hashes --with dev && \
   pip install -r tests/requirements.txt
 
 RUN python3 -m grpc_tools.protoc --proto_path="$(pwd)/protobuf" \
