@@ -32,6 +32,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     EndScanRequest,
     EndScanResponse,
     ErrorCode,
+    GoToFaultRequest,
+    GoToFaultResponse,
     MonitorData,
     MonitorResponse,
     ReceiveMonitorData,
@@ -836,3 +838,15 @@ def test_recv_grpc_restart_when_exception_thrown(
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()
+
+
+def test_recv_grpc_go_to_fault(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+) -> None:
+    """Test that RECV gRPC go_to_fault."""
+    mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
+
+    grpc_api.go_to_fault()
+
+    mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())

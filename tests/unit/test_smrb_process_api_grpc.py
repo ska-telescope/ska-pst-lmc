@@ -32,6 +32,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     EndScanRequest,
     EndScanResponse,
     ErrorCode,
+    GoToFaultRequest,
+    GoToFaultResponse,
     MonitorData,
     MonitorResponse,
     ReleaseResourcesRequest,
@@ -745,3 +747,15 @@ def test_smrb_grpc_simulated_monitor_calls_callback(
         )
     ]
     subband_monitor_data_callback.assert_has_calls(calls=calls)
+
+
+def test_smrb_grpc_go_to_fault(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+) -> None:
+    """Test that SMRB gRPC go_to_fault."""
+    mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
+
+    grpc_api.go_to_fault()
+
+    mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())

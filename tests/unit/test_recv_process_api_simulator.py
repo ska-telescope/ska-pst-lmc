@@ -83,6 +83,7 @@ def test_recv_simulator_api_simulated_monitor_calls_callback(
     logger: logging.Logger,
 ) -> None:
     """Test simulatued monitoring calls subband_monitor_data_callback."""
+    simulation_api._scanning = True
 
     def _abort_monitor() -> None:
         logger.debug("Test sleeping 600ms")

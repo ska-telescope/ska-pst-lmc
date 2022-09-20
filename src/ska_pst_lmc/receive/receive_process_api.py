@@ -150,6 +150,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         task_callback(progress=69)
         self._simulator.scan(args)
         self._component_state_callback(scanning=True)
+        self._scanning = True
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def end_scan(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
@@ -164,6 +165,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         task_callback(progress=88)
         self._simulator.end_scan()
         self._component_state_callback(scanning=False)
+        self._scanning = False
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     @background_task
@@ -206,7 +208,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
     def _simulated_monitor_data_generator(
         self: PstReceiveProcessApiSimulator, polling_rate: int
     ) -> Generator[Dict[int, Any], None, None]:
-        while True:
+        while self._scanning:
             self._logger.debug("Background generator is creating data")
             yield self._simulator.get_subband_data()
             self._logger.debug(f"Sleeping {polling_rate}ms")
