@@ -18,9 +18,9 @@ import time
 from typing import Any, Callable, Dict, Generator, Optional
 
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
-    AssignResourcesRequest,
-    ConfigureRequest,
-    MonitorResponse,
+    MonitorData,
+    ResourceConfiguration,
+    ScanConfiguration,
     SmrbResources,
     SmrbScanConfiguration,
 )
@@ -212,11 +212,11 @@ class PstSmrbProcessApiGrpc(PstProcessApiGrpc, PstSmrbProcessApi):
     subband, rather than one for all of RECV as a whole.
     """
 
-    def _get_assign_resources_request(self: PstSmrbProcessApiGrpc, resources: dict) -> AssignResourcesRequest:
-        return AssignResourcesRequest(smrb=SmrbResources(**resources))
+    def _get_assign_resources_request(self: PstSmrbProcessApiGrpc, resources: dict) -> ResourceConfiguration:
+        return ResourceConfiguration(smrb=SmrbResources(**resources))
 
     def _handle_monitor_response(
-        self: PstSmrbProcessApiGrpc, data: MonitorResponse, monitor_data_callback: Callable[..., None]
+        self: PstSmrbProcessApiGrpc, data: MonitorData, monitor_data_callback: Callable[..., None]
     ) -> None:
         smrb_data_stats = data.smrb.data
         smrb_weights_stats = data.smrb.weights
@@ -238,5 +238,5 @@ class PstSmrbProcessApiGrpc(PstProcessApiGrpc, PstSmrbProcessApi):
             ),
         )
 
-    def _get_configure_scan_request(self: PstProcessApiGrpc, configure_parameters: dict) -> ConfigureRequest:
-        return ConfigureRequest(smrb=SmrbScanConfiguration())
+    def _get_configure_scan_request(self: PstProcessApiGrpc, configure_parameters: dict) -> ScanConfiguration:
+        return ScanConfiguration(smrb=SmrbScanConfiguration())

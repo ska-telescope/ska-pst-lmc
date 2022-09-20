@@ -32,13 +32,16 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     EndScanRequest,
     EndScanResponse,
     ErrorCode,
+    MonitorData,
     MonitorResponse,
     ReleaseResourcesRequest,
     ReleaseResourcesResponse,
     ResetRequest,
     ResetResponse,
+    ResourceConfiguration,
     RestartRequest,
     RestartResponse,
+    ScanConfiguration,
     ScanRequest,
     ScanResponse,
     SmrbMonitorData,
@@ -103,7 +106,9 @@ def test_smrb_grpc_assign_resources(
     grpc_api.assign_resources(resources, task_callback=task_callback)
 
     expected_smrb_request = SmrbResources(**resources)
-    expected_request = AssignResourcesRequest(smrb=expected_smrb_request)
+    expected_request = AssignResourcesRequest(
+        resource_configuration=ResourceConfiguration(smrb=expected_smrb_request)
+    )
     mock_servicer_context.assign_resources.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -132,7 +137,9 @@ def test_smrb_grpc_assign_resources_when_already_assigned(
     grpc_api.assign_resources(resources, task_callback=task_callback)
 
     expected_smrb_request = SmrbResources(**resources)
-    expected_request = AssignResourcesRequest(smrb=expected_smrb_request)
+    expected_request = AssignResourcesRequest(
+        resource_configuration=ResourceConfiguration(smrb=expected_smrb_request)
+    )
     mock_servicer_context.assign_resources.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -161,7 +168,9 @@ def test_smrb_grpc_assign_resources_when_throws_exception(
     grpc_api.assign_resources(resources, task_callback=task_callback)
 
     expected_smrb_request = SmrbResources(**resources)
-    expected_request = AssignResourcesRequest(smrb=expected_smrb_request)
+    expected_request = AssignResourcesRequest(
+        resource_configuration=ResourceConfiguration(smrb=expected_smrb_request)
+    )
     mock_servicer_context.assign_resources.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -253,7 +262,7 @@ def test_smrb_grpc_configure(
 
     grpc_api.configure(configure_scan_request, task_callback=task_callback)
 
-    expected_request = ConfigureRequest(smrb=SmrbScanConfiguration())
+    expected_request = ConfigureRequest(scan_configuration=ScanConfiguration(smrb=SmrbScanConfiguration()))
     mock_servicer_context.configure.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -279,7 +288,7 @@ def test_smrb_grpc_configure_when_already_configured(
     )
     grpc_api.configure(configure_scan_request, task_callback=task_callback)
 
-    expected_request = ConfigureRequest(smrb=SmrbScanConfiguration())
+    expected_request = ConfigureRequest(scan_configuration=ScanConfiguration(smrb=SmrbScanConfiguration()))
     mock_servicer_context.configure.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -305,7 +314,7 @@ def test_smrb_grpc_configure_when_throws_exception(
     )
     grpc_api.configure(configure_scan_request, task_callback=task_callback)
 
-    expected_request = ConfigureRequest(smrb=SmrbScanConfiguration())
+    expected_request = ConfigureRequest(scan_configuration=ScanConfiguration(smrb=SmrbScanConfiguration()))
     mock_servicer_context.configure.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -697,7 +706,7 @@ def test_smrb_grpc_simulated_monitor_calls_callback(
             )
 
             logger.debug("Yielding monitor data")
-            yield MonitorResponse(smrb=SmrbMonitorData(data=data, weights=weights))
+            yield MonitorResponse(monitor_data=MonitorData(smrb=SmrbMonitorData(data=data, weights=weights)))
             time.sleep(0.5)
 
     mock_servicer_context.monitor = MagicMock()
