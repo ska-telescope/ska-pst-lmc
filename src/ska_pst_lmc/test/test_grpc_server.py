@@ -37,6 +37,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GetScanConfigurationResponse,
     GetStateRequest,
     GetStateResponse,
+    GoToFaultRequest,
+    GoToFaultResponse,
     MonitorRequest,
     MonitorResponse,
     ReleaseResourcesRequest,
@@ -250,6 +252,17 @@ class TestMockServicer(PstLmcServiceServicer):
         self._logger.debug("get_state called.")
         try:
             return self._context.get_state(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
+
+    def go_to_fault(
+        self: TestMockServicer, request: GoToFaultRequest, context: ServicerContext
+    ) -> GoToFaultResponse:
+        """Handle putting service into FAULT state."""
+        self._logger.debug("go_to_fault called.")
+        try:
+            return self._context.go_to_fault(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"

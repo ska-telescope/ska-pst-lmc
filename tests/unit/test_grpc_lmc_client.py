@@ -20,6 +20,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GetScanConfigurationResponse,
     GetStateRequest,
     GetStateResponse,
+    GoToFaultRequest,
+    GoToFaultResponse,
 )
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ObsState as GrpcObsState
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import SmrbResources, SmrbScanConfiguration
@@ -125,3 +127,29 @@ def test_grpc_client_get_state_throws_exception(
 
     with pytest.raises(UnknownGrpcException):
         grpc_client.get_state()
+
+
+def test_grpc_client_go_to_fault(
+    grpc_client: PstGrpcLmcClient,
+    mock_servicer_context: MagicMock,
+) -> None:
+    """Tests calling go_to_fault on remote service."""
+    response = GoToFaultResponse()
+    mock_servicer_context.go_to_fault = MagicMock(return_value=response)
+    grpc_client.go_to_fault()
+
+    mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
+
+
+def test_grpc_client_go_to_fault_throws_exception(
+    grpc_client: PstGrpcLmcClient,
+    mock_servicer_context: MagicMock,
+) -> None:
+    """Tests calling go_to_fault on remote service."""
+    mock_servicer_context.go_to_fault.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.INTERNAL,
+        message="Interal server error.",
+    )
+
+    with pytest.raises(UnknownGrpcException):
+        grpc_client.go_to_fault()
