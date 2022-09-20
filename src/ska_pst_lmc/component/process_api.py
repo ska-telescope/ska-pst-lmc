@@ -346,6 +346,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self._logger.error(
                 f"Problem processing assign_resources request for '{self._client_id}'", exc_info=True
             )
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def release_resources(self: PstProcessApiGrpc, task_callback: Callable) -> None:

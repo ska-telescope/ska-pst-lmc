@@ -222,6 +222,7 @@ def test_receive_grpc_assign_resources_when_throws_exception(
     task_callback: MagicMock,
 ) -> None:
     """Test that RECV gRPC assign resources throws an exception."""
+    mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
     mock_servicer_context.assign_resources.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.INTERNAL_ERROR,
@@ -233,6 +234,7 @@ def test_receive_grpc_assign_resources_when_throws_exception(
         resource_configuration=ResourceConfiguration(receive=expected_receive_resources_protobuf)
     )
     mock_servicer_context.assign_resources.assert_called_once_with(expected_request)
+    mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
