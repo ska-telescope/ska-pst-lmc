@@ -32,6 +32,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     EndScanRequest,
     EndScanResponse,
     ErrorCode,
+    MonitorData,
     MonitorResponse,
     ReceiveMonitorData,
     ReceiveResources,
@@ -41,8 +42,10 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ReleaseResourcesResponse,
     ResetRequest,
     ResetResponse,
+    ResourceConfiguration,
     RestartRequest,
     RestartResponse,
+    ScanConfiguration,
     ScanRequest,
     ScanResponse,
 )
@@ -165,7 +168,9 @@ def test_receive_grpc_assign_resources(
 
     grpc_api.assign_resources(subband_assign_resources_request, task_callback=task_callback)
 
-    expected_request = AssignResourcesRequest(receive=expected_receive_resources_protobuf)
+    expected_request = AssignResourcesRequest(
+        resource_configuration=ResourceConfiguration(receive=expected_receive_resources_protobuf)
+    )
     mock_servicer_context.assign_resources.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -193,7 +198,9 @@ def test_receive_grpc_assign_resources_when_already_assigned(
 
     grpc_api.assign_resources(subband_assign_resources_request, task_callback=task_callback)
 
-    expected_request = AssignResourcesRequest(receive=expected_receive_resources_protobuf)
+    expected_request = AssignResourcesRequest(
+        resource_configuration=ResourceConfiguration(receive=expected_receive_resources_protobuf)
+    )
     mock_servicer_context.assign_resources.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -220,7 +227,9 @@ def test_receive_grpc_assign_resources_when_throws_exception(
     )
     grpc_api.assign_resources(subband_assign_resources_request, task_callback=task_callback)
 
-    expected_request = AssignResourcesRequest(receive=expected_receive_resources_protobuf)
+    expected_request = AssignResourcesRequest(
+        resource_configuration=ResourceConfiguration(receive=expected_receive_resources_protobuf)
+    )
     mock_servicer_context.assign_resources.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -313,7 +322,9 @@ def test_recv_grpc_configure(
 
     grpc_api.configure(configure_scan_request, task_callback=task_callback)
 
-    expected_request = ConfigureRequest(receive=expected_receive_configure_protobuf)
+    expected_request = ConfigureRequest(
+        scan_configuration=ScanConfiguration(receive=expected_receive_configure_protobuf)
+    )
     mock_servicer_context.configure.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -340,7 +351,9 @@ def test_recv_grpc_configure_when_already_configured(
     )
     grpc_api.configure(configure_scan_request, task_callback=task_callback)
 
-    expected_request = ConfigureRequest(receive=expected_receive_configure_protobuf)
+    expected_request = ConfigureRequest(
+        scan_configuration=ScanConfiguration(receive=expected_receive_configure_protobuf)
+    )
     mock_servicer_context.configure.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -367,7 +380,9 @@ def test_recv_grpc_configure_when_throws_exception(
     )
     grpc_api.configure(configure_scan_request, task_callback=task_callback)
 
-    expected_request = ConfigureRequest(receive=expected_receive_configure_protobuf)
+    expected_request = ConfigureRequest(
+        scan_configuration=ScanConfiguration(receive=expected_receive_configure_protobuf)
+    )
     mock_servicer_context.configure.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -602,12 +617,14 @@ def test_recv_grpc_handle_monitor_response(
     misordered_packets = randint(1, 100)
 
     response_message = MonitorResponse(
-        receive=ReceiveMonitorData(
-            receive_rate=receive_rate,
-            data_received=data_received,
-            data_drop_rate=data_drop_rate,
-            data_dropped=data_dropped,
-            misordered_packets=misordered_packets,
+        monitor_data=MonitorData(
+            receive=ReceiveMonitorData(
+                receive_rate=receive_rate,
+                data_received=data_received,
+                data_drop_rate=data_drop_rate,
+                data_dropped=data_dropped,
+                misordered_packets=misordered_packets,
+            )
         )
     )
 
@@ -651,7 +668,7 @@ def test_recv_grpc_simulated_monitor_calls_callback(
     def response_generator() -> Generator[MonitorResponse, None, None]:
         while True:
             logger.debug("Yielding monitor data")
-            yield MonitorResponse(receive=monitior_data)
+            yield MonitorResponse(monitor_data=MonitorData(receive=monitior_data))
             time.sleep(0.5)
 
     mock_servicer_context.monitor = MagicMock()

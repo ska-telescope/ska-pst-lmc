@@ -21,13 +21,13 @@ import time
 from typing import Any, Callable, Dict, Generator, Optional
 
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
-    AssignResourcesRequest,
-    ConfigureRequest,
-    MonitorResponse,
+    MonitorData,
     ReceiveMonitorData,
     ReceiveResources,
     ReceiveScanConfiguration,
     ReceiveSubbandResources,
+    ResourceConfiguration,
+    ScanConfiguration,
 )
 from ska_tango_base.commands import TaskStatus
 
@@ -223,21 +223,21 @@ class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
 
     def _get_assign_resources_request(
         self: PstReceiveProcessApiGrpc, resources: dict
-    ) -> AssignResourcesRequest:
+    ) -> ResourceConfiguration:
         subband_resources = ReceiveSubbandResources(**resources["subband"])
-        return AssignResourcesRequest(
+        return ResourceConfiguration(
             receive=ReceiveResources(subband_resources=subband_resources, **resources["common"])
         )
 
     def _get_configure_scan_request(
         self: PstReceiveProcessApiGrpc, configure_parameters: dict
-    ) -> ConfigureRequest:
-        return ConfigureRequest(
+    ) -> ScanConfiguration:
+        return ScanConfiguration(
             receive=ReceiveScanConfiguration(**map_configure_request(configure_parameters))
         )
 
     def _handle_monitor_response(
-        self: PstProcessApiGrpc, data: MonitorResponse, monitor_data_callback: Callable[..., None]
+        self: PstProcessApiGrpc, data: MonitorData, monitor_data_callback: Callable[..., None]
     ) -> None:
         receive_monitor_data: ReceiveMonitorData = data.receive
         monitor_data_callback(

@@ -24,7 +24,9 @@ from typing import Any, Callable, Dict, Generator, Optional
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AssignResourcesRequest,
     ConfigureRequest,
-    MonitorResponse,
+    MonitorData,
+    ResourceConfiguration,
+    ScanConfiguration,
     ScanRequest,
 )
 from ska_tango_base.commands import TaskStatus
@@ -286,12 +288,12 @@ class PstProcessApiGrpc(PstProcessApi):
         if self._monitor_abort_event is not None:
             self._monitor_abort_event.set()
 
-    def _get_assign_resources_request(self: PstProcessApiGrpc, resources: dict) -> AssignResourcesRequest:
-        """Convert resources dictionary to instance of `AssignResourcesRequest`."""
+    def _get_assign_resources_request(self: PstProcessApiGrpc, resources: dict) -> ResourceConfiguration:
+        """Convert resources dictionary to instance of `ResourceConfiguration`."""
         raise NotImplementedError("PstProcessApiGrpc is an abstract class.")
 
-    def _get_configure_scan_request(self: PstProcessApiGrpc, configure_parameters: dict) -> ConfigureRequest:
-        """Convert scan parameters dictionary to instance of `ConfigureRequest`."""
+    def _get_configure_scan_request(self: PstProcessApiGrpc, configure_parameters: dict) -> ScanConfiguration:
+        """Convert scan parameters dictionary to instance of `ScanConfiguration`."""
         raise NotImplementedError("PstProcessApiGrpc is an abstract class.")
 
     def _get_scan_request(self: PstProcessApiGrpc, scan_parameters: dict) -> ScanRequest:
@@ -311,7 +313,8 @@ class PstProcessApiGrpc(PstProcessApi):
         self._logger.debug(f"Assigning resources for '{self._client_id}': {resources}")
         task_callback(status=TaskStatus.IN_PROGRESS)
 
-        request = self._get_assign_resources_request(resources)
+        resource_configuration = self._get_assign_resources_request(resources)
+        request = AssignResourcesRequest(resource_configuration=resource_configuration)
         try:
             self._grpc_client.assign_resources(request=request)
 
@@ -359,7 +362,8 @@ class PstProcessApiGrpc(PstProcessApi):
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
 
-        request = self._get_configure_scan_request(configuration)
+        scan_configuration = self._get_configure_scan_request(configuration)
+        request = ConfigureRequest(scan_configuration=scan_configuration)
         try:
             self._grpc_client.configure(request)
 
@@ -501,7 +505,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self._monitor_abort_event.set()
 
     def _handle_monitor_response(
-        self: PstProcessApiGrpc, data: MonitorResponse, monitor_data_callback: Callable[..., None]
+        self: PstProcessApiGrpc, data: MonitorData, monitor_data_callback: Callable[..., None]
     ) -> None:
         """Handle monitoring data response."""
         raise NotImplementedError("PstProcessApiGrpc is abstract.")
@@ -528,6 +532,8 @@ class PstProcessApiGrpc(PstProcessApi):
             for d in self._grpc_client.monitor(
                 polling_rate=polling_rate, abort_event=self._monitor_abort_event
             ):
-                self._handle_monitor_response(d, monitor_data_callback=subband_monitor_data_callback)
+                self._handle_monitor_response(
+                    d.monitor_data, monitor_data_callback=subband_monitor_data_callback
+                )
         except Exception:
             self._logger.warning("Error while handing monitoring.", exc_info=True)
