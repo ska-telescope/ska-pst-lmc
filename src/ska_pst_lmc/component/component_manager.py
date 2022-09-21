@@ -267,6 +267,15 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
 
         return self.submit_task(_task, task_callback=task_callback)
 
+    def go_to_fault(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
+        """Set the component into a FAULT state.
+
+        For BEAM this will make the sub-devices be put into a FAULT state. For
+        API backed component managers it is expected that the service backing that
+        API should be put into a FAULT state.
+        """
+        raise NotImplementedError("PstApiComponentManager is abstract class")
+
 
 class PstApiComponentManager(PstComponentManager):
     """

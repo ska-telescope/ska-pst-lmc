@@ -184,8 +184,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the On commands {command_ids} have completed.")
             self._component_state_callback(power=PowerState.ON)
-            task_callback(status=TaskStatus.COMPLETED)
-            task_callback(result="Completed")
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
             action=lambda d: d.On(),
@@ -205,8 +204,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'Off' commands {command_ids} have completed.")
             self._component_state_callback(power=PowerState.OFF)
-            task_callback(status=TaskStatus.COMPLETED)
-            task_callback(result="Completed")
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
             action=lambda d: d.Off(),
@@ -226,8 +224,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'Standy' commands {command_ids} have completed.")
             self._component_state_callback(power=PowerState.STANDBY)
-            task_callback(status=TaskStatus.COMPLETED)
-            task_callback(result="Completed")
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
             action=lambda d: d.Standby(),
@@ -247,8 +244,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'Reset' commands {command_ids} have completed.")
             self._component_state_callback(power=PowerState.OFF)
-            task_callback(status=TaskStatus.COMPLETED)
-            task_callback(result="Completed")
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
             action=lambda d: d.Reset(),
@@ -266,8 +262,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'AssignResources' commands {command_ids} have completed.")
             self._component_state_callback(resourced=True)
-            task_callback(status=TaskStatus.COMPLETED)
-            task_callback(result="Completed")
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         resources_str = json.dumps(resources)
 
@@ -287,8 +282,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'ReleaseResources' commands {command_ids} have completed.")
             self._component_state_callback(resourced=False)
-            task_callback(status=TaskStatus.COMPLETED)
-            task_callback(result="Completed")
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         resources_str = json.dumps(resources)
 
@@ -304,8 +298,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'ReleaseAllResources' commands {command_ids} have completed.")
             self._component_state_callback(resourced=False)
-            task_callback(status=TaskStatus.COMPLETED)
-            task_callback(result="Completed")
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
             action=lambda d: d.ReleaseAllResources(),
@@ -326,8 +319,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'Configure' commands {command_ids} have completed.")
             self._component_state_callback(configured=True)
-            task_callback(status=TaskStatus.COMPLETED)
-            task_callback(result="Completed")
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         configuration_str = json.dumps(configuration)
 
@@ -343,8 +335,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'End' commands {command_ids} have completed.")
             self._component_state_callback(configured=False)
-            task_callback(status=TaskStatus.COMPLETED)
-            task_callback(result="Completed")
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
             action=lambda d: d.End(),
@@ -358,8 +349,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'Scan' commands {command_ids} have completed.")
             self._component_state_callback(scanning=True)
-            task_callback(status=TaskStatus.COMPLETED)
-            task_callback(result="Completed")
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         args_str = json.dumps(args)
 
@@ -375,8 +365,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'EndScan' commands {command_ids} have completed.")
             self._component_state_callback(scanning=False)
-            task_callback(status=TaskStatus.COMPLETED)
-            task_callback(result="Completed")
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
             action=lambda d: d.EndScan(),
@@ -397,8 +386,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'ObsReset' commands {command_ids} have completed.")
             self._component_state_callback(configured=False)
-            task_callback(status=TaskStatus.COMPLETED)
-            task_callback(result="Completed")
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
             action=lambda d: d.ObsReset(),
@@ -412,11 +400,24 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'Restart' commands {command_ids} have completed.")
             self._component_state_callback(configured=False, resourced=False)
-            task_callback(status=TaskStatus.COMPLETED)
-            task_callback(result="Completed")
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
             action=lambda d: d.Restart(),
+            task_callback=task_callback,
+            completion_callback=_completion_callback,
+        )
+
+    def go_to_fault(self: PstBeamComponentManager, task_callback: Callable) -> TaskResponse:
+        """Put all the sub-devices into a FAULT state."""
+
+        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
+            self.logger.debug(f"All the 'GoToFault' commands {command_ids} have completed.")
+            self._component_state_callback(obsfault=True)
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+        return self._submit_remote_job(
+            action=lambda d: d.GoToFault(),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
