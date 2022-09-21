@@ -181,11 +181,6 @@ class TestPstReceive:
             ],
         )
 
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.Off(),
-        )
-        assert device_under_test.state() == DevState.OFF
-
     @pytest.mark.forked
     def test_recv_abort_when_scanning(
         self: TestPstReceive,
@@ -288,11 +283,7 @@ class TestPstReceive:
             ],
         )
 
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.Off(),
-        )
-        assert device_under_test.state() == DevState.OFF
-
+    @pytest.mark.forked
     def test_simulation_mode(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
@@ -317,6 +308,7 @@ class TestPstReceive:
         device_under_test.simulationMode = SimulationMode.TRUE
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
+    @pytest.mark.forked
     def test_simulation_mode_when_not_in_empty_obs_state(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
@@ -344,6 +336,7 @@ class TestPstReceive:
             0
         ].desc == "ValueError: Unable to change simulation mode unless in EMPTY observation state"
 
+    @pytest.mark.forked
     def test_simulation_mode_when_in_empty_obs_state(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
@@ -409,11 +402,6 @@ class TestPstReceive:
             ],
         )
 
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.Off(),
-        )
-        assert device_under_test.state() == DevState.OFF
-
     @pytest.mark.forked
     def test_recv_go_to_fault_when_configured(
         self: TestPstReceive,
@@ -464,11 +452,6 @@ class TestPstReceive:
             ],
         )
 
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.Off(),
-        )
-        assert device_under_test.state() == DevState.OFF
-
     @pytest.mark.forked
     def test_recv_go_to_fault_when_scanning(
         self: TestPstReceive,
@@ -512,6 +495,8 @@ class TestPstReceive:
             ],
         )
 
+        time.sleep(0.1)
+
         tango_device_command_checker.assert_command(
             lambda: device_under_test.GoToFault(),
             expected_obs_state_events=[
@@ -526,8 +511,3 @@ class TestPstReceive:
                 ObsState.EMPTY,
             ],
         )
-
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.Off(),
-        )
-        assert device_under_test.state() == DevState.OFF

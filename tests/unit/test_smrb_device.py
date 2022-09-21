@@ -164,9 +164,6 @@ class TestPstSmrb:
             ],
         )
 
-        tango_device_command_checker.assert_command(lambda: device_under_test.Off())
-        assert device_under_test.state() == DevState.OFF
-
     @pytest.mark.forked
     def test_abort_when_scanning(
         self: TestPstSmrb,
@@ -269,6 +266,7 @@ class TestPstSmrb:
             ],
         )
 
+    @pytest.mark.forked
     def test_simulation_mode(
         self: TestPstSmrb,
         device_under_test: DeviceProxy,
@@ -293,6 +291,7 @@ class TestPstSmrb:
         device_under_test.simulationMode = SimulationMode.TRUE
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
+    @pytest.mark.forked
     def test_simulation_mode_when_not_in_empty_obs_state(
         self: TestPstSmrb,
         device_under_test: DeviceProxy,
@@ -320,6 +319,7 @@ class TestPstSmrb:
             0
         ].desc == "ValueError: Unable to change simulation mode unless in EMPTY observation state"
 
+    @pytest.mark.forked
     def test_simulation_mode_when_in_empty_obs_state(
         self: TestPstSmrb,
         device_under_test: DeviceProxy,
@@ -385,11 +385,6 @@ class TestPstSmrb:
             ],
         )
 
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.Off(),
-        )
-        assert device_under_test.state() == DevState.OFF
-
     @pytest.mark.forked
     def test_recv_go_to_fault_when_configured(
         self: TestPstSmrb,
@@ -439,11 +434,6 @@ class TestPstSmrb:
                 ObsState.EMPTY,
             ],
         )
-
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.Off(),
-        )
-        assert device_under_test.state() == DevState.OFF
 
     @pytest.mark.forked
     def test_recv_go_to_fault_when_scanning(
@@ -502,8 +492,3 @@ class TestPstSmrb:
                 ObsState.EMPTY,
             ],
         )
-
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.Off(),
-        )
-        assert device_under_test.state() == DevState.OFF
