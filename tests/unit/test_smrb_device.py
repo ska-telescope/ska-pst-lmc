@@ -353,7 +353,7 @@ class TestPstSmrb:
         scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
-        """Test that when device is SCANNING and abort is requested."""
+        """Test that when device is in IDLE state and GoToFault is called."""
         assert device_under_test.state() == DevState.OFF
 
         tango_device_command_checker.assert_command(
@@ -394,7 +394,7 @@ class TestPstSmrb:
         scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
-        """Test that when device is SCANNING and abort is requested."""
+        """Test that when device is READY state and GoToFault is called."""
         assert device_under_test.state() == DevState.OFF
 
         tango_device_command_checker.assert_command(
@@ -444,7 +444,7 @@ class TestPstSmrb:
         scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
-        """Test that when device is SCANNING and abort is requested."""
+        """Test that when device is SCANNING and GoToFault is called."""
         assert device_under_test.state() == DevState.OFF
 
         tango_device_command_checker.assert_command(

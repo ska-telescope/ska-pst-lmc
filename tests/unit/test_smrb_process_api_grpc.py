@@ -313,7 +313,7 @@ def test_smrb_grpc_configure_when_throws_exception(
     configure_scan_request: dict,
     task_callback: MagicMock,
 ) -> None:
-    """Test that SMRB gRPC assign resources throws an exception."""
+    """Test that SMRB gRPC configure throws an exception."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
     mock_servicer_context.configure.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
@@ -675,11 +675,11 @@ def test_smrb_grpc_restart_when_exception_thrown(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that SMRB gRPC reset when exception is thrown."""
+    """Test that SMRB gRPC restart when exception is thrown."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
     mock_servicer_context.restart.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.INTERNAL,
-        message="Resetting error!",
+        message="Restarting error!",
     )
 
     grpc_api.restart(task_callback=task_callback)
@@ -689,7 +689,7 @@ def test_smrb_grpc_restart_when_exception_thrown(
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(status=TaskStatus.FAILED, result="Resetting error!", exception=ANY),
+        call(status=TaskStatus.FAILED, result="Restarting error!", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_once_with(obsfault=True)
