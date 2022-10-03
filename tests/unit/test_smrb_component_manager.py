@@ -10,12 +10,13 @@
 import logging
 import time
 from random import randint
-from typing import Callable
+from typing import Callable, cast
 from unittest.mock import MagicMock, call
 
 import pytest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionResponse
 from ska_tango_base.control_model import CommunicationStatus, SimulationMode
+from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
 from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData
@@ -450,3 +451,21 @@ def test_smrb_restart(
     api.restart.assert_called_once_with(
         task_callback=task_callback,
     )
+
+
+def test_recv_go_to_fault(
+    component_manager: PstSmrbComponentManager,
+    task_callback: Callable,
+) -> None:
+    """Test that the component manager calls the API start a scan."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback,
+    )
+
+    component_manager.go_to_fault(task_callback=task_callback)
+
+    api.go_to_fault.assert_called_once()
+    calls = [call(status=TaskStatus.IN_PROGRESS), call(status=TaskStatus.COMPLETED, result="Completed")]
+    cast(MagicMock, task_callback).assert_has_calls(calls)

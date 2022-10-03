@@ -207,3 +207,63 @@ class TestPstBeam:
             lambda: device_under_test.Off(),
         )
         assert_state(DevState.OFF)
+
+    @pytest.mark.skip(reason="This fails on CI server but not locally.")
+    @pytest.mark.forked
+    def test_go_to_fault(
+        self: TestPstBeam,
+        device_under_test: DeviceProxy,
+        multidevice_test_context: MultiDeviceTestContext,
+        tango_device_command_checker: TangoDeviceCommandChecker,
+        logger: logging.Logger,
+    ) -> None:
+        """Test state model of PstReceive."""
+        # need to go through state mode
+        recv_proxy = multidevice_test_context.get_device("test/recv/1")
+        smrb_proxy = multidevice_test_context.get_device("test/smrb/1")
+        # trying to avoid potential race condition inside TANGO
+        time.sleep(0.1)
+
+        def assert_state(state: DevState) -> None:
+            assert device_under_test.state() == state
+            assert recv_proxy.state() == state
+            assert smrb_proxy.state() == state
+
+        @backoff.on_exception(
+            backoff.expo,
+            AssertionError,
+            factor=1,
+            max_time=5.0,
+        )
+        def assert_obstate(obsState: ObsState) -> None:
+            assert device_under_test.obsState == obsState
+            assert recv_proxy.obsState == obsState
+            assert smrb_proxy.obsState == obsState
+
+        device_under_test.adminMode = AdminMode.ONLINE
+        time.sleep(0.1)
+        assert recv_proxy.adminMode == AdminMode.ONLINE
+        assert smrb_proxy.adminMode == AdminMode.ONLINE
+
+        assert_state(DevState.OFF)
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+        )
+        assert_state(DevState.ON)
+
+        # need to assign resources
+        assert_obstate(ObsState.EMPTY)
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.GoToFault(),
+            expected_obs_state_events=[
+                ObsState.FAULT,
+            ],
+        )
+        assert_obstate(ObsState.FAULT)
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Off(),
+        )
+        assert_state(DevState.OFF)

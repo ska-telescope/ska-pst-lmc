@@ -29,6 +29,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GetScanConfigurationResponse,
     GetStateRequest,
     GetStateResponse,
+    GoToFaultRequest,
     MonitorRequest,
     MonitorResponse,
     ReleaseResourcesRequest,
@@ -300,6 +301,14 @@ class PstGrpcLmcClient:
         try:
             self._service.end_scan(EndScanRequest())
             return True
+        except grpc.RpcError as e:
+            _handle_grpc_error(e)
+
+    def go_to_fault(self: PstGrpcLmcClient) -> None:
+        """Put the gRPC service in to a FAULT state."""
+        self._logger.debug("Calling go_to_fault on remote service.")
+        try:
+            self._service.go_to_fault(GoToFaultRequest())
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 

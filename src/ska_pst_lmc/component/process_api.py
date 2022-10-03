@@ -137,6 +137,13 @@ class PstProcessApi:
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
+    def go_to_fault(self: PstProcessApi) -> None:
+        """Set remote service in a FAULT state.
+
+        This doesn't take a callback as we want a synchronous call.
+        """
+        raise NotImplementedError("PstProcessApu is abstract class")
+
     @background_task
     def monitor(
         self: PstProcessApi,
@@ -170,6 +177,7 @@ class PstProcessApiSimulator(PstProcessApi):
     ) -> None:
         """Initialise the API."""
         self._monitor_abort_event: Optional[threading.Event] = None
+        self._scanning = False
         super().__init__(logger=logger, component_state_callback=component_state_callback, **kwargs)
 
     def connect(self: PstProcessApiSimulator) -> None:
@@ -190,6 +198,19 @@ class PstProcessApiSimulator(PstProcessApi):
         :param polling_rate: the rate, in milliseconds, at which the monitoring should generated data.
         """
         raise NotImplementedError("PstProcessApiSimulator is abstract class")
+
+    def go_to_fault(self: PstProcessApiSimulator) -> None:
+        """Set simulator into a FAULT state.
+
+        If simulator is scanning then stop scanning.
+        """
+        if self._scanning:
+            self._scanning = False
+
+        if self._monitor_abort_event is not None:
+            self._monitor_abort_event.set()
+
+        self._component_state_callback(obsfault=True)
 
     @background_task
     def monitor(
@@ -327,6 +348,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self._logger.error(
                 f"Problem processing assign_resources request for '{self._client_id}'", exc_info=True
             )
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def release_resources(self: PstProcessApiGrpc, task_callback: Callable) -> None:
@@ -349,6 +371,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self._logger.error(
                 f"Problem processing release_resources request for '{self._client_id}'", exc_info=True
             )
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def configure(self: PstProcessApiGrpc, configuration: dict, task_callback: Callable) -> None:
@@ -376,6 +399,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self._logger.error(
                 f"Problem processing 'configure' request for '{self._client_id}'", exc_info=True
             )
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def deconfigure(self: PstProcessApiGrpc, task_callback: Callable) -> None:
@@ -401,6 +425,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self._logger.error(
                 f"Problem processing 'deconfigure' request for '{self._client_id}'", exc_info=True
             )
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def scan(
@@ -426,6 +451,7 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error(f"Problem processing scan request for '{self._client_id}'", exc_info=True)
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def end_scan(self: PstProcessApiGrpc, task_callback: Callable) -> None:
@@ -449,6 +475,7 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error(f"Problem processing end_scan request for '{self._client_id}'", exc_info=True)
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     @background_task
@@ -467,6 +494,7 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error(f"Problem in aborting request for '{self._client_id}'", exc_info=True)
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def reset(self: PstProcessApiGrpc, task_callback: Callable) -> None:
@@ -481,6 +509,7 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error(f"Error raised while resetting '{self._client_id}'", exc_info=True)
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def restart(self: PstProcessApiGrpc, task_callback: Callable) -> None:
@@ -498,7 +527,22 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error(f"Error raised while restarting '{self._client_id}'", exc_info=True)
+            self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
+
+    def go_to_fault(self: PstProcessApiGrpc) -> None:
+        """Put remote service into FAULT state.
+
+        This is used to put the remote service into a FAULT state to match
+        the status of the LMC component.
+        """
+        try:
+            self._component_state_callback(obsfault=True)
+            self._grpc_client.go_to_fault()
+        except BaseGrpcException:
+            self._logger.warn(
+                f"Error in trying to put remote service '{self._client_id}' in FAULT state.", exc_info=True
+            )
 
     def _stop_monitoring(self: PstProcessApiGrpc) -> None:
         if self._monitor_abort_event is not None:

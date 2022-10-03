@@ -225,6 +225,7 @@ def request_params(
         ("end_scan", lambda d: d.EndScan, {"scanning": False}),
         ("obsreset", lambda d: d.ObsReset, {"configured": False}),
         ("restart", lambda d: d.Restart, {"configured": False, "resourced": False}),
+        ("go_to_fault", lambda d: d.GoToFault, {"obsfault": True}),
     ],
 )
 def test_remote_actions(
@@ -285,5 +286,5 @@ def test_remote_actions(
     else:
         component_state_callback.assert_not_called()  # type: ignore
 
-    calls = [call(status=TaskStatus.COMPLETED), call(result="Completed")]
+    calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
     task_callback.assert_has_calls(calls)
