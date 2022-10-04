@@ -633,29 +633,27 @@ def test_recv_grpc_handle_monitor_response(
     data_dropped = randint(1, 100)
     misordered_packets = randint(1, 100)
 
-    response_message = MonitorResponse(
-        monitor_data=MonitorData(
-            receive=ReceiveMonitorData(
-                receive_rate=receive_rate,
-                data_received=data_received,
-                data_drop_rate=data_drop_rate,
-                data_dropped=data_dropped,
-                misordered_packets=misordered_packets,
-            )
-        )
+    receive_monitor_data = ReceiveMonitorData(
+        receive_rate=receive_rate,
+        data_received=data_received,
+        data_drop_rate=data_drop_rate,
+        data_dropped=data_dropped,
+        misordered_packets=misordered_packets,
     )
 
-    grpc_api._handle_monitor_response(response_message, subband_monitor_data_callback)
+    response_message = MonitorResponse(monitor_data=MonitorData(receive=receive_monitor_data))
+
+    grpc_api._handle_monitor_response(response_message.monitor_data, subband_monitor_data_callback)
 
     subband_monitor_data_callback.assert_called_once_with(
         subband_id=1,
         subband_data=ReceiveData(
             # grab from the protobuf message given there can be rounding issues.
-            received_data=response_message.receive.data_received,
-            received_rate=response_message.receive.receive_rate,
-            dropped_data=response_message.receive.data_dropped,
-            dropped_rate=response_message.receive.data_drop_rate,
-            misordered_packets=response_message.receive.misordered_packets,
+            received_data=receive_monitor_data.data_received,
+            received_rate=receive_monitor_data.receive_rate,
+            dropped_data=receive_monitor_data.data_dropped,
+            dropped_rate=receive_monitor_data.data_drop_rate,
+            misordered_packets=receive_monitor_data.misordered_packets,
         ),
     )
 

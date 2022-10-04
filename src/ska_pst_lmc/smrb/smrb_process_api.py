@@ -27,7 +27,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc, PstProcessApiSimulator
-from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData, SubbandMonitorData
+from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData, SmrbSubbandMonitorData
 from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
@@ -171,7 +171,7 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def reset(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
-        """End a scan.
+        """Reset service when in ABORTED / FAULT state.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -184,7 +184,7 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def restart(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
-        """End a scan.
+        """Restart service when in ABORTED / FAULT state.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -231,7 +231,7 @@ class PstSmrbProcessApiGrpc(PstProcessApiGrpc, PstSmrbProcessApi):
 
         monitor_data_callback(
             subband_id=1,
-            subband_data=SubbandMonitorData(
+            subband_data=SmrbSubbandMonitorData(
                 buffer_size=buffer_size,
                 total_written=total_written,
                 total_read=total_read,

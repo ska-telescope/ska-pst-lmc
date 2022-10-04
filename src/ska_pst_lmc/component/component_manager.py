@@ -25,6 +25,7 @@ from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 __all__ = [
     "PstApiComponentManager",
     "PstComponentManager",
+    "TaskResponse",
 ]
 
 

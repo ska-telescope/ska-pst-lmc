@@ -9,7 +9,6 @@
 
 import logging
 import time
-from random import randint
 from typing import Callable, cast
 from unittest.mock import MagicMock, call
 
@@ -18,6 +17,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionRespo
 from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
+from ska_pst_lmc.component import MonitorDataHandler
 from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
 from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData
 from ska_pst_lmc.smrb.smrb_process_api import (
@@ -135,36 +135,15 @@ def test_properties_come_from_simulator_api_monitor_data(
     component_manager: PstSmrbComponentManager,
     monitor_data: SmrbMonitorData,
     property: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test properties are coming from API monitor data."""
-    component_manager._monitor_data = monitor_data
+    monkeypatch.setattr(MonitorDataHandler, "monitor_data", monitor_data)
 
     actual = getattr(component_manager, property)
     expected = getattr(monitor_data, property)
 
     assert actual == expected
-
-
-def test_handle_subband_monitor_data(
-    component_manager: PstSmrbComponentManager,
-    monitor_data_callback: MagicMock,
-    monitor_data: SmrbMonitorData,
-) -> None:
-    """Test handle_subband_monitor_data."""
-    subband_data = MagicMock()
-    monitor_data_store = MagicMock()
-    monitor_data_store.get_smrb_monitor_data.return_value = monitor_data
-    component_manager._monitor_data_store = monitor_data_store
-    subband_id = randint(1, 4)
-
-    component_manager._handle_subband_monitor_data(
-        subband_id=subband_id,
-        subband_data=subband_data,
-    )
-
-    monitor_data_store.subband_data.__setitem__.assert_called_once_with(subband_id, subband_data)
-    assert component_manager._monitor_data == monitor_data
-    monitor_data_callback.assert_called_once_with(monitor_data)
 
 
 def test_api_instance_changes_depending_on_simulation_mode(
@@ -373,7 +352,7 @@ def test_smrb_scan(
         task_callback=task_callback,
     )
     api.monitor.assert_called_once_with(
-        subband_monitor_data_callback=component_manager._handle_subband_monitor_data,
+        subband_monitor_data_callback=component_manager._monitor_data_handler.handle_subband_data,
         polling_rate=component_manager._monitor_polling_rate,
     )
 

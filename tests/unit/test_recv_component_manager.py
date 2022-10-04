@@ -17,6 +17,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionRespo
 from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
+from ska_pst_lmc.component import MonitorDataHandler
 from ska_pst_lmc.receive.receive_component_manager import PstReceiveComponentManager
 from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_process_api import (
@@ -134,9 +135,10 @@ def test_recv_properties_comes_from_monitor_data(
     api: PstReceiveProcessApi,
     monitor_data: ReceiveData,
     property: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test properties are coming from API monitor data."""
-    component_manager._monitor_data = monitor_data
+    monkeypatch.setattr(MonitorDataHandler, "monitor_data", monitor_data)
 
     actual = getattr(component_manager, property)
     expected = getattr(monitor_data, property)

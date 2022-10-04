@@ -12,7 +12,7 @@ from __future__ import annotations
 from random import randint
 from typing import Any, Dict, List, Optional
 
-from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData, SmrbMonitorDataStore, SubbandMonitorData
+from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData, SmrbMonitorDataStore, SmrbSubbandMonitorData
 
 
 class PstSmrbSimulator:
@@ -88,9 +88,12 @@ class PstSmrbSimulator:
             num_of_buffers = subband_num_of_buffers[idx]
             buffer_size = subband_ring_buffer_sizes[idx]
 
-            self._data_store.subband_data[idx + 1] = SubbandMonitorData(
-                buffer_size=buffer_size,
-                num_of_buffers=num_of_buffers,
+            self._data_store.update_subband(
+                subband_id=(idx + 1),
+                subband_data=SmrbSubbandMonitorData(
+                    buffer_size=buffer_size,
+                    num_of_buffers=num_of_buffers,
+                ),
             )
 
     def deconfigure(self: PstSmrbSimulator) -> None:
@@ -115,7 +118,7 @@ class PstSmrbSimulator:
     def _update(self: PstSmrbSimulator) -> None:
         """Simulate the update of SMRB data."""
         for idx in range(self.num_subbands):
-            subband_data = self._data_store.subband_data[idx + 1]
+            subband_data = self._data_store._subband_data[idx + 1]
 
             written = randint(2**10, 2**16)
             utilisation = randint(0, 1000) / 10.0  # between 0-100%
@@ -132,16 +135,16 @@ class PstSmrbSimulator:
         Updates the current simulated data and returns the latest data.
 
         :returns: current simulated SMRB data.
-        :rtype: :py:class:`SharedMemoryRingBufferData`
+        :rtype: :py:class:`SmrbMonitorData`
         """
         if self._scan:
             self._update()
 
-        return self._data_store.get_smrb_monitor_data()
+        return self._data_store.monitor_data
 
-    def get_subband_data(self: PstSmrbSimulator) -> Dict[int, SubbandMonitorData]:
+    def get_subband_data(self: PstSmrbSimulator) -> Dict[int, SmrbSubbandMonitorData]:
         """Get simulated subband data."""
         if self._scan:
             self._update()
 
-        return self._data_store.subband_data
+        return self._data_store._subband_data

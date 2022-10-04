@@ -22,7 +22,7 @@ __all__ = [
     "PstSmrbSimulator",
     "SmrbMonitorData",
     "SmrbMonitorDataStore",
-    "SubbandMonitorData",
+    "SmrbSubbandMonitorData",
 ]
 
 from .beam import PstBeam
@@ -36,5 +36,5 @@ from .smrb import (
     PstSmrbSimulator,
     SmrbMonitorData,
     SmrbMonitorDataStore,
-    SubbandMonitorData,
+    SmrbSubbandMonitorData,
 )

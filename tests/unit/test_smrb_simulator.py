@@ -32,8 +32,8 @@ def test_constructor_of_simulator() -> None:
     data = simulator.get_data()
     assert data.subband_ring_buffer_sizes == [1024, 2048]
 
-    assert simulator._data_store.subband_data[1].num_of_buffers == 4
-    assert simulator._data_store.subband_data[2].num_of_buffers == 8
+    assert simulator._data_store._subband_data[1].num_of_buffers == 4
+    assert simulator._data_store._subband_data[2].num_of_buffers == 8
 
 
 def test_configure_of_simulator(simulator: PstSmrbSimulator) -> None:
@@ -48,7 +48,7 @@ def test_configure_of_simulator(simulator: PstSmrbSimulator) -> None:
 
     assert simulator.num_subbands == 2
 
-    data = simulator._data_store.get_smrb_monitor_data()
+    data = simulator._data_store.monitor_data
     assert data.ring_buffer_size == 1180
     assert data.ring_buffer_utilisation == 0.0
     assert data.ring_buffer_read == 0
@@ -78,7 +78,7 @@ def test_configure_handles_no_subbands_configuration(simulator: PstSmrbSimulator
     num_subbands: int = simulator.num_subbands
     assert num_subbands in [1, 2, 3, 4]
 
-    data = simulator._data_store.get_smrb_monitor_data()
+    data = simulator._data_store.monitor_data
 
     assert data.ring_buffer_utilisation == 0.0
     assert data.subband_ring_buffer_utilisations == num_subbands * [0.0]
