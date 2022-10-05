@@ -57,6 +57,20 @@ def recv_device_proxy(recv_fqdn: str) -> PstDeviceProxy:
 
 
 @pytest.fixture
+def dsp_fqdn() -> str:
+    """Create DSP FQDN fixture."""
+    return "test/dsp/1"
+
+
+@pytest.fixture
+def dsp_device_proxy(dsp_fqdn: str) -> PstDeviceProxy:
+    """Create RECV device proxy fixture."""
+    proxy = MagicMock()
+    proxy.fqdn = dsp_fqdn
+    return proxy
+
+
+@pytest.fixture
 def background_task_processor() -> BackgroundTaskProcessor:
     """Create Background Processor fixture."""
     return MagicMock()
@@ -78,6 +92,7 @@ def component_state_callback() -> Callable:
 def component_manager(
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
+    dsp_device_proxy: PstDeviceProxy,
     logger: logging.Logger,
     communication_state_callback: Callable[[CommunicationStatus], None],
     component_state_callback: Callable,
@@ -87,12 +102,15 @@ def component_manager(
     """Create PST Beam Component fixture."""
     smrb_fqdn = smrb_device_proxy.fqdn
     recv_fqdn = recv_device_proxy.fqdn
+    dsp_fqdn = dsp_device_proxy.fqdn
 
     def _get_device(fqdn: str) -> PstDeviceProxy:
         if fqdn == smrb_fqdn:
             return smrb_device_proxy
-        else:
+        elif fqdn == recv_fqdn:
             return recv_device_proxy
+        else:
+            return dsp_device_proxy
 
     monkeypatch.setattr(DeviceProxyFactory, "get_device", _get_device)
 
@@ -100,6 +118,7 @@ def component_manager(
         "test/beam/1",
         smrb_fqdn,
         recv_fqdn,
+        dsp_fqdn,
         logger,
         communication_state_callback,
         component_state_callback,
@@ -158,6 +177,7 @@ def test_component_manager_delegates_admin_mode(
     component_manager: PstBeamComponentManager,
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
+    dsp_device_proxy: PstDeviceProxy,
 ) -> None:
     """Test component manager delegates setting admin mode to sub-element devices."""
     for a in list(AdminMode):
@@ -165,12 +185,14 @@ def test_component_manager_delegates_admin_mode(
 
         assert smrb_device_proxy.adminMode == a
         assert recv_device_proxy.adminMode == a
+        assert dsp_device_proxy.adminMode == a
 
 
 def test_component_manager_calls_abort_on_subdevices(
     component_manager: PstBeamComponentManager,
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
+    dsp_device_proxy: PstDeviceProxy,
 ) -> None:
     """Test component manager delegates setting admin mode to sub-element devices."""
     task_executor = MagicMock()
@@ -185,6 +207,7 @@ def test_component_manager_calls_abort_on_subdevices(
 
     smrb_device_proxy.Abort.assert_called_once()
     recv_device_proxy.Abort.assert_called_once()
+    dsp_device_proxy.Abort.assert_called_once()
 
     task_executor.abort.assert_called_once()
 
@@ -232,6 +255,7 @@ def test_remote_actions(
     component_manager: PstBeamComponentManager,
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
+    dsp_device_proxy: PstDeviceProxy,
     component_state_callback: Callable,
     method_name: str,
     request_params: Optional[Any],
@@ -250,6 +274,10 @@ def test_remote_actions(
     remote_action_supplier(recv_device_proxy).return_value = (  # type: ignore
         [TaskStatus.QUEUED],
         ["recv_job_id"],
+    )
+    remote_action_supplier(dsp_device_proxy).return_value = (  # type: ignore
+        [TaskStatus.QUEUED],
+        ["dsp_job_id"],
     )
 
     func = getattr(component_manager, method_name)
@@ -278,7 +306,7 @@ def test_remote_actions(
     # need to force an data update
     [
         component_manager._long_running_client._handle_command_completed(job_id)  # type: ignore
-        for job_id in ["smrb_job_id", "recv_job_id"]
+        for job_id in ["smrb_job_id", "recv_job_id", "dsp_job_id"]
     ]
 
     if component_state_callback_params:

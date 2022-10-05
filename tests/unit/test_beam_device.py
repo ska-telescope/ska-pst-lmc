@@ -20,7 +20,7 @@ from ska_tango_base.control_model import AdminMode, ObsState
 from tango import DeviceProxy, DevState
 from tango.test_context import MultiDeviceTestContext
 
-from ska_pst_lmc import PstBeam, PstReceive, PstSmrb
+from ska_pst_lmc import PstBeam, PstDsp, PstReceive, PstSmrb
 from tests.conftest import TangoDeviceCommandChecker
 
 
@@ -48,6 +48,15 @@ def server_configuration(devices_info: List[dict]) -> dict:
 def devices_info() -> List[dict]:
     """Get device configuration for tests."""
     return [
+        {
+            "class": PstDsp,
+            "devices": [
+                {
+                    "name": "test/dsp/1",
+                    "properties": {},
+                }
+            ],
+        },
         {
             "class": PstReceive,
             "devices": [
@@ -129,6 +138,7 @@ class TestPstBeam:
     ) -> None:
         """Test state model of PstReceive."""
         # need to go through state mode
+        dsp_proxy = multidevice_test_context.get_device("test/recv/1")
         recv_proxy = multidevice_test_context.get_device("test/recv/1")
         smrb_proxy = multidevice_test_context.get_device("test/smrb/1")
         # trying to avoid potential race condition inside TANGO
@@ -138,6 +148,7 @@ class TestPstBeam:
             assert device_under_test.state() == state
             assert recv_proxy.state() == state
             assert smrb_proxy.state() == state
+            assert dsp_proxy.state() == state
 
         @backoff.on_exception(
             backoff.expo,
@@ -149,11 +160,13 @@ class TestPstBeam:
             assert device_under_test.obsState == obsState
             assert recv_proxy.obsState == obsState
             assert smrb_proxy.obsState == obsState
+            assert dsp_proxy.obsState == obsState
 
         device_under_test.adminMode = AdminMode.ONLINE
         time.sleep(0.1)
         assert recv_proxy.adminMode == AdminMode.ONLINE
         assert smrb_proxy.adminMode == AdminMode.ONLINE
+        assert dsp_proxy.adminMode == AdminMode.ONLINE
 
         assert_state(DevState.OFF)
 
@@ -219,6 +232,7 @@ class TestPstBeam:
     ) -> None:
         """Test state model of PstReceive."""
         # need to go through state mode
+        dsp_proxy = multidevice_test_context.get_device("test/dsp/1")
         recv_proxy = multidevice_test_context.get_device("test/recv/1")
         smrb_proxy = multidevice_test_context.get_device("test/smrb/1")
         # trying to avoid potential race condition inside TANGO
@@ -228,6 +242,7 @@ class TestPstBeam:
             assert device_under_test.state() == state
             assert recv_proxy.state() == state
             assert smrb_proxy.state() == state
+            assert dsp_proxy.state() == state
 
         @backoff.on_exception(
             backoff.expo,
@@ -239,11 +254,13 @@ class TestPstBeam:
             assert device_under_test.obsState == obsState
             assert recv_proxy.obsState == obsState
             assert smrb_proxy.obsState == obsState
+            assert dsp_proxy.obsState == obsState
 
         device_under_test.adminMode = AdminMode.ONLINE
         time.sleep(0.1)
         assert recv_proxy.adminMode == AdminMode.ONLINE
         assert smrb_proxy.adminMode == AdminMode.ONLINE
+        assert dsp_proxy.adminMode == AdminMode.ONLINE
 
         assert_state(DevState.OFF)
 
