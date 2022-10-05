@@ -8,6 +8,7 @@
 """Module for providing utility methods of RECV."""
 
 __all__ = [
+    "calculate_receive_common_resources",
     "calculate_receive_subband_resources",
 ]
 
@@ -91,26 +92,18 @@ def map_configure_request(
     return result
 
 
-def calculate_receive_subband_resources(
-    beam_id: int,
+def calculate_receive_common_resources(
     request_params: dict,
-    data_host: str,
-    data_port: int,
-    **kwargs: dict,
 ) -> dict:
-    """Calculate the RECV resources from request.
+    """Calculate the RECV common resources.
 
-    This is a common method to map a CSP JSON request to the appropriate
-    RECV.CORE parameters. It is also used to calculate the specific subband
-    resources.
+    This method has been refactored out of `calculate_receive_subband_resources`
+    as there are parameters that are calculated that can be reused in other
+    areas such as the `bytes_per_second` used in DSP.
 
     :param request_params: a dictionary of request parameters that is used to
         configure PST, the specific parameters for SMRB are extracted within
         this method.
-    :returns: a dict of dicts, with the top level key being the subband id, while
-        the second level is the specific parameters. An example would response
-        is as follows::
-        TODO - update docs
     """
     udp_format = get_udp_format(**request_params)
 
@@ -128,31 +121,75 @@ def calculate_receive_subband_resources(
     bytes_per_second = nchan * npol * nbits * NUM_DIMENSIONS / 8 * 1_000_000 / tsamp
 
     return {
-        "common": {
-            "nchan": nchan,
-            "nsubband": 1,
-            "udp_nsamp": request_params["udp_nsamp"],
-            "wt_nsamp": request_params["wt_nsamp"],
-            "udp_nchan": request_params["udp_nchan"],
-            "frequency": request_params["centre_frequency"] / MEGA_HERTZ,
-            "bandwidth": bandwidth_mhz,
-            "frontend": request_params["timing_beam_id"],
-            "fd_poln": request_params["feed_polarization"],
-            "fd_hand": request_params["feed_handedness"],
-            "fd_sang": request_params["feed_angle"],
-            "fd_mode": request_params["feed_tracking_mode"],
-            "fa_req": request_params["feed_position_angle"],
-            "nant": len(request_params["receptors"]),
-            "antennas": ",".join(request_params["receptors"]),
-            "ant_weights": ",".join(map(str, request_params["receptor_weights"])),
-            "npol": npol,
-            "nbits": nbits,
-            "ndim": NUM_DIMENSIONS,
-            "tsamp": tsamp,
-            "ovrsamp": "/".join(map(str, oversampling_ratio)),
-            "udp_format": udp_format,
-            "bytes_per_second": bytes_per_second,
-        },
+        "nchan": nchan,
+        "nsubband": 1,
+        "udp_nsamp": request_params["udp_nsamp"],
+        "wt_nsamp": request_params["wt_nsamp"],
+        "udp_nchan": request_params["udp_nchan"],
+        "frequency": request_params["centre_frequency"] / MEGA_HERTZ,
+        "bandwidth": bandwidth_mhz,
+        "frontend": request_params["timing_beam_id"],
+        "fd_poln": request_params["feed_polarization"],
+        "fd_hand": request_params["feed_handedness"],
+        "fd_sang": request_params["feed_angle"],
+        "fd_mode": request_params["feed_tracking_mode"],
+        "fa_req": request_params["feed_position_angle"],
+        "nant": len(request_params["receptors"]),
+        "antennas": ",".join(request_params["receptors"]),
+        "ant_weights": ",".join(map(str, request_params["receptor_weights"])),
+        "npol": npol,
+        "nbits": nbits,
+        "ndim": NUM_DIMENSIONS,
+        "tsamp": tsamp,
+        "ovrsamp": "/".join(map(str, oversampling_ratio)),
+        "udp_format": udp_format,
+        "bytes_per_second": bytes_per_second,
+    }
+
+
+def calculate_receive_subband_resources(
+    beam_id: int,
+    request_params: dict,
+    data_host: str,
+    data_port: int,
+    **kwargs: dict,
+) -> dict:
+    """Calculate the RECV resources for all subbands from request.
+
+    This is a common method to map a CSP JSON request to the appropriate
+    RECV.CORE parameters. It is also used to calculate the specific subband
+    resources.
+
+    :param request_params: a dictionary of request parameters that is used to
+        configure PST, the specific parameters for RECV are extracted within
+        this method.
+    :returns: a dict of dicts, with "common" and "subbands" as the top level
+        keys.  The `common` values comes from the :py:func:`calculate_receive_common_resources`
+        function.  The `subbands` is a dict of dicts with subband ids as the keys, while
+        the second level is the specific parameters. An example would response
+        is as follows::
+
+            {
+                "common": {
+                    "nchan": nchan,
+                    "nsubband": 1,
+                    ...
+                },
+                "subbands": {
+                    1: {
+                        "data_key": "a000",
+                        "weights_key": "a010",
+                        ...
+                    }
+                }
+            }
+
+    """
+    nchan = request_params["num_frequency_channels"]
+    bandwidth = request_params["total_bandwidth"]
+
+    return {
+        "common": calculate_receive_common_resources(request_params),
         "subbands": {
             1: {
                 "data_key": generate_data_key(beam_id=beam_id, subband_id=1),
