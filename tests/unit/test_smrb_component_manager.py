@@ -5,7 +5,7 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
 
-"""This module contains tests for the RECV component managers class."""
+"""This module contains tests for the SMRB component managers class."""
 
 import logging
 import time
@@ -99,7 +99,7 @@ def calculated_smrb_subband_resources(beam_id: int, assign_resources_request: di
     return resources[1]
 
 
-def test_start_communicating_calls_connect_on_api(
+def test_smrb_cm_start_communicating_calls_connect_on_api(
     component_manager: PstSmrbComponentManager,
     api: PstSmrbProcessApi,
 ) -> None:
@@ -131,7 +131,7 @@ def test_start_communicating_calls_connect_on_api(
         ("subband_ring_buffer_written"),
     ],
 )
-def test_properties_come_from_simulator_api_monitor_data(
+def test_smrb_cm_properties_come_from_simulator_api_monitor_data(
     component_manager: PstSmrbComponentManager,
     monitor_data: SmrbMonitorData,
     property: str,
@@ -146,7 +146,7 @@ def test_properties_come_from_simulator_api_monitor_data(
     assert actual == expected
 
 
-def test_api_instance_changes_depending_on_simulation_mode(
+def test_smrb_cm_api_instance_changes_depending_on_simulation_mode(
     component_manager: PstSmrbComponentManager,
 ) -> None:
     """Test to assert that the process API changes depending on simulation mode."""
@@ -165,7 +165,7 @@ def test_api_instance_changes_depending_on_simulation_mode(
         (SimulationMode.FALSE,),
     ],
 )
-def test_no_change_in_simulation_mode_value_wont_change_communication_state(
+def test_smrb_cm_no_change_in_simulation_mode_value_wont_change_communication_state(
     device_name: str,
     component_manager: PstSmrbComponentManager,
     simulation_mode: SimulationMode,
@@ -196,7 +196,7 @@ def test_no_change_in_simulation_mode_value_wont_change_communication_state(
     update_communication_state.assert_not_called()
 
 
-def test_if_communicating_switching_simulation_mode_must_stop_then_restart(
+def test_smrb_cm_if_communicating_switching_simulation_mode_must_stop_then_restart(
     device_name: str,
     component_manager: PstSmrbComponentManager,
     pst_lmc_service: TestPstLmcService,
@@ -238,7 +238,7 @@ def test_if_communicating_switching_simulation_mode_must_stop_then_restart(
     update_communication_state.reset_mock()
 
 
-def test_not_communicating_switching_simulation_mode_not_try_to_establish_connection(
+def test_smrb_cm_not_communicating_switching_simulation_mode_not_try_to_establish_connection(
     component_manager: PstSmrbComponentManager,
 ) -> None:
     """Test if not communicating and change of simulation happens, don't do anything."""
@@ -258,7 +258,7 @@ def test_not_communicating_switching_simulation_mode_not_try_to_establish_connec
     update_communication_state.assert_not_called()
 
 
-def test_smrb_assign_resources(
+def test_smrb_cm_smrb_assign_resources(
     component_manager: PstSmrbComponentManager,
     assign_resources_request: dict,
     task_callback: Callable,
@@ -279,7 +279,7 @@ def test_smrb_assign_resources(
     )
 
 
-def test_smrb_release_resources(
+def test_smrb_cm_smrb_release_resources(
     component_manager: PstSmrbComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -295,7 +295,7 @@ def test_smrb_release_resources(
     api.release_resources.assert_called_once_with(task_callback=task_callback)
 
 
-def test_configure_scan(
+def test_smrb_cm_configure_scan(
     component_manager: PstSmrbComponentManager,
     configure_scan_request: dict,
     task_callback: Callable,
@@ -315,7 +315,7 @@ def test_configure_scan(
     )
 
 
-def test_deconfigure(
+def test_smrb_cm_deconfigure(
     component_manager: PstSmrbComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -333,7 +333,7 @@ def test_deconfigure(
     )
 
 
-def test_smrb_scan(
+def test_smrb_cm_smrb_scan(
     component_manager: PstSmrbComponentManager,
     scan_request: dict,
     task_callback: Callable,
@@ -357,7 +357,7 @@ def test_smrb_scan(
     )
 
 
-def test_smrb_end_scan(
+def test_smrb_cm_smrb_end_scan(
     component_manager: PstSmrbComponentManager,
     task_callback: Callable,
     monitor_data_callback: MagicMock,
@@ -378,7 +378,7 @@ def test_smrb_end_scan(
     monitor_data_callback.assert_called_once_with(SmrbMonitorData())
 
 
-def test_smrb_abort(
+def test_smrb_cm_smrb_abort(
     component_manager: PstSmrbComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -396,7 +396,7 @@ def test_smrb_abort(
     )
 
 
-def test_smrb_obsreset(
+def test_smrb_cm_smrb_obsreset(
     component_manager: PstSmrbComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -414,7 +414,7 @@ def test_smrb_obsreset(
     )
 
 
-def test_smrb_restart(
+def test_smrb_cm_smrb_restart(
     component_manager: PstSmrbComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -432,7 +432,7 @@ def test_smrb_restart(
     )
 
 
-def test_recv_go_to_fault(
+def test_smrb_cm_recv_go_to_fault(
     component_manager: PstSmrbComponentManager,
     task_callback: Callable,
 ) -> None:

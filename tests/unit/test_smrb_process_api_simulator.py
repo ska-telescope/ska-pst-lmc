@@ -5,7 +5,7 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
 
-"""This module contains tests for the RECV API."""
+"""This module contains tests for the SMRB API."""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ def simulator() -> PstSmrbSimulator:
     return PstSmrbSimulator()
 
 
-def test_simulated_monitor_calls_callback(
+def test_smrb_simulator_api_simulated_monitor_calls_callback(
     simulation_api: PstSmrbProcessApiSimulator,
     subband_monitor_data_callback: MagicMock,
     abort_event: threading.Event,
@@ -78,7 +78,7 @@ def test_simulated_monitor_calls_callback(
     subband_monitor_data_callback.assert_has_calls(calls=calls)
 
 
-def test_assign_resources(
+def test_smrb_simulator_api_assign_resources(
     simulation_api: PstSmrbProcessApiSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
@@ -97,7 +97,7 @@ def test_assign_resources(
     component_state_callback.assert_called_with(resourced=True)
 
 
-def test_release_resources(
+def test_smrb_simulator_api_release_resources(
     simulation_api: PstSmrbProcessApiSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
@@ -114,7 +114,7 @@ def test_release_resources(
     component_state_callback.assert_called_with(resourced=False)
 
 
-def test_configure(
+def test_smrb_simulator_api_configure(
     simulation_api: PstSmrbProcessApiSimulator,
     simulator: PstSmrbSimulator,
     component_state_callback: MagicMock,
@@ -136,7 +136,7 @@ def test_configure(
     component_state_callback.assert_called_with(configured=True)
 
 
-def test_deconfigure(
+def test_smrb_simulator_api_deconfigure(
     simulation_api: PstSmrbProcessApiSimulator,
     simulator: PstSmrbSimulator,
     component_state_callback: MagicMock,
@@ -158,7 +158,7 @@ def test_deconfigure(
     component_state_callback.assert_called_with(configured=False)
 
 
-def test_scan(
+def test_smrb_simulator_api_scan(
     simulation_api: PstSmrbProcessApiSimulator,
     simulator: PstSmrbSimulator,
     scan_request: dict,
@@ -179,7 +179,7 @@ def test_scan(
     component_state_callback.assert_called_with(scanning=True)
 
 
-def test_end_scan(
+def test_smrb_simulator_api_end_scan(
     simulation_api: PstSmrbProcessApiSimulator,
     simulator: PstSmrbSimulator,
     component_state_callback: MagicMock,
@@ -200,7 +200,7 @@ def test_end_scan(
     component_state_callback.assert_called_with(scanning=False)
 
 
-def test_abort(
+def test_smrb_simulator_api_abort(
     simulation_api: PstSmrbProcessApiSimulator,
     simulator: PstSmrbSimulator,
     component_state_callback: MagicMock,
@@ -220,7 +220,7 @@ def test_abort(
     component_state_callback.assert_called_with(scanning=False)
 
 
-def test_recv_simulator_api_go_to_fault(
+def test_smrb_simulator_api_go_to_fault(
     simulation_api: PstSmrbProcessApiSimulator,
     component_state_callback: MagicMock,
 ) -> None:
@@ -229,7 +229,7 @@ def test_recv_simulator_api_go_to_fault(
     component_state_callback.assert_called_once_with(obsfault=True)
 
 
-def test_recv_simulator_api_go_to_fault_if_scanning(
+def test_smrb_simulator_api_go_to_fault_if_scanning(
     simulation_api: PstSmrbProcessApiSimulator,
     component_state_callback: MagicMock,
 ) -> None:
@@ -242,7 +242,7 @@ def test_recv_simulator_api_go_to_fault_if_scanning(
     assert not simulation_api._scanning, "Expected scanning to stop"
 
 
-def test_recv_simulator_api_go_to_fault_if_monitoring_event_is_not_set(
+def test_smrb_simulator_api_go_to_fault_if_monitoring_event_is_not_set(
     simulation_api: PstSmrbProcessApiSimulator,
     component_state_callback: MagicMock,
 ) -> None:
