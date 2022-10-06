@@ -8,10 +8,8 @@
 """Module for providing the API to be communicate with the RECV process.
 
 The :py:class:`PstReceiveProcessApiSimulator` is used in testing or
-simulation, for now its not run as a separate process but in future
-it should be able to be set up as a separate process and the API
-will call via the same mechanism that would be for the real API (i.e.
-via TCP/UDP sockets.)
+simulation mode, while the :py:class:`PstReceiveProcessApiGrpc` is used
+to connect to a remote application that exposes a gRPC API.
 """
 
 from __future__ import annotations

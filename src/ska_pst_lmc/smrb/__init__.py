@@ -16,7 +16,7 @@ __all__ = [
     "PstSmrbSimulator",
     "SmrbMonitorData",
     "SmrbMonitorDataStore",
-    "SubbandMonitorData",
+    "SmrbSubbandMonitorData",
     "generate_data_key",
     "generate_weights_key",
     "calculate_smrb_subband_resources",
@@ -24,7 +24,7 @@ __all__ = [
 
 from .smrb_component_manager import PstSmrbComponentManager
 from .smrb_device import PstSmrb
-from .smrb_model import SmrbMonitorData, SmrbMonitorDataStore, SubbandMonitorData
+from .smrb_model import SmrbMonitorData, SmrbMonitorDataStore, SmrbSubbandMonitorData
 from .smrb_process_api import PstSmrbProcessApi, PstSmrbProcessApiSimulator, PstSmrbProcessApiGrpc
 from .smrb_simulator import PstSmrbSimulator
 from .smrb_util import generate_data_key, generate_weights_key, calculate_smrb_subband_resources

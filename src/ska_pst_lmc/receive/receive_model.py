@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ska_pst_lmc.component.monitor_data_handler import MonitorDataStore
+
 
 @dataclass
 class ReceiveData:
@@ -33,3 +35,29 @@ class ReceiveData:
     dropped_data: int = 0
     dropped_rate: float = 0.0
     misordered_packets: int = 0
+
+
+class ReceiveDataStore(MonitorDataStore[ReceiveData, ReceiveData]):
+    """A data store for Receive subband monitoring data.
+
+    This data store will aggregate the separate data
+    """
+
+    @property
+    def monitor_data(self: ReceiveDataStore) -> ReceiveData:
+        """Return the current calculated monitoring data.
+
+        This aggregates all the individual subband data values into one
+        :py:class:`ReceiveData` instance.
+
+        :returns: current monitoring data.
+        """
+        monitor_data = ReceiveData()
+        for subband_monitor_data in self._subband_data.values():
+            monitor_data.dropped_data += subband_monitor_data.dropped_data
+            monitor_data.dropped_rate += subband_monitor_data.dropped_rate
+            monitor_data.received_data += subband_monitor_data.received_data
+            monitor_data.received_rate += subband_monitor_data.received_rate
+            monitor_data.misordered_packets += subband_monitor_data.misordered_packets
+
+        return monitor_data

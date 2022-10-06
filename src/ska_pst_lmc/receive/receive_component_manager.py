@@ -10,14 +10,14 @@
 from __future__ import annotations
 
 import logging
-import threading
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
 from ska_pst_lmc.component import PstApiComponentManager
 from ska_pst_lmc.component.component_manager import TaskResponse
-from ska_pst_lmc.receive.receive_model import ReceiveData
+from ska_pst_lmc.component.monitor_data_handler import MonitorDataHandler
+from ska_pst_lmc.receive.receive_model import ReceiveData, ReceiveDataStore
 from ska_pst_lmc.receive.receive_process_api import (
     PstReceiveProcessApi,
     PstReceiveProcessApiGrpc,
@@ -73,11 +73,11 @@ class PstReceiveComponentManager(PstApiComponentManager):
         self._network_interface = network_interface
         self._udp_port = udp_port
 
-        # need a lock for updating component data
-        self._monitor_lock = threading.Lock()
-        self._monitor_data_store: Dict[int, ReceiveData] = {}
-        self._monitor_data: ReceiveData = ReceiveData()
-        self._monitor_data_callback = monitor_data_callback
+        # Set up handling of monitor data.
+        self._monitor_data_handler = MonitorDataHandler(
+            data_store=ReceiveDataStore(),
+            monitor_data_callback=monitor_data_callback,
+        )
         self._monitor_polling_rate = monitor_polling_rate
 
         super().__init__(
@@ -161,6 +161,11 @@ class PstReceiveComponentManager(PstApiComponentManager):
         """
         return self._monitor_data.misordered_packets
 
+    @property
+    def _monitor_data(self: PstReceiveComponentManager) -> ReceiveData:
+        """Get monitor data from data handler."""
+        return self._monitor_data_handler.monitor_data
+
     def assign(self: PstReceiveComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
         """
         Assign resources to the component.
@@ -200,33 +205,19 @@ class PstReceiveComponentManager(PstApiComponentManager):
             self._api.scan(args, task_callback=task_callback)
             self._api.monitor(
                 # for now only handling 1 subband
-                subband_monitor_data_callback=self._handle_subband_monitor_data,
+                subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
                 polling_rate=self._monitor_polling_rate,
             )
 
         return self._submit_background_task(_task, task_callback=task_callback)
 
-    def _handle_subband_monitor_data(
-        self: PstReceiveComponentManager,
-        *args: Any,
-        subband_id: int,
-        subband_data: ReceiveData,
-        **kwargs: dict,
-    ) -> None:
-        """Handle receiving of a sub-band monitor data update."""
-        self.logger.info(f"Received subband data for subband {subband_id}. Data=\n{subband_data}")
-        with self._monitor_lock:
-            self._monitor_data_store[subband_id] = subband_data
+    def end_scan(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
+        """End scanning."""
 
-            # calcuated new monitor data
-            monitor_data = ReceiveData()
-            for subband_monitor_data in self._monitor_data_store.values():
-                monitor_data.dropped_data += subband_monitor_data.dropped_data
-                monitor_data.dropped_rate += subband_monitor_data.dropped_rate
-                monitor_data.received_data += subband_monitor_data.received_data
-                monitor_data.received_rate += subband_monitor_data.received_rate
-                monitor_data.misordered_packets += subband_monitor_data.misordered_packets
+        def _task(task_callback: Callable[..., None]) -> None:
+            self._api.end_scan(task_callback=task_callback)
 
-            # fire callback
-            self._monitor_data = monitor_data
-            self._monitor_data_callback(self._monitor_data)
+            # reset the monitoring data
+            self._monitor_data_handler.reset_monitor_data()
+
+        return self._submit_background_task(_task, task_callback=task_callback)

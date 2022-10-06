@@ -10,72 +10,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import List
 
-
-@dataclass
-class SmrbMonitorDataStore:
-    """Data store use to aggregate the subband data.
-
-    :ivar subband_data: the monitor data for each subband.
-    :vartype subband_data: Dict[int, SubbandMonitorData]
-    """
-
-    subband_data: Dict[int, SubbandMonitorData] = field(default_factory=dict)
-
-    def get_smrb_monitor_data(self: SmrbMonitorDataStore) -> SmrbMonitorData:
-        """Calculate the aggregate SMRB monitor data.
-
-        This step includes rolling up each of the individual sub-band data
-        items to be able to calculate the overall utilisation
-        """
-        ring_buffer_utilisation: float = 0.0
-        ring_buffer_size: int = 0
-        ring_buffer_read: int = 0
-        ring_buffer_written: int = 0
-        number_subbands: int = len(self.subband_data)
-
-        # initialise subband data to zeros
-        subband_ring_buffer_utilisations: List[float] = number_subbands * [0.0]
-        subband_ring_buffer_sizes: List[int] = number_subbands * [0]
-        subband_ring_buffer_read: List[int] = number_subbands * [0]
-        subband_ring_buffer_written: List[int] = number_subbands * [0]
-
-        if number_subbands == 0:
-            # no ringbuffer has been allocated, so return empty data
-            return SmrbMonitorData()
-
-        total_utilised_bytes: float = 0.0
-
-        for subband_id, data in self.subband_data.items():
-            # need a zero offset
-            idx = subband_id - 1
-            ring_buffer_size += data.buffer_size
-            ring_buffer_read += data.total_read
-            ring_buffer_written += data.total_written
-            total_utilised_bytes += data.utilised_bytes
-
-            subband_ring_buffer_utilisations[idx] = data.utilisation
-            subband_ring_buffer_sizes[idx] = data.buffer_size
-            subband_ring_buffer_read[idx] = data.total_read
-            subband_ring_buffer_written[idx] = data.total_written
-
-        if ring_buffer_size > 0:
-            # avoid true divide by zero.  This should not happen
-            # if the ring buffers have been allocated.
-            ring_buffer_utilisation = total_utilised_bytes / ring_buffer_size * 100.0
-
-        return SmrbMonitorData(
-            ring_buffer_utilisation=ring_buffer_utilisation,
-            ring_buffer_size=ring_buffer_size,
-            ring_buffer_read=ring_buffer_read,
-            ring_buffer_written=ring_buffer_written,
-            number_subbands=number_subbands,
-            subband_ring_buffer_utilisations=subband_ring_buffer_utilisations,
-            subband_ring_buffer_sizes=subband_ring_buffer_sizes,
-            subband_ring_buffer_read=subband_ring_buffer_read,
-            subband_ring_buffer_written=subband_ring_buffer_written,
-        )
+from ska_pst_lmc.component import MonitorDataStore
 
 
 @dataclass
@@ -114,7 +51,7 @@ class SmrbMonitorData:
 
 
 @dataclass
-class SubbandMonitorData:
+class SmrbSubbandMonitorData:
     """A data class used for a specific SMRB subband.
 
     :ivar buffer_size: total size of the ring buffer, including header size.
@@ -136,7 +73,7 @@ class SubbandMonitorData:
     full: int = 0
 
     @property
-    def utilisation(self: SubbandMonitorData) -> float:
+    def utilisation(self: SmrbSubbandMonitorData) -> float:
         """Return the current utilisation of the subband ring buffer.
 
         This is full/num_of_buffers as a percentage.
@@ -144,10 +81,72 @@ class SubbandMonitorData:
         return self.full / self.num_of_buffers * 100.0
 
     @property
-    def utilised_bytes(self: SubbandMonitorData) -> float:
+    def utilised_bytes(self: SmrbSubbandMonitorData) -> float:
         """Return the number of utilised bytes.
 
         This is utiltisation (as float not percentage) * buffer_size.
         Which is equivalent to full/num_of_buffers * buffer_size.
         """
         return self.full / self.num_of_buffers * self.buffer_size
+
+
+class SmrbMonitorDataStore(MonitorDataStore[SmrbSubbandMonitorData, SmrbMonitorData]):
+    """Data store use to aggregate the subband data."""
+
+    @property
+    def monitor_data(self: SmrbMonitorDataStore) -> SmrbMonitorData:
+        """Calculate the aggregate SMRB monitor data.
+
+        This step includes rolling up each of the individual sub-band data
+        items to be able to calculate the overall utilisation
+
+        :returns: the calculated monitoring data. If there is no subband data
+            this will return a default instance of a :py:class:`SmrbMonitorData`.
+        """
+        number_subbands: int = len(self._subband_data)
+        if number_subbands == 0:
+            # no ringbuffer has been allocated, so return empty data
+            return SmrbMonitorData()
+
+        ring_buffer_utilisation: float = 0.0
+        ring_buffer_size: int = 0
+        ring_buffer_read: int = 0
+        ring_buffer_written: int = 0
+
+        # initialise subband data to zeros
+        subband_ring_buffer_utilisations: List[float] = number_subbands * [0.0]
+        subband_ring_buffer_sizes: List[int] = number_subbands * [0]
+        subband_ring_buffer_read: List[int] = number_subbands * [0]
+        subband_ring_buffer_written: List[int] = number_subbands * [0]
+
+        total_utilised_bytes: float = 0.0
+
+        for subband_id, data in self._subband_data.items():
+            # need a zero offset
+            idx = subband_id - 1
+            ring_buffer_size += data.buffer_size
+            ring_buffer_read += data.total_read
+            ring_buffer_written += data.total_written
+            total_utilised_bytes += data.utilised_bytes
+
+            subband_ring_buffer_utilisations[idx] = data.utilisation
+            subband_ring_buffer_sizes[idx] = data.buffer_size
+            subband_ring_buffer_read[idx] = data.total_read
+            subband_ring_buffer_written[idx] = data.total_written
+
+        if ring_buffer_size > 0:
+            # avoid true divide by zero.  This should not happen
+            # if the ring buffers have been allocated.
+            ring_buffer_utilisation = total_utilised_bytes / ring_buffer_size * 100.0
+
+        return SmrbMonitorData(
+            ring_buffer_utilisation=ring_buffer_utilisation,
+            ring_buffer_size=ring_buffer_size,
+            ring_buffer_read=ring_buffer_read,
+            ring_buffer_written=ring_buffer_written,
+            number_subbands=number_subbands,
+            subband_ring_buffer_utilisations=subband_ring_buffer_utilisations,
+            subband_ring_buffer_sizes=subband_ring_buffer_sizes,
+            subband_ring_buffer_read=subband_ring_buffer_read,
+            subband_ring_buffer_written=subband_ring_buffer_written,
+        )

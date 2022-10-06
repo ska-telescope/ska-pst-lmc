@@ -11,10 +11,10 @@ from random import randint
 
 import numpy as np
 
-from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData, SmrbMonitorDataStore, SubbandMonitorData
+from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData, SmrbMonitorDataStore, SmrbSubbandMonitorData
 
 
-def generate_smrb_subband_monitor_data() -> SubbandMonitorData:
+def generate_smrb_subband_monitor_data() -> SmrbSubbandMonitorData:
     """Create random SMRB subband data."""
     buffer_size = randint(100, 1000)
     num_of_buffers = randint(100, 1000)
@@ -22,7 +22,7 @@ def generate_smrb_subband_monitor_data() -> SubbandMonitorData:
     total_read = total_written - 1
     full = randint(1, num_of_buffers)
 
-    return SubbandMonitorData(
+    return SmrbSubbandMonitorData(
         buffer_size=buffer_size,
         num_of_buffers=num_of_buffers,
         total_written=total_written,
@@ -52,9 +52,9 @@ def test_smrb_data_store_with_one_subband() -> None:
     data_store = SmrbMonitorDataStore()
     subband_data = generate_smrb_subband_monitor_data()
 
-    data_store.subband_data[1] = subband_data
+    data_store.update_subband(subband_id=1, subband_data=subband_data)
 
-    actual: SmrbMonitorData = data_store.get_smrb_monitor_data()
+    actual: SmrbMonitorData = data_store.monitor_data
 
     assert actual.number_subbands == 1
     assert actual.ring_buffer_read == subband_data.total_read
@@ -80,7 +80,7 @@ def test_smrb_data_store_with_multiple_subbands() -> None:
 
     for idx in range(num_subbands):
         subband_data = generate_smrb_subband_monitor_data()
-        data_store.subband_data[idx + 1] = subband_data
+        data_store.update_subband(subband_id=(idx + 1), subband_data=subband_data)
 
         total_read += subband_data.total_read
         total_written += subband_data.total_written
@@ -92,7 +92,7 @@ def test_smrb_data_store_with_multiple_subbands() -> None:
         expected_subband_buffer_sizes[idx] = subband_data.buffer_size
         expected_subband_utilisations[idx] = subband_data.utilisation
 
-    actual: SmrbMonitorData = data_store.get_smrb_monitor_data()
+    actual: SmrbMonitorData = data_store.monitor_data
 
     assert actual.number_subbands == num_subbands
     assert actual.ring_buffer_read == total_read

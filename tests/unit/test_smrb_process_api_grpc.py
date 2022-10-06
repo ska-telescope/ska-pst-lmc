@@ -53,7 +53,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
 )
 from ska_tango_base.commands import TaskStatus
 
-from ska_pst_lmc.smrb.smrb_model import SubbandMonitorData
+from ska_pst_lmc.smrb.smrb_model import SmrbSubbandMonitorData
 from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApiGrpc
 from ska_pst_lmc.smrb.smrb_util import calculate_smrb_subband_resources
 from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
@@ -761,7 +761,7 @@ def test_smrb_grpc_simulated_monitor_calls_callback(
     calls = [
         call(
             subband_id=1,
-            subband_data=SubbandMonitorData(
+            subband_data=SmrbSubbandMonitorData(
                 buffer_size=buffer_size,
                 total_written=total_written,
                 total_read=total_read,

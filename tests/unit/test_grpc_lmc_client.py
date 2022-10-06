@@ -24,7 +24,12 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GoToFaultResponse,
 )
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ObsState as GrpcObsState
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import SmrbResources, SmrbScanConfiguration
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    ResourceConfiguration,
+    ScanConfiguration,
+    SmrbResources,
+    SmrbScanConfiguration,
+)
 from ska_tango_base.control_model import ObsState
 
 from ska_pst_lmc.component.grpc_lmc_client import (
@@ -52,7 +57,9 @@ def test_grpc_client_get_assigned_resources(
     mock_servicer_context: MagicMock,
 ) -> None:
     """Test getting the assigned resources of service."""
-    response = GetAssignedResourcesResponse(smrb=SmrbResources())
+    response = GetAssignedResourcesResponse(
+        resource_configuration=ResourceConfiguration(smrb=SmrbResources())
+    )
     mock_servicer_context.get_assigned_resources = MagicMock(return_value=response)
     grpc_client.get_assigned_resources()
 
@@ -80,7 +87,9 @@ def test_grpc_client_get_scan_configuration(
     mock_servicer_context: MagicMock,
 ) -> None:
     """Test getting the configuration for upcoming scan."""
-    response = GetScanConfigurationResponse(smrb=SmrbScanConfiguration())
+    response = GetScanConfigurationResponse(
+        scan_configuration=ScanConfiguration(smrb=SmrbScanConfiguration())
+    )
     mock_servicer_context.get_scan_configuration = MagicMock(return_value=response)
     grpc_client.get_scan_configuration()
 

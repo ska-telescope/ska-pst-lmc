@@ -11,13 +11,12 @@ from __future__ import annotations
 
 import functools
 import logging
-import threading
 from typing import Any, Callable, List, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
-from ska_pst_lmc.component.component_manager import PstApiComponentManager, TaskResponse
-from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData, SmrbMonitorDataStore, SubbandMonitorData
+from ska_pst_lmc.component import MonitorDataHandler, PstApiComponentManager, TaskResponse
+from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData, SmrbMonitorDataStore
 from ska_pst_lmc.smrb.smrb_process_api import (
     PstSmrbProcessApi,
     PstSmrbProcessApiGrpc,
@@ -73,11 +72,11 @@ class PstSmrbComponentManager(PstApiComponentManager):
             component_state_callback=component_state_callback,
         )
 
-        # need a lock for updating component data
-        self._monitor_lock = threading.Lock()
-        self._monitor_data_store = SmrbMonitorDataStore()
-        self._monitor_data = SmrbMonitorData()
-        self._monitor_data_callback = monitor_data_callback
+        # Set up handling of monitor data.
+        self._monitor_data_handler = MonitorDataHandler(
+            data_store=SmrbMonitorDataStore(),
+            monitor_data_callback=monitor_data_callback,
+        )
         self._monitor_polling_rate = monitor_polling_rate
 
         super().__init__(
@@ -182,6 +181,11 @@ class PstSmrbComponentManager(PstApiComponentManager):
         """
         return self._monitor_data.subband_ring_buffer_written
 
+    @property
+    def _monitor_data(self: PstSmrbComponentManager) -> SmrbMonitorData:
+        """Get monitor data from data handler."""
+        return self._monitor_data_handler.monitor_data
+
     def _update_api(self: PstSmrbComponentManager) -> None:
         """Update instance of API based on simulation mode."""
         if self._simuation_mode == SimulationMode.TRUE:
@@ -220,7 +224,7 @@ class PstSmrbComponentManager(PstApiComponentManager):
             self._api.scan(args, task_callback=task_callback)
             self._api.monitor(
                 # for now only handling 1 subband
-                subband_monitor_data_callback=self._handle_subband_monitor_data,
+                subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
                 polling_rate=self._monitor_polling_rate,
             )
 
@@ -233,44 +237,6 @@ class PstSmrbComponentManager(PstApiComponentManager):
             self._api.end_scan(task_callback=task_callback)
 
             # reset the monitoring data
-            self._monitor_data = SmrbMonitorData()
-            self._monitor_data_callback(self._monitor_data)
+            self._monitor_data_handler.reset_monitor_data()
 
         return self._submit_background_task(_task, task_callback=task_callback)
-
-    def obsreset(self: PstSmrbComponentManager, task_callback: Callable) -> TaskResponse:
-        """Handle observation reset.
-
-        This occurs when the device is in ABORTED or FAULT state. This is used to make
-        sure that the device is put back in to an IDLE state.
-        """
-        return self._submit_background_task(
-            functools.partial(self._api.reset),
-            task_callback=task_callback,
-        )
-
-    def restart(self: PstSmrbComponentManager, task_callback: Callable) -> TaskResponse:
-        """Handle device restart command.
-
-        This occurs when the device is in ABORTED or FAULT state but the operator wants
-        to also release all the resources of device. Calling this will ensure that the
-        device is deconfigured and resources are deallocated.
-        """
-        return self._submit_background_task(
-            functools.partial(self._api.restart),
-            task_callback=task_callback,
-        )
-
-    def _handle_subband_monitor_data(
-        self: PstSmrbComponentManager,
-        *args: Any,
-        subband_id: int,
-        subband_data: SubbandMonitorData,
-        **kwargs: dict,
-    ) -> None:
-        """Handle receiving of a sub-band monitor data update."""
-        self.logger.info(f"Received subband data for subband {subband_id}. Data=\n{subband_data}")
-        with self._monitor_lock:
-            self._monitor_data_store.subband_data[subband_id] = subband_data
-            self._monitor_data = self._monitor_data_store.get_smrb_monitor_data()
-            self._monitor_data_callback(self._monitor_data)
