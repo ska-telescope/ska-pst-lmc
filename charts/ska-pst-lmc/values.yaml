@@ -45,7 +45,7 @@ recv:
 dsp:
   simulationMode: 1
   monitor_polling_rate: 5000
-  smrb_process_api_endpoint: ska-pst-dsp:8080 # these should come from pod name and port configs
+  dsp_process_api_endpoint: ska-pst-dsp:8080 # these should come from pod name and port configs
 
 dsconfig:
   image:
