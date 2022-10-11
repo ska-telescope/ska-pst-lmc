@@ -57,7 +57,7 @@ def get_udp_format(frequency_band: Optional[str] = None, **kwargs: dict) -> str:
     return LOW_PST
 
 
-def map_configure_request(
+def generate_recv_scan_request(
     request_params: dict,
 ) -> dict:
     """Map the LMC configure request to what is needed by RECV.CORE.

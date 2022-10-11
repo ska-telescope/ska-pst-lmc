@@ -11,7 +11,7 @@ from typing import List
 
 import pytest
 
-from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources, map_configure_request
+from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources, generate_recv_scan_request
 from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 
 
@@ -207,7 +207,7 @@ def test_map_configure_request(
     configure_scan_request: dict,
 ) -> None:
     """Test that the correct RECV subband resources request is created."""
-    actual = map_configure_request(configure_scan_request)
+    actual = generate_recv_scan_request(configure_scan_request)
 
     assert actual["activation_time"] == configure_scan_request["activation_time"]
     assert actual["scan_id"] == configure_scan_request["scan_id"]
@@ -231,7 +231,7 @@ def test_map_configure_request_test_equinox(
 ) -> None:
     """Test that the correct RECV subband resources request is created."""
     configure_scan_request["coordinates"]["equinox"] = 2000.0
-    actual = map_configure_request(configure_scan_request)
+    actual = generate_recv_scan_request(configure_scan_request)
 
     assert actual["equinox"] == "2000.0"
 
@@ -241,6 +241,6 @@ def test_map_configure_request_test_vector_not_set(
 ) -> None:
     """Test that the correct RECV subband resources request is created."""
     del configure_scan_request["test_vector_id"]
-    actual = map_configure_request(configure_scan_request)
+    actual = generate_recv_scan_request(configure_scan_request)
 
     assert "test_vector" not in actual
