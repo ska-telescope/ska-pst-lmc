@@ -36,6 +36,7 @@ class TestPstBeam:
         logger: logging.Logger,
     ) -> None:
         """Test state model of PstReceive."""
+        dsp_proxy = DeviceProxyFactory.get_device("low-pst/dsp/01")
         recv_proxy = DeviceProxyFactory.get_device("low-pst/recv/01")
         smrb_proxy = DeviceProxyFactory.get_device("low-pst/smrb/01")
         beam_proxy = DeviceProxyFactory.get_device("low-pst/beam/01")
@@ -54,6 +55,7 @@ class TestPstBeam:
             assert beam_proxy.state() == state
             assert recv_proxy.state() == state
             assert smrb_proxy.state() == state
+            assert dsp_proxy.state() == state
 
         @backoff.on_exception(
             backoff.expo,
@@ -65,6 +67,7 @@ class TestPstBeam:
             assert beam_proxy.obsState == obsState
             assert recv_proxy.obsState == obsState
             assert smrb_proxy.obsState == obsState
+            assert dsp_proxy.obsState == obsState
 
         # better handle of setup and teardown
         assert_state(DevState.DISABLE)
@@ -73,6 +76,7 @@ class TestPstBeam:
         time.sleep(0.2)
         assert recv_proxy.adminMode == AdminMode.ONLINE
         assert smrb_proxy.adminMode == AdminMode.ONLINE
+        assert dsp_proxy.adminMode == AdminMode.ONLINE
 
         assert_state(DevState.OFF)
 
@@ -134,5 +138,6 @@ class TestPstBeam:
             time.sleep(0.1)
             assert recv_proxy.adminMode == AdminMode.OFFLINE
             assert smrb_proxy.adminMode == AdminMode.OFFLINE
+            assert dsp_proxy.adminMode == AdminMode.OFFLINE
 
             assert_state(DevState.DISABLE)

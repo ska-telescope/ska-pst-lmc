@@ -3,6 +3,8 @@ function: ska-pst-lmc-test
 domain: ska-pst-lmc
 instances: ["01"]
 entrypoints:
+  - name: "dsp_device.PstDsp"
+    path: "/app/src/ska_pst_lmc/dsp/dsp_device.py"
   - name: "receive_device.PstReceive"
     path: "/app/src/ska_pst_lmc/receive/receive_device.py"
   - name: "smrb_device.PstSmrb"
@@ -14,6 +16,22 @@ server:
   instances:
     - name: "01"
       classes:
+      - name: "PstDsp"
+        devices:
+        - name: "low-pst/dsp/01"
+          properties:
+          - name: "process_api_endpoint"
+            values:
+            - "{{.Release.Name}}-{{.Values.dsp.dsp_process_api_endpoint}}"
+          - name: "monitoring_polling_rate"
+            values:
+            - "{{.Values.dsp.monitor_polling_rate}}"
+          attribute_properties:
+          - attribute: "simulationMode"
+            properties:
+            - name: "__value"
+              values:
+              - "{{.Values.dsp.simulationMode}}"
       - name: "PstReceive"
         devices:
         - name: "low-pst/recv/01"

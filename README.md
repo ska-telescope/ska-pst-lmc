@@ -15,8 +15,6 @@ This project is based off the old [pst-lmc](https://gitlab.com/ska-telescope/pst
 
 ## TANGO Devices
 
-**TODO** - Update as TANGO devices ported/updated
-
 ### Base classes
 
 The `ska_pst_lmc.component` module is for common base classes for TANGO device components. For now the only class
@@ -61,6 +59,21 @@ It includes the use of:
 
 While the Process API is similar to the Component Manager, it's goal is different. The Component Manager uses the API which
 will ultimately connect to the SMRB process or a stubbed/simulator process. It is meant to deal with the communication with
+the external process and also not worry about the state model, which is a part of the component manager.
+
+### DSP Device
+
+This device is used for managing and monitoring the Digital Signal Processing (DSP) process within the PST.LMC sub-system.
+It includes the use of:
+
+* SKASubarray TANGO Device (found in the [ska-tango-base](https://gitlab.com/ska-telescope/ska-tango-base))
+* A Component Manager extending from `PstComponentManager`
+* A process API
+* A SMRB Model module
+* A simulator
+
+While the Process API is similar to the Component Manager, it's goal is different. The Component Manager uses the API which
+will ultimately connect to the DSP process or a stubbed/simulator process. It is meant to deal with the communication with
 the external process and also not worry about the state model, which is a part of the component manager.
 
 ## Developer Setup

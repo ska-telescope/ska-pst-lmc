@@ -5,7 +5,7 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
 
-"""This module contains tests for the SMRB component managers class."""
+"""This module contains tests for the DSP component managers class."""
 
 import logging
 import time
@@ -18,14 +18,10 @@ from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component import MonitorDataHandler
-from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
-from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData
-from ska_pst_lmc.smrb.smrb_process_api import (
-    PstSmrbProcessApi,
-    PstSmrbProcessApiGrpc,
-    PstSmrbProcessApiSimulator,
-)
-from ska_pst_lmc.smrb.smrb_util import calculate_smrb_subband_resources
+from ska_pst_lmc.dsp.dsp_component_manager import PstDspComponentManager
+from ska_pst_lmc.dsp.dsp_model import DspMonitorData
+from ska_pst_lmc.dsp.dsp_process_api import PstDspProcessApi, PstDspProcessApiGrpc, PstDspProcessApiSimulator
+from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources
 from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
 
 
@@ -35,13 +31,13 @@ def component_manager(
     grpc_endpoint: str,
     simulation_mode: SimulationMode,
     logger: logging.Logger,
-    api: PstSmrbProcessApi,
+    api: PstDspProcessApi,
     communication_state_callback: Callable[[CommunicationStatus], None],
     component_state_callback: Callable,
     monitor_data_callback: Callable,
-) -> PstSmrbComponentManager:
+) -> PstDspComponentManager:
     """Create instance of a component manager."""
-    return PstSmrbComponentManager(
+    return PstDspComponentManager(
         device_name=device_name,
         process_api_endpoint=grpc_endpoint,
         simulation_mode=simulation_mode,
@@ -60,15 +56,15 @@ def api(
     simulation_mode: SimulationMode,
     logger: logging.Logger,
     component_state_callback: Callable,
-) -> PstSmrbProcessApi:
+) -> PstDspProcessApi:
     """Create an API instance."""
     if simulation_mode == SimulationMode.TRUE:
-        return PstSmrbProcessApiSimulator(
+        return PstDspProcessApiSimulator(
             logger=logger,
             component_state_callback=component_state_callback,
         )
     else:
-        return PstSmrbProcessApiGrpc(
+        return PstDspProcessApiGrpc(
             client_id=device_name,
             grpc_endpoint=grpc_endpoint,
             logger=logger,
@@ -79,29 +75,29 @@ def api(
 @pytest.fixture
 def monitor_data(
     scan_request: dict,
-) -> SmrbMonitorData:
+) -> DspMonitorData:
     """Create an an instance of ReceiveData for monitor data."""
-    from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
+    from ska_pst_lmc.dsp.dsp_simulator import PstDspSimulator
 
-    simulator = PstSmrbSimulator()
+    simulator = PstDspSimulator()
     simulator.scan(args=scan_request)
 
     return simulator.get_data()
 
 
 @pytest.fixture
-def calculated_smrb_subband_resources(beam_id: int, assign_resources_request: dict) -> dict:
-    """Fixture to calculate expected smrb subband resources."""
-    resources = calculate_smrb_subband_resources(
+def calculated_dsp_subband_resources(beam_id: int, assign_resources_request: dict) -> dict:
+    """Fixture to calculate expected dsp subband resources."""
+    resources = calculate_dsp_subband_resources(
         beam_id=beam_id,
         request_params=assign_resources_request,
     )
     return resources[1]
 
 
-def test_smrb_cm_start_communicating_calls_connect_on_api(
-    component_manager: PstSmrbComponentManager,
-    api: PstSmrbProcessApi,
+def test_dsp_cm_start_communicating_calls_connect_on_api(
+    component_manager: PstDspComponentManager,
+    api: PstDspProcessApi,
 ) -> None:
     """Assert start/stop communicating calls API."""
     api = MagicMock(wraps=api)
@@ -120,20 +116,20 @@ def test_smrb_cm_start_communicating_calls_connect_on_api(
 @pytest.mark.parametrize(
     "property",
     [
-        ("ring_buffer_utilisation"),
-        ("ring_buffer_size"),
-        ("number_subbands"),
-        ("ring_buffer_read"),
-        ("ring_buffer_written"),
-        ("subband_ring_buffer_utilisations"),
-        ("subband_ring_buffer_sizes"),
-        ("subband_ring_buffer_read"),
-        ("subband_ring_buffer_written"),
+        ("disk_capacity"),
+        ("disk_available_bytes"),
+        ("disk_used_bytes"),
+        ("disk_used_percentage"),
+        ("bytes_written"),
+        ("write_rate"),
+        ("available_recording_time"),
+        ("subband_bytes_written"),
+        ("subband_write_rate"),
     ],
 )
-def test_smrb_cm_properties_come_from_simulator_api_monitor_data(
-    component_manager: PstSmrbComponentManager,
-    monitor_data: SmrbMonitorData,
+def test_dsp_cm_properties_come_from_simulator_api_monitor_data(
+    component_manager: PstDspComponentManager,
+    monitor_data: DspMonitorData,
     property: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -146,16 +142,16 @@ def test_smrb_cm_properties_come_from_simulator_api_monitor_data(
     assert actual == expected
 
 
-def test_smrb_cm_api_instance_changes_depending_on_simulation_mode(
-    component_manager: PstSmrbComponentManager,
+def test_dsp_cm_api_instance_changes_depending_on_simulation_mode(
+    component_manager: PstDspComponentManager,
 ) -> None:
     """Test to assert that the process API changes depending on simulation mode."""
     assert component_manager.simulation_mode == SimulationMode.TRUE
-    assert type(component_manager._api) == PstSmrbProcessApiSimulator
+    assert type(component_manager._api) == PstDspProcessApiSimulator
 
     component_manager.simulation_mode = SimulationMode.FALSE
 
-    assert type(component_manager._api) == PstSmrbProcessApiGrpc
+    assert type(component_manager._api) == PstDspProcessApiGrpc
 
 
 @pytest.mark.parametrize(
@@ -165,9 +161,9 @@ def test_smrb_cm_api_instance_changes_depending_on_simulation_mode(
         (SimulationMode.FALSE,),
     ],
 )
-def test_smrb_cm_no_change_in_simulation_mode_value_wont_change_communication_state(
+def test_dsp_cm_no_change_in_simulation_mode_value_wont_change_communication_state(
     device_name: str,
-    component_manager: PstSmrbComponentManager,
+    component_manager: PstDspComponentManager,
     simulation_mode: SimulationMode,
     pst_lmc_service: TestPstLmcService,
     mock_servicer_context: MagicMock,
@@ -196,9 +192,9 @@ def test_smrb_cm_no_change_in_simulation_mode_value_wont_change_communication_st
     update_communication_state.assert_not_called()
 
 
-def test_smrb_cm_if_communicating_switching_simulation_mode_must_stop_then_restart(
+def test_dsp_cm_if_communicating_switching_simulation_mode_must_stop_then_restart(
     device_name: str,
-    component_manager: PstSmrbComponentManager,
+    component_manager: PstDspComponentManager,
     pst_lmc_service: TestPstLmcService,
     mock_servicer_context: MagicMock,
 ) -> None:
@@ -238,8 +234,8 @@ def test_smrb_cm_if_communicating_switching_simulation_mode_must_stop_then_resta
     update_communication_state.reset_mock()
 
 
-def test_smrb_cm_not_communicating_switching_simulation_mode_not_try_to_establish_connection(
-    component_manager: PstSmrbComponentManager,
+def test_dsp_cm_not_communicating_switching_simulation_mode_not_try_to_establish_connection(
+    component_manager: PstDspComponentManager,
 ) -> None:
     """Test if not communicating and change of simulation happens, don't do anything."""
     update_communication_state = MagicMock(wraps=component_manager._update_communication_state)
@@ -258,11 +254,11 @@ def test_smrb_cm_not_communicating_switching_simulation_mode_not_try_to_establis
     update_communication_state.assert_not_called()
 
 
-def test_smrb_cm_smrb_assign_resources(
-    component_manager: PstSmrbComponentManager,
+def test_dsp_cm_dsp_assign_resources(
+    component_manager: PstDspComponentManager,
     assign_resources_request: dict,
     task_callback: Callable,
-    calculated_smrb_subband_resources: dict,
+    calculated_dsp_subband_resources: dict,
 ) -> None:
     """Test that assign resources calls the API correctly."""
     api = MagicMock()
@@ -275,12 +271,12 @@ def test_smrb_cm_smrb_assign_resources(
     component_manager.assign(resources=assign_resources_request, task_callback=task_callback)
 
     api.assign_resources.assert_called_once_with(
-        resources=calculated_smrb_subband_resources, task_callback=task_callback
+        resources=calculated_dsp_subband_resources, task_callback=task_callback
     )
 
 
-def test_smrb_cm_smrb_release_resources(
-    component_manager: PstSmrbComponentManager,
+def test_dsp_cm_dsp_release_resources(
+    component_manager: PstDspComponentManager,
     task_callback: Callable,
 ) -> None:
     """Test that assign resources calls the API correctly."""
@@ -295,8 +291,8 @@ def test_smrb_cm_smrb_release_resources(
     api.release_resources.assert_called_once_with(task_callback=task_callback)
 
 
-def test_smrb_cm_configure_scan(
-    component_manager: PstSmrbComponentManager,
+def test_dsp_cm_configure_scan(
+    component_manager: PstDspComponentManager,
     configure_scan_request: dict,
     task_callback: Callable,
 ) -> None:
@@ -315,8 +311,8 @@ def test_smrb_cm_configure_scan(
     )
 
 
-def test_smrb_cm_deconfigure(
-    component_manager: PstSmrbComponentManager,
+def test_dsp_cm_deconfigure(
+    component_manager: PstDspComponentManager,
     task_callback: Callable,
 ) -> None:
     """Test that the component manager calls the API for configure."""
@@ -333,8 +329,8 @@ def test_smrb_cm_deconfigure(
     )
 
 
-def test_smrb_cm_smrb_scan(
-    component_manager: PstSmrbComponentManager,
+def test_dsp_cm_dsp_scan(
+    component_manager: PstDspComponentManager,
     scan_request: dict,
     task_callback: Callable,
 ) -> None:
@@ -357,8 +353,8 @@ def test_smrb_cm_smrb_scan(
     )
 
 
-def test_smrb_cm_smrb_end_scan(
-    component_manager: PstSmrbComponentManager,
+def test_dsp_cm_dsp_end_scan(
+    component_manager: PstDspComponentManager,
     task_callback: Callable,
     monitor_data_callback: MagicMock,
 ) -> None:
@@ -374,12 +370,12 @@ def test_smrb_cm_smrb_end_scan(
     api.end_scan.assert_called_once_with(
         task_callback=task_callback,
     )
-    assert component_manager._monitor_data == SmrbMonitorData()
-    monitor_data_callback.assert_called_once_with(SmrbMonitorData())
+    assert component_manager._monitor_data == DspMonitorData()
+    monitor_data_callback.assert_called_once_with(DspMonitorData())
 
 
-def test_smrb_cm_smrb_abort(
-    component_manager: PstSmrbComponentManager,
+def test_dsp_cm_dsp_abort(
+    component_manager: PstDspComponentManager,
     task_callback: Callable,
 ) -> None:
     """Test that the component manager calls the API to abort on service."""
@@ -396,8 +392,8 @@ def test_smrb_cm_smrb_abort(
     )
 
 
-def test_smrb_cm_smrb_obsreset(
-    component_manager: PstSmrbComponentManager,
+def test_dsp_cm_dsp_obsreset(
+    component_manager: PstDspComponentManager,
     task_callback: Callable,
 ) -> None:
     """Test that the component manager calls the API to reset service in ABORTED or FAULT state."""
@@ -414,8 +410,8 @@ def test_smrb_cm_smrb_obsreset(
     )
 
 
-def test_smrb_cm_smrb_restart(
-    component_manager: PstSmrbComponentManager,
+def test_dsp_cm_dsp_restart(
+    component_manager: PstDspComponentManager,
     task_callback: Callable,
 ) -> None:
     """Test that the component manager calls the API to restart service in ABORTED or FAULT state."""
@@ -432,8 +428,8 @@ def test_smrb_cm_smrb_restart(
     )
 
 
-def test_smrb_cm_recv_go_to_fault(
-    component_manager: PstSmrbComponentManager,
+def test_dsp_cm_recv_go_to_fault(
+    component_manager: PstDspComponentManager,
     task_callback: Callable,
 ) -> None:
     """Test that the component manager calls the API start a scan."""

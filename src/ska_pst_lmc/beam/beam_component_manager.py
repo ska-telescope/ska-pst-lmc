@@ -90,12 +90,14 @@ class PstBeamComponentManager(PstComponentManager):
 
     _smrb_device: PstDeviceProxy
     _recv_device: PstDeviceProxy
+    _dsp_device: PstDeviceProxy
 
     def __init__(
         self: PstBeamComponentManager,
         device_name: str,
         smrb_fqdn: str,
         recv_fqdn: str,
+        dsp_fqdn: str,
         logger: logging.Logger,
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable,
@@ -107,6 +109,7 @@ class PstBeamComponentManager(PstComponentManager):
         :param smrb_fqdn: the fully qualified device name (FQDN) of the
             shared memory ring buffer (SMRB) TANGO device.
         :param recv_fqdn: the FQDN of the Receive TANGO device.
+        :param dsp_fqdn: the FQDN of the Digital Signal processing (DSP) TANGO device.
         :param simulation_mode: enum to track if component should be
             in simulation mode or not.
         :param logger: a logger for this object to use
@@ -118,7 +121,8 @@ class PstBeamComponentManager(PstComponentManager):
         """
         self._smrb_device = DeviceProxyFactory.get_device(smrb_fqdn)
         self._recv_device = DeviceProxyFactory.get_device(recv_fqdn)
-        self._remote_devices = [self._smrb_device, self._recv_device]
+        self._dsp_device = DeviceProxyFactory.get_device(dsp_fqdn)
+        self._remote_devices = [self._smrb_device, self._recv_device, self._dsp_device]
         self._subscribed = False
         self._long_running_client = LongRunningCommandInterface(
             tango_devices=self._remote_devices,
@@ -156,6 +160,7 @@ class PstBeamComponentManager(PstComponentManager):
         """
         self._smrb_device.adminMode = admin_mode
         self._recv_device.adminMode = admin_mode
+        self._dsp_device.adminMode = admin_mode
 
     def _submit_remote_job(
         self: PstBeamComponentManager,
@@ -378,6 +383,7 @@ class PstBeamComponentManager(PstComponentManager):
         # raise NotImplementedError("SubarrayComponentManager is abstract.")
         self._smrb_device.Abort()
         self._recv_device.Abort()
+        self._dsp_device.Abort()
         return super().abort_tasks(task_callback)
 
     def obsreset(self: PstBeamComponentManager, task_callback: Callable) -> TaskResponse:

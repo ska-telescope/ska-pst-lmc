@@ -8,6 +8,7 @@ API
 
   Beam subpackage<beam/index>
   Component subpackage<component/index>
+  Digital Signal Processing subpackage<dsp/index>
   Receive subpackage<receive/index>
   SMRB subpackage<smrb/index>
   Util subpackage<util/index>

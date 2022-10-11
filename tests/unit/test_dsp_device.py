@@ -5,7 +5,7 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
 
-"""Test to the SMRB Tango device for PST.LMC."""
+"""Test to the DSP Tango device for PST.LMC."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ import json
 import time
 from unittest.mock import MagicMock
 
+import numpy as np
 import pytest
 import tango
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionResponse
@@ -20,7 +21,7 @@ from ska_tango_base.commands import ResultCode, TaskStatus
 from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
 
-from ska_pst_lmc.smrb.smrb_device import PstSmrb
+from ska_pst_lmc.dsp.dsp_device import PstDsp
 from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
 from tests.conftest import TangoDeviceCommandChecker
 
@@ -36,11 +37,11 @@ def device_properties(
     }
 
 
-class TestPstSmrb:
+class TestPstDsp:
     """Test class used for testing the PstReceive TANGO device."""
 
     @pytest.fixture
-    def device_test_config(self: TestPstSmrb, device_properties: dict) -> dict:
+    def device_test_config(self: TestPstDsp, device_properties: dict) -> dict:
         """
         Specify device configuration, including properties and memorized attributes.
 
@@ -54,13 +55,13 @@ class TestPstSmrb:
             configured
         """
         return {
-            "device": PstSmrb,
+            "device": PstDsp,
             "process": True,
             "properties": device_properties,
             "memorized": {"adminMode": str(AdminMode.ONLINE.value)},
         }
 
-    def test_State(self: TestPstSmrb, device_under_test: DeviceProxy) -> None:
+    def test_State(self: TestPstDsp, device_under_test: DeviceProxy) -> None:
         """
         Test for State.
 
@@ -69,7 +70,7 @@ class TestPstSmrb:
         assert device_under_test.state() == DevState.OFF
         assert device_under_test.Status() == "The device is in OFF state."
 
-    def test_GetVersionInfo(self: TestPstSmrb, device_under_test: DeviceProxy) -> None:
+    def test_GetVersionInfo(self: TestPstDsp, device_under_test: DeviceProxy) -> None:
         """
         Test for GetVersionInfo.
 
@@ -87,14 +88,14 @@ class TestPstSmrb:
 
     @pytest.mark.forked
     def test_configure_then_scan_then_stop(
-        self: TestPstSmrb,
+        self: TestPstDsp,
         device_under_test: DeviceProxy,
         assign_resources_request: dict,
         configure_scan_request: dict,
         scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
-        """Test state model of PstSmrb."""
+        """Test state model of PstDsp."""
         assert device_under_test.state() == DevState.OFF
 
         tango_device_command_checker.assert_command(
@@ -130,17 +131,30 @@ class TestPstSmrb:
 
         # still need to sleep. Wait for 2 polling periods
         time.sleep(0.2)
-        assert device_under_test.ring_buffer_utilisation >= 0.0
-        assert device_under_test.ring_buffer_size > 0
-        assert device_under_test.number_subbands > 0
-        assert device_under_test.ring_buffer_read >= 0
-        assert device_under_test.ring_buffer_written >= 0
+        assert device_under_test.disk_capacity > 0
+        assert device_under_test.disk_available_bytes > 0
+        print(device_under_test.disk_used_bytes)
+        assert device_under_test.disk_used_bytes > 0
+        assert (
+            device_under_test.disk_capacity
+            == device_under_test.disk_available_bytes + device_under_test.disk_used_bytes
+        )
+        assert device_under_test.disk_used_percentage >= 0.0
+        np.testing.assert_almost_equal(
+            device_under_test.disk_used_percentage,
+            100.0 * device_under_test.disk_used_bytes / device_under_test.disk_capacity,
+        )
+        assert device_under_test.write_rate >= 0.0
+        assert device_under_test.bytes_written > 0
 
-        for i in range(device_under_test.number_subbands):
-            assert device_under_test.subband_ring_buffer_utilisations[i] >= 0.0
-            assert device_under_test.subband_ring_buffer_sizes[i] > 0
-            assert device_under_test.subband_ring_buffer_read[i] >= 0
-            assert device_under_test.subband_ring_buffer_written[i] >= 0
+        for wr in device_under_test.subband_write_rate:
+            assert wr >= 0.0
+
+        for bw in device_under_test.subband_bytes_written:
+            assert bw > 0
+
+        assert device_under_test.bytes_written == np.sum(device_under_test.subband_bytes_written)
+        np.testing.assert_almost_equal(device_under_test.write_rate, np.sum(device_under_test.write_rate))
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.EndScan(),
@@ -166,7 +180,7 @@ class TestPstSmrb:
 
     @pytest.mark.forked
     def test_abort_when_scanning(
-        self: TestPstSmrb,
+        self: TestPstDsp,
         device_under_test: DeviceProxy,
         assign_resources_request: dict,
         configure_scan_request: dict,
@@ -268,12 +282,12 @@ class TestPstSmrb:
 
     @pytest.mark.forked
     def test_simulation_mode(
-        self: TestPstSmrb,
+        self: TestPstDsp,
         device_under_test: DeviceProxy,
         pst_lmc_service: TestPstLmcService,
         mock_servicer_context: MagicMock,
     ) -> None:
-        """Test state model of PstSmrb."""
+        """Test state model of PstDsp."""
         device_under_test.loggingLevel = 5
 
         device_under_test.simulationMode = SimulationMode.TRUE
@@ -293,11 +307,11 @@ class TestPstSmrb:
 
     @pytest.mark.forked
     def test_simulation_mode_when_not_in_empty_obs_state(
-        self: TestPstSmrb,
+        self: TestPstDsp,
         device_under_test: DeviceProxy,
         assign_resources_request: dict,
     ) -> None:
-        """Test state model of PstSmrb."""
+        """Test state model of PstDsp."""
         device_under_test.simulationMode = SimulationMode.TRUE
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
@@ -321,12 +335,12 @@ class TestPstSmrb:
 
     @pytest.mark.forked
     def test_simulation_mode_when_in_empty_obs_state(
-        self: TestPstSmrb,
+        self: TestPstDsp,
         device_under_test: DeviceProxy,
         pst_lmc_service: TestPstLmcService,
         mock_servicer_context: MagicMock,
     ) -> None:
-        """Test state model of PstSmrb."""
+        """Test state model of PstDsp."""
         response = ConnectionResponse()
         mock_servicer_context.connect = MagicMock(return_value=response)
         assert device_under_test.obsState == ObsState.EMPTY
@@ -346,7 +360,7 @@ class TestPstSmrb:
 
     @pytest.mark.forked
     def test_recv_go_to_fault_when_resources_assigned(
-        self: TestPstSmrb,
+        self: TestPstDsp,
         device_under_test: DeviceProxy,
         assign_resources_request: dict,
         configure_scan_request: dict,
@@ -387,7 +401,7 @@ class TestPstSmrb:
 
     @pytest.mark.forked
     def test_recv_go_to_fault_when_configured(
-        self: TestPstSmrb,
+        self: TestPstDsp,
         device_under_test: DeviceProxy,
         assign_resources_request: dict,
         configure_scan_request: dict,
@@ -437,7 +451,7 @@ class TestPstSmrb:
 
     @pytest.mark.forked
     def test_recv_go_to_fault_when_scanning(
-        self: TestPstSmrb,
+        self: TestPstDsp,
         device_under_test: DeviceProxy,
         assign_resources_request: dict,
         configure_scan_request: dict,

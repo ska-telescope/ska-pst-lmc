@@ -92,6 +92,7 @@ class PstBeam(PstBaseDevice):
             device_name=self.get_name(),
             smrb_fqdn=self.SmrbFQDN,
             recv_fqdn=self.RecvFQDN,
+            dsp_fqdn=self.DspFQDN,
             simulation_mode=SimulationMode.TRUE,
             logger=self.logger,
             communication_state_callback=self._communication_state_changed,

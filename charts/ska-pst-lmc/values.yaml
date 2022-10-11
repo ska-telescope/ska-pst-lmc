@@ -42,6 +42,11 @@ recv:
   monitor_polling_rate: 5000
   recv_process_api_endpoint: ska-pst-recv:8080 # these should come from pod name and port configs
 
+dsp:
+  simulationMode: 1
+  monitor_polling_rate: 5000
+  dsp_process_api_endpoint: ska-pst-dsp:8080 # these should come from pod name and port configs
+
 dsconfig:
   image:
     registry: artefact.skao.int
