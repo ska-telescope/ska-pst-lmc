@@ -8,7 +8,7 @@
 """This module contains tests for the DSP utility methods."""
 
 
-from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources
+from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources, generate_dsp_scan_request
 from ska_pst_lmc.receive.receive_util import calculate_receive_common_resources
 from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 
@@ -30,7 +30,21 @@ def test_calculate_receive_subband_resources(
     assert actual_subband_1["data_key"] == generate_data_key(beam_id=beam_id, subband_id=1)
     assert actual_subband_1["weights_key"] == generate_weights_key(beam_id=beam_id, subband_id=1)
 
-    expected_bytes_per_second = calculate_receive_common_resources(assign_resources_request)[
-        "bytes_per_second"
-    ]
-    assert actual_subband_1["bytes_per_second"] == expected_bytes_per_second
+
+def test_generate_dsp_scan_request(configure_scan_request: dict) -> None:
+    """Test that we generate the correct scan configuration."""
+    actual = generate_dsp_scan_request(request_params=configure_scan_request)
+    recv_common_resources = calculate_receive_common_resources(request_params=configure_scan_request)
+
+    assert actual["scanlen_max"] == configure_scan_request["max_scan_length"]
+    assert actual["bytes_per_second"] == recv_common_resources["bytes_per_second"]
+
+
+def test_generate_dsp_scan_request_when_max_scan_length_not_set(configure_scan_request: dict) -> None:
+    """Test that we generate the correct scan configuration when max_scan_length not set."""
+    del configure_scan_request["max_scan_length"]
+    actual = generate_dsp_scan_request(request_params=configure_scan_request)
+    recv_common_resources = calculate_receive_common_resources(request_params=configure_scan_request)
+
+    assert actual["scanlen_max"] == 0.0
+    assert actual["bytes_per_second"] == recv_common_resources["bytes_per_second"]

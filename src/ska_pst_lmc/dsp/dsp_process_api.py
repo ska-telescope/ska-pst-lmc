@@ -31,6 +31,7 @@ from ska_tango_base.commands import TaskStatus
 from ska_pst_lmc.component.process_api import PstProcessApiGrpc, PstProcessApiSimulator
 from ska_pst_lmc.dsp.dsp_model import DspMonitorData, DspSubbandMonitorData
 from ska_pst_lmc.dsp.dsp_simulator import PstDspSimulator
+from ska_pst_lmc.dsp.dsp_util import generate_dsp_scan_request
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
 __all__ = [
@@ -237,5 +238,5 @@ class PstDspProcessApiGrpc(PstProcessApiGrpc, PstDspProcessApi):
 
     def _get_configure_scan_request(self: PstProcessApiGrpc, configure_parameters: dict) -> ScanConfiguration:
         return ScanConfiguration(
-            dsp=DspScanConfiguration(scanlen_max=int(configure_parameters["max_scan_length"]))
+            dsp=DspScanConfiguration(**generate_dsp_scan_request(request_params=configure_parameters))
         )

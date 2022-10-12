@@ -11,13 +11,13 @@ __all__ = [
     "calculate_dsp_subband_resources",
 ]
 
-from typing import Dict
+from typing import Any, Dict
 
 from ska_pst_lmc.receive.receive_util import calculate_receive_common_resources
 from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 
 
-def calculate_dsp_subband_resources(beam_id: int, request_params: dict) -> Dict[int, dict]:
+def calculate_dsp_subband_resources(beam_id: int, **kwargs: Any) -> Dict[int, dict]:
     """Calculate the digital signal processing (DSP) resources from request.
 
     This is a common method to map a CSP JSON request to the appropriate
@@ -40,18 +40,21 @@ def calculate_dsp_subband_resources(beam_id: int, request_params: dict) -> Dict[
                 1: {
                     'data_key': "a000",
                     'weights_key': "a010",
-                    'bytes_per_second': 1234567.89,
                 }
             }
 
     """
-    recv_common_resources = calculate_receive_common_resources(request_params=request_params)
-    bytes_per_second = recv_common_resources["bytes_per_second"]
-
     return {
         1: {
             "data_key": generate_data_key(beam_id=beam_id, subband_id=1),
             "weights_key": generate_weights_key(beam_id=beam_id, subband_id=1),
-            "bytes_per_second": bytes_per_second,
         }
     }
+
+
+def generate_dsp_scan_request(request_params: dict) -> dict:
+    recv_common_resources = calculate_receive_common_resources(request_params=request_params)
+    bytes_per_second = recv_common_resources["bytes_per_second"]
+    scanlen_max = request_params.get("max_scan_length", 0.0)
+
+    return {"bytes_per_second": bytes_per_second, "scanlen_max": scanlen_max}

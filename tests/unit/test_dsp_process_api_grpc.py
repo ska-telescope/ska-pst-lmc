@@ -54,7 +54,7 @@ from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.dsp.dsp_model import DspSubbandMonitorData
 from ska_pst_lmc.dsp.dsp_process_api import PstDspProcessApiGrpc
-from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources
+from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources, generate_dsp_scan_request
 from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
@@ -102,7 +102,7 @@ def test_dsp_grpc_assign_resources(
     """Test that DSP gRPC assign resources."""
     response = AssignResourcesResponse()
     mock_servicer_context.assign_resources = MagicMock(return_value=response)
-    resources = calculate_dsp_subband_resources(1, assign_resources_request)[1]
+    resources = calculate_dsp_subband_resources(beam_id=1, request_params=assign_resources_request)[1]
 
     grpc_api.assign_resources(resources, task_callback=task_callback)
 
@@ -133,7 +133,7 @@ def test_dsp_grpc_assign_resources_when_already_assigned(
         error_code=ErrorCode.RESOURCES_ALREADY_ASSIGNED,
         message="Resources have already been assigned",
     )
-    resources = calculate_dsp_subband_resources(1, assign_resources_request)[1]
+    resources = calculate_dsp_subband_resources(beam_id=1, request_params=assign_resources_request)[1]
 
     grpc_api.assign_resources(resources, task_callback=task_callback)
 
@@ -165,7 +165,7 @@ def test_dsp_grpc_assign_resources_when_throws_exception(
         error_code=ErrorCode.INTERNAL_ERROR,
         message="Internal server error occurred",
     )
-    resources = calculate_dsp_subband_resources(1, assign_resources_request)[1]
+    resources = calculate_dsp_subband_resources(beam_id=1, request_params=assign_resources_request)[1]
 
     grpc_api.assign_resources(resources, task_callback=task_callback)
 
@@ -268,9 +268,9 @@ def test_dsp_grpc_configure(
 
     grpc_api.configure(configure_scan_request, task_callback=task_callback)
 
-    scanlen_max = int(configure_scan_request.get("max_scan_length", 0))
+    expected_scan_configuration = generate_dsp_scan_request(request_params=configure_scan_request)
     expected_request = ConfigureRequest(
-        scan_configuration=ScanConfiguration(dsp=DspScanConfiguration(scanlen_max=scanlen_max))
+        scan_configuration=ScanConfiguration(dsp=DspScanConfiguration(**expected_scan_configuration))
     )
     mock_servicer_context.configure.assert_called_once_with(expected_request)
 
@@ -297,9 +297,9 @@ def test_dsp_grpc_configure_when_already_configured(
     )
     grpc_api.configure(configure_scan_request, task_callback=task_callback)
 
-    scanlen_max = int(configure_scan_request.get("max_scan_length", 0))
+    expected_scan_configuration = generate_dsp_scan_request(request_params=configure_scan_request)
     expected_request = ConfigureRequest(
-        scan_configuration=ScanConfiguration(dsp=DspScanConfiguration(scanlen_max=scanlen_max))
+        scan_configuration=ScanConfiguration(dsp=DspScanConfiguration(**expected_scan_configuration))
     )
     mock_servicer_context.configure.assert_called_once_with(expected_request)
 
@@ -327,9 +327,9 @@ def test_dsp_grpc_configure_when_throws_exception(
     )
     grpc_api.configure(configure_scan_request, task_callback=task_callback)
 
-    scanlen_max = int(configure_scan_request.get("max_scan_length", 0))
+    expected_scan_configuration = generate_dsp_scan_request(request_params=configure_scan_request)
     expected_request = ConfigureRequest(
-        scan_configuration=ScanConfiguration(dsp=DspScanConfiguration(scanlen_max=scanlen_max))
+        scan_configuration=ScanConfiguration(dsp=DspScanConfiguration(**expected_scan_configuration))
     )
     mock_servicer_context.configure.assert_called_once_with(expected_request)
     mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())

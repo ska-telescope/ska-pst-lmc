@@ -295,12 +295,12 @@ def test_remote_actions(
         params_str = json.dumps(request_params)
         [
             remote_action_supplier(d).assert_called_once_with(params_str)  # type: ignore
-            for d in [smrb_device_proxy, recv_device_proxy]
+            for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]
         ]
     else:
         [
             remote_action_supplier(d).assert_called_once()  # type: ignore
-            for d in [smrb_device_proxy, recv_device_proxy]
+            for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]
         ]
 
     # need to force an data update

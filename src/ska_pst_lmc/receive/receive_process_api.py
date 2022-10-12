@@ -34,7 +34,7 @@ from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_simulator import PstReceiveSimulator
 from ska_pst_lmc.util.background_task import BackgroundTask, BackgroundTaskProcessor, background_task
 
-from .receive_util import map_configure_request
+from .receive_util import generate_recv_scan_request
 
 __all__ = [
     "PstReceiveProcessApi",
@@ -233,7 +233,7 @@ class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
         self: PstReceiveProcessApiGrpc, configure_parameters: dict
     ) -> ScanConfiguration:
         return ScanConfiguration(
-            receive=ReceiveScanConfiguration(**map_configure_request(configure_parameters))
+            receive=ReceiveScanConfiguration(**generate_recv_scan_request(configure_parameters))
         )
 
     def _handle_monitor_response(

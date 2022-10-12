@@ -55,7 +55,7 @@ from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApi, PstReceiveProcessApiGrpc
-from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources, map_configure_request
+from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources, generate_recv_scan_request
 from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
@@ -120,7 +120,7 @@ def mapped_configure_request(
     configure_scan_request: dict,
 ) -> dict:
     """Map configure scan request to RECV properties."""
-    return map_configure_request(request_params=configure_scan_request)
+    return generate_recv_scan_request(request_params=configure_scan_request)
 
 
 @pytest.fixture
