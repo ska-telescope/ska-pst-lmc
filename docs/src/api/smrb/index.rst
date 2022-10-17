@@ -12,8 +12,6 @@ The API is to be used by the component to talk with the
 sub-element process (i.e. via socket, gRPC, etc.). For now
 the component uses the Simulator internally.
 
-.. automodule:: ska_pst_lmc.smrb
-
 .. toctree::
 
   Component Manager<component_manager>
@@ -21,3 +19,5 @@ the component uses the Simulator internally.
   Model<model>
   Process API<process_api>
   Simulator<simulator>
+
+.. automodule:: ska_pst_lmc.smrb

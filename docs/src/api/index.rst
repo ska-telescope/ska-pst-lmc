@@ -4,7 +4,7 @@ API
 
 .. toctree::
   :caption: Subpackages
-  :maxdepth: 3
+  :maxdepth: 4
 
   Beam subpackage<beam/index>
   Component subpackage<component/index>

@@ -299,7 +299,7 @@ $ make docs-build html
 
 The docs can then be found in the `docs/build/html` directory. If you're using VS Code, you can view the output using a `Live Server` view of this to check that the documentation is being generated correctly.
 
-[PST LMC Read The Docs](https://developer.skao.int/projects/ska-pss-lmc)
+[PST LMC Read The Docs](https://developer.skao.int/projects/ska-pst-lmc)
 
 ### Confluence Documentation
 

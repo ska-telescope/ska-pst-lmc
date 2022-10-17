@@ -1,6 +1,6 @@
-=======================
-Receive TANGO Component
-=======================
+=========================================
+Digital Signal Processing TANGO Component
+=========================================
 
 The Digital Signal Processing (DSP) TANGO Component is used
 to manage the DSP sub-element for PST.LMC.
@@ -11,8 +11,6 @@ manager, as well as including a simulator and an API.
 The API is to be used by the component to talk with the
 sub-element process (i.e. via socket, gRPC, etc.).
 
-.. automodule:: ska_pst_lmc.dsp
-
 .. toctree::
 
   Component Manager<component_manager>
@@ -20,3 +18,5 @@ sub-element process (i.e. via socket, gRPC, etc.).
   Model<model>
   Process API<process_api>
   Simulator<simulator>
+
+.. automodule:: ska_pst_lmc.dsp

@@ -139,20 +139,23 @@ html_theme_options = {
 }
 
 html_context = {
-    "favicon": "img/favicon.ico",
-    "logo": "img/logo.jpg",
-    "theme_logo_only": True,
-    "display_github": True,  # Integrate GitHub
-    "github_user": "flyingfrog81",  # Username
-    "github_repo": "developer.skatelescope.org",  # Repo name
-    "github_version": "master",  # Version
-    "conf_py_path": "/src/",  # Path in the checkout to the docs root
+    'favicon': 'img/favicon.ico',
+    'logo': 'img/logo.png',
+    'theme_logo_only' : True,
+    'display_github': True, # Integrate GitHub
+    'github_repo': 'ska-pst-lmc', #Repository name
+    'github_version': 'master',  #Version
+    'conf_py_path': '/docs/src/', # Path in the checkout to the docs root
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+
+html_css_files = [
+    'css/custom.css',
+]
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.

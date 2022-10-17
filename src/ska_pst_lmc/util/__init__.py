@@ -1,6 +1,15 @@
 # -*- coding: utf-8 -*-
 
-"""PST Util python module."""
+"""This module covers common utility classes and functions of PST.LMC.
+
+Functionality provided within this module is:
+
+    * Validation of JSON requests
+    * Background Task processing
+    * Long running command processing
+    * Custom timeout iterator (see :py:class:`TimeoutIterator`)
+"""
+
 
 __all__ = [
     "validate",
