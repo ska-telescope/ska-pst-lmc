@@ -9,8 +9,8 @@
 
 import json
 import logging
-import time
-from typing import Any, Callable, List, Optional
+import threading
+from typing import Any, Callable, List, Optional, Tuple
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -261,9 +261,25 @@ def test_remote_actions(
     request_params: Optional[Any],
     remote_action_supplier: Callable[[PstDeviceProxy], Callable],
     component_state_callback_params: Optional[dict],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Assert that actions that need to be delegated to remote devices."""
     task_callback = MagicMock()
+
+    def _submit_task(
+        func: Callable,
+        args: Optional[Any] = None,
+        kwargs: Optional[dict] = None,
+        task_callback: Optional[Callable] = None,
+    ) -> Tuple[TaskStatus, str]:
+        args = args or []
+        kwargs = kwargs or {}
+        func(*args, task_callback=task_callback, task_abort_event=threading.Event(), **kwargs)
+        if task_callback is not None:
+            task_callback(status=TaskStatus.QUEUED)
+        return TaskStatus.QUEUED, "Task queued"
+
+    monkeypatch.setattr(component_manager, "submit_task", _submit_task)
 
     component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
 
@@ -288,8 +304,6 @@ def test_remote_actions(
 
     assert status == TaskStatus.QUEUED
     assert message == "Task queued"
-
-    time.sleep(0.1)
 
     if request_params is not None:
         params_str = json.dumps(request_params)
