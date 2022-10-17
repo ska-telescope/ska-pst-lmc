@@ -27,6 +27,11 @@ import sphinx_rtd_theme
 
 autodoc_mock_imports = [
     "ska_tango_base",
+    "ska_pst_lmc_proto",
+    "schema",
+    "ska_telmodel",
+    "grpc",
+    "backoff",
     "tango",
     "numpy",
     "readerwriterlock",
