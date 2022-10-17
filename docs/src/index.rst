@@ -29,7 +29,7 @@ the Pulsar Timing Sub-element (PST) within the Central Signal Processor
 
 .. toctree::
   :caption: API
-  :maxdepth: 4
+  :maxdepth: 3
 
   PST.LMC API<api/index>
 
@@ -37,7 +37,7 @@ the Pulsar Timing Sub-element (PST) within the Central Signal Processor
 
 .. toctree::
   :caption: Architecture
-  :maxdepth: 4
+  :maxdepth: 3
 
   Architecture<architecture/index>
 
@@ -45,6 +45,6 @@ the Pulsar Timing Sub-element (PST) within the Central Signal Processor
 
 .. toctree::
   :caption: Deployment
-  :maxdepth: 4
+  :maxdepth: 3
 
   Deployment<deployment/index>

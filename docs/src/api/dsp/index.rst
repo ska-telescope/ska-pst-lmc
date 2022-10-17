@@ -12,11 +12,10 @@ The API is to be used by the component to talk with the
 sub-element process (i.e. via socket, gRPC, etc.).
 
 .. toctree::
+  :maxdepth: 1
 
   Component Manager<component_manager>
   Device<device>
   Model<model>
   Process API<process_api>
   Simulator<simulator>
-
-.. automodule:: ska_pst_lmc.dsp

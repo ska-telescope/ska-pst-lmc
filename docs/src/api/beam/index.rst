@@ -15,10 +15,8 @@ a simulator or an API class as it orchestrates the other
 devices.
 
 .. toctree::
-  :maxdepth: 3
+  :maxdepth: 1
 
   Component Manager<component_manager>
   Device<device>
-
-.. automodule:: ska_pst_lmc.beam
 
