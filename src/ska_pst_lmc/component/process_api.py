@@ -22,12 +22,12 @@ import threading
 from typing import Any, Callable, Dict, Generator, Optional
 
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
-    AssignResourcesRequest,
-    ConfigureRequest,
+    ConfigureBeamRequest,
+    ConfigureScanRequest,
     MonitorData,
     ResourceConfiguration,
     ScanConfiguration,
-    ScanRequest,
+    StartScanRequest,
 )
 from ska_tango_base.commands import TaskStatus
 
@@ -71,7 +71,7 @@ class PstProcessApi:
         """Disconnect from the external process."""
         raise NotImplementedError("PstProcessApi is abstract class")
 
-    def assign_resources(self: PstProcessApi, resources: dict, task_callback: Callable) -> None:
+    def configure_beam(self: PstProcessApi, resources: dict, task_callback: Callable) -> None:
         """Assign resources.
 
         :param resources: dictionary of resources to allocate.
@@ -79,14 +79,14 @@ class PstProcessApi:
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
-    def release_resources(self: PstProcessApi, task_callback: Callable) -> None:
+    def deconfigure_beam(self: PstProcessApi, task_callback: Callable) -> None:
         """Release all resources.
 
         :param task_callback: callable to connect back to the component manager.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
-    def configure(self: PstProcessApi, configuration: dict, task_callback: Callable) -> None:
+    def configure_scan(self: PstProcessApi, configuration: dict, task_callback: Callable) -> None:
         """Configure as scan.
 
         :param configuration: the configuration of for the scan.
@@ -94,14 +94,14 @@ class PstProcessApi:
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
-    def deconfigure(self: PstProcessApi, task_callback: Callable) -> None:
+    def deconfigure_scan(self: PstProcessApi, task_callback: Callable) -> None:
         """Deconfiure a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
-    def scan(self: PstProcessApi, args: dict, task_callback: Callable) -> None:
+    def start_scan(self: PstProcessApi, args: dict, task_callback: Callable) -> None:
         """Run a scan.
 
         :param args: arguments for the scan.
@@ -109,7 +109,7 @@ class PstProcessApi:
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
-    def end_scan(self: PstProcessApi, task_callback: Callable) -> None:
+    def stop_scan(self: PstProcessApi, task_callback: Callable) -> None:
         """End a scan.
 
         :param task_callback: callable to connect back to the component manager.
@@ -309,7 +309,7 @@ class PstProcessApiGrpc(PstProcessApi):
         if self._monitor_abort_event is not None:
             self._monitor_abort_event.set()
 
-    def _get_assign_resources_request(self: PstProcessApiGrpc, resources: dict) -> ResourceConfiguration:
+    def _get_configure_beam_request(self: PstProcessApiGrpc, resources: dict) -> ResourceConfiguration:
         """Convert resources dictionary to instance of `ResourceConfiguration`."""
         raise NotImplementedError("PstProcessApiGrpc is an abstract class.")
 
@@ -317,15 +317,15 @@ class PstProcessApiGrpc(PstProcessApi):
         """Convert scan parameters dictionary to instance of `ScanConfiguration`."""
         raise NotImplementedError("PstProcessApiGrpc is an abstract class.")
 
-    def _get_scan_request(self: PstProcessApiGrpc, scan_parameters: dict) -> ScanRequest:
+    def _get_start_scan_request(self: PstProcessApiGrpc, scan_parameters: dict) -> StartScanRequest:
         """Convert scan parameters dictionary to instance of `ScanRequest`.
 
         For now this is an empty request, however, in the future it is possible that this
         request will have parameters and could be specific to the component.
         """
-        return ScanRequest(**scan_parameters)
+        return StartScanRequest(**scan_parameters)
 
-    def assign_resources(self: PstProcessApiGrpc, resources: dict, task_callback: Callable) -> None:
+    def configure_beam(self: PstProcessApiGrpc, resources: dict, task_callback: Callable) -> None:
         """Assign resources.
 
         :param resources: dictionary of resources to allocate.
@@ -334,10 +334,10 @@ class PstProcessApiGrpc(PstProcessApi):
         self._logger.debug(f"Assigning resources for '{self._client_id}': {resources}")
         task_callback(status=TaskStatus.IN_PROGRESS)
 
-        resource_configuration = self._get_assign_resources_request(resources)
-        request = AssignResourcesRequest(resource_configuration=resource_configuration)
+        resource_configuration = self._get_configure_beam_request(resources)
+        request = ConfigureBeamRequest(resource_configuration=resource_configuration)
         try:
-            self._grpc_client.assign_resources(request=request)
+            self._grpc_client.configure_beam(request=request)
 
             self._component_state_callback(resourced=True)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
@@ -346,12 +346,12 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(result=e.message, status=TaskStatus.FAILED, exception=e)
         except BaseGrpcException as e:
             self._logger.error(
-                f"Problem processing assign_resources request for '{self._client_id}'", exc_info=True
+                f"Problem processing configure_beam request for '{self._client_id}'", exc_info=True
             )
             self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
-    def release_resources(self: PstProcessApiGrpc, task_callback: Callable) -> None:
+    def deconfigure_beam(self: PstProcessApiGrpc, task_callback: Callable) -> None:
         """Release all resources.
 
         :param task_callback: callable to connect back to the component manager.
@@ -359,7 +359,7 @@ class PstProcessApiGrpc(PstProcessApi):
         task_callback(status=TaskStatus.IN_PROGRESS)
 
         try:
-            self._grpc_client.release_resources()
+            self._grpc_client.deconfigure_beam()
 
             self._component_state_callback(resourced=False)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
@@ -369,12 +369,12 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result=e.message)
         except BaseGrpcException as e:
             self._logger.error(
-                f"Problem processing release_resources request for '{self._client_id}'", exc_info=True
+                f"Problem processing deconfigure_beam request for '{self._client_id}'", exc_info=True
             )
             self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
-    def configure(self: PstProcessApiGrpc, configuration: dict, task_callback: Callable) -> None:
+    def configure_scan(self: PstProcessApiGrpc, configuration: dict, task_callback: Callable) -> None:
         """Configure as scan.
 
         For SMRB this is a no-op command. There is nothing on the server that would be
@@ -386,9 +386,9 @@ class PstProcessApiGrpc(PstProcessApi):
         task_callback(status=TaskStatus.IN_PROGRESS)
 
         scan_configuration = self._get_configure_scan_request(configuration)
-        request = ConfigureRequest(scan_configuration=scan_configuration)
+        request = ConfigureScanRequest(scan_configuration=scan_configuration)
         try:
-            self._grpc_client.configure(request)
+            self._grpc_client.configure_scan(request)
 
             self._component_state_callback(configured=True)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
@@ -402,7 +402,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
-    def deconfigure(self: PstProcessApiGrpc, task_callback: Callable) -> None:
+    def deconfigure_scan(self: PstProcessApiGrpc, task_callback: Callable) -> None:
         """Deconfiure a scan.
 
         For SMRB this is a no-op command. There is nothin on the server that would be
@@ -413,7 +413,7 @@ class PstProcessApiGrpc(PstProcessApi):
         task_callback(status=TaskStatus.IN_PROGRESS)
 
         try:
-            self._grpc_client.deconfigure()
+            self._grpc_client.deconfigure_scan()
 
             self._component_state_callback(configured=False)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
@@ -428,7 +428,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
-    def scan(
+    def start_scan(
         self: PstProcessApiGrpc,
         args: dict,
         task_callback: Callable,
@@ -440,9 +440,9 @@ class PstProcessApiGrpc(PstProcessApi):
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
 
-        request = self._get_scan_request(args)
+        request = self._get_start_scan_request(args)
         try:
-            self._grpc_client.scan(request)
+            self._grpc_client.start_scan(request)
             self._component_state_callback(scanning=True)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except AlreadyScanningException as e:
@@ -454,7 +454,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
-    def end_scan(self: PstProcessApiGrpc, task_callback: Callable) -> None:
+    def stop_scan(self: PstProcessApiGrpc, task_callback: Callable) -> None:
         """End a scan.
 
         This will call out to the remote service to end a scan.  It will also
@@ -466,7 +466,7 @@ class PstProcessApiGrpc(PstProcessApi):
         task_callback(status=TaskStatus.IN_PROGRESS)
         try:
             self._stop_monitoring()
-            self._grpc_client.end_scan()
+            self._grpc_client.stop_scan()
             self._component_state_callback(scanning=False)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except NotScanningException as e:
@@ -474,7 +474,7 @@ class PstProcessApiGrpc(PstProcessApi):
             self._component_state_callback(scanning=False)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
-            self._logger.error(f"Problem processing end_scan request for '{self._client_id}'", exc_info=True)
+            self._logger.error(f"Problem processing stop_scan request for '{self._client_id}'", exc_info=True)
             self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 

@@ -69,7 +69,7 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
 
         super().__init__(logger=logger, component_state_callback=component_state_callback)
 
-    def assign_resources(self: PstSmrbProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
+    def configure_beam(self: PstSmrbProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
         """Assign resources.
 
         :param resources: dictionary of resources to allocate.
@@ -83,7 +83,7 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         self._component_state_callback(resourced=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def release_resources(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
+    def deconfigure_beam(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
         """Release all resources.
 
         :param task_callback: callable to connect back to the component manager.
@@ -95,7 +95,9 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         self._component_state_callback(resourced=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def configure(self: PstSmrbProcessApiSimulator, configuration: dict, task_callback: Callable) -> None:
+    def configure_scan(
+        self: PstSmrbProcessApiSimulator, configuration: dict, task_callback: Callable
+    ) -> None:
         """Configure as scan.
 
         :param configuration: the configuration of for the scan.
@@ -106,12 +108,12 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         task_callback(progress=42)
         time.sleep(0.1)
         task_callback(progress=58)
-        self._simulator.configure(configuration=configuration)
+        self._simulator.configure_scan(configuration=configuration)
         time.sleep(0.1)
         self._component_state_callback(configured=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def deconfigure(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
+    def deconfigure_scan(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
         """Deconfiure a scan.
 
         :param task_callback: callable to connect back to the component manager.
@@ -124,11 +126,11 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         time.sleep(0.05)
         task_callback(progress=80)
         time.sleep(0.1)
-        self._simulator.deconfigure()
+        self._simulator.deconfigure_scan()
         self._component_state_callback(configured=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def scan(self: PstSmrbProcessApiSimulator, args: dict, task_callback: Callable) -> None:
+    def start_scan(self: PstSmrbProcessApiSimulator, args: dict, task_callback: Callable) -> None:
         """Run a scan.
 
         :param args: arguments for the scan.
@@ -138,12 +140,12 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         time.sleep(0.1)
         task_callback(progress=55)
         time.sleep(0.1)
-        self._simulator.scan(args)
+        self._simulator.start_scan(args)
         self._component_state_callback(scanning=True)
         self._scanning = True
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def end_scan(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
+    def stop_scan(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
         """End a scan.
 
         :param task_callback: callable to connect back to the component manager.
@@ -153,7 +155,7 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         task_callback(progress=37)
         time.sleep(0.1)
         task_callback(progress=63)
-        self._simulator.end_scan()
+        self._simulator.stop_scan()
         self._component_state_callback(scanning=False)
         self._scanning = False
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
@@ -214,7 +216,7 @@ class PstSmrbProcessApiGrpc(PstProcessApiGrpc, PstSmrbProcessApi):
     subband, rather than one for all of RECV as a whole.
     """
 
-    def _get_assign_resources_request(self: PstSmrbProcessApiGrpc, resources: dict) -> ResourceConfiguration:
+    def _get_configure_beam_request(self: PstSmrbProcessApiGrpc, resources: dict) -> ResourceConfiguration:
         return ResourceConfiguration(smrb=SmrbResources(**resources))
 
     def _handle_monitor_response(

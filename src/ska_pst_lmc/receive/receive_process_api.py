@@ -75,9 +75,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
 
         super().__init__(logger=logger, component_state_callback=component_state_callback)
 
-    def assign_resources(
-        self: PstReceiveProcessApiSimulator, resources: dict, task_callback: Callable
-    ) -> None:
+    def configure_beam(self: PstReceiveProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
         """Assign resources.
 
         :param resources: dictionary of resources to allocate.
@@ -92,7 +90,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         self._component_state_callback(resourced=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def release_resources(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
+    def deconfigure_beam(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
         """Release all resources.
 
         :param task_callback: callable to connect back to the component manager.
@@ -104,7 +102,9 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         self._component_state_callback(resourced=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def configure(self: PstReceiveProcessApiSimulator, configuration: dict, task_callback: Callable) -> None:
+    def configure_scan(
+        self: PstReceiveProcessApiSimulator, configuration: dict, task_callback: Callable
+    ) -> None:
         """Configure as scan.
 
         :param configuration: the configuration of for the scan.
@@ -115,12 +115,12 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         task_callback(progress=30)
         time.sleep(0.1)
         task_callback(progress=60)
-        self._simulator.configure(configuration=configuration)
+        self._simulator.configure_scan(configuration=configuration)
         time.sleep(0.1)
         self._component_state_callback(configured=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def deconfigure(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
+    def deconfigure_scan(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
         """Deconfiure a scan.
 
         :param task_callback: callable to connect back to the component manager.
@@ -131,11 +131,11 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         time.sleep(0.1)
         task_callback(progress=89)
         time.sleep(0.1)
-        self._simulator.deconfigure()
+        self._simulator.deconfigure_scan()
         self._component_state_callback(configured=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def scan(self: PstReceiveProcessApiSimulator, args: dict, task_callback: Callable) -> None:
+    def start_scan(self: PstReceiveProcessApiSimulator, args: dict, task_callback: Callable) -> None:
         """Run a scan.
 
         :param args: arguments for the scan.
@@ -146,12 +146,12 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         task_callback(progress=27)
         time.sleep(0.1)
         task_callback(progress=69)
-        self._simulator.scan(args)
+        self._simulator.start_scan(args)
         self._component_state_callback(scanning=True)
         self._scanning = True
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def end_scan(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
+    def stop_scan(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
         """End a scan.
 
         :param task_callback: callable to connect back to the component manager.
@@ -161,7 +161,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         task_callback(progress=32)
         time.sleep(0.1)
         task_callback(progress=88)
-        self._simulator.end_scan()
+        self._simulator.stop_scan()
         self._component_state_callback(scanning=False)
         self._scanning = False
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
@@ -221,9 +221,7 @@ class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
     subband, rather than one for all of RECV as a whole.
     """
 
-    def _get_assign_resources_request(
-        self: PstReceiveProcessApiGrpc, resources: dict
-    ) -> ResourceConfiguration:
+    def _get_configure_beam_request(self: PstReceiveProcessApiGrpc, resources: dict) -> ResourceConfiguration:
         subband_resources = ReceiveSubbandResources(**resources["subband"])
         return ResourceConfiguration(
             receive=ReceiveResources(subband_resources=subband_resources, **resources["common"])

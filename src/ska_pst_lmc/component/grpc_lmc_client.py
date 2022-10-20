@@ -17,14 +17,14 @@ import grpc
 from grpc import Channel
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AbortRequest,
-    AssignResourcesRequest,
-    ConfigureRequest,
+    ConfigureBeamRequest,
+    ConfigureScanRequest,
     ConnectionRequest,
-    DeconfigureRequest,
-    EndScanRequest,
+    DeconfigureBeamRequest,
+    DeconfigureScanRequest,
     ErrorCode,
-    GetAssignedResourcesRequest,
-    GetAssignedResourcesResponse,
+    GetBeamConfigurationRequest,
+    GetBeamConfigurationResponse,
     GetScanConfigurationRequest,
     GetScanConfigurationResponse,
     GetStateRequest,
@@ -32,11 +32,11 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GoToFaultRequest,
     MonitorRequest,
     MonitorResponse,
-    ReleaseResourcesRequest,
     ResetRequest,
     RestartRequest,
-    ScanRequest,
+    StartScanRequest,
     Status,
+    StopScanRequest,
 )
 from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceStub
 from ska_tango_base.control_model import ObsState
@@ -76,7 +76,7 @@ class NotScanningException(BaseGrpcException):
     Raised when the server is not in a scanning state but received an
     end scan command. Just like :py:class:`AlreadyScanningException`
     it is possible for the LMC to recover from this as this exception
-    is only raised during end_scan. The LMC should log this happened
+    is only raised during stop_scan. The LMC should log this happened
     but can safely go into a READY state.
     """
 
@@ -234,46 +234,46 @@ class PstGrpcLmcClient:
             self._logger.warning(f"Error in connecting to remote server {self._endpoint}", exc_info=True)
             raise
 
-    def assign_resources(self: PstGrpcLmcClient, request: AssignResourcesRequest) -> bool:
-        """Call assign_resources on remote gRPC service."""
+    def configure_beam(self: PstGrpcLmcClient, request: ConfigureBeamRequest) -> bool:
+        """Call configure_beam on remote gRPC service."""
         self._logger.debug("Assigning resources.")
         try:
-            self._service.assign_resources(request)
+            self._service.configure_beam(request)
             return True
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 
-    def release_resources(self: PstGrpcLmcClient) -> bool:
-        """Call release_resources on remote gRPC service."""
+    def deconfigure_beam(self: PstGrpcLmcClient) -> bool:
+        """Call deconfigure_beam on remote gRPC service."""
         self._logger.debug("Releasing component resources")
         try:
-            self._service.release_resources(ReleaseResourcesRequest())
+            self._service.deconfigure_beam(DeconfigureBeamRequest())
             return True
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 
-    def get_assigned_resources(self: PstGrpcLmcClient) -> GetAssignedResourcesResponse:
-        """Call get_assigned_resources on remote gRPC service."""
+    def get_beam_configuration(self: PstGrpcLmcClient) -> GetBeamConfigurationResponse:
+        """Call get_beam_configuration on remote gRPC service."""
         self._logger.debug("Getting assigned resources.")
         try:
-            return self._service.get_assigned_resources(GetAssignedResourcesRequest())
+            return self._service.get_beam_configuration(GetBeamConfigurationRequest())
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 
-    def configure(self: PstGrpcLmcClient, request: ConfigureRequest) -> bool:
+    def configure_scan(self: PstGrpcLmcClient, request: ConfigureScanRequest) -> bool:
         """Call configure on remote gRPC service."""
         self._logger.debug("Calling configure on remote service.")
         try:
-            self._service.configure(request)
+            self._service.configure_scan(request)
             return True
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 
-    def deconfigure(self: PstGrpcLmcClient) -> bool:
+    def deconfigure_scan(self: PstGrpcLmcClient) -> bool:
         """Call deconfigure on remote gRPC service."""
         self._logger.debug("Calling deconfigure on remote service.")
         try:
-            self._service.deconfigure(DeconfigureRequest())
+            self._service.deconfigure_scan(DeconfigureScanRequest())
             return True
         except grpc.RpcError as e:
             _handle_grpc_error(e)
@@ -286,20 +286,20 @@ class PstGrpcLmcClient:
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 
-    def scan(self: PstGrpcLmcClient, request: ScanRequest) -> bool:
+    def start_scan(self: PstGrpcLmcClient, request: StartScanRequest) -> bool:
         """Call scan on remote gRPC service."""
         self._logger.debug("Calling scan")
         try:
-            self._service.scan(request)
+            self._service.start_scan(request)
             return True
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 
-    def end_scan(self: PstGrpcLmcClient) -> bool:
+    def stop_scan(self: PstGrpcLmcClient) -> bool:
         """Call scan on remote gRPC service."""
         self._logger.debug("Calling end scan")
         try:
-            self._service.end_scan(EndScanRequest())
+            self._service.stop_scan(StopScanRequest())
             return True
         except grpc.RpcError as e:
             _handle_grpc_error(e)

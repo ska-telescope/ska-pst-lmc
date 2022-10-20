@@ -20,19 +20,19 @@ from grpc import ServicerContext
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AbortRequest,
     AbortResponse,
-    AssignResourcesRequest,
-    AssignResourcesResponse,
-    ConfigureRequest,
-    ConfigureResponse,
+    ConfigureBeamRequest,
+    ConfigureBeamResponse,
+    ConfigureScanRequest,
+    ConfigureScanResponse,
     ConnectionRequest,
     ConnectionResponse,
-    DeconfigureRequest,
-    DeconfigureResponse,
-    EndScanRequest,
-    EndScanResponse,
+    DeconfigureBeamRequest,
+    DeconfigureBeamResponse,
+    DeconfigureScanRequest,
+    DeconfigureScanResponse,
     ErrorCode,
-    GetAssignedResourcesRequest,
-    GetAssignedResourcesResponse,
+    GetBeamConfigurationRequest,
+    GetBeamConfigurationResponse,
     GetScanConfigurationRequest,
     GetScanConfigurationResponse,
     GetStateRequest,
@@ -41,15 +41,15 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GoToFaultResponse,
     MonitorRequest,
     MonitorResponse,
-    ReleaseResourcesRequest,
-    ReleaseResourcesResponse,
     ResetRequest,
     ResetResponse,
     RestartRequest,
     RestartResponse,
-    ScanRequest,
-    ScanResponse,
+    StartScanRequest,
+    StartScanResponse,
     Status,
+    StopScanRequest,
+    StopScanResponse,
 )
 from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer
 
@@ -132,57 +132,57 @@ class TestMockServicer(PstLmcServiceServicer):
         self._logger.debug("connect request")
         return self._context.connect(request)
 
-    def assign_resources(
-        self: TestMockServicer, request: AssignResourcesRequest, context: ServicerContext
-    ) -> AssignResourcesResponse:
+    def configure_beam(
+        self: TestMockServicer, request: ConfigureBeamRequest, context: ServicerContext
+    ) -> ConfigureBeamResponse:
         """Handle assign resources."""
-        self._logger.debug("assign_resources request")
+        self._logger.debug("configure_beam request")
         try:
-            return self._context.assign_resources(request)
+            return self._context.configure_beam(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
 
-    def release_resources(
-        self: TestMockServicer, request: ReleaseResourcesRequest, context: ServicerContext
-    ) -> ReleaseResourcesResponse:
+    def deconfigure_beam(
+        self: TestMockServicer, request: DeconfigureBeamRequest, context: ServicerContext
+    ) -> DeconfigureBeamResponse:
         """Handle release resources."""
-        self._logger.debug("release_resources request")
+        self._logger.debug("deconfigure_beam request")
         try:
-            return self._context.release_resources(request)
+            return self._context.deconfigure_beam(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
 
-    def get_assigned_resources(
-        self: TestMockServicer, request: GetAssignedResourcesRequest, context: ServicerContext
-    ) -> GetAssignedResourcesResponse:
+    def get_beam_configuration(
+        self: TestMockServicer, request: GetBeamConfigurationRequest, context: ServicerContext
+    ) -> GetBeamConfigurationResponse:
         """Handle getting the assigned resources."""
-        self._logger.debug("get_assigned_resources called.")
+        self._logger.debug("get_beam_configuration called.")
         try:
-            return self._context.get_assigned_resources(request)
+            return self._context.get_beam_configuration(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
 
-    def configure(
-        self: TestMockServicer, request: ConfigureRequest, context: ServicerContext
-    ) -> ConfigureResponse:
+    def configure_scan(
+        self: TestMockServicer, request: ConfigureScanRequest, context: ServicerContext
+    ) -> ConfigureScanResponse:
         """Handle configure request."""
         self._logger.debug("configure request")
         try:
-            return self._context.configure(request)
+            return self._context.configure_scan(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
 
-    def deconfigure(
-        self: TestMockServicer, request: DeconfigureRequest, context: ServicerContext
-    ) -> DeconfigureResponse:
+    def deconfigure_scan(
+        self: TestMockServicer, request: DeconfigureScanRequest, context: ServicerContext
+    ) -> DeconfigureScanResponse:
         """Handle deconfigure request."""
         self._logger.debug("configure request")
         try:
-            return self._context.deconfigure(request)
+            return self._context.deconfigure_scan(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
@@ -198,22 +198,24 @@ class TestMockServicer(PstLmcServiceServicer):
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
 
-    def scan(self: TestMockServicer, request: ScanRequest, context: ServicerContext) -> ScanResponse:
+    def start_scan(
+        self: TestMockServicer, request: StartScanRequest, context: ServicerContext
+    ) -> StartScanResponse:
         """Handle scan."""
         self._logger.debug("scan request")
         try:
-            return self._context.scan(request)
+            return self._context.start_scan(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
 
-    def end_scan(
-        self: TestMockServicer, request: EndScanRequest, context: ServicerContext
-    ) -> EndScanResponse:
+    def stop_scan(
+        self: TestMockServicer, request: StopScanRequest, context: ServicerContext
+    ) -> StopScanResponse:
         """Handle end scan."""
-        self._logger.debug("end_scan request")
+        self._logger.debug("stop_scan request")
         try:
-            return self._context.end_scan(request)
+            return self._context.stop_scan(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"

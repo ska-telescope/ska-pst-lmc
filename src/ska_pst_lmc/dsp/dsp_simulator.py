@@ -76,7 +76,7 @@ class PstDspSimulator:
         if subband_bytes_written is not None:
             configuration["subband_bytes_written"] = subband_bytes_written
 
-        self.configure(configuration=configuration)
+        self.configure_scan(configuration=configuration)
         self._scan = False
 
     @property
@@ -105,7 +105,7 @@ class PstDspSimulator:
         """
         self._disk_available_bytes = disk_available_bytes
 
-    def configure(self: PstDspSimulator, configuration: dict) -> None:
+    def configure_scan(self: PstDspSimulator, configuration: dict) -> None:
         """
         Configure the simulator.
 
@@ -146,18 +146,18 @@ class PstDspSimulator:
                 ),
             )
 
-    def deconfigure(self: PstDspSimulator) -> None:
+    def deconfigure_scan(self: PstDspSimulator) -> None:
         """Simulate deconfigure."""
         self._scan = False
 
-    def scan(self: PstDspSimulator, args: dict) -> None:
+    def start_scan(self: PstDspSimulator, args: dict) -> None:
         """Start scanning.
 
         :param: the scan arguments.
         """
         self._scan = True
 
-    def end_scan(self: PstDspSimulator) -> None:
+    def stop_scan(self: PstDspSimulator) -> None:
         """End scanning."""
         self._scan = False
 

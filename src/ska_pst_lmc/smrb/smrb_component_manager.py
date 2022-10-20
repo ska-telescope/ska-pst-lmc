@@ -213,15 +213,15 @@ class PstSmrbComponentManager(PstApiComponentManager):
         self.logger.debug(f"Submitting API with smrb_resources={smrb_resources[1]}")
 
         return self._submit_background_task(
-            functools.partial(self._api.assign_resources, resources=smrb_resources[1]),
+            functools.partial(self._api.configure_beam, resources=smrb_resources[1]),
             task_callback=task_callback,
         )
 
-    def scan(self: PstSmrbComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+    def start_scan(self: PstSmrbComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
         """Start scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
-            self._api.scan(args, task_callback=task_callback)
+            self._api.start_scan(args, task_callback=task_callback)
             self._api.monitor(
                 # for now only handling 1 subband
                 subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
@@ -230,11 +230,11 @@ class PstSmrbComponentManager(PstApiComponentManager):
 
         return self._submit_background_task(_task, task_callback=task_callback)
 
-    def end_scan(self: PstSmrbComponentManager, task_callback: Callable) -> TaskResponse:
+    def stop_scan(self: PstSmrbComponentManager, task_callback: Callable) -> TaskResponse:
         """End scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
-            self._api.end_scan(task_callback=task_callback)
+            self._api.stop_scan(task_callback=task_callback)
 
             # reset the monitoring data
             self._monitor_data_handler.reset_monitor_data()

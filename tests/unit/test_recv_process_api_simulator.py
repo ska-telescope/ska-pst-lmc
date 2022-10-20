@@ -109,7 +109,7 @@ def test_recv_simulator_api_simulated_monitor_calls_callback(
     subband_monitor_data_callback.assert_has_calls(calls=calls)
 
 
-def test_recv_simulator_api_assign_resources(
+def test_recv_simulator_api_configure_beam(
     simulation_api: PstReceiveProcessApiSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
@@ -117,7 +117,7 @@ def test_recv_simulator_api_assign_resources(
     """Test that assign resources simulator calls task."""
     resources: dict = {}
 
-    simulation_api.assign_resources(resources, task_callback)
+    simulation_api.configure_beam(resources, task_callback)
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
@@ -129,13 +129,13 @@ def test_recv_simulator_api_assign_resources(
     component_state_callback.assert_called_with(resourced=True)
 
 
-def test_recv_simulator_api_release_resources(
+def test_recv_simulator_api_deconfigure_beam(
     simulation_api: PstReceiveProcessApiSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
     """Test that release_all simulator calls task."""
-    simulation_api.release_resources(task_callback)
+    simulation_api.deconfigure_beam(task_callback)
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
@@ -146,7 +146,7 @@ def test_recv_simulator_api_release_resources(
     component_state_callback.assert_called_with(resourced=False)
 
 
-def test_recv_simulator_api_configure(
+def test_recv_simulator_api_configure_scan(
     simulation_api: PstReceiveProcessApiSimulator,
     simulator: PstReceiveSimulator,
     component_state_callback: MagicMock,
@@ -154,9 +154,11 @@ def test_recv_simulator_api_configure(
     configure_scan_request: dict,
 ) -> None:
     """Test that release_all simulator calls task."""
-    with unittest.mock.patch.object(simulator, "configure", wraps=simulator.configure) as configure:
-        simulation_api.configure(configure_scan_request, task_callback)
-        configure.assert_called_with(configuration=configure_scan_request)
+    with unittest.mock.patch.object(
+        simulator, "configure_scan", wraps=simulator.configure_scan
+    ) as configure_scan:
+        simulation_api.configure_scan(configure_scan_request, task_callback)
+        configure_scan.assert_called_with(configuration=configure_scan_request)
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
@@ -168,16 +170,18 @@ def test_recv_simulator_api_configure(
     component_state_callback.assert_called_with(configured=True)
 
 
-def test_recv_simulator_api_deconfigure(
+def test_recv_simulator_api_deconfigure_scan(
     simulation_api: PstReceiveProcessApiSimulator,
     simulator: PstReceiveSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
     """Test that release_all simulator calls task."""
-    with unittest.mock.patch.object(simulator, "deconfigure", wraps=simulator.deconfigure) as deconfigure:
-        simulation_api.deconfigure(task_callback)
-        deconfigure.assert_called_once()
+    with unittest.mock.patch.object(
+        simulator, "deconfigure_scan", wraps=simulator.deconfigure_scan
+    ) as deconfigure_scan:
+        simulation_api.deconfigure_scan(task_callback)
+        deconfigure_scan.assert_called_once()
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
@@ -189,7 +193,7 @@ def test_recv_simulator_api_deconfigure(
     component_state_callback.assert_called_with(configured=False)
 
 
-def test_recv_simulator_api_scan(
+def test_recv_simulator_api_start_scan(
     simulation_api: PstReceiveProcessApiSimulator,
     simulator: PstReceiveSimulator,
     component_state_callback: MagicMock,
@@ -197,9 +201,9 @@ def test_recv_simulator_api_scan(
 ) -> None:
     """Test that release_all simulator calls task."""
     args = {"foo": "bar"}
-    with unittest.mock.patch.object(simulator, "scan", wraps=simulator.scan) as scan:
-        simulation_api.scan(args, task_callback)
-        scan.assert_called_with(args)
+    with unittest.mock.patch.object(simulator, "start_scan", wraps=simulator.start_scan) as start_scan:
+        simulation_api.start_scan(args, task_callback)
+        start_scan.assert_called_with(args)
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
@@ -211,16 +215,16 @@ def test_recv_simulator_api_scan(
     component_state_callback.assert_called_with(scanning=True)
 
 
-def test_recv_simulator_api_end_scan(
+def test_recv_simulator_api_stop_scan(
     simulation_api: PstReceiveProcessApiSimulator,
     simulator: PstReceiveSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that end_scan simulator calls task."""
-    with unittest.mock.patch.object(simulator, "end_scan", wraps=simulator.end_scan) as end_scan:
-        simulation_api.end_scan(task_callback)
-        end_scan.assert_called_once()
+    """Test that stop_scan simulator calls task."""
+    with unittest.mock.patch.object(simulator, "stop_scan", wraps=simulator.stop_scan) as stop_scan:
+        simulation_api.stop_scan(task_callback)
+        stop_scan.assert_called_once()
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),

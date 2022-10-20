@@ -49,10 +49,10 @@ class PstReceiveSimulator:
         if num_subbands is not None:
             configuration["num_subbands"] = num_subbands
 
-        self.configure(configuration=configuration)
+        self.configure_scan(configuration=configuration)
         self._scan = False
 
-    def configure(self: PstReceiveSimulator, configuration: dict) -> None:
+    def configure_scan(self: PstReceiveSimulator, configuration: dict) -> None:
         """
         Configure the simulator.
 
@@ -68,18 +68,18 @@ class PstReceiveSimulator:
 
         self._subband_data = {subband_id: ReceiveData() for subband_id in range(1, self.num_subbands + 1)}
 
-    def deconfigure(self: PstReceiveSimulator) -> None:
+    def deconfigure_scan(self: PstReceiveSimulator) -> None:
         """Simulate deconfigure."""
         self._scan = False
 
-    def scan(self: PstReceiveSimulator, args: dict) -> None:
+    def start_scan(self: PstReceiveSimulator, args: dict) -> None:
         """Start scanning.
 
         :param: the scan arguments.
         """
         self._scan = True
 
-    def end_scan(self: PstReceiveSimulator) -> None:
+    def stop_scan(self: PstReceiveSimulator) -> None:
         """End scanning."""
         self._scan = False
 

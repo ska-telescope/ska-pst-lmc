@@ -46,13 +46,13 @@ def test_dsp_simulator_using_constructor() -> None:
     assert data.subband_bytes_written[1] == 50
 
 
-def test_dps_simulator_configure(simulator: PstDspSimulator) -> None:
+def test_dps_simulator_configure_scan(simulator: PstDspSimulator) -> None:
     """Test that configuration of simulator sets up data."""
     configuration: Dict[str, Any] = {
         "num_subbands": 2,
     }
 
-    simulator.configure(configuration=configuration)
+    simulator.configure_scan(configuration=configuration)
 
     assert simulator.num_subbands == 2
 
@@ -69,14 +69,14 @@ def test_dsp_simulator_until_scan_get_data_returns_initial_data(
     simulator: PstDspSimulator,
     scan_request: dict,
 ) -> None:
-    """Test that scan/end_scan will only update data while scanning."""
+    """Test that scan/stop_scan will only update data while scanning."""
     initial_data = simulator.get_data()
 
     next_data = simulator.get_data()
 
     assert initial_data == next_data
 
-    simulator.scan(args=scan_request)
+    simulator.start_scan(args=scan_request)
     prev_data = next_data = simulator.get_data()
 
     assert initial_data != next_data
@@ -84,7 +84,7 @@ def test_dsp_simulator_until_scan_get_data_returns_initial_data(
 
     assert prev_data != next_data
 
-    simulator.end_scan()
+    simulator.stop_scan()
     prev_data = next_data
     next_data = simulator.get_data()
 
