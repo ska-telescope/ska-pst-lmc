@@ -1,17 +1,18 @@
 SKA PST LMC
 ===========
 
-[![Documentation Status](https://readthedocs.org/projects/ska-telescope-pst-lmc/badge/?version=latest)](https://readthedocs.org/projects/ska-telescope-pst-lmc/badge/?version=latest)
+[![Documentation Status](https://readthedocs.org/projects/ska-telescope-ska-pst-lmc/badge/?version=latest)](https://readthedocs.org/projects/ska-telescope-ska-pst-lmc/badge/?version=latest)
 
 Release: 0.2.2
+
+Check the [PST.LMC Documentation](https://developer.skao.int/projects/ska-pst-lmc) for the API and detailed documentation
+of this project.
 
 ## About
 
 The repository for the Local Monitoring and Control (LMC) software the Pulsar Timing Sub-element (PST) within the Central Signal Processor (CSP) element of the Square Kilometre Array (SKA) Low and Mid telescopes.
 
 This project is for the PST Tango devices used within the LMC.
-
-This project is based off the old [pst-lmc](https://gitlab.com/ska-telescope/pst-lmc) repository. Due to that it had not been actively developed it has been decided to start afresh starting from Program Increment 14. The old project is still available as a reference but this project now supercedes that project.
 
 ## TANGO Devices
 
@@ -29,7 +30,7 @@ This device is a logical device for managing devices like RECV and SMRB. This us
 is a wrapper around the `tango.DeviceProxy` class. This allows for not having to import TANGO classes within component
 classes.
 
-The component manager proxies commands to the remote devices that are configured based on the TANGO device's attributes of `RecvFQDN`, `SmrbFQDN`, `DspFQDN`, and `SendFQDN`.
+The component manager proxies commands to the remote devices that are configured based on the TANGO device's attributes of `RecvFQDN`, `SmrbFQDN`, `DspFQDN`.
 
 ### RECV Device
 
@@ -278,13 +279,6 @@ tests `test_recv_device.py` versus other test files). It is very important when 
 TANGO device that the `device_test_config` fixture has the property `process=True` (again see `test_recv_device.py`
 for an example) else you will get Segmentation Faults.
 
-### Open Issue
-
-Right now the tests coverage is not handling the code which is be run in a thread. This is a known issue with `pytest`
-can coverage. It may require some specific changes to the setup of classes, though if using the common `BackgroundTask`
-you should be able to provide test coverage over the `action_fn` in the calling class and know that the there is
-coverage over the `BackgroundTask`.
-
 ## Documentation
 
 General design decisions for this project need to be captured externally on Confluence (see section below). However, API documentation is specific to the version of code and should be a part of this project.
@@ -298,8 +292,6 @@ $ make docs-build html
 ```
 
 The docs can then be found in the `docs/build/html` directory. If you're using VS Code, you can view the output using a `Live Server` view of this to check that the documentation is being generated correctly.
-
-[PST LMC Read The Docs](https://developer.skao.int/projects/ska-pst-lmc)
 
 ### Confluence Documentation
 
