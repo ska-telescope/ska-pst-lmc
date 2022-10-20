@@ -17,14 +17,14 @@ from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 
 def test_calculate_receive_subband_resources(
     beam_id: int,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     recv_network_interface: str,
     recv_udp_port: int,
 ) -> None:
     """Test that the correct RECV subband resources request is created."""
     actual = calculate_receive_subband_resources(
         beam_id=beam_id,
-        request_params=assign_resources_request,
+        request_params=configure_beam_request,
         data_host=recv_network_interface,
         data_port=recv_udp_port,
     )
@@ -37,25 +37,25 @@ def test_calculate_receive_subband_resources(
 
     assert actual_common["nsubband"] == 1
 
-    assert actual_common["udp_nsamp"] == assign_resources_request["udp_nsamp"]
-    assert actual_common["wt_nsamp"] == assign_resources_request["wt_nsamp"]
-    assert actual_common["udp_nchan"] == assign_resources_request["udp_nchan"]
-    assert actual_common["frequency"] == assign_resources_request["centre_frequency"] / 1e6
-    assert actual_common["bandwidth"] == assign_resources_request["total_bandwidth"] / 1e6
-    assert actual_common["nchan"] == assign_resources_request["num_frequency_channels"]
-    assert actual_common["frontend"] == assign_resources_request["timing_beam_id"]
-    assert actual_common["fd_poln"] == assign_resources_request["feed_polarization"]
-    assert actual_common["fd_hand"] == assign_resources_request["feed_handedness"]
-    assert actual_common["fd_sang"] == assign_resources_request["feed_angle"]
-    assert actual_common["fd_mode"] == assign_resources_request["feed_tracking_mode"]
-    assert actual_common["fa_req"] == assign_resources_request["feed_position_angle"]
-    assert actual_common["nant"] == len(assign_resources_request["receptors"])
-    assert actual_common["antennas"] == ",".join(assign_resources_request["receptors"])
-    assert actual_common["ant_weights"] == ",".join(map(str, assign_resources_request["receptor_weights"]))
-    assert actual_common["npol"] == assign_resources_request["num_of_polarizations"]
-    assert actual_common["nbits"] == assign_resources_request["bits_per_sample"] // 2
+    assert actual_common["udp_nsamp"] == configure_beam_request["udp_nsamp"]
+    assert actual_common["wt_nsamp"] == configure_beam_request["wt_nsamp"]
+    assert actual_common["udp_nchan"] == configure_beam_request["udp_nchan"]
+    assert actual_common["frequency"] == configure_beam_request["centre_frequency"] / 1e6
+    assert actual_common["bandwidth"] == configure_beam_request["total_bandwidth"] / 1e6
+    assert actual_common["nchan"] == configure_beam_request["num_frequency_channels"]
+    assert actual_common["frontend"] == configure_beam_request["timing_beam_id"]
+    assert actual_common["fd_poln"] == configure_beam_request["feed_polarization"]
+    assert actual_common["fd_hand"] == configure_beam_request["feed_handedness"]
+    assert actual_common["fd_sang"] == configure_beam_request["feed_angle"]
+    assert actual_common["fd_mode"] == configure_beam_request["feed_tracking_mode"]
+    assert actual_common["fa_req"] == configure_beam_request["feed_position_angle"]
+    assert actual_common["nant"] == len(configure_beam_request["receptors"])
+    assert actual_common["antennas"] == ",".join(configure_beam_request["receptors"])
+    assert actual_common["ant_weights"] == ",".join(map(str, configure_beam_request["receptor_weights"]))
+    assert actual_common["npol"] == configure_beam_request["num_of_polarizations"]
+    assert actual_common["nbits"] == configure_beam_request["bits_per_sample"] // 2
     assert actual_common["ndim"] == 2
-    assert actual_common["ovrsamp"] == "/".join(map(str, assign_resources_request["oversampling_ratio"]))
+    assert actual_common["ovrsamp"] == "/".join(map(str, configure_beam_request["oversampling_ratio"]))
 
     actual_subband_1 = actual["subbands"][1]
 
@@ -66,7 +66,7 @@ def test_calculate_receive_subband_resources(
     assert actual_subband_1["nchan"] == actual_subband_1["end_channel"] - actual_subband_1["start_channel"]
     assert actual_subband_1["frequency"] == actual_common["frequency"]
     assert actual_subband_1["start_channel"] == 0
-    assert actual_subband_1["end_channel"] == assign_resources_request["num_frequency_channels"]
+    assert actual_subband_1["end_channel"] == configure_beam_request["num_frequency_channels"]
     assert actual_subband_1["bandwidth_out"] == actual_common["bandwidth"]
     assert actual_subband_1["nchan_out"] == actual_common["nchan"]
     assert (
@@ -75,7 +75,7 @@ def test_calculate_receive_subband_resources(
     )
     assert actual_subband_1["frequency_out"] == actual_common["frequency"]
     assert actual_subband_1["start_channel_out"] == 0
-    assert actual_subband_1["end_channel_out"] == assign_resources_request["num_frequency_channels"]
+    assert actual_subband_1["end_channel_out"] == configure_beam_request["num_frequency_channels"]
 
 
 @pytest.mark.parametrize(
@@ -92,17 +92,17 @@ def test_calculate_receive_subband_resources(
 )
 def test_udp_format_set_in_calculated_resources(
     beam_id: int,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     frequency_band: str,
     expected_udp_format: str,
     recv_network_interface: str,
     recv_udp_port: int,
 ) -> None:
     """Test that we add the correct udp_format field."""
-    assign_resources_request["frequency_band"] = frequency_band
+    configure_beam_request["frequency_band"] = frequency_band
     calculated_resources = calculate_receive_subband_resources(
         beam_id=beam_id,
-        request_params=assign_resources_request,
+        request_params=configure_beam_request,
         data_host=recv_network_interface,
         data_port=recv_udp_port,
     )
@@ -124,7 +124,7 @@ def test_udp_format_set_in_calculated_resources(
 )
 def test_recv_util_calc_tsamp(
     beam_id: int,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     bandwidth_mhz: float,
     num_frequency_channels: int,
     oversampling_ratio: List[int],
@@ -138,13 +138,13 @@ def test_recv_util_calc_tsamp(
     Values for these parameterised tests come from the example RECV config
     files in the ska-pst-recv repository.
     """
-    assign_resources_request["total_bandwidth"] = bandwidth_mhz * 1e6
-    assign_resources_request["num_frequency_channels"] = num_frequency_channels
-    assign_resources_request["oversampling_ratio"] = oversampling_ratio
+    configure_beam_request["total_bandwidth"] = bandwidth_mhz * 1e6
+    configure_beam_request["num_frequency_channels"] = num_frequency_channels
+    configure_beam_request["oversampling_ratio"] = oversampling_ratio
 
     calculated_resources = calculate_receive_subband_resources(
         beam_id=beam_id,
-        request_params=assign_resources_request,
+        request_params=configure_beam_request,
         data_host=recv_network_interface,
         data_port=recv_udp_port,
     )
@@ -166,7 +166,7 @@ def test_recv_util_calc_tsamp(
 )
 def test_recv_util_calc_bytes_per_seconds(
     beam_id: int,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     bandwidth_mhz: float,
     num_frequency_channels: int,
     npol: int,
@@ -182,15 +182,15 @@ def test_recv_util_calc_bytes_per_seconds(
     Values for these parameterised tests come from the example RECV config
     files in the ska-pst-recv repository.
     """
-    assign_resources_request["total_bandwidth"] = bandwidth_mhz * 1_000_000
-    assign_resources_request["num_frequency_channels"] = num_frequency_channels
-    assign_resources_request["oversampling_ratio"] = oversampling_ratio
-    assign_resources_request["num_of_polarizations"] = npol
-    assign_resources_request["bits_per_sample"] = 2 * nbits
+    configure_beam_request["total_bandwidth"] = bandwidth_mhz * 1_000_000
+    configure_beam_request["num_frequency_channels"] = num_frequency_channels
+    configure_beam_request["oversampling_ratio"] = oversampling_ratio
+    configure_beam_request["num_of_polarizations"] = npol
+    configure_beam_request["bits_per_sample"] = 2 * nbits
 
     calculated_resources = calculate_receive_subband_resources(
         beam_id=beam_id,
-        request_params=assign_resources_request,
+        request_params=configure_beam_request,
         data_host=recv_network_interface,
         data_port=recv_udp_port,
     )

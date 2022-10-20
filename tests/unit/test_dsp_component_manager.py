@@ -86,11 +86,11 @@ def monitor_data(
 
 
 @pytest.fixture
-def calculated_dsp_subband_resources(beam_id: int, assign_resources_request: dict) -> dict:
+def calculated_dsp_subband_resources(beam_id: int, configure_beam_request: dict) -> dict:
     """Fixture to calculate expected dsp subband resources."""
     resources = calculate_dsp_subband_resources(
         beam_id=beam_id,
-        request_params=assign_resources_request,
+        request_params=configure_beam_request,
     )
     return resources[1]
 
@@ -254,9 +254,9 @@ def test_dsp_cm_not_communicating_switching_simulation_mode_not_try_to_establish
     update_communication_state.assert_not_called()
 
 
-def test_dsp_cm_dsp_assign_resources(
+def test_dsp_cm_dsp_configure_beam(
     component_manager: PstDspComponentManager,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     task_callback: Callable,
     calculated_dsp_subband_resources: dict,
 ) -> None:
@@ -268,14 +268,14 @@ def test_dsp_cm_dsp_assign_resources(
         task_callback=task_callback
     )
 
-    component_manager.assign(resources=assign_resources_request, task_callback=task_callback)
+    component_manager.assign(resources=configure_beam_request, task_callback=task_callback)
 
     api.configure_beam.assert_called_once_with(
         resources=calculated_dsp_subband_resources, task_callback=task_callback
     )
 
 
-def test_dsp_cm_dsp_release_resources(
+def test_dsp_cm_dsp_deconfigure_beam(
     component_manager: PstDspComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -303,7 +303,7 @@ def test_dsp_cm_configure_scan(
         task_callback=task_callback,
     )
 
-    component_manager.configure(configuration=configure_scan_request, task_callback=task_callback)
+    component_manager.configure_scan(configuration=configure_scan_request, task_callback=task_callback)
 
     api.configure_scan.assert_called_once_with(
         configuration=configure_scan_request,
@@ -311,7 +311,7 @@ def test_dsp_cm_configure_scan(
     )
 
 
-def test_dsp_cm_deconfigure(
+def test_dsp_cm_deconfigure_scan(
     component_manager: PstDspComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -322,7 +322,7 @@ def test_dsp_cm_deconfigure(
         task_callback=task_callback,
     )
 
-    component_manager.deconfigure(task_callback=task_callback)
+    component_manager.deconfigure_scan(task_callback=task_callback)
 
     api.deconfigure_scan.assert_called_once_with(
         task_callback=task_callback,
@@ -341,7 +341,7 @@ def test_dsp_cm_dsp_scan(
         task_callback=task_callback,
     )
 
-    component_manager.scan(scan_request, task_callback=task_callback)
+    component_manager.start_scan(scan_request, task_callback=task_callback)
 
     api.start_scan.assert_called_once_with(
         scan_request,
@@ -353,7 +353,7 @@ def test_dsp_cm_dsp_scan(
     )
 
 
-def test_dsp_cm_dsp_end_scan(
+def test_dsp_cm_dsp_stop_scan(
     component_manager: PstDspComponentManager,
     task_callback: Callable,
     monitor_data_callback: MagicMock,
@@ -365,7 +365,7 @@ def test_dsp_cm_dsp_end_scan(
         task_callback=task_callback,
     )
 
-    component_manager.end_scan(task_callback=task_callback)
+    component_manager.stop_scan(task_callback=task_callback)
 
     api.stop_scan.assert_called_once_with(
         task_callback=task_callback,

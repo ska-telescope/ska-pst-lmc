@@ -29,7 +29,7 @@ class TestPstBeam:
     @pytest.mark.forked
     def test_configure_then_scan_then_stop(
         self: TestPstBeam,
-        assign_resources_request: dict,
+        configure_beam_request: dict,
         configure_scan_request: dict,
         scan_request: dict,
         change_event_callbacks: ChangeEventDict,
@@ -89,7 +89,7 @@ class TestPstBeam:
             # need to assign resources
             assert_obstate(ObsState.EMPTY)
 
-            resources = json.dumps(assign_resources_request)
+            resources = json.dumps(configure_beam_request)
             tango_device_command_checker.assert_command(
                 lambda: beam_proxy.AssignResources(resources),
                 expected_obs_state_events=[

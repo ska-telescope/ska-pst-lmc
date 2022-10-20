@@ -177,7 +177,7 @@ class PstDspComponentManager(PstApiComponentManager):
             task_callback=task_callback,
         )
 
-    def scan(self: PstDspComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+    def start_scan(self: PstDspComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
         """Start scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
@@ -190,7 +190,7 @@ class PstDspComponentManager(PstApiComponentManager):
 
         return self._submit_background_task(_task, task_callback=task_callback)
 
-    def end_scan(self: PstDspComponentManager, task_callback: Callable) -> TaskResponse:
+    def stop_scan(self: PstDspComponentManager, task_callback: Callable) -> TaskResponse:
         """End scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:

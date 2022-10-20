@@ -34,7 +34,7 @@ def beam_id() -> int:
 
 
 @pytest.fixture
-def assign_resources_request() -> dict:
+def configure_beam_request() -> dict:
     """Return a valid assign resources object."""
     return {
         # CSP JSON fields / PST fields

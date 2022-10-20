@@ -215,13 +215,13 @@ def test_component_manager_calls_abort_on_subdevices(
 @pytest.fixture
 def request_params(
     method_name: str,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     configure_scan_request: dict,
     scan_request: dict,
 ) -> Optional[Any]:
     """Get request parameters for a given method name."""
     if method_name == "assign":
-        return assign_resources_request
+        return configure_beam_request
     elif method_name == "configure":
         return configure_scan_request
     elif method_name == "release":
@@ -239,13 +239,13 @@ def request_params(
         ("off", lambda d: d.Off, {"power": PowerState.OFF}),
         ("reset", lambda d: d.Reset, {"power": PowerState.OFF}),
         ("standby", lambda d: d.Standby, {"power": PowerState.STANDBY}),
-        ("assign", lambda d: d.AssignResources, {"resourced": True}),
-        ("release", lambda d: d.ReleaseResources, {"resourced": False}),
+        ("assign", lambda d: d.ConfigureBeam, {"resourced": True}),
+        ("release", lambda d: d.DeconfigureBeam, {"resourced": False}),
         ("release_all", lambda d: d.ReleaseAllResources, {"resourced": False}),
         ("configure", lambda d: d.Configure, {"configured": True}),
         ("deconfigure", lambda d: d.End, {"configured": False}),
         ("scan", lambda d: d.Scan, {"scanning": True}),
-        ("end_scan", lambda d: d.EndScan, {"scanning": False}),
+        ("stop_scan", lambda d: d.EndScan, {"scanning": False}),
         ("obsreset", lambda d: d.ObsReset, {"configured": False}),
         ("restart", lambda d: d.Restart, {"configured": False, "resourced": False}),
         ("go_to_fault", lambda d: d.GoToFault, {"obsfault": True}),

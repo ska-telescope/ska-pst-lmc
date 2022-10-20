@@ -234,6 +234,158 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
 
         return self.submit_task(_task, task_callback=task_callback)
 
+    def assign(self: PstApiComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+        """
+        Assign resources to the component.
+
+        .. deprecated:: 0.2.2
+            Use :meth:`configure_beam`
+
+        :param resources: resources to be assigned
+        :type resources: dict
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
+        return self.configure_beam(resources=resources, task_callback=task_callback)
+
+    def configure_beam(self: PstComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+        """
+        Configure the beam specific configuration of the component.
+
+        :param resources: resources to be assigned
+        :type resources: dict
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
+        raise NotImplementedError("PstComponentManager is abstract.")
+
+    def release(self: PstComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+        """
+        Release resources from the component.
+
+        This will release all the resources for this component, due to the fact that in PST it
+        does not make sense that a BEAM can be partially configured. It's either all or nothing.
+
+        .. deprecated:: 0.2.2
+            Use :meth:`deconfigure_beam`
+
+        :param resources: resources to be released
+        :type resources: dict
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
+        # pylint: disable=unused-argument
+        return self.deconfigure_beam(task_callback=task_callback)
+
+    def release_all(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
+        """Release all resources.
+
+        .. deprecated:: 0.2.2
+            Use :meth:`deconfigure_beam`
+
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
+        return self.deconfigure_beam(task_callback=task_callback)
+
+    def deconfigure_beam(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
+        """Deconfigure the component's beam configuration.
+
+        This will release all the resources associated with the component, including the SMRBs.
+
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
+        raise NotImplementedError("PstComponentManager is abstract.")
+
+    def configure(self: PstComponentManager, configuration: dict, task_callback: Callable) -> TaskResponse:
+        """
+        Configure the component for a scan.
+
+        .. deprecated:: 0.2.2
+            Use :meth:`configure_scan`
+
+        :param configuration: the configuration to be configured
+        :type configuration: dict
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
+        return self.configure_scan(configuration=configuration, task_callback=task_callback)
+
+    def configure_scan(
+        self: PstComponentManager, configuration: dict, task_callback: Callable
+    ) -> TaskResponse:
+        """
+        Configure the component for a scan.
+
+        :param configuration: the configuration to be configured
+        :type configuration: dict
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
+        raise NotImplementedError("PstComponentManager is abstract.")
+
+    def deconfigure(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
+        """Deconfigure this component for current scan configuration.
+
+        .. deprecated:: 0.2.2
+            Use :meth:`deconfigure_scan`
+
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
+        return self.deconfigure_scan(task_callback=task_callback)
+
+    def deconfigure_scan(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
+        """Deconfigure this component for current scan configuration.
+
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
+        raise NotImplementedError("PstComponentManager is abstract.")
+
+    def scan(self: PstComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+        """Start scanning.
+
+        .. deprecated:: 0.2.2
+            Use :meth:`start_scan`
+
+        :param args: scan arguments (i.e start time)
+        :type args: dict
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
+        return self.start_scan(args=args, task_callback=task_callback)
+
+    def start_scan(self: PstComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+        """Start scanning.
+
+        :param args: scan arguments (i.e start time)
+        :type args: dict
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
+        raise NotImplementedError("PstComponentManager is abstract.")
+
+    def end_scan(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
+        """Stop scanning.
+
+        .. deprecated:: 0.2.2
+            Use :meth:`start_scan`
+
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
+        return self.stop_scan(task_callback=task_callback)
+
+    def stop_scan(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
+        """Stop scanning.
+
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
+        raise NotImplementedError("PstComponentManager is abstract.")
+
     def obsreset(self: PstComponentManager, task_callback: Callable) -> TaskResponse:
         """Reset the component to unconfigured but do not release resources."""
 
@@ -370,56 +522,69 @@ class PstApiComponentManager(PstComponentManager):
         """
         raise NotImplementedError("PstApiComponentManager is abstract.")
 
-    def assign(self: PstApiComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+    def configure_beam(
+        self: PstApiComponentManager, resources: dict, task_callback: Callable
+    ) -> TaskResponse:
         """
-        Assign resources to the component.
+        Configure the beam resources of the component.
 
         :param resources: resources to be assigned
+        :type resources: dict
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
         """
         self._api.configure_beam(resources, task_callback)
         return TaskStatus.QUEUED, "Resourcing"
 
-    def release(self: PstApiComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+    def deconfigure_beam(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
+        """Deconfigure the component's beam configuration.
+
+        This will release all the resources associated with the component, including the SMRBs.
+
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
         """
-        Release resources from the component.
-
-        This will release all the resources for this component, due to the fact that in PST it
-        does not make sense that a BEAM can be partially configured. It's either all or nothing.
-
-        :param resources: resources to be released
-        """
-        # pylint: disable=unused-argument
-        return self.release_all(task_callback=task_callback)
-
-    def release_all(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
-        """Release all resources."""
         return self._submit_background_task(self._api.deconfigure_beam, task_callback=task_callback)
 
-    def configure(self: PstApiComponentManager, configuration: dict, task_callback: Callable) -> TaskResponse:
+    def configure_scan(
+        self: PstApiComponentManager, configuration: dict, task_callback: Callable
+    ) -> TaskResponse:
         """
-        Configure the component.
+        Configure the component for a scan.
 
         :param configuration: the configuration to be configured
         :type configuration: dict
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
         """
         return self._submit_background_task(
             functools.partial(self._api.configure_scan, configuration=configuration),
             task_callback=task_callback,
         )
 
-    def deconfigure(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
-        """Deconfigure this component."""
+    def deconfigure_scan(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
+        """Deconfigure this component for current scan configuration.
+
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
         return self._submit_background_task(self._api.deconfigure_scan, task_callback=task_callback)
 
-    def scan(self: PstApiComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
-        """Start scanning."""
+    def start_scan(self: PstApiComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+        """Start scanning.
+
+        :param args: scan arguments (i.e start time)
+        :type args: dict
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
         # should be for how long the scan is and update based on that.
         return self._submit_background_task(
             functools.partial(self._api.start_scan, args), task_callback=task_callback
         )
 
-    def end_scan(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
-        """End scanning."""
+    def stop_scan(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
+        """Stop scanning."""
         return self._submit_background_task(self._api.stop_scan, task_callback=task_callback)
 
     def abort(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:

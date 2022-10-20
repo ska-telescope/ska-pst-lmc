@@ -91,14 +91,14 @@ def monitor_data() -> ReceiveData:
 @pytest.fixture
 def calculated_receive_subband_resources(
     beam_id: int,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     recv_network_interface: str,
     recv_udp_port: int,
 ) -> dict:
     """Calculate expected subband resources."""
     return calculate_receive_subband_resources(
         beam_id=beam_id,
-        request_params=assign_resources_request,
+        request_params=configure_beam_request,
         data_host=recv_network_interface,
         data_port=recv_udp_port,
     )
@@ -146,9 +146,9 @@ def test_recv_properties_comes_from_monitor_data(
     assert actual == expected
 
 
-def test_recv_assign_resources(
+def test_recv_configure_beam(
     component_manager: PstReceiveComponentManager,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     task_callback: Callable,
     calculated_receive_subband_resources: dict,
 ) -> None:
@@ -160,7 +160,7 @@ def test_recv_assign_resources(
         task_callback=task_callback
     )
 
-    component_manager.assign(resources=assign_resources_request, task_callback=task_callback)
+    component_manager.assign(resources=configure_beam_request, task_callback=task_callback)
 
     expected_request = {
         "common": calculated_receive_subband_resources["common"],
@@ -170,7 +170,7 @@ def test_recv_assign_resources(
     api.configure_beam.assert_called_once_with(resources=expected_request, task_callback=task_callback)
 
 
-def test_recv_release_resources(
+def test_recv_deconfigure_beam(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -198,7 +198,7 @@ def test_recv_configure_scan(
         task_callback=task_callback,
     )
 
-    component_manager.configure(configuration=configure_scan_request, task_callback=task_callback)
+    component_manager.configure_scan(configuration=configure_scan_request, task_callback=task_callback)
 
     api.configure_scan.assert_called_once_with(
         configuration=configure_scan_request,
@@ -206,7 +206,7 @@ def test_recv_configure_scan(
     )
 
 
-def test_recv_deconfigure(
+def test_recv_deconfigure_scan(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -217,7 +217,7 @@ def test_recv_deconfigure(
         task_callback=task_callback,
     )
 
-    component_manager.deconfigure(task_callback=task_callback)
+    component_manager.deconfigure_scan(task_callback=task_callback)
 
     api.deconfigure_scan.assert_called_once_with(
         task_callback=task_callback,
@@ -236,7 +236,7 @@ def test_recv_scan(
         task_callback=task_callback,
     )
 
-    component_manager.scan(scan_request, task_callback=task_callback)
+    component_manager.start_scan(scan_request, task_callback=task_callback)
 
     api.start_scan.assert_called_once_with(
         scan_request,
@@ -244,7 +244,7 @@ def test_recv_scan(
     )
 
 
-def test_recv_end_scan(
+def test_recv_stop_scan(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -255,7 +255,7 @@ def test_recv_end_scan(
         task_callback=task_callback,
     )
 
-    component_manager.end_scan(task_callback=task_callback)
+    component_manager.stop_scan(task_callback=task_callback)
 
     api.stop_scan.assert_called_once_with(
         task_callback=task_callback,

@@ -15,12 +15,12 @@ from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 
 def test_calculate_receive_subband_resources(
     beam_id: int,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
 ) -> None:
     """Test that the correct DSP subband resources request is created."""
     actual = calculate_dsp_subband_resources(
         beam_id=beam_id,
-        request_params=assign_resources_request,
+        request_params=configure_beam_request,
     )
 
     assert 1 in actual

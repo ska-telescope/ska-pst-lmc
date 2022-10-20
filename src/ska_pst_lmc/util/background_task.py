@@ -40,7 +40,7 @@ def background_task(func: Wrapped) -> Wrapped:
     .. code-block:: python
 
         @background_task
-        def assign_resources(self):
+        def configure_beam(self):
             ...
 
     :param func: the wrapped function
