@@ -161,7 +161,9 @@ class PstDspComponentManager(PstApiComponentManager):
         """Get a list of current rate of writing per subband, in bytes/seconds."""
         return self._monitor_data.subband_write_rate
 
-    def assign(self: PstDspComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+    def configure_beam(
+        self: PstDspComponentManager, resources: dict, task_callback: Callable
+    ) -> TaskResponse:
         """
         Assign resources to the component.
 

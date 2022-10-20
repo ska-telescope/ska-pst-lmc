@@ -166,7 +166,9 @@ class PstReceiveComponentManager(PstApiComponentManager):
         """Get monitor data from data handler."""
         return self._monitor_data_handler.monitor_data
 
-    def assign(self: PstReceiveComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+    def configure_beam(
+        self: PstReceiveComponentManager, resources: dict, task_callback: Callable
+    ) -> TaskResponse:
         """
         Assign resources to the component.
 

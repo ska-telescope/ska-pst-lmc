@@ -18,14 +18,9 @@ import logging
 import time
 from typing import Any, Callable, Dict, Generator, Optional
 
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import BeamConfiguration, DspBeamConfiguration
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import DspMonitorData as DspMonitorDataProtobuf
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
-    DspResources,
-    DspScanConfiguration,
-    MonitorData,
-    ResourceConfiguration,
-    ScanConfiguration,
-)
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import DspScanConfiguration, MonitorData, ScanConfiguration
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.component.process_api import PstProcessApiGrpc, PstProcessApiSimulator
@@ -218,8 +213,8 @@ class PstDspProcessApiGrpc(PstProcessApiGrpc, PstDspProcessApi):
     subband, rather than one for all of RECV as a whole.
     """
 
-    def _get_configure_beam_request(self: PstDspProcessApiGrpc, resources: dict) -> ResourceConfiguration:
-        return ResourceConfiguration(dsp=DspResources(**resources))
+    def _get_configure_beam_request(self: PstDspProcessApiGrpc, resources: dict) -> BeamConfiguration:
+        return BeamConfiguration(dsp=DspBeamConfiguration(**resources))
 
     def _handle_monitor_response(
         self: PstDspProcessApiGrpc, data: MonitorData, monitor_data_callback: Callable[..., None]

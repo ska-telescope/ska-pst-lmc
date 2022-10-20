@@ -21,6 +21,7 @@ import pytest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AbortRequest,
     AbortResponse,
+    BeamConfiguration,
     ConfigureBeamRequest,
     ConfigureBeamResponse,
     ConfigureScanRequest,
@@ -36,13 +37,12 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GoToFaultResponse,
     MonitorData,
     MonitorResponse,
+    ReceiveBeamConfiguration,
     ReceiveMonitorData,
-    ReceiveResources,
     ReceiveScanConfiguration,
     ReceiveSubbandResources,
     ResetRequest,
     ResetResponse,
-    ResourceConfiguration,
     RestartRequest,
     RestartResponse,
     ScanConfiguration,
@@ -102,14 +102,14 @@ def subband_id() -> int:
 @pytest.fixture
 def calculated_receive_subband_resources(
     beam_id: int,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     recv_network_interface: str,
     recv_udp_port: int,
 ) -> dict:
     """Calculate RECV subband resources."""
     return calculate_receive_subband_resources(
         beam_id=beam_id,
-        request_params=assign_resources_request,
+        request_params=configure_beam_request,
         data_host=recv_network_interface,
         data_port=recv_udp_port,
     )
@@ -124,7 +124,7 @@ def mapped_configure_request(
 
 
 @pytest.fixture
-def subband_assign_resources_request(
+def subband_configure_beam_request(
     subband_id: int,
     calculated_receive_subband_resources: dict,
 ) -> dict:
@@ -137,13 +137,13 @@ def subband_assign_resources_request(
 
 @pytest.fixture
 def expected_receive_resources_protobuf(
-    subband_assign_resources_request: dict,
-) -> ReceiveResources:
+    subband_configure_beam_request: dict,
+) -> ReceiveBeamConfiguration:
     """Create expected protobuf resources message for RECV."""
-    return ReceiveResources(
-        **subband_assign_resources_request["common"],
+    return ReceiveBeamConfiguration(
+        **subband_configure_beam_request["common"],
         subband_resources=ReceiveSubbandResources(
-            **subband_assign_resources_request["subband"],
+            **subband_configure_beam_request["subband"],
         ),
     )
 
@@ -160,7 +160,7 @@ def test_receive_grpc_configure_beam(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    subband_assign_resources_request: dict,
+    subband_configure_beam_request: dict,
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
@@ -168,10 +168,10 @@ def test_receive_grpc_configure_beam(
     response = ConfigureBeamResponse()
     mock_servicer_context.configure_beam = MagicMock(return_value=response)
 
-    grpc_api.configure_beam(subband_assign_resources_request, task_callback=task_callback)
+    grpc_api.configure_beam(subband_configure_beam_request, task_callback=task_callback)
 
     expected_request = ConfigureBeamRequest(
-        resource_configuration=ResourceConfiguration(receive=expected_receive_resources_protobuf)
+        beam_configuration=BeamConfiguration(receive=expected_receive_resources_protobuf)
     )
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
 
@@ -187,21 +187,21 @@ def test_receive_grpc_configure_beam_when_already_assigned(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    subband_assign_resources_request: dict,
+    subband_configure_beam_request: dict,
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
     """Test that RECV gRPC assign resources when resources alreay assigned."""
     mock_servicer_context.configure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
-        error_code=ErrorCode.RESOURCES_ALREADY_ASSIGNED,
+        error_code=ErrorCode.CONFIGURED_FOR_BEAM_ALREADY,
         message="Resources have already been assigned",
     )
 
-    grpc_api.configure_beam(subband_assign_resources_request, task_callback=task_callback)
+    grpc_api.configure_beam(subband_configure_beam_request, task_callback=task_callback)
 
     expected_request = ConfigureBeamRequest(
-        resource_configuration=ResourceConfiguration(receive=expected_receive_resources_protobuf)
+        beam_configuration=BeamConfiguration(receive=expected_receive_resources_protobuf)
     )
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
 
@@ -217,7 +217,7 @@ def test_receive_grpc_configure_beam_when_throws_exception(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    subband_assign_resources_request: dict,
+    subband_configure_beam_request: dict,
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
@@ -228,10 +228,10 @@ def test_receive_grpc_configure_beam_when_throws_exception(
         error_code=ErrorCode.INTERNAL_ERROR,
         message="Internal server error occurred",
     )
-    grpc_api.configure_beam(subband_assign_resources_request, task_callback=task_callback)
+    grpc_api.configure_beam(subband_configure_beam_request, task_callback=task_callback)
 
     expected_request = ConfigureBeamRequest(
-        resource_configuration=ResourceConfiguration(receive=expected_receive_resources_protobuf)
+        beam_configuration=BeamConfiguration(receive=expected_receive_resources_protobuf)
     )
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
     mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
@@ -274,7 +274,7 @@ def test_receive_grpc_deconfigure_beam_when_no_resources_assigned(
     """Test that RECV release resources when there are not resources assigned."""
     mock_servicer_context.deconfigure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
-        error_code=ErrorCode.RESOURCES_NOT_ASSIGNED,
+        error_code=ErrorCode.NOT_CONFIGURED_FOR_BEAM,
         message="No resources have been assigned",
     )
 
@@ -353,7 +353,7 @@ def test_recv_grpc_configure_when_already_configured(
     """Test that RECV gRPC configure and already configured."""
     mock_servicer_context.configure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
-        error_code=ErrorCode.SCAN_CONFIGURED_ALREADY,
+        error_code=ErrorCode.CONFIGURED_FOR_SCAN_ALREADY,
         message="Scan has already been configured.",
     )
     grpc_api.configure_scan(configure_scan_request, task_callback=task_callback)

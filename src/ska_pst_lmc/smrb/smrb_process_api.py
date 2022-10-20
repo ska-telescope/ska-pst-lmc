@@ -18,10 +18,10 @@ import time
 from typing import Any, Callable, Dict, Generator, Optional
 
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    BeamConfiguration,
     MonitorData,
-    ResourceConfiguration,
     ScanConfiguration,
-    SmrbResources,
+    SmrbBeamConfiguration,
     SmrbScanConfiguration,
 )
 from ska_tango_base.commands import TaskStatus
@@ -216,8 +216,8 @@ class PstSmrbProcessApiGrpc(PstProcessApiGrpc, PstSmrbProcessApi):
     subband, rather than one for all of RECV as a whole.
     """
 
-    def _get_configure_beam_request(self: PstSmrbProcessApiGrpc, resources: dict) -> ResourceConfiguration:
-        return ResourceConfiguration(smrb=SmrbResources(**resources))
+    def _get_configure_beam_request(self: PstSmrbProcessApiGrpc, resources: dict) -> BeamConfiguration:
+        return BeamConfiguration(smrb=SmrbBeamConfiguration(**resources))
 
     def _handle_monitor_response(
         self: PstSmrbProcessApiGrpc, data: MonitorData, monitor_data_callback: Callable[..., None]

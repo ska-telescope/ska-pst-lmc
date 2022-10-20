@@ -13,6 +13,7 @@ from unittest.mock import MagicMock
 import grpc
 import pytest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    BeamConfiguration,
     ErrorCode,
     GetBeamConfigurationRequest,
     GetBeamConfigurationResponse,
@@ -24,12 +25,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GoToFaultResponse,
 )
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ObsState as GrpcObsState
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
-    ResourceConfiguration,
-    ScanConfiguration,
-    SmrbResources,
-    SmrbScanConfiguration,
-)
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ScanConfiguration, SmrbBeamConfiguration, SmrbScanConfiguration
 from ska_tango_base.control_model import ObsState
 
 from ska_pst_lmc.component.grpc_lmc_client import (
@@ -58,7 +54,7 @@ def test_grpc_client_get_beam_configuration(
 ) -> None:
     """Test getting the assigned resources of service."""
     response = GetBeamConfigurationResponse(
-        resource_configuration=ResourceConfiguration(smrb=SmrbResources())
+        beam_configuration=BeamConfiguration(smrb=SmrbBeamConfiguration())
     )
     mock_servicer_context.get_beam_configuration = MagicMock(return_value=response)
     grpc_client.get_beam_configuration()
@@ -74,7 +70,7 @@ def test_grpc_client_get_beam_configuration_throws_exception(
     """Test getting the assigned resources of service throws exception."""
     mock_servicer_context.get_beam_configuration.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
-        error_code=ErrorCode.RESOURCES_NOT_ASSIGNED,
+        error_code=ErrorCode.NOT_CONFIGURED_FOR_BEAM,
         message="Resource not assigned.",
     )
 

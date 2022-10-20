@@ -337,13 +337,16 @@ def test_smrb_cm_smrb_scan(
     component_manager: PstSmrbComponentManager,
     scan_request: dict,
     task_callback: Callable,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test that the component manager calls the API start a scan."""
     api = MagicMock()
     component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback,
-    )
+
+    def _submit_background_task(task: Callable, task_callback: Callable) -> None:
+        task(task_callback=task_callback)
+
+    monkeypatch.setattr(component_manager, "_submit_background_task", _submit_background_task)
 
     component_manager.start_scan(scan_request, task_callback=task_callback)
 

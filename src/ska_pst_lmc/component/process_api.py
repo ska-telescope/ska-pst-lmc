@@ -22,10 +22,10 @@ import threading
 from typing import Any, Callable, Dict, Generator, Optional
 
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    BeamConfiguration,
     ConfigureBeamRequest,
     ConfigureScanRequest,
     MonitorData,
-    ResourceConfiguration,
     ScanConfiguration,
     StartScanRequest,
 )
@@ -309,8 +309,8 @@ class PstProcessApiGrpc(PstProcessApi):
         if self._monitor_abort_event is not None:
             self._monitor_abort_event.set()
 
-    def _get_configure_beam_request(self: PstProcessApiGrpc, resources: dict) -> ResourceConfiguration:
-        """Convert resources dictionary to instance of `ResourceConfiguration`."""
+    def _get_configure_beam_request(self: PstProcessApiGrpc, resources: dict) -> BeamConfiguration:
+        """Convert resources dictionary to instance of `BeamConfiguration`."""
         raise NotImplementedError("PstProcessApiGrpc is an abstract class.")
 
     def _get_configure_scan_request(self: PstProcessApiGrpc, configure_parameters: dict) -> ScanConfiguration:
@@ -334,8 +334,8 @@ class PstProcessApiGrpc(PstProcessApi):
         self._logger.debug(f"Assigning resources for '{self._client_id}': {resources}")
         task_callback(status=TaskStatus.IN_PROGRESS)
 
-        resource_configuration = self._get_configure_beam_request(resources)
-        request = ConfigureBeamRequest(resource_configuration=resource_configuration)
+        beam_configuration = self._get_configure_beam_request(resources)
+        request = ConfigureBeamRequest(beam_configuration=beam_configuration)
         try:
             self._grpc_client.configure_beam(request=request)
 

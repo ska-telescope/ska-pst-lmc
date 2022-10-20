@@ -9,8 +9,8 @@
 
 import json
 import logging
-import time
-from typing import Any, Callable, List, Optional
+import threading
+from typing import Any, Callable, List, Optional, Tuple
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -179,7 +179,7 @@ def test_component_manager_delegates_admin_mode(
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
 ) -> None:
-    """Test component manager delegates setting admin mode to sub-element devices."""
+    """Test component manager delegates setting admin mode to sub-component devices."""
     for a in list(AdminMode):
         component_manager.update_admin_mode(a)
 
@@ -194,7 +194,7 @@ def test_component_manager_calls_abort_on_subdevices(
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
 ) -> None:
-    """Test component manager delegates setting admin mode to sub-element devices."""
+    """Test component manager delegates setting admin mode to sub-component devices."""
     task_executor = MagicMock()
     task_executor.abort.return_value = (TaskStatus.IN_PROGRESS, "Aborting tasks")
 
@@ -239,13 +239,13 @@ def request_params(
         ("off", lambda d: d.Off, {"power": PowerState.OFF}),
         ("reset", lambda d: d.Reset, {"power": PowerState.OFF}),
         ("standby", lambda d: d.Standby, {"power": PowerState.STANDBY}),
-        ("assign", lambda d: d.ConfigureBeam, {"resourced": True}),
-        ("release", lambda d: d.DeconfigureBeam, {"resourced": False}),
+        ("assign", lambda d: d.AssignResources, {"resourced": True}),
+        ("release", lambda d: d.ReleaseResources, {"resourced": False}),
         ("release_all", lambda d: d.ReleaseAllResources, {"resourced": False}),
         ("configure", lambda d: d.Configure, {"configured": True}),
         ("deconfigure", lambda d: d.End, {"configured": False}),
         ("scan", lambda d: d.Scan, {"scanning": True}),
-        ("stop_scan", lambda d: d.EndScan, {"scanning": False}),
+        ("end_scan", lambda d: d.EndScan, {"scanning": False}),
         ("obsreset", lambda d: d.ObsReset, {"configured": False}),
         ("restart", lambda d: d.Restart, {"configured": False, "resourced": False}),
         ("go_to_fault", lambda d: d.GoToFault, {"obsfault": True}),
@@ -261,9 +261,25 @@ def test_remote_actions(
     request_params: Optional[Any],
     remote_action_supplier: Callable[[PstDeviceProxy], Callable],
     component_state_callback_params: Optional[dict],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Assert that actions that need to be delegated to remote devices."""
     task_callback = MagicMock()
+
+    def _submit_task(
+        func: Callable,
+        args: Optional[Any] = None,
+        kwargs: Optional[dict] = None,
+        task_callback: Optional[Callable] = None,
+    ) -> Tuple[TaskStatus, str]:
+        args = args or []
+        kwargs = kwargs or {}
+        func(*args, task_callback=task_callback, task_abort_event=threading.Event(), **kwargs)
+        if task_callback is not None:
+            task_callback(status=TaskStatus.QUEUED)
+        return TaskStatus.QUEUED, "Task queued"
+
+    monkeypatch.setattr(component_manager, "submit_task", _submit_task)
 
     component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
 
@@ -288,8 +304,6 @@ def test_remote_actions(
 
     assert status == TaskStatus.QUEUED
     assert message == "Task queued"
-
-    time.sleep(0.1)
 
     if request_params is not None:
         params_str = json.dumps(request_params)

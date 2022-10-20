@@ -154,9 +154,9 @@ ERROR_CODE_EXCEPTION_MAP: Dict[ErrorCode, Type[BaseGrpcException]] = {
     ErrorCode.ALREADY_SCANNING: AlreadyScanningException,
     ErrorCode.NOT_SCANNING: NotScanningException,
     ErrorCode.INVALID_REQUEST: InvalidRequestException,
-    ErrorCode.RESOURCES_ALREADY_ASSIGNED: ResourcesAlreadyAssignedException,
-    ErrorCode.RESOURCES_NOT_ASSIGNED: ResourcesNotAssignedException,
-    ErrorCode.SCAN_CONFIGURED_ALREADY: ScanConfiguredAlreadyException,
+    ErrorCode.CONFIGURED_FOR_BEAM_ALREADY: ResourcesAlreadyAssignedException,
+    ErrorCode.NOT_CONFIGURED_FOR_BEAM: ResourcesNotAssignedException,
+    ErrorCode.CONFIGURED_FOR_SCAN_ALREADY: ScanConfiguredAlreadyException,
     ErrorCode.NOT_CONFIGURED_FOR_SCAN: NotConfiguredForScanException,
 }
 

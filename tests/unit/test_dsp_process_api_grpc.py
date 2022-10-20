@@ -21,6 +21,7 @@ import pytest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AbortRequest,
     AbortResponse,
+    BeamConfiguration,
     ConfigureBeamRequest,
     ConfigureBeamResponse,
     ConfigureScanRequest,
@@ -31,8 +32,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     DeconfigureBeamResponse,
     DeconfigureScanRequest,
     DeconfigureScanResponse,
+    DspBeamConfiguration,
     DspMonitorData,
-    DspResources,
     DspScanConfiguration,
     ErrorCode,
     GoToFaultRequest,
@@ -41,7 +42,6 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     MonitorResponse,
     ResetRequest,
     ResetResponse,
-    ResourceConfiguration,
     RestartRequest,
     RestartResponse,
     ScanConfiguration,
@@ -96,20 +96,18 @@ def test_dsp_grpc_configure_beam(
     grpc_api: PstDspProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     task_callback: MagicMock,
 ) -> None:
     """Test that DSP gRPC assign resources."""
     response = ConfigureBeamResponse()
     mock_servicer_context.configure_beam = MagicMock(return_value=response)
-    resources = calculate_dsp_subband_resources(beam_id=1, request_params=assign_resources_request)[1]
+    resources = calculate_dsp_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
 
     grpc_api.configure_beam(resources, task_callback=task_callback)
 
-    expected_dsp_request = DspResources(**resources)
-    expected_request = ConfigureBeamRequest(
-        resource_configuration=ResourceConfiguration(dsp=expected_dsp_request)
-    )
+    expected_dsp_request = DspBeamConfiguration(**resources)
+    expected_request = ConfigureBeamRequest(beam_configuration=BeamConfiguration(dsp=expected_dsp_request))
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -124,23 +122,21 @@ def test_dsp_grpc_configure_beam_when_already_assigned(
     grpc_api: PstDspProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     task_callback: MagicMock,
 ) -> None:
     """Test that DSP gRPC assign resources when resources alreay assigned."""
     mock_servicer_context.configure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
-        error_code=ErrorCode.RESOURCES_ALREADY_ASSIGNED,
+        error_code=ErrorCode.CONFIGURED_FOR_BEAM_ALREADY,
         message="Resources have already been assigned",
     )
-    resources = calculate_dsp_subband_resources(beam_id=1, request_params=assign_resources_request)[1]
+    resources = calculate_dsp_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
 
     grpc_api.configure_beam(resources, task_callback=task_callback)
 
-    expected_dsp_request = DspResources(**resources)
-    expected_request = ConfigureBeamRequest(
-        resource_configuration=ResourceConfiguration(dsp=expected_dsp_request)
-    )
+    expected_dsp_request = DspBeamConfiguration(**resources)
+    expected_request = ConfigureBeamRequest(beam_configuration=BeamConfiguration(dsp=expected_dsp_request))
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -155,7 +151,7 @@ def test_dsp_grpc_configure_beam_when_throws_exception(
     grpc_api: PstDspProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     task_callback: MagicMock,
 ) -> None:
     """Test that DSP gRPC assign resources throws an exception."""
@@ -165,14 +161,12 @@ def test_dsp_grpc_configure_beam_when_throws_exception(
         error_code=ErrorCode.INTERNAL_ERROR,
         message="Internal server error occurred",
     )
-    resources = calculate_dsp_subband_resources(beam_id=1, request_params=assign_resources_request)[1]
+    resources = calculate_dsp_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
 
     grpc_api.configure_beam(resources, task_callback=task_callback)
 
-    expected_dsp_request = DspResources(**resources)
-    expected_request = ConfigureBeamRequest(
-        resource_configuration=ResourceConfiguration(dsp=expected_dsp_request)
-    )
+    expected_dsp_request = DspBeamConfiguration(**resources)
+    expected_request = ConfigureBeamRequest(beam_configuration=BeamConfiguration(dsp=expected_dsp_request))
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
     mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
 
@@ -214,7 +208,7 @@ def test_dsp_grpc_deconfigure_beam_when_no_resources_assigned(
     """Test that DSP release resources when there are not resources assigned."""
     mock_servicer_context.deconfigure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
-        error_code=ErrorCode.RESOURCES_NOT_ASSIGNED,
+        error_code=ErrorCode.NOT_CONFIGURED_FOR_BEAM,
         message="No resources have been assigned",
     )
 
@@ -292,7 +286,7 @@ def test_dsp_grpc_configure_when_already_configured(
     """Test that DSP gRPC configure and already configured."""
     mock_servicer_context.configure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
-        error_code=ErrorCode.SCAN_CONFIGURED_ALREADY,
+        error_code=ErrorCode.CONFIGURED_FOR_SCAN_ALREADY,
         message="Scan has already been configured.",
     )
     grpc_api.configure_scan(configure_scan_request, task_callback=task_callback)

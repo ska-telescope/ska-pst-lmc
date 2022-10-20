@@ -201,7 +201,9 @@ class PstSmrbComponentManager(PstApiComponentManager):
                 component_state_callback=self._component_state_callback,
             )
 
-    def assign(self: PstSmrbComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+    def configure_beam(
+        self: PstSmrbComponentManager, resources: dict, task_callback: Callable
+    ) -> TaskResponse:
         """
         Assign resources to the component.
 
@@ -217,7 +219,7 @@ class PstSmrbComponentManager(PstApiComponentManager):
             task_callback=task_callback,
         )
 
-    def scan(self: PstSmrbComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+    def start_scan(self: PstSmrbComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
         """Start scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
@@ -230,7 +232,7 @@ class PstSmrbComponentManager(PstApiComponentManager):
 
         return self._submit_background_task(_task, task_callback=task_callback)
 
-    def end_scan(self: PstSmrbComponentManager, task_callback: Callable) -> TaskResponse:
+    def stop_scan(self: PstSmrbComponentManager, task_callback: Callable) -> TaskResponse:
         """End scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:

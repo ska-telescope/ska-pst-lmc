@@ -19,12 +19,12 @@ import time
 from typing import Any, Callable, Dict, Generator, Optional
 
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    BeamConfiguration,
     MonitorData,
+    ReceiveBeamConfiguration,
     ReceiveMonitorData,
-    ReceiveResources,
     ReceiveScanConfiguration,
     ReceiveSubbandResources,
-    ResourceConfiguration,
     ScanConfiguration,
 )
 from ska_tango_base.commands import TaskStatus
@@ -221,10 +221,10 @@ class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
     subband, rather than one for all of RECV as a whole.
     """
 
-    def _get_configure_beam_request(self: PstReceiveProcessApiGrpc, resources: dict) -> ResourceConfiguration:
+    def _get_configure_beam_request(self: PstReceiveProcessApiGrpc, resources: dict) -> BeamConfiguration:
         subband_resources = ReceiveSubbandResources(**resources["subband"])
-        return ResourceConfiguration(
-            receive=ReceiveResources(subband_resources=subband_resources, **resources["common"])
+        return BeamConfiguration(
+            receive=ReceiveBeamConfiguration(subband_resources=subband_resources, **resources["common"])
         )
 
     def _get_configure_scan_request(
