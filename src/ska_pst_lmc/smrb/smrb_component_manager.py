@@ -217,7 +217,7 @@ class PstSmrbComponentManager(PstApiComponentManager):
             task_callback=task_callback,
         )
 
-    def start_scan(self: PstSmrbComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+    def scan(self: PstSmrbComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
         """Start scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
@@ -230,7 +230,7 @@ class PstSmrbComponentManager(PstApiComponentManager):
 
         return self._submit_background_task(_task, task_callback=task_callback)
 
-    def stop_scan(self: PstSmrbComponentManager, task_callback: Callable) -> TaskResponse:
+    def end_scan(self: PstSmrbComponentManager, task_callback: Callable) -> TaskResponse:
         """End scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:

@@ -80,7 +80,7 @@ def monitor_data(
     from ska_pst_lmc.dsp.dsp_simulator import PstDspSimulator
 
     simulator = PstDspSimulator()
-    simulator.scan(args=scan_request)
+    simulator.start_scan(args=scan_request)
 
     return simulator.get_data()
 
@@ -270,7 +270,7 @@ def test_dsp_cm_dsp_assign_resources(
 
     component_manager.assign(resources=assign_resources_request, task_callback=task_callback)
 
-    api.assign_resources.assert_called_once_with(
+    api.configure_beam.assert_called_once_with(
         resources=calculated_dsp_subband_resources, task_callback=task_callback
     )
 
@@ -288,7 +288,7 @@ def test_dsp_cm_dsp_release_resources(
 
     component_manager.release_all(task_callback=task_callback)
 
-    api.release_resources.assert_called_once_with(task_callback=task_callback)
+    api.deconfigure_beam.assert_called_once_with(task_callback=task_callback)
 
 
 def test_dsp_cm_configure_scan(
@@ -305,7 +305,7 @@ def test_dsp_cm_configure_scan(
 
     component_manager.configure(configuration=configure_scan_request, task_callback=task_callback)
 
-    api.configure.assert_called_once_with(
+    api.configure_scan.assert_called_once_with(
         configuration=configure_scan_request,
         task_callback=task_callback,
     )
@@ -324,7 +324,7 @@ def test_dsp_cm_deconfigure(
 
     component_manager.deconfigure(task_callback=task_callback)
 
-    api.deconfigure.assert_called_once_with(
+    api.deconfigure_scan.assert_called_once_with(
         task_callback=task_callback,
     )
 
@@ -343,7 +343,7 @@ def test_dsp_cm_dsp_scan(
 
     component_manager.scan(scan_request, task_callback=task_callback)
 
-    api.scan.assert_called_once_with(
+    api.start_scan.assert_called_once_with(
         scan_request,
         task_callback=task_callback,
     )
@@ -367,7 +367,7 @@ def test_dsp_cm_dsp_end_scan(
 
     component_manager.end_scan(task_callback=task_callback)
 
-    api.end_scan.assert_called_once_with(
+    api.stop_scan.assert_called_once_with(
         task_callback=task_callback,
     )
     assert component_manager._monitor_data == DspMonitorData()

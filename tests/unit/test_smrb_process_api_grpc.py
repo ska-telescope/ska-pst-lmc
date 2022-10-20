@@ -97,13 +97,13 @@ def test_smrb_grpc_configure_beam(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_beam_request: dict,
+    assign_resources_request: dict,
     task_callback: MagicMock,
 ) -> None:
     """Test that SMRB gRPC assign resources."""
     response = ConfigureBeamResponse()
     mock_servicer_context.configure_beam = MagicMock(return_value=response)
-    resources = calculate_smrb_subband_resources(1, configure_beam_request)[1]
+    resources = calculate_smrb_subband_resources(1, assign_resources_request)[1]
 
     grpc_api.configure_beam(resources, task_callback=task_callback)
 
@@ -125,7 +125,7 @@ def test_smrb_grpc_configure_beam_when_already_assigned(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_beam_request: dict,
+    assign_resources_request: dict,
     task_callback: MagicMock,
 ) -> None:
     """Test that SMRB gRPC assign resources when resources alreay assigned."""
@@ -134,7 +134,7 @@ def test_smrb_grpc_configure_beam_when_already_assigned(
         error_code=ErrorCode.RESOURCES_ALREADY_ASSIGNED,
         message="Resources have already been assigned",
     )
-    resources = calculate_smrb_subband_resources(1, configure_beam_request)[1]
+    resources = calculate_smrb_subband_resources(1, assign_resources_request)[1]
 
     grpc_api.configure_beam(resources, task_callback=task_callback)
 
@@ -156,7 +156,7 @@ def test_smrb_grpc_configure_beam_when_throws_exception(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_beam_request: dict,
+    assign_resources_request: dict,
     task_callback: MagicMock,
 ) -> None:
     """Test that SMRB gRPC assign resources throws an exception."""
@@ -166,7 +166,7 @@ def test_smrb_grpc_configure_beam_when_throws_exception(
         error_code=ErrorCode.INTERNAL_ERROR,
         message="Internal server error occurred",
     )
-    resources = calculate_smrb_subband_resources(1, configure_beam_request)[1]
+    resources = calculate_smrb_subband_resources(1, assign_resources_request)[1]
 
     grpc_api.configure_beam(resources, task_callback=task_callback)
 

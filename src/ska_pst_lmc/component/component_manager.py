@@ -376,7 +376,7 @@ class PstApiComponentManager(PstComponentManager):
 
         :param resources: resources to be assigned
         """
-        self._api.assign_resources(resources, task_callback)
+        self._api.configure_beam(resources, task_callback)
         return TaskStatus.QUEUED, "Resourcing"
 
     def release(self: PstApiComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
@@ -393,7 +393,7 @@ class PstApiComponentManager(PstComponentManager):
 
     def release_all(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
         """Release all resources."""
-        return self._submit_background_task(self._api.release_resources, task_callback=task_callback)
+        return self._submit_background_task(self._api.deconfigure_beam, task_callback=task_callback)
 
     def configure(self: PstApiComponentManager, configuration: dict, task_callback: Callable) -> TaskResponse:
         """
@@ -403,23 +403,24 @@ class PstApiComponentManager(PstComponentManager):
         :type configuration: dict
         """
         return self._submit_background_task(
-            functools.partial(self._api.configure, configuration=configuration), task_callback=task_callback
+            functools.partial(self._api.configure_scan, configuration=configuration),
+            task_callback=task_callback,
         )
 
     def deconfigure(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
         """Deconfigure this component."""
-        return self._submit_background_task(self._api.deconfigure, task_callback=task_callback)
+        return self._submit_background_task(self._api.deconfigure_scan, task_callback=task_callback)
 
     def scan(self: PstApiComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
         """Start scanning."""
         # should be for how long the scan is and update based on that.
         return self._submit_background_task(
-            functools.partial(self._api.scan, args), task_callback=task_callback
+            functools.partial(self._api.start_scan, args), task_callback=task_callback
         )
 
     def end_scan(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
         """End scanning."""
-        return self._submit_background_task(self._api.end_scan, task_callback=task_callback)
+        return self._submit_background_task(self._api.stop_scan, task_callback=task_callback)
 
     def abort(self: PstApiComponentManager, task_callback: Callable) -> TaskResponse:
         """Abort current process.

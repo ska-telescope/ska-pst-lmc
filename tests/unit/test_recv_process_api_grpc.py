@@ -102,14 +102,14 @@ def subband_id() -> int:
 @pytest.fixture
 def calculated_receive_subband_resources(
     beam_id: int,
-    configure_beam_request: dict,
+    assign_resources_request: dict,
     recv_network_interface: str,
     recv_udp_port: int,
 ) -> dict:
     """Calculate RECV subband resources."""
     return calculate_receive_subband_resources(
         beam_id=beam_id,
-        request_params=configure_beam_request,
+        request_params=assign_resources_request,
         data_host=recv_network_interface,
         data_port=recv_udp_port,
     )
@@ -124,7 +124,7 @@ def mapped_configure_request(
 
 
 @pytest.fixture
-def subband_configure_beam_request(
+def subband_assign_resources_request(
     subband_id: int,
     calculated_receive_subband_resources: dict,
 ) -> dict:
@@ -137,13 +137,13 @@ def subband_configure_beam_request(
 
 @pytest.fixture
 def expected_receive_resources_protobuf(
-    subband_configure_beam_request: dict,
+    subband_assign_resources_request: dict,
 ) -> ReceiveResources:
     """Create expected protobuf resources message for RECV."""
     return ReceiveResources(
-        **subband_configure_beam_request["common"],
+        **subband_assign_resources_request["common"],
         subband_resources=ReceiveSubbandResources(
-            **subband_configure_beam_request["subband"],
+            **subband_assign_resources_request["subband"],
         ),
     )
 
@@ -160,7 +160,7 @@ def test_receive_grpc_configure_beam(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    subband_configure_beam_request: dict,
+    subband_assign_resources_request: dict,
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
@@ -168,7 +168,7 @@ def test_receive_grpc_configure_beam(
     response = ConfigureBeamResponse()
     mock_servicer_context.configure_beam = MagicMock(return_value=response)
 
-    grpc_api.configure_beam(subband_configure_beam_request, task_callback=task_callback)
+    grpc_api.configure_beam(subband_assign_resources_request, task_callback=task_callback)
 
     expected_request = ConfigureBeamRequest(
         resource_configuration=ResourceConfiguration(receive=expected_receive_resources_protobuf)
@@ -187,7 +187,7 @@ def test_receive_grpc_configure_beam_when_already_assigned(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    subband_configure_beam_request: dict,
+    subband_assign_resources_request: dict,
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
@@ -198,7 +198,7 @@ def test_receive_grpc_configure_beam_when_already_assigned(
         message="Resources have already been assigned",
     )
 
-    grpc_api.configure_beam(subband_configure_beam_request, task_callback=task_callback)
+    grpc_api.configure_beam(subband_assign_resources_request, task_callback=task_callback)
 
     expected_request = ConfigureBeamRequest(
         resource_configuration=ResourceConfiguration(receive=expected_receive_resources_protobuf)
@@ -217,7 +217,7 @@ def test_receive_grpc_configure_beam_when_throws_exception(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    subband_configure_beam_request: dict,
+    subband_assign_resources_request: dict,
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
@@ -228,7 +228,7 @@ def test_receive_grpc_configure_beam_when_throws_exception(
         error_code=ErrorCode.INTERNAL_ERROR,
         message="Internal server error occurred",
     )
-    grpc_api.configure_beam(subband_configure_beam_request, task_callback=task_callback)
+    grpc_api.configure_beam(subband_assign_resources_request, task_callback=task_callback)
 
     expected_request = ConfigureBeamRequest(
         resource_configuration=ResourceConfiguration(receive=expected_receive_resources_protobuf)

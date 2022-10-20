@@ -167,7 +167,7 @@ def test_recv_assign_resources(
         "subband": calculated_receive_subband_resources["subbands"][1],
     }
 
-    api.assign_resources.assert_called_once_with(resources=expected_request, task_callback=task_callback)
+    api.configure_beam.assert_called_once_with(resources=expected_request, task_callback=task_callback)
 
 
 def test_recv_release_resources(
@@ -183,7 +183,7 @@ def test_recv_release_resources(
 
     component_manager.release_all(task_callback=task_callback)
 
-    api.release_resources.assert_called_once_with(task_callback=task_callback)
+    api.deconfigure_beam.assert_called_once_with(task_callback=task_callback)
 
 
 def test_recv_configure_scan(
@@ -200,7 +200,7 @@ def test_recv_configure_scan(
 
     component_manager.configure(configuration=configure_scan_request, task_callback=task_callback)
 
-    api.configure.assert_called_once_with(
+    api.configure_scan.assert_called_once_with(
         configuration=configure_scan_request,
         task_callback=task_callback,
     )
@@ -219,7 +219,7 @@ def test_recv_deconfigure(
 
     component_manager.deconfigure(task_callback=task_callback)
 
-    api.deconfigure.assert_called_once_with(
+    api.deconfigure_scan.assert_called_once_with(
         task_callback=task_callback,
     )
 
@@ -238,7 +238,7 @@ def test_recv_scan(
 
     component_manager.scan(scan_request, task_callback=task_callback)
 
-    api.scan.assert_called_once_with(
+    api.start_scan.assert_called_once_with(
         scan_request,
         task_callback=task_callback,
     )
@@ -257,7 +257,7 @@ def test_recv_end_scan(
 
     component_manager.end_scan(task_callback=task_callback)
 
-    api.end_scan.assert_called_once_with(
+    api.stop_scan.assert_called_once_with(
         task_callback=task_callback,
     )
 

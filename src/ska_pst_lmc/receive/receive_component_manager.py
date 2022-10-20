@@ -191,7 +191,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
                 "subband": subband_resources,
             }
 
-            self._api.assign_resources(resources=resources, task_callback=task_callback)
+            self._api.configure_beam(resources=resources, task_callback=task_callback)
 
         return self._submit_background_task(
             _task,
@@ -202,7 +202,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
         """Start scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
-            self._api.scan(args, task_callback=task_callback)
+            self._api.start_scan(args, task_callback=task_callback)
             self._api.monitor(
                 # for now only handling 1 subband
                 subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
@@ -215,7 +215,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
         """End scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
-            self._api.end_scan(task_callback=task_callback)
+            self._api.stop_scan(task_callback=task_callback)
 
             # reset the monitoring data
             self._monitor_data_handler.reset_monitor_data()

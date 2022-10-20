@@ -173,7 +173,7 @@ class PstDspComponentManager(PstApiComponentManager):
         self.logger.debug(f"Submitting API with dsp_resources={dsp_resources[1]}")
 
         return self._submit_background_task(
-            functools.partial(self._api.assign_resources, resources=dsp_resources[1]),
+            functools.partial(self._api.configure_beam, resources=dsp_resources[1]),
             task_callback=task_callback,
         )
 
@@ -181,7 +181,7 @@ class PstDspComponentManager(PstApiComponentManager):
         """Start scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
-            self._api.scan(args, task_callback=task_callback)
+            self._api.start_scan(args, task_callback=task_callback)
             self._api.monitor(
                 # for now only handling 1 subband
                 subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
@@ -194,7 +194,7 @@ class PstDspComponentManager(PstApiComponentManager):
         """End scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
-            self._api.end_scan(task_callback=task_callback)
+            self._api.stop_scan(task_callback=task_callback)
 
             # reset the monitoring data
             self._monitor_data_handler.reset_monitor_data()
