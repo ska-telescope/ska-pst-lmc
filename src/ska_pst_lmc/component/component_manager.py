@@ -61,14 +61,19 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
         :param device_name: the FQDN of the current device. This
             is used within the gRPC process to identify who is
             doing the calling.
+        :type device_name: str
         :param simulation_mode: enum to track if component should be
             in simulation mode or not.
+        :type simulation_mode: `SimulationMode`
         :param logger: a logger for this object to use
+        :type logger: `logging.Logger`
         :param communication_status_changed_callback: callback to be
             called when the status of the communications channel between
             the component manager and its component changes
+        :type communication_status_changed_callback: `Callable`
         :param component_fault_callback: callback to be called when the
             component faults (or stops faulting)
+        :type component_fault_callback: `Callable`
         """
         self._device_name = device_name
         self._simuation_mode = simulation_mode
@@ -280,15 +285,18 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
 
 class PstApiComponentManager(PstComponentManager):
     """
-    A base component Manager for the PST.LMC. that uses and API.
+    A base component Manager for the PST.LMC. that uses an API.
 
     Instances of this component manager are required to provide an
-    instance of :py:class::`PstProcessApi` to delegate functionality
-    to.
+    instance of a :py:class:`PstProcessApi` to delegate functionality
+    to. If the simulation mode changes then the instances are expected
+    to handle changing between a simulation API and a real implementation
+    of the API; the interface for the simulation and real API are to be
+    the same.
 
     Only components that use an external process, such as RECV and SMRB
     are to be extended from this class. Components such as BEAM need
-    to use :py:class::`PstComponentManager` as they don't use a process
+    to use :py:class:`PstComponentManager` as they don't use a process
     API.
     """
 
@@ -307,15 +315,18 @@ class PstApiComponentManager(PstComponentManager):
         :param device_name: the FQDN of the current device. This
             is used within the gRPC process to identify who is
             doing the calling.
-        :param simulation_mode: enum to track if component should be
-            in simulation mode or not.
+        :type device_name: str
         :param api: an API object used to delegate functionality to.
+        :type api: `PstProcessApi`
         :param logger: a logger for this object to use
+        :type logger: `logging.Logger`
         :param communication_status_changed_callback: callback to be
             called when the status of the communications channel between
             the component manager and its component changes
+        :type communication_status_changed_callback: `Callable`
         :param component_fault_callback: callback to be called when the
             component faults (or stops faulting)
+        :type component_fault_callback: `Callable`
         """
         self._api = api
         super().__init__(

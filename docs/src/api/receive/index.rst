@@ -1,20 +1,23 @@
-=======================
-Receive TANGO Component
-=======================
+============================
+Receive MGMT TANGO Component
+============================
 
-The Receive (RECV) TANGO Component is used to manage the
-RECV sub-element for PST.LMC.
+The Receive (RECV.MGMT) TANGO Component is used to manage the
+RECV.CORE process.
 
 This is component is made up of a TANGO device, a component
-manager, as well as including a simulator and an API.
+manager, as well as including a simulator and a gRPC
+Process API, which used by the component to talk with the
+RECV process via gRPC + Protobuf.
 
-The API is to be used by the component to talk with the
-sub-element process (i.e. via socket, gRPC, etc.). For now
-the component uses the Simulator internally.
+For more information about RECV.CORE check:
 
-.. automodule:: ska_pst_lmc.receive
+  * `RECV.CORE code repository <https://gitlab.com/ska-telescope/pst/ska-pst-recv>`_
+  * `RECV.CORE online documentation <https://developer.skao.int/projects/ska-pst-recv>`_
 
 .. toctree::
+  :caption: API
+  :maxdepth: 1
 
   Component Manager<component_manager>
   Device<device>

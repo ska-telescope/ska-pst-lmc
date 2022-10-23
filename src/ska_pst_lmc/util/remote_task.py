@@ -11,7 +11,7 @@
 Since commands on device proxies may be slow, long running commands, this
 module provies classes that can submit and track remote tasks.
 
-The :py:class::`RemoteTask` class deals with calling the task on a remote
+The :py:class:`RemoteTask` class deals with calling the task on a remote
 device. It subscribes to events of the `longRunningCommandStatus` and
 `longRunningCommandProgress` attributes and will proxy the values
 of `progress` and `status` back to a task callback method.

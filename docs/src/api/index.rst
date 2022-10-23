@@ -4,17 +4,17 @@ API
 
 .. toctree::
   :caption: Subpackages
-  :maxdepth: 3
+  :maxdepth: 2
 
+  Base Component subpackage<component/index>
   Beam subpackage<beam/index>
-  Component subpackage<component/index>
-  Digital Signal Processing subpackage<dsp/index>
-  Receive subpackage<receive/index>
-  SMRB subpackage<smrb/index>
+  Digital Signal Processing (DSP) subpackage<dsp/index>
+  Receive (RECV) subpackage<receive/index>
+  Shared Memory Ring Buffer (SMRB) subpackage<smrb/index>
   Util subpackage<util/index>
 
 .. toctree::
-  :caption: Stubbed TANGO devices
+  :caption: Legacy TANGO devices
   :maxdepth: 3
 
-  LMC TANGO Devivces<lmc>
+  Legacy LMC TANGO Devivces<legacy>

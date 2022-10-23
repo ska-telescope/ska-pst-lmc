@@ -5,7 +5,7 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
 
-"""Module for providing the RECV capability for the Pulsar Timing Sub-element."""
+"""Module for providing the RECV.MGMT capability for the Pulsar Timing Sub-element."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ __all__ = ["PstReceive", "main"]
 
 
 class PstReceive(PstBaseDevice):
-    """A software TANGO device for managing the RECV component of the PST.LMC subsystem."""
+    """A software TANGO device for managing the RECV component of the PST.LMC system."""
 
     # -----------------
     # Device Properties

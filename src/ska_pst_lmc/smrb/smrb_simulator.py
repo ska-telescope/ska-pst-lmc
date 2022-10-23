@@ -5,7 +5,7 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
 
-"""Module for providing the Simulated SMRB capability for the Pulsar Timing Sub-element."""
+"""Module for providing the Simulated SMRB capability."""
 
 from __future__ import annotations
 

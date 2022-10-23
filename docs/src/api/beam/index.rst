@@ -1,22 +1,20 @@
-=======================
-Beam TANGO Component
-=======================
+==========================
+BEAM.MGMT TANGO Component
+==========================
 
-The Beam (BEAM) TANGO Component is a logical TANGO
-component that is used to manage the sub-element
-devices and processes of the PST.LMC.
+The Beam (BEAM) MGMT TANGO Component is a logical TANGO
+component that is used to manage the separate TANGO
+components that manage the separate processes that make
+up the PST.LMC system.
 
-This component current proxies the commands to RECV
-and SMRB devices, but in the future will also manage
-the DSP and SEND devices.
-
-Unlike the RECV and SMRB devices, this doesn't use
-a simulator or API class. The simulation happens at
-the software devices.
-
-.. automodule:: ska_pst_lmc.beam
+This component orchestrates the LMC commands, such as
+Configure or Scan, to the RECV.MGMT, SMRB.MGMT, and
+DSP.MGMT components. As such this component doesn't use
+as Simulator or a gRPC Process API.
 
 .. toctree::
+  :maxdepth: 1
 
   Component Manager<component_manager>
   Device<device>
+

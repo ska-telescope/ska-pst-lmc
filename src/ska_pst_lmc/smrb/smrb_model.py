@@ -5,7 +5,7 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
 
-"""Module for providing common model classes within the SMRB sub-element component."""
+"""Module for providing common model classes within the SMRB.MGMT component."""
 
 from __future__ import annotations
 

@@ -79,12 +79,12 @@ class PstBeamComponentManager(PstComponentManager):
     BEAM, RECV.
 
     Commands that are executed on this component manager are
-    sent to instances of :py:class::`PstDeviceProxy` for each
+    sent to instances of :py:class:`PstDeviceProxy` for each
     device that the BEAM device manages.
 
     This component manager only takes the fully-qualified device
     name (FQDN) for the remote devices, but uses the
-    :py:class::`DeviceProxyFactory` to retrieve instances of the
+    :py:class:`DeviceProxyFactory` to retrieve instances of the
     device proxies that commands should be sent to.
     """
 
@@ -155,7 +155,7 @@ class PstBeamComponentManager(PstComponentManager):
         """Update the admin mode of the remote devices.
 
         The adminMode of the remote devices should only be managed through the BEAM
-        device, and this method is called from the :py:class::`PstBeam` device to
+        device, and this method is called from the :py:class:`PstBeam` device to
         make sure that the component manager will update the remote devices.
         """
         self._smrb_device.adminMode = admin_mode
