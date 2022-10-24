@@ -19,7 +19,7 @@ from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component import MonitorDataHandler
 from ska_pst_lmc.dsp.dsp_component_manager import PstDspComponentManager
-from ska_pst_lmc.dsp.dsp_model import DspMonitorData
+from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData
 from ska_pst_lmc.dsp.dsp_process_api import PstDspProcessApi, PstDspProcessApiGrpc, PstDspProcessApiSimulator
 from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources
 from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
@@ -75,7 +75,7 @@ def api(
 @pytest.fixture
 def monitor_data(
     scan_request: dict,
-) -> DspMonitorData:
+) -> DspDiskMonitorData:
     """Create an an instance of ReceiveData for monitor data."""
     from ska_pst_lmc.dsp.dsp_simulator import PstDspSimulator
 
@@ -129,7 +129,7 @@ def test_dsp_cm_start_communicating_calls_connect_on_api(
 )
 def test_dsp_cm_properties_come_from_simulator_api_monitor_data(
     component_manager: PstDspComponentManager,
-    monitor_data: DspMonitorData,
+    monitor_data: DspDiskMonitorData,
     property: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -370,8 +370,8 @@ def test_dsp_cm_dsp_stop_scan(
     api.stop_scan.assert_called_once_with(
         task_callback=task_callback,
     )
-    assert component_manager._monitor_data == DspMonitorData()
-    monitor_data_callback.assert_called_once_with(DspMonitorData())
+    assert component_manager._monitor_data == DspDiskMonitorData()
+    monitor_data_callback.assert_called_once_with(DspDiskMonitorData())
 
 
 def test_dsp_cm_dsp_abort(

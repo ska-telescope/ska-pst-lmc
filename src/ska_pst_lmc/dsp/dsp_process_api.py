@@ -18,13 +18,13 @@ import logging
 import time
 from typing import Any, Callable, Dict, Generator, Optional
 
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import BeamConfiguration, DspBeamConfiguration
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import DspMonitorData as DspMonitorDataProtobuf
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import DspScanConfiguration, MonitorData, ScanConfiguration
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import BeamConfiguration, DspDiskBeamConfiguration
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import DspDiskMonitorData as DspDiskMonitorDataProtobuf
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import DspDiskScanConfiguration, MonitorData, ScanConfiguration
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.component.process_api import PstProcessApiGrpc, PstProcessApiSimulator
-from ska_pst_lmc.dsp.dsp_model import DspMonitorData, DspSubbandMonitorData
+from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData, DspDiskSubbandMonitorData
 from ska_pst_lmc.dsp.dsp_simulator import PstDspSimulator
 from ska_pst_lmc.dsp.dsp_util import generate_dsp_scan_request
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
@@ -64,7 +64,7 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         """
         self._simulator = simulator or PstDspSimulator()
         self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
-        self.data: Optional[DspMonitorData] = None
+        self.data: Optional[DspDiskMonitorData] = None
 
         super().__init__(logger=logger, component_state_callback=component_state_callback)
 
@@ -214,24 +214,26 @@ class PstDspProcessApiGrpc(PstProcessApiGrpc, PstDspProcessApi):
     """
 
     def _get_configure_beam_request(self: PstDspProcessApiGrpc, resources: dict) -> BeamConfiguration:
-        return BeamConfiguration(dsp=DspBeamConfiguration(**resources))
+        return BeamConfiguration(dsp_disk=DspDiskBeamConfiguration(**resources))
 
     def _handle_monitor_response(
         self: PstDspProcessApiGrpc, data: MonitorData, monitor_data_callback: Callable[..., None]
     ) -> None:
-        dsp_data: DspMonitorDataProtobuf = data.dsp
+        dsp_disk_data: DspDiskMonitorDataProtobuf = data.dsp_disk
 
         monitor_data_callback(
             subband_id=1,
-            subband_data=DspSubbandMonitorData(
-                disk_capacity=dsp_data.disk_capacity,
-                disk_available_bytes=dsp_data.disk_available_bytes,
-                bytes_written=dsp_data.bytes_written,
-                write_rate=dsp_data.write_rate,
+            subband_data=DspDiskSubbandMonitorData(
+                disk_capacity=dsp_disk_data.disk_capacity,
+                disk_available_bytes=dsp_disk_data.disk_available_bytes,
+                bytes_written=dsp_disk_data.bytes_written,
+                write_rate=dsp_disk_data.write_rate,
             ),
         )
 
     def _get_configure_scan_request(self: PstProcessApiGrpc, configure_parameters: dict) -> ScanConfiguration:
         return ScanConfiguration(
-            dsp=DspScanConfiguration(**generate_dsp_scan_request(request_params=configure_parameters))
+            dsp_disk=DspDiskScanConfiguration(
+                **generate_dsp_scan_request(request_params=configure_parameters)
+            )
         )

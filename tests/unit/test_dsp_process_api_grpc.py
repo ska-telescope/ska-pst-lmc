@@ -32,9 +32,9 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     DeconfigureBeamResponse,
     DeconfigureScanRequest,
     DeconfigureScanResponse,
-    DspBeamConfiguration,
-    DspMonitorData,
-    DspScanConfiguration,
+    DspDiskBeamConfiguration,
+    DspDiskMonitorData,
+    DspDiskScanConfiguration,
     ErrorCode,
     GoToFaultRequest,
     GoToFaultResponse,
@@ -52,7 +52,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
 )
 from ska_tango_base.commands import TaskStatus
 
-from ska_pst_lmc.dsp.dsp_model import DspSubbandMonitorData
+from ska_pst_lmc.dsp.dsp_model import DspDiskSubbandMonitorData
 from ska_pst_lmc.dsp.dsp_process_api import PstDspProcessApiGrpc
 from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources, generate_dsp_scan_request
 from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
@@ -106,8 +106,10 @@ def test_dsp_grpc_configure_beam(
 
     grpc_api.configure_beam(resources, task_callback=task_callback)
 
-    expected_dsp_request = DspBeamConfiguration(**resources)
-    expected_request = ConfigureBeamRequest(beam_configuration=BeamConfiguration(dsp=expected_dsp_request))
+    expected_dsp_request = DspDiskBeamConfiguration(**resources)
+    expected_request = ConfigureBeamRequest(
+        beam_configuration=BeamConfiguration(dsp_disk=expected_dsp_request)
+    )
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -135,8 +137,10 @@ def test_dsp_grpc_configure_beam_when_already_assigned(
 
     grpc_api.configure_beam(resources, task_callback=task_callback)
 
-    expected_dsp_request = DspBeamConfiguration(**resources)
-    expected_request = ConfigureBeamRequest(beam_configuration=BeamConfiguration(dsp=expected_dsp_request))
+    expected_dsp_request = DspDiskBeamConfiguration(**resources)
+    expected_request = ConfigureBeamRequest(
+        beam_configuration=BeamConfiguration(dsp_disk=expected_dsp_request)
+    )
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
 
     expected_calls = [
@@ -165,8 +169,10 @@ def test_dsp_grpc_configure_beam_when_throws_exception(
 
     grpc_api.configure_beam(resources, task_callback=task_callback)
 
-    expected_dsp_request = DspBeamConfiguration(**resources)
-    expected_request = ConfigureBeamRequest(beam_configuration=BeamConfiguration(dsp=expected_dsp_request))
+    expected_dsp_request = DspDiskBeamConfiguration(**resources)
+    expected_request = ConfigureBeamRequest(
+        beam_configuration=BeamConfiguration(dsp_disk=expected_dsp_request)
+    )
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
     mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
 
@@ -264,7 +270,7 @@ def test_dsp_grpc_configure_scan(
 
     expected_scan_configuration = generate_dsp_scan_request(request_params=configure_scan_request)
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(dsp=DspScanConfiguration(**expected_scan_configuration))
+        scan_configuration=ScanConfiguration(dsp_disk=DspDiskScanConfiguration(**expected_scan_configuration))
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
 
@@ -293,7 +299,7 @@ def test_dsp_grpc_configure_when_already_configured(
 
     expected_scan_configuration = generate_dsp_scan_request(request_params=configure_scan_request)
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(dsp=DspScanConfiguration(**expected_scan_configuration))
+        scan_configuration=ScanConfiguration(dsp_disk=DspDiskScanConfiguration(**expected_scan_configuration))
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
 
@@ -323,7 +329,7 @@ def test_dsp_grpc_configure_when_throws_exception(
 
     expected_scan_configuration = generate_dsp_scan_request(request_params=configure_scan_request)
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(dsp=DspScanConfiguration(**expected_scan_configuration))
+        scan_configuration=ScanConfiguration(dsp_disk=DspDiskScanConfiguration(**expected_scan_configuration))
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
     mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
@@ -715,7 +721,7 @@ def test_dsp_grpc_simulated_monitor_calls_callback(
             logger.debug("Yielding monitor data")
             yield MonitorResponse(
                 monitor_data=MonitorData(
-                    dsp=DspMonitorData(
+                    dsp_disk=DspDiskMonitorData(
                         disk_capacity=disk_capacity,
                         disk_available_bytes=disk_available_bytes,
                         bytes_written=bytes_written,
@@ -748,7 +754,7 @@ def test_dsp_grpc_simulated_monitor_calls_callback(
     calls = [
         call(
             subband_id=1,
-            subband_data=DspSubbandMonitorData(
+            subband_data=DspDiskSubbandMonitorData(
                 disk_capacity=disk_capacity,
                 disk_available_bytes=disk_available_bytes,
                 bytes_written=bytes_written,

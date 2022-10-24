@@ -21,7 +21,7 @@ DEFAULT_RECORDING_TIME: float = float(60 * 60 * 24 * 365)
 
 
 @dataclass
-class DspSubbandMonitorData:
+class DspDiskSubbandMonitorData:
     """A data class to represent a subband monitoring data record.
 
     This class is used to report on a subband specific monitoring data.
@@ -47,7 +47,7 @@ class DspSubbandMonitorData:
 
 
 @dataclass
-class DspMonitorData:
+class DspDiskMonitorData:
     """A data class to represent the DSP monitoring across all subbands.
 
     This class is used to model the combined subband data for the DSP.
@@ -84,30 +84,30 @@ class DspMonitorData:
     subband_write_rate: List[float] = field(default_factory=list)
 
     @property
-    def disk_used_bytes(self: DspMonitorData) -> int:
+    def disk_used_bytes(self: DspDiskMonitorData) -> int:
         """Get amount of bytes used on the disk that DSP is writing to."""
         return self.disk_capacity - self.disk_available_bytes
 
     @property
-    def disk_used_percentage(self: DspMonitorData) -> float:
+    def disk_used_percentage(self: DspDiskMonitorData) -> float:
         """Get the percentage of used disk space that DSP is writing to."""
         return 100.0 * (self.disk_used_bytes) / (self.disk_capacity + 1e-8)
 
 
-class DspMonitorDataStore(MonitorDataStore[DspSubbandMonitorData, DspMonitorData]):
+class DspDiskMonitorDataStore(MonitorDataStore[DspDiskSubbandMonitorData, DspDiskMonitorData]):
     """Data store use to aggregate the subband data for DSP."""
 
     @property
-    def monitor_data(self: DspMonitorDataStore) -> DspMonitorData:
+    def monitor_data(self: DspDiskMonitorDataStore) -> DspDiskMonitorData:
         """Get current monitoring data for DSP.
 
         This returns the latest monitoring data calculated from the current
         subband data. If no subband data is available then the response is
-        a default :py:class:`DspMonitorData` object.
+        a default :py:class:`DspDiskMonitorData` object.
         """
         number_subbands: int = len(self._subband_data)
         if number_subbands == 0:
-            return DspMonitorData()
+            return DspDiskMonitorData()
 
         # use max long as initial value, we will want min value
         disk_capacity: int = sys.maxsize
@@ -133,7 +133,7 @@ class DspMonitorDataStore(MonitorDataStore[DspSubbandMonitorData, DspMonitorData
         # need to reduce the recording time per disk A/(total current rate)
         available_recording_time = disk_available_bytes / (write_rate + 1e-8)
 
-        return DspMonitorData(
+        return DspDiskMonitorData(
             disk_capacity=disk_capacity,
             disk_available_bytes=disk_available_bytes,
             bytes_written=bytes_written,
