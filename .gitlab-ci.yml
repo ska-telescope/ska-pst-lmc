@@ -80,9 +80,6 @@ python-generate-code:
     - copy-protobuf
   tags:
     - k8srunner
-  before_script:
-    - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile; exit 1")'
-    - 'make help | grep python-generate-code'
   script:
     - make PROTOBUF_DIR="$(pwd)/build/protobuf" GENERATED_PATH="$(pwd)/generated" python-generate-code
   artifacts:
