@@ -24,6 +24,9 @@ COPY --from=pstbuilder /usr/local/lib/libupb.so* ./lib/
 COPY --from=pstbuilder /usr/local/lib/libz.so* ./lib/
 
 COPY pyproject.toml poetry.lock* /app/
+# This is needed to run tests
+COPY src/ska_pst_lmc/ /app/src/ska_pst_lmc/
+COPY tests/ /app/tests/
 
 RUN mkdir -p /app/tests && \
   poetry config virtualenvs.create false && \
@@ -36,12 +39,6 @@ RUN mkdir -p "$(pwd)/generated" && \
     --init_python_opt=imports=protobuf+grpcio \
     --grpc_python_out="$(pwd)/generated" \
     $(find "$(pwd)/protobuf" -iname "*.proto")
-
-# should run tests, this will validate that the base install works
-COPY src/ /app/src/
-COPY tests/ /app/tests/
-
-ENV PYTHONPATH=/app/src:/app/generated:/usr/local/lib/python3.10/site-packages
 
 RUN pytest --forked tests/
 
@@ -70,5 +67,3 @@ RUN poetry config virtualenvs.create false && \
   rm pyproject.toml poetry.lock
 
 USER tango
-
-ENV PYTHONPATH=/app/src:/usr/local/lib/python3.10/site-packages
