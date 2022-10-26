@@ -8,6 +8,7 @@ variables:
   SKA_PST_COMMON_BUILDER_IMAGE: artefact.skao.int/ska-pst-common-builder:0.3.0
   OCI_IMAGE_BUILD_CONTEXT: $(PWD)
   K8S_TEST_CLUSTER_TAG: k8srunner # k8srunner-psi-low
+  SKA_GEMNASIUM_IMAGE: artefact.skao.int/ska-cicd-gemnasium-scanning-alpine:0.8.2
 
 # GitLab CI in conjunction with GitLab Runner can use Docker Engine to test and build any application.
 # Docker, when used with GitLab CI, runs each job in a separate and isolated container using the predefined image that is set up in .gitlab-ci.yml.
