@@ -34,13 +34,13 @@ RUN mkdir -p /app/tests && \
 
 RUN mkdir -p "$(pwd)/generated" && \
     python3 -m grpc_tools.protoc --proto_path="$(pwd)/protobuf" \
-    --python_out="$(pwd)/src" \
-    --init_python_out="$(pwd)/src" \
+    --python_out="$(pwd)/generated" \
+    --init_python_out="$(pwd)/generated" \
     --init_python_opt=imports=protobuf+grpcio \
-    --grpc_python_out="$(pwd)/src" \
+    --grpc_python_out="$(pwd)/generated" \
     $(find "$(pwd)/protobuf" -iname "*.proto")
 
-RUN pytest --forked tests/
+RUN PYTHONPATH="/app/src:/app/generated" pytest --forked tests/
 
 FROM $BASE_IMAGE
 
@@ -60,10 +60,9 @@ COPY --from=pstbuilder /usr/local/lib/libz.so* ./lib/
 WORKDIR /app
 
 COPY pyproject.toml poetry.lock* /app/
-COPY --from=buildenv --chown=tango:tango /app/src/ska_pst_lmc_proto/ /app/src/ska_pst_lmc_proto
+COPY --from=buildenv --chown=tango:tango /app/generated/ /app/src
 
 RUN poetry config virtualenvs.create false && \
-  poetry install --without dev && \
-  rm pyproject.toml poetry.lock
+  poetry install --without dev
 
 USER tango

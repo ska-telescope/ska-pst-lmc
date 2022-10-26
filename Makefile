@@ -26,7 +26,7 @@ PYTHON_VARS_BEFORE_PYTEST = PYTHONPATH=$(PWD)/src:$(PWD)/generated
 ifeq ($(strip $(firstword $(MAKECMDGOALS))),k8s-test)
 # need to set the PYTHONPATH since the ska-cicd-makefile default definition
 # of it is not OK for the alpine images
-PYTHON_VARS_BEFORE_PYTEST = PYTHONPATH=./src:./generated:/app/src:/usr/local/lib/python3.9/site-packages TANGO_HOST="$(TANGO_HOST)"
+PYTHON_VARS_BEFORE_PYTEST = TANGO_HOST="$(TANGO_HOST)"
 PYTHON_VARS_AFTER_PYTEST := -m 'integration' --disable-pytest-warnings --forked
 endif
 
@@ -152,16 +152,16 @@ K8S_CHART_PARAMS = --set global.minikube=$(MINIKUBE) \
 	--set ska-pst-smrb.enabled=$(SMRB) \
 	${K8S_TEST_TANGO_IMAGE}
 
-k8s_test_command = /bin/bash -o pipefail -c "\
-	mkfifo results-pipe && tar zx --warning=all && \
-        ( if [[ -f pyproject.toml ]]; then poetry export --format requirements.txt --output poetry-requirements.txt --without-hashes --dev; echo 'k8s-test: installing poetry-requirements.txt';  pip install -qUr poetry-requirements.txt; else if [[ -f $(k8s_test_folder)/requirements.txt ]]; then echo 'k8s-test: installing $(k8s_test_folder)/requirements.txt'; pip install -qUr $(k8s_test_folder)/requirements.txt; fi; fi ) && \
-		echo \"Dev python packages installed.\" && \
-		export PYTHONPATH=${PYTHONPATH}:/app/src$(k8s_test_src_dirs) && \
-		mkdir -p build && \
-		echo \"Executing: $(K8S_TEST_TEST_COMMAND)\" && \
-	( \
-	$(K8S_TEST_TEST_COMMAND) \
-	); \
-	echo \$$? > build/status; pip list > build/pip_list.txt; \
-	echo \"k8s_test_command: test command exit is: \$$(cat build/status)\"; \
-	tar zcf results-pipe build;"
+# k8s_test_command = /bin/bash -o pipefail -c "\
+# 	mkfifo results-pipe && tar zx --warning=all && \
+#         ( if [[ -f pyproject.toml ]]; then poetry export --format requirements.txt --output poetry-requirements.txt --without-hashes --dev; echo 'k8s-test: installing poetry-requirements.txt';  pip install -qUr poetry-requirements.txt; else if [[ -f $(k8s_test_folder)/requirements.txt ]]; then echo 'k8s-test: installing $(k8s_test_folder)/requirements.txt'; pip install -qUr $(k8s_test_folder)/requirements.txt; fi; fi ) && \
+# 		echo \"Dev python packages installed.\" && \
+# 		export PYTHONPATH=${PYTHONPATH}:/app/src$(k8s_test_src_dirs) && \
+# 		mkdir -p build && \
+# 		echo \"Executing: $(K8S_TEST_TEST_COMMAND)\" && \
+# 	( \
+# 	$(K8S_TEST_TEST_COMMAND) \
+# 	); \
+# 	echo \$$? > build/status; pip list > build/pip_list.txt; \
+# 	echo \"k8s_test_command: test command exit is: \$$(cat build/status)\"; \
+# 	tar zcf results-pipe build;"
