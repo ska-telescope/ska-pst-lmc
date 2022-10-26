@@ -165,7 +165,7 @@ class PstDspComponentManager(PstApiComponentManager):
         self: PstDspComponentManager, resources: dict, task_callback: Callable
     ) -> TaskResponse:
         """
-        Assign resources to the component.
+        Configure the beam of the the component with the resources.
 
         :param resources: resources to be assigned
         """
@@ -193,7 +193,7 @@ class PstDspComponentManager(PstApiComponentManager):
         return self._submit_background_task(_task, task_callback=task_callback)
 
     def stop_scan(self: PstDspComponentManager, task_callback: Callable) -> TaskResponse:
-        """End scanning."""
+        """Stop scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
             self._api.stop_scan(task_callback=task_callback)

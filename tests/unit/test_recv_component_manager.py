@@ -152,7 +152,7 @@ def test_recv_configure_beam(
     task_callback: Callable,
     calculated_receive_subband_resources: dict,
 ) -> None:
-    """Test that assign resources calls the API correctly."""
+    """Test that configure beam calls the API correctly."""
     api = MagicMock()
     component_manager._api = api
     # override the background processing.
@@ -174,14 +174,14 @@ def test_recv_deconfigure_beam(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
-    """Test that assign resources calls the API correctly."""
+    """Test that configure beam calls the API correctly."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
         task_callback=task_callback
     )
 
-    component_manager.release_all(task_callback=task_callback)
+    component_manager.deconfigure_beam(task_callback=task_callback)
 
     api.deconfigure_beam.assert_called_once_with(task_callback=task_callback)
 
@@ -191,7 +191,7 @@ def test_recv_configure_scan(
     configure_scan_request: dict,
     task_callback: Callable,
 ) -> None:
-    """Test that the component manager calls the API for configure service."""
+    """Test that the component manager calls the API for configure_scan service."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
@@ -210,7 +210,7 @@ def test_recv_deconfigure_scan(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
-    """Test that the component manager calls the API to deconfigure service."""
+    """Test that the component manager calls the API to deconfigure_scan service."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore

@@ -315,9 +315,9 @@ class PstBeamComponentManager(PstComponentManager):
         self: PstBeamComponentManager, configuration: dict, task_callback: Callable
     ) -> TaskResponse:
         """
-        Configure the component.
+        Configure scan for the component.
 
-        :param configuration: the configuration to be configured
+        :param configuration: the scan configuration.
         :type configuration: dict
         """
 
@@ -335,7 +335,7 @@ class PstBeamComponentManager(PstComponentManager):
         )
 
     def deconfigure_scan(self: PstBeamComponentManager, task_callback: Callable) -> TaskResponse:
-        """Deconfigure this component."""
+        """Deconfigure scan for this component."""
 
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'End' commands {command_ids} have completed.")
@@ -365,7 +365,7 @@ class PstBeamComponentManager(PstComponentManager):
         )
 
     def stop_scan(self: PstBeamComponentManager, task_callback: Callable) -> TaskResponse:
-        """End scanning."""
+        """Stop scanning."""
 
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'EndScan' commands {command_ids} have completed.")

@@ -89,7 +89,7 @@ def test_until_scan_get_data_returns_initial_data(
     simulator: PstSmrbSimulator,
     scan_request: dict,
 ) -> None:
-    """Test that scan/stop_scan will only update data while scanning."""
+    """Test that start_scan/stop_scan will only update data while scanning."""
     initial_data = simulator.get_data()
 
     next_data = simulator.get_data()

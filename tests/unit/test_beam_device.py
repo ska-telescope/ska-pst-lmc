@@ -175,7 +175,7 @@ class TestPstBeam:
         )
         assert_state(DevState.ON)
 
-        # need to assign resources
+        # need to configure beam
         assert_obstate(ObsState.EMPTY)
 
         resources = json.dumps(configure_beam_request)
@@ -269,7 +269,7 @@ class TestPstBeam:
         )
         assert_state(DevState.ON)
 
-        # need to assign resources
+        # need to configure beam
         assert_obstate(ObsState.EMPTY)
 
         tango_device_command_checker.assert_command(

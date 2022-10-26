@@ -170,7 +170,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
         self: PstReceiveComponentManager, resources: dict, task_callback: Callable
     ) -> TaskResponse:
         """
-        Assign resources to the component.
+        Configure beam resources in the component.
 
         :param resources: resources to be assigned
         """

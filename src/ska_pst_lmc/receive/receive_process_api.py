@@ -76,7 +76,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         super().__init__(logger=logger, component_state_callback=component_state_callback)
 
     def configure_beam(self: PstReceiveProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
-        """Assign resources.
+        """Configure beam for the service.
 
         :param resources: dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
@@ -91,7 +91,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def deconfigure_beam(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
-        """Release all resources.
+        """Deconfigure the beam.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -105,7 +105,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
     def configure_scan(
         self: PstReceiveProcessApiSimulator, configuration: dict, task_callback: Callable
     ) -> None:
-        """Configure as scan.
+        """Configure a scan.
 
         :param configuration: the configuration of for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -121,7 +121,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def deconfigure_scan(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
-        """Deconfiure a scan.
+        """Deconfigure a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -136,7 +136,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def start_scan(self: PstReceiveProcessApiSimulator, args: dict, task_callback: Callable) -> None:
-        """Run a scan.
+        """Start scanning.
 
         :param args: arguments for the scan.
         :param task_callback: callable to connect back to the component manager.

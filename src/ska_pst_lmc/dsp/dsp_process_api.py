@@ -69,7 +69,7 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         super().__init__(logger=logger, component_state_callback=component_state_callback)
 
     def configure_beam(self: PstDspProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
-        """Assign resources.
+        """Configure the beam.
 
         :param resources: dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
@@ -83,7 +83,7 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def deconfigure_beam(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
-        """Release all resources.
+        """Deconfigure the beam.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -95,7 +95,7 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def configure_scan(self: PstDspProcessApiSimulator, configuration: dict, task_callback: Callable) -> None:
-        """Configure as scan.
+        """Configure a scan.
 
         :param configuration: the configuration of for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -111,7 +111,7 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def deconfigure_scan(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
-        """Deconfiure a scan.
+        """Deconfigure a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -128,7 +128,7 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def start_scan(self: PstDspProcessApiSimulator, args: dict, task_callback: Callable) -> None:
-        """Run a scan.
+        """Start a scan.
 
         :param args: arguments for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -143,7 +143,7 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def stop_scan(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
-        """End a scan.
+        """Stop a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -209,8 +209,8 @@ class PstDspProcessApiGrpc(PstProcessApiGrpc, PstDspProcessApi):
     """This is an gRPC implementation of the `PstDspProcessApi` API.
 
     This uses an instance of a `PstGrpcLmcClient` to send requests through
-    to the DSP.CORE application. Instances of this class should be per
-    subband, rather than one for all of RECV as a whole.
+    to the DSP.DISK application. Instances of this class should be per
+    subband, rather than one for all of DSP.DISK as a whole.
     """
 
     def _get_configure_beam_request(self: PstDspProcessApiGrpc, resources: dict) -> BeamConfiguration:

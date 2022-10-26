@@ -72,7 +72,7 @@ class PstProcessApi:
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def configure_beam(self: PstProcessApi, resources: dict, task_callback: Callable) -> None:
-        """Assign resources.
+        """Configure beam for service.
 
         :param resources: dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
@@ -80,14 +80,14 @@ class PstProcessApi:
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def deconfigure_beam(self: PstProcessApi, task_callback: Callable) -> None:
-        """Release all resources.
+        """Deconfigure beam to release all resources.
 
         :param task_callback: callable to connect back to the component manager.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def configure_scan(self: PstProcessApi, configuration: dict, task_callback: Callable) -> None:
-        """Configure as scan.
+        """Configure a scan.
 
         :param configuration: the configuration of for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -95,14 +95,14 @@ class PstProcessApi:
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def deconfigure_scan(self: PstProcessApi, task_callback: Callable) -> None:
-        """Deconfiure a scan.
+        """Deconfigure a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def start_scan(self: PstProcessApi, args: dict, task_callback: Callable) -> None:
-        """Run a scan.
+        """Start a scan.
 
         :param args: arguments for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -110,7 +110,7 @@ class PstProcessApi:
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def stop_scan(self: PstProcessApi, task_callback: Callable) -> None:
-        """End a scan.
+        """Stop a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -326,7 +326,7 @@ class PstProcessApiGrpc(PstProcessApi):
         return StartScanRequest(**scan_parameters)
 
     def configure_beam(self: PstProcessApiGrpc, resources: dict, task_callback: Callable) -> None:
-        """Assign resources.
+        """Configure the beam with the resources.
 
         :param resources: dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
@@ -352,7 +352,7 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def deconfigure_beam(self: PstProcessApiGrpc, task_callback: Callable) -> None:
-        """Release all resources.
+        """Deconfigure the beam, releasing all resources.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -375,7 +375,7 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def configure_scan(self: PstProcessApiGrpc, configuration: dict, task_callback: Callable) -> None:
-        """Configure as scan.
+        """Configure a scan.
 
         For SMRB this is a no-op command. There is nothing on the server that would be
         performed and executing this will do nothing.
@@ -403,10 +403,7 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def deconfigure_scan(self: PstProcessApiGrpc, task_callback: Callable) -> None:
-        """Deconfiure a scan.
-
-        For SMRB this is a no-op command. There is nothin on the server that would be
-        performed and executing this will do nothing.
+        """Deconfigure a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -433,7 +430,7 @@ class PstProcessApiGrpc(PstProcessApi):
         args: dict,
         task_callback: Callable,
     ) -> None:
-        """Run a scan.
+        """Start scanning.
 
         :param args: arguments for the scan.
         :param task_callback: callable to connect back to the component manager.

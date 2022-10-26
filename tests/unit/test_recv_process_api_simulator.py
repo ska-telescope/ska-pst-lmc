@@ -114,7 +114,7 @@ def test_recv_simulator_api_configure_beam(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that assign resources simulator calls task."""
+    """Test that configure beam simulator calls task."""
     resources: dict = {}
 
     simulation_api.configure_beam(resources, task_callback)
@@ -134,7 +134,7 @@ def test_recv_simulator_api_deconfigure_beam(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that release_all simulator calls task."""
+    """Test that deconfigure_beam simulator calls task."""
     simulation_api.deconfigure_beam(task_callback)
 
     expected_calls = [
@@ -153,7 +153,7 @@ def test_recv_simulator_api_configure_scan(
     task_callback: MagicMock,
     configure_scan_request: dict,
 ) -> None:
-    """Test that release_all simulator calls task."""
+    """Test that deconfigure_beam simulator calls task."""
     with unittest.mock.patch.object(
         simulator, "configure_scan", wraps=simulator.configure_scan
     ) as configure_scan:
@@ -176,7 +176,7 @@ def test_recv_simulator_api_deconfigure_scan(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that release_all simulator calls task."""
+    """Test that deconfigure_beam simulator calls task."""
     with unittest.mock.patch.object(
         simulator, "deconfigure_scan", wraps=simulator.deconfigure_scan
     ) as deconfigure_scan:
@@ -199,7 +199,7 @@ def test_recv_simulator_api_start_scan(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that release_all simulator calls task."""
+    """Test that deconfigure_beam simulator calls task."""
     args = {"foo": "bar"}
     with unittest.mock.patch.object(simulator, "start_scan", wraps=simulator.start_scan) as start_scan:
         simulation_api.start_scan(args, task_callback)

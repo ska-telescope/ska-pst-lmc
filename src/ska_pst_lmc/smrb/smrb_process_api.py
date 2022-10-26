@@ -70,7 +70,7 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         super().__init__(logger=logger, component_state_callback=component_state_callback)
 
     def configure_beam(self: PstSmrbProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
-        """Assign resources.
+        """Configure beam resources.
 
         :param resources: dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
@@ -84,7 +84,7 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def deconfigure_beam(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
-        """Release all resources.
+        """Deconfigure the beam.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -98,7 +98,7 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
     def configure_scan(
         self: PstSmrbProcessApiSimulator, configuration: dict, task_callback: Callable
     ) -> None:
-        """Configure as scan.
+        """Configure a scan.
 
         :param configuration: the configuration of for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -114,7 +114,7 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def deconfigure_scan(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
-        """Deconfiure a scan.
+        """Deconfigure a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -131,7 +131,7 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def start_scan(self: PstSmrbProcessApiSimulator, args: dict, task_callback: Callable) -> None:
-        """Run a scan.
+        """Start scanning.
 
         :param args: arguments for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -213,7 +213,7 @@ class PstSmrbProcessApiGrpc(PstProcessApiGrpc, PstSmrbProcessApi):
 
     This uses an instance of a `PstGrpcLmcClient` to send requests through
     to the SMRB.RB application. Instances of this class should be per
-    subband, rather than one for all of RECV as a whole.
+    subband, rather than one for all of SMRB as a whole.
     """
 
     def _get_configure_beam_request(self: PstSmrbProcessApiGrpc, resources: dict) -> BeamConfiguration:

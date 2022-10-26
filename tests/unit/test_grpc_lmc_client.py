@@ -52,7 +52,7 @@ def test_grpc_client_get_beam_configuration(
     grpc_client: PstGrpcLmcClient,
     mock_servicer_context: MagicMock,
 ) -> None:
-    """Test getting the assigned resources of service."""
+    """Test getting the beam configuration of service."""
     response = GetBeamConfigurationResponse(
         beam_configuration=BeamConfiguration(smrb=SmrbBeamConfiguration())
     )
@@ -67,7 +67,7 @@ def test_grpc_client_get_beam_configuration_throws_exception(
     mock_servicer_context: MagicMock,
     logger: logging.Logger,
 ) -> None:
-    """Test getting the assigned resources of service throws exception."""
+    """Test getting the beam configuration of service throws exception."""
     mock_servicer_context.get_beam_configuration.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.NOT_CONFIGURED_FOR_BEAM,

@@ -164,7 +164,7 @@ def test_receive_grpc_configure_beam(
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
-    """Test that RECV gRPC assign resources."""
+    """Test that RECV gRPC configure beam."""
     response = ConfigureBeamResponse()
     mock_servicer_context.configure_beam = MagicMock(return_value=response)
 
@@ -191,11 +191,11 @@ def test_receive_grpc_configure_beam_when_already_assigned(
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
-    """Test that RECV gRPC assign resources when resources alreay assigned."""
+    """Test that RECV gRPC configure beam when resources alreay assigned."""
     mock_servicer_context.configure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.CONFIGURED_FOR_BEAM_ALREADY,
-        message="Resources have already been assigned",
+        message="Beam has already been configured",
     )
 
     grpc_api.configure_beam(subband_configure_beam_request, task_callback=task_callback)
@@ -207,7 +207,7 @@ def test_receive_grpc_configure_beam_when_already_assigned(
 
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(status=TaskStatus.FAILED, result="Resources have already been assigned", exception=ANY),
+        call(status=TaskStatus.FAILED, result="Beam has already been configured", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_not_called()
@@ -221,7 +221,7 @@ def test_receive_grpc_configure_beam_when_throws_exception(
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
-    """Test that RECV gRPC assign resources throws an exception."""
+    """Test that RECV gRPC configure beam throws an exception."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
     mock_servicer_context.configure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
@@ -250,7 +250,7 @@ def test_receive_grpc_deconfigure_beam(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that RECV gRPC release resources."""
+    """Test that RECV gRPC deconfigure beam."""
     response = DeconfigureBeamResponse()
     mock_servicer_context.deconfigure_beam = MagicMock(return_value=response)
 
@@ -271,7 +271,7 @@ def test_receive_grpc_deconfigure_beam_when_no_resources_assigned(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that RECV release resources when there are not resources assigned."""
+    """Test that RECV deconfigure beam when there are not beam configured."""
     mock_servicer_context.deconfigure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.NOT_CONFIGURED_FOR_BEAM,
@@ -295,7 +295,7 @@ def test_receive_grpc_deconfigure_beam_when_throws_exception(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that RECV release resources when an exception is thrown."""
+    """Test that RECV deconfigure beam when an exception is thrown."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
     mock_servicer_context.deconfigure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.INTERNAL,
@@ -323,7 +323,7 @@ def test_recv_grpc_configure_scan(
     expected_receive_configure_protobuf: ReceiveScanConfiguration,
     task_callback: MagicMock,
 ) -> None:
-    """Test that RECV gRPC calls configure on remote service."""
+    """Test that RECV gRPC calls configure_scan on remote service."""
     response = ConfigureScanResponse()
     mock_servicer_context.configure_scan = MagicMock(return_value=response)
 
@@ -350,7 +350,7 @@ def test_recv_grpc_configure_when_already_configured(
     expected_receive_configure_protobuf: ReceiveScanConfiguration,
     task_callback: MagicMock,
 ) -> None:
-    """Test that RECV gRPC configure and already configured."""
+    """Test that RECV gRPC configure scan and already configured."""
     mock_servicer_context.configure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.CONFIGURED_FOR_SCAN_ALREADY,
@@ -379,7 +379,7 @@ def test_recv_grpc_configure_when_throws_exception(
     expected_receive_configure_protobuf: ReceiveScanConfiguration,
     task_callback: MagicMock,
 ) -> None:
-    """Test that RECV gRPC assign resources throws an exception."""
+    """Test that RECV gRPC configure beam throws an exception."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
     mock_servicer_context.configure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
@@ -408,7 +408,7 @@ def test_recv_grpc_deconfigure_scan(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that RECV gRPC calls configure on remote service."""
+    """Test that RECV gRPC calls configure_scan on remote service."""
     response = DeconfigureScanResponse()
     mock_servicer_context.deconfigure_scan = MagicMock(return_value=response)
 
@@ -430,7 +430,7 @@ def test_recv_grpc_deconfigure_when_not_configured_for_scan(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that RECV gRPC deconfigure and currently not configured."""
+    """Test that RECV gRPC deconfigure scan and currently not configured."""
     mock_servicer_context.deconfigure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.NOT_CONFIGURED_FOR_SCAN,
@@ -454,7 +454,7 @@ def test_recv_grpc_deconfigure_when_throws_exception(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that RECV gRPC deconfigure throws an exception."""
+    """Test that RECV gRPC deconfigure scan throws an exception."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
     mock_servicer_context.deconfigure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,

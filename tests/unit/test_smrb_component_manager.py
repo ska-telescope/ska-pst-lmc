@@ -264,7 +264,7 @@ def test_smrb_cm_smrb_configure_beam(
     task_callback: Callable,
     calculated_smrb_subband_resources: dict,
 ) -> None:
-    """Test that assign resources calls the API correctly."""
+    """Test that configure beam calls the API correctly."""
     api = MagicMock()
     component_manager._api = api
     # override the background processing.
@@ -283,14 +283,14 @@ def test_smrb_cm_smrb_deconfigure_beam(
     component_manager: PstSmrbComponentManager,
     task_callback: Callable,
 ) -> None:
-    """Test that assign resources calls the API correctly."""
+    """Test that configure beam calls the API correctly."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
         task_callback=task_callback
     )
 
-    component_manager.release_all(task_callback=task_callback)
+    component_manager.deconfigure_beam(task_callback=task_callback)
 
     api.deconfigure_beam.assert_called_once_with(task_callback=task_callback)
 

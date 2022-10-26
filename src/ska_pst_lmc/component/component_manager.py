@@ -371,7 +371,7 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
         """Stop scanning.
 
         .. deprecated:: 0.2.2
-            Use :meth:`start_scan`
+            Use :meth:`stop_scan`
 
         :param task_callback: callback for background processing to update device status.
         :type task_callback: Callable

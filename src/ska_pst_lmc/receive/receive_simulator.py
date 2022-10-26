@@ -54,7 +54,7 @@ class PstReceiveSimulator:
 
     def configure_scan(self: PstReceiveSimulator, configuration: dict) -> None:
         """
-        Configure the simulator.
+        Simulate configuring a scan.
 
         Only the "nchan" parameter is used by this simulator.
 
@@ -69,18 +69,18 @@ class PstReceiveSimulator:
         self._subband_data = {subband_id: ReceiveData() for subband_id in range(1, self.num_subbands + 1)}
 
     def deconfigure_scan(self: PstReceiveSimulator) -> None:
-        """Simulate deconfigure."""
+        """Simulate deconfiguring of a scan."""
         self._scan = False
 
     def start_scan(self: PstReceiveSimulator, args: dict) -> None:
-        """Start scanning.
+        """Simulate start scanning.
 
         :param: the scan arguments.
         """
         self._scan = True
 
     def stop_scan(self: PstReceiveSimulator) -> None:
-        """End scanning."""
+        """Simulate stop scanning."""
         self._scan = False
 
     def abort(self: PstReceiveSimulator) -> None:

@@ -261,7 +261,7 @@ class PstGrpcLmcClient:
             _handle_grpc_error(e)
 
     def configure_scan(self: PstGrpcLmcClient, request: ConfigureScanRequest) -> bool:
-        """Call configure on remote gRPC service."""
+        """Call configure_scan on remote gRPC service."""
         self._logger.debug("Calling configure on remote service.")
         try:
             self._service.configure_scan(request)
@@ -270,7 +270,7 @@ class PstGrpcLmcClient:
             _handle_grpc_error(e)
 
     def deconfigure_scan(self: PstGrpcLmcClient) -> bool:
-        """Call deconfigure on remote gRPC service."""
+        """Call deconfigure_scan on remote gRPC service."""
         self._logger.debug("Calling deconfigure on remote service.")
         try:
             self._service.deconfigure_scan(DeconfigureScanRequest())
@@ -279,7 +279,7 @@ class PstGrpcLmcClient:
             _handle_grpc_error(e)
 
     def get_scan_configuration(self: PstGrpcLmcClient) -> GetScanConfigurationResponse:
-        """Call deconfigure on remote gRPC service."""
+        """Call get_scan_configuration on remote gRPC service."""
         self._logger.debug("Calling remote service for its scan configuration.")
         try:
             return self._service.get_scan_configuration(GetScanConfigurationRequest())
@@ -287,8 +287,8 @@ class PstGrpcLmcClient:
             _handle_grpc_error(e)
 
     def start_scan(self: PstGrpcLmcClient, request: StartScanRequest) -> bool:
-        """Call scan on remote gRPC service."""
-        self._logger.debug("Calling scan")
+        """Call start_scan on remote gRPC service."""
+        self._logger.debug("Calling start_scan")
         try:
             self._service.start_scan(request)
             return True
@@ -296,8 +296,8 @@ class PstGrpcLmcClient:
             _handle_grpc_error(e)
 
     def stop_scan(self: PstGrpcLmcClient) -> bool:
-        """Call scan on remote gRPC service."""
-        self._logger.debug("Calling end scan")
+        """Call stop_scan on remote gRPC service."""
+        self._logger.debug("Calling stop_scan")
         try:
             self._service.stop_scan(StopScanRequest())
             return True
@@ -313,8 +313,8 @@ class PstGrpcLmcClient:
             _handle_grpc_error(e)
 
     def get_state(self: PstGrpcLmcClient) -> ObsState:
-        """Call scan on remote gRPC service."""
-        self._logger.debug("Calling get state")
+        """Call get_state on remote gRPC service."""
+        self._logger.debug("Calling get_state")
         try:
             result: GetStateResponse = self._service.get_state(GetStateRequest())
             return ObsState(result.state)

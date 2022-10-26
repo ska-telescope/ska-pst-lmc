@@ -107,7 +107,7 @@ class PstDspSimulator:
 
     def configure_scan(self: PstDspSimulator, configuration: dict) -> None:
         """
-        Configure the simulator.
+        Simulate configuring a scan.
 
         Only the "num_subbands" parameter is used by this simulator.
 
@@ -147,18 +147,18 @@ class PstDspSimulator:
             )
 
     def deconfigure_scan(self: PstDspSimulator) -> None:
-        """Simulate deconfigure."""
+        """Simulate deconfiguring of a scan."""
         self._scan = False
 
     def start_scan(self: PstDspSimulator, args: dict) -> None:
-        """Start scanning.
+        """Simulate start scanning.
 
         :param: the scan arguments.
         """
         self._scan = True
 
     def stop_scan(self: PstDspSimulator) -> None:
-        """End scanning."""
+        """Simulate stop scanning."""
         self._scan = False
 
     def abort(self: PstDspSimulator) -> None:

@@ -76,7 +76,7 @@ def api(
 def monitor_data(
     scan_request: dict,
 ) -> DspDiskMonitorData:
-    """Create an an instance of ReceiveData for monitor data."""
+    """Create an an instance of DspDiskMonitorData for monitor data."""
     from ska_pst_lmc.dsp.dsp_simulator import PstDspSimulator
 
     simulator = PstDspSimulator()
@@ -260,7 +260,7 @@ def test_dsp_cm_dsp_configure_beam(
     task_callback: Callable,
     calculated_dsp_subband_resources: dict,
 ) -> None:
-    """Test that assign resources calls the API correctly."""
+    """Test that configure beam calls the API correctly."""
     api = MagicMock()
     component_manager._api = api
     # override the background processing.
@@ -279,14 +279,14 @@ def test_dsp_cm_dsp_deconfigure_beam(
     component_manager: PstDspComponentManager,
     task_callback: Callable,
 ) -> None:
-    """Test that assign resources calls the API correctly."""
+    """Test that configure beam calls the API correctly."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
         task_callback=task_callback
     )
 
-    component_manager.release_all(task_callback=task_callback)
+    component_manager.deconfigure_beam(task_callback=task_callback)
 
     api.deconfigure_beam.assert_called_once_with(task_callback=task_callback)
 
