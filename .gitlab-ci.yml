@@ -80,6 +80,13 @@ python-generate-code:
     - copy-protobuf
   tags:
     - k8srunner
+  before_script:
+    - poetry config virtualenvs.in-project true
+    - echo "python-generate-code Setting.. poetry config virtualenvs.create $POETRY_CONFIG_VIRTUALENVS_CREATE"
+    - poetry config virtualenvs.create $POETRY_CONFIG_VIRTUALENVS_CREATE
+    - echo "python-generate-code Installing with poetry"
+    - time poetry install --with dev
+
   script:
     - make PROTOBUF_DIR="$(pwd)/build/protobuf" GENERATED_PATH="$(pwd)/generated" python-generate-code
   artifacts:
