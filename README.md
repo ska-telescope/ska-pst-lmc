@@ -90,7 +90,8 @@ At the very least have [Docker](https://docs.docker.com/get-docker/) and install
 
 No matter what enviroment that you use, you will need to make sure that Poetry is in stalled and that you have the the Poetry shell running.
 
-Install Poetry based on [Poetry Docs](https://python-poetry.org/docs/). This should install Poetry for the local user.
+Install Poetry based on [Poetry Docs](https://python-poetry.org/docs/). Ensure that you're using at least 1.2.0, as the
+`pyproject.toml` and `poetry.lock` files have been migrated to the Poetry 1.2.
 
 After having Poetry installed, run the following command to be able to install the project. This will create a virtual env for you before starting.
 
