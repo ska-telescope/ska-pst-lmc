@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from ska_pst_lmc.dsp.dsp_model import DspMonitorData, DspMonitorDataStore, DspSubbandMonitorData
+from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData, DspDiskMonitorDataStore, DspDiskSubbandMonitorData
 
 __all__ = ["PstDspSimulator"]
 
@@ -39,7 +39,7 @@ class PstDspSimulator:
     to override the current value.
     """
 
-    _data_store: DspMonitorDataStore
+    _data_store: DspDiskMonitorDataStore
 
     def __init__(
         self: PstDspSimulator,
@@ -76,7 +76,7 @@ class PstDspSimulator:
         if subband_bytes_written is not None:
             configuration["subband_bytes_written"] = subband_bytes_written
 
-        self.configure(configuration=configuration)
+        self.configure_scan(configuration=configuration)
         self._scan = False
 
     @property
@@ -105,9 +105,9 @@ class PstDspSimulator:
         """
         self._disk_available_bytes = disk_available_bytes
 
-    def configure(self: PstDspSimulator, configuration: dict) -> None:
+    def configure_scan(self: PstDspSimulator, configuration: dict) -> None:
         """
-        Configure the simulator.
+        Simulate configuring a scan.
 
         Only the "num_subbands" parameter is used by this simulator.
 
@@ -134,11 +134,11 @@ class PstDspSimulator:
         assert len(self._subband_write_rates) == self.num_subbands
         assert len(self._subband_bytes_written) == self.num_subbands
 
-        self._data_store = DspMonitorDataStore()
+        self._data_store = DspDiskMonitorDataStore()
         for idx in range(self.num_subbands):
             self._data_store.update_subband(
                 subband_id=(idx + 1),
-                subband_data=DspSubbandMonitorData(
+                subband_data=DspDiskSubbandMonitorData(
                     disk_capacity=self.disk_capacity,
                     disk_available_bytes=self.disk_available_bytes,
                     bytes_written=self._subband_bytes_written[idx],
@@ -146,19 +146,19 @@ class PstDspSimulator:
                 ),
             )
 
-    def deconfigure(self: PstDspSimulator) -> None:
-        """Simulate deconfigure."""
+    def deconfigure_scan(self: PstDspSimulator) -> None:
+        """Simulate deconfiguring of a scan."""
         self._scan = False
 
-    def scan(self: PstDspSimulator, args: dict) -> None:
-        """Start scanning.
+    def start_scan(self: PstDspSimulator, args: dict) -> None:
+        """Simulate start scanning.
 
         :param: the scan arguments.
         """
         self._scan = True
 
-    def end_scan(self: PstDspSimulator) -> None:
-        """End scanning."""
+    def stop_scan(self: PstDspSimulator) -> None:
+        """Simulate stop scanning."""
         self._scan = False
 
     def abort(self: PstDspSimulator) -> None:
@@ -183,7 +183,7 @@ class PstDspSimulator:
 
             self._data_store.update_subband(
                 subband_id=(idx + 1),
-                subband_data=DspSubbandMonitorData(
+                subband_data=DspDiskSubbandMonitorData(
                     disk_capacity=self.disk_capacity,
                     disk_available_bytes=self.disk_available_bytes,
                     bytes_written=self._subband_bytes_written[idx],
@@ -191,21 +191,21 @@ class PstDspSimulator:
                 ),
             )
 
-    def get_data(self: PstDspSimulator) -> DspMonitorData:
+    def get_data(self: PstDspSimulator) -> DspDiskMonitorData:
         """
         Get current DSP data.
 
         Updates the current simulated data and returns the latest data.
 
         :returns: current simulated DSP data.
-        :rtype: :py:class:`DspMonitorData`
+        :rtype: :py:class:`DspDiskMonitorData`
         """
         if self._scan:
             self._update()
 
         return self._data_store.monitor_data
 
-    def get_subband_data(self: PstDspSimulator) -> Dict[int, DspSubbandMonitorData]:
+    def get_subband_data(self: PstDspSimulator) -> Dict[int, DspDiskSubbandMonitorData]:
         """Get simulated subband data."""
         if self._scan:
             self._update()

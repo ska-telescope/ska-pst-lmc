@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 import grpc
 import pytest
 import tango
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ScanRequest
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import StartScanRequest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer, add_PstLmcServiceServicer_to_server
 from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import ObsState, SimulationMode
@@ -34,8 +34,8 @@ def beam_id() -> int:
 
 
 @pytest.fixture
-def assign_resources_request() -> dict:
-    """Return a valid assign resources object."""
+def configure_beam_request() -> dict:
+    """Return a valid configure beam object."""
     return {
         # CSP JSON fields / PST fields
         "num_frequency_channels": 768,  # nchan
@@ -60,7 +60,7 @@ def assign_resources_request() -> dict:
 
 @pytest.fixture
 def configure_scan_request() -> dict:
-    """Return a valid configure object."""
+    """Return a valid configure scan object."""
     # this has been copied from the SKA Telmodel
     # see https://developer.skao.int/projects/ska-telmodel/en/latest/schemas/ska-csp-configure.html
     return {
@@ -122,9 +122,9 @@ def scan_request() -> dict:
 @pytest.fixture
 def expected_scan_request_protobuf(
     scan_request: dict,
-) -> ScanRequest:
-    """Fixture for build expected RECV scan request."""
-    return ScanRequest(**scan_request)
+) -> StartScanRequest:
+    """Fixture for build expected start_scan request."""
+    return StartScanRequest(**scan_request)
 
 
 @pytest.fixture

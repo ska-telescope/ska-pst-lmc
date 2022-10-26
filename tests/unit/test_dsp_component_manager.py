@@ -19,7 +19,7 @@ from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component import MonitorDataHandler
 from ska_pst_lmc.dsp.dsp_component_manager import PstDspComponentManager
-from ska_pst_lmc.dsp.dsp_model import DspMonitorData
+from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData
 from ska_pst_lmc.dsp.dsp_process_api import PstDspProcessApi, PstDspProcessApiGrpc, PstDspProcessApiSimulator
 from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources
 from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
@@ -75,22 +75,22 @@ def api(
 @pytest.fixture
 def monitor_data(
     scan_request: dict,
-) -> DspMonitorData:
-    """Create an an instance of ReceiveData for monitor data."""
+) -> DspDiskMonitorData:
+    """Create an an instance of DspDiskMonitorData for monitor data."""
     from ska_pst_lmc.dsp.dsp_simulator import PstDspSimulator
 
     simulator = PstDspSimulator()
-    simulator.scan(args=scan_request)
+    simulator.start_scan(args=scan_request)
 
     return simulator.get_data()
 
 
 @pytest.fixture
-def calculated_dsp_subband_resources(beam_id: int, assign_resources_request: dict) -> dict:
+def calculated_dsp_subband_resources(beam_id: int, configure_beam_request: dict) -> dict:
     """Fixture to calculate expected dsp subband resources."""
     resources = calculate_dsp_subband_resources(
         beam_id=beam_id,
-        request_params=assign_resources_request,
+        request_params=configure_beam_request,
     )
     return resources[1]
 
@@ -129,7 +129,7 @@ def test_dsp_cm_start_communicating_calls_connect_on_api(
 )
 def test_dsp_cm_properties_come_from_simulator_api_monitor_data(
     component_manager: PstDspComponentManager,
-    monitor_data: DspMonitorData,
+    monitor_data: DspDiskMonitorData,
     property: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -254,13 +254,13 @@ def test_dsp_cm_not_communicating_switching_simulation_mode_not_try_to_establish
     update_communication_state.assert_not_called()
 
 
-def test_dsp_cm_dsp_assign_resources(
+def test_dsp_cm_dsp_configure_beam(
     component_manager: PstDspComponentManager,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     task_callback: Callable,
     calculated_dsp_subband_resources: dict,
 ) -> None:
-    """Test that assign resources calls the API correctly."""
+    """Test that configure beam calls the API correctly."""
     api = MagicMock()
     component_manager._api = api
     # override the background processing.
@@ -268,27 +268,27 @@ def test_dsp_cm_dsp_assign_resources(
         task_callback=task_callback
     )
 
-    component_manager.assign(resources=assign_resources_request, task_callback=task_callback)
+    component_manager.assign(resources=configure_beam_request, task_callback=task_callback)
 
-    api.assign_resources.assert_called_once_with(
+    api.configure_beam.assert_called_once_with(
         resources=calculated_dsp_subband_resources, task_callback=task_callback
     )
 
 
-def test_dsp_cm_dsp_release_resources(
+def test_dsp_cm_dsp_deconfigure_beam(
     component_manager: PstDspComponentManager,
     task_callback: Callable,
 ) -> None:
-    """Test that assign resources calls the API correctly."""
+    """Test that configure beam calls the API correctly."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
         task_callback=task_callback
     )
 
-    component_manager.release_all(task_callback=task_callback)
+    component_manager.deconfigure_beam(task_callback=task_callback)
 
-    api.release_resources.assert_called_once_with(task_callback=task_callback)
+    api.deconfigure_beam.assert_called_once_with(task_callback=task_callback)
 
 
 def test_dsp_cm_configure_scan(
@@ -303,15 +303,15 @@ def test_dsp_cm_configure_scan(
         task_callback=task_callback,
     )
 
-    component_manager.configure(configuration=configure_scan_request, task_callback=task_callback)
+    component_manager.configure_scan(configuration=configure_scan_request, task_callback=task_callback)
 
-    api.configure.assert_called_once_with(
+    api.configure_scan.assert_called_once_with(
         configuration=configure_scan_request,
         task_callback=task_callback,
     )
 
 
-def test_dsp_cm_deconfigure(
+def test_dsp_cm_deconfigure_scan(
     component_manager: PstDspComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -322,9 +322,9 @@ def test_dsp_cm_deconfigure(
         task_callback=task_callback,
     )
 
-    component_manager.deconfigure(task_callback=task_callback)
+    component_manager.deconfigure_scan(task_callback=task_callback)
 
-    api.deconfigure.assert_called_once_with(
+    api.deconfigure_scan.assert_called_once_with(
         task_callback=task_callback,
     )
 
@@ -341,9 +341,9 @@ def test_dsp_cm_dsp_scan(
         task_callback=task_callback,
     )
 
-    component_manager.scan(scan_request, task_callback=task_callback)
+    component_manager.start_scan(scan_request, task_callback=task_callback)
 
-    api.scan.assert_called_once_with(
+    api.start_scan.assert_called_once_with(
         scan_request,
         task_callback=task_callback,
     )
@@ -353,7 +353,7 @@ def test_dsp_cm_dsp_scan(
     )
 
 
-def test_dsp_cm_dsp_end_scan(
+def test_dsp_cm_dsp_stop_scan(
     component_manager: PstDspComponentManager,
     task_callback: Callable,
     monitor_data_callback: MagicMock,
@@ -365,13 +365,13 @@ def test_dsp_cm_dsp_end_scan(
         task_callback=task_callback,
     )
 
-    component_manager.end_scan(task_callback=task_callback)
+    component_manager.stop_scan(task_callback=task_callback)
 
-    api.end_scan.assert_called_once_with(
+    api.stop_scan.assert_called_once_with(
         task_callback=task_callback,
     )
-    assert component_manager._monitor_data == DspMonitorData()
-    monitor_data_callback.assert_called_once_with(DspMonitorData())
+    assert component_manager._monitor_data == DspDiskMonitorData()
+    monitor_data_callback.assert_called_once_with(DspDiskMonitorData())
 
 
 def test_dsp_cm_dsp_abort(

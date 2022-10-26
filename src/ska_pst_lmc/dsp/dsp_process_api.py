@@ -18,18 +18,13 @@ import logging
 import time
 from typing import Any, Callable, Dict, Generator, Optional
 
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import DspMonitorData as DspMonitorDataProtobuf
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
-    DspResources,
-    DspScanConfiguration,
-    MonitorData,
-    ResourceConfiguration,
-    ScanConfiguration,
-)
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import BeamConfiguration, DspDiskBeamConfiguration
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import DspDiskMonitorData as DspDiskMonitorDataProtobuf
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import DspDiskScanConfiguration, MonitorData, ScanConfiguration
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.component.process_api import PstProcessApiGrpc, PstProcessApiSimulator
-from ska_pst_lmc.dsp.dsp_model import DspMonitorData, DspSubbandMonitorData
+from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData, DspDiskSubbandMonitorData
 from ska_pst_lmc.dsp.dsp_simulator import PstDspSimulator
 from ska_pst_lmc.dsp.dsp_util import generate_dsp_scan_request
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
@@ -69,12 +64,12 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         """
         self._simulator = simulator or PstDspSimulator()
         self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
-        self.data: Optional[DspMonitorData] = None
+        self.data: Optional[DspDiskMonitorData] = None
 
         super().__init__(logger=logger, component_state_callback=component_state_callback)
 
-    def assign_resources(self: PstDspProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
-        """Assign resources.
+    def configure_beam(self: PstDspProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
+        """Configure the beam.
 
         :param resources: dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
@@ -87,8 +82,8 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         self._component_state_callback(resourced=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def release_resources(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
-        """Release all resources.
+    def deconfigure_beam(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
+        """Deconfigure the beam.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -99,8 +94,8 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         self._component_state_callback(resourced=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def configure(self: PstDspProcessApiSimulator, configuration: dict, task_callback: Callable) -> None:
-        """Configure as scan.
+    def configure_scan(self: PstDspProcessApiSimulator, configuration: dict, task_callback: Callable) -> None:
+        """Configure a scan.
 
         :param configuration: the configuration of for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -110,13 +105,13 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(progress=35)
         time.sleep(0.1)
         task_callback(progress=81)
-        self._simulator.configure(configuration=configuration)
+        self._simulator.configure_scan(configuration=configuration)
         time.sleep(0.1)
         self._component_state_callback(configured=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def deconfigure(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
-        """Deconfiure a scan.
+    def deconfigure_scan(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
+        """Deconfigure a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -128,12 +123,12 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         time.sleep(0.05)
         task_callback(progress=76)
         time.sleep(0.1)
-        self._simulator.deconfigure()
+        self._simulator.deconfigure_scan()
         self._component_state_callback(configured=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def scan(self: PstDspProcessApiSimulator, args: dict, task_callback: Callable) -> None:
-        """Run a scan.
+    def start_scan(self: PstDspProcessApiSimulator, args: dict, task_callback: Callable) -> None:
+        """Start a scan.
 
         :param args: arguments for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -142,13 +137,13 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         time.sleep(0.1)
         task_callback(progress=59)
         time.sleep(0.1)
-        self._simulator.scan(args)
+        self._simulator.start_scan(args)
         self._component_state_callback(scanning=True)
         self._scanning = True
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def end_scan(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
-        """End a scan.
+    def stop_scan(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
+        """Stop a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -157,7 +152,7 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(progress=31)
         time.sleep(0.1)
         task_callback(progress=77)
-        self._simulator.end_scan()
+        self._simulator.stop_scan()
         self._component_state_callback(scanning=False)
         self._scanning = False
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
@@ -214,29 +209,31 @@ class PstDspProcessApiGrpc(PstProcessApiGrpc, PstDspProcessApi):
     """This is an gRPC implementation of the `PstDspProcessApi` API.
 
     This uses an instance of a `PstGrpcLmcClient` to send requests through
-    to the DSP.CORE application. Instances of this class should be per
-    subband, rather than one for all of RECV as a whole.
+    to the DSP.DISK application. Instances of this class should be per
+    subband, rather than one for all of DSP.DISK as a whole.
     """
 
-    def _get_assign_resources_request(self: PstDspProcessApiGrpc, resources: dict) -> ResourceConfiguration:
-        return ResourceConfiguration(dsp=DspResources(**resources))
+    def _get_configure_beam_request(self: PstDspProcessApiGrpc, resources: dict) -> BeamConfiguration:
+        return BeamConfiguration(dsp_disk=DspDiskBeamConfiguration(**resources))
 
     def _handle_monitor_response(
         self: PstDspProcessApiGrpc, data: MonitorData, monitor_data_callback: Callable[..., None]
     ) -> None:
-        dsp_data: DspMonitorDataProtobuf = data.dsp
+        dsp_disk_data: DspDiskMonitorDataProtobuf = data.dsp_disk
 
         monitor_data_callback(
             subband_id=1,
-            subband_data=DspSubbandMonitorData(
-                disk_capacity=dsp_data.disk_capacity,
-                disk_available_bytes=dsp_data.disk_available_bytes,
-                bytes_written=dsp_data.bytes_written,
-                write_rate=dsp_data.write_rate,
+            subband_data=DspDiskSubbandMonitorData(
+                disk_capacity=dsp_disk_data.disk_capacity,
+                disk_available_bytes=dsp_disk_data.disk_available_bytes,
+                bytes_written=dsp_disk_data.bytes_written,
+                write_rate=dsp_disk_data.write_rate,
             ),
         )
 
     def _get_configure_scan_request(self: PstProcessApiGrpc, configure_parameters: dict) -> ScanConfiguration:
         return ScanConfiguration(
-            dsp=DspScanConfiguration(**generate_dsp_scan_request(request_params=configure_parameters))
+            dsp_disk=DspDiskScanConfiguration(
+                **generate_dsp_scan_request(request_params=configure_parameters)
+            )
         )

@@ -91,14 +91,14 @@ def monitor_data() -> ReceiveData:
 @pytest.fixture
 def calculated_receive_subband_resources(
     beam_id: int,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     recv_network_interface: str,
     recv_udp_port: int,
 ) -> dict:
     """Calculate expected subband resources."""
     return calculate_receive_subband_resources(
         beam_id=beam_id,
-        request_params=assign_resources_request,
+        request_params=configure_beam_request,
         data_host=recv_network_interface,
         data_port=recv_udp_port,
     )
@@ -146,13 +146,13 @@ def test_recv_properties_comes_from_monitor_data(
     assert actual == expected
 
 
-def test_recv_assign_resources(
+def test_recv_configure_beam(
     component_manager: PstReceiveComponentManager,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     task_callback: Callable,
     calculated_receive_subband_resources: dict,
 ) -> None:
-    """Test that assign resources calls the API correctly."""
+    """Test that configure beam calls the API correctly."""
     api = MagicMock()
     component_manager._api = api
     # override the background processing.
@@ -160,30 +160,30 @@ def test_recv_assign_resources(
         task_callback=task_callback
     )
 
-    component_manager.assign(resources=assign_resources_request, task_callback=task_callback)
+    component_manager.assign(resources=configure_beam_request, task_callback=task_callback)
 
     expected_request = {
         "common": calculated_receive_subband_resources["common"],
         "subband": calculated_receive_subband_resources["subbands"][1],
     }
 
-    api.assign_resources.assert_called_once_with(resources=expected_request, task_callback=task_callback)
+    api.configure_beam.assert_called_once_with(resources=expected_request, task_callback=task_callback)
 
 
-def test_recv_release_resources(
+def test_recv_deconfigure_beam(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
-    """Test that assign resources calls the API correctly."""
+    """Test that configure beam calls the API correctly."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
         task_callback=task_callback
     )
 
-    component_manager.release_all(task_callback=task_callback)
+    component_manager.deconfigure_beam(task_callback=task_callback)
 
-    api.release_resources.assert_called_once_with(task_callback=task_callback)
+    api.deconfigure_beam.assert_called_once_with(task_callback=task_callback)
 
 
 def test_recv_configure_scan(
@@ -191,35 +191,35 @@ def test_recv_configure_scan(
     configure_scan_request: dict,
     task_callback: Callable,
 ) -> None:
-    """Test that the component manager calls the API for configure service."""
+    """Test that the component manager calls the API for configure_scan service."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
         task_callback=task_callback,
     )
 
-    component_manager.configure(configuration=configure_scan_request, task_callback=task_callback)
+    component_manager.configure_scan(configuration=configure_scan_request, task_callback=task_callback)
 
-    api.configure.assert_called_once_with(
+    api.configure_scan.assert_called_once_with(
         configuration=configure_scan_request,
         task_callback=task_callback,
     )
 
 
-def test_recv_deconfigure(
+def test_recv_deconfigure_scan(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
-    """Test that the component manager calls the API to deconfigure service."""
+    """Test that the component manager calls the API to deconfigure_scan service."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
         task_callback=task_callback,
     )
 
-    component_manager.deconfigure(task_callback=task_callback)
+    component_manager.deconfigure_scan(task_callback=task_callback)
 
-    api.deconfigure.assert_called_once_with(
+    api.deconfigure_scan.assert_called_once_with(
         task_callback=task_callback,
     )
 
@@ -236,15 +236,15 @@ def test_recv_scan(
         task_callback=task_callback,
     )
 
-    component_manager.scan(scan_request, task_callback=task_callback)
+    component_manager.start_scan(scan_request, task_callback=task_callback)
 
-    api.scan.assert_called_once_with(
+    api.start_scan.assert_called_once_with(
         scan_request,
         task_callback=task_callback,
     )
 
 
-def test_recv_end_scan(
+def test_recv_stop_scan(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -255,9 +255,9 @@ def test_recv_end_scan(
         task_callback=task_callback,
     )
 
-    component_manager.end_scan(task_callback=task_callback)
+    component_manager.stop_scan(task_callback=task_callback)
 
-    api.end_scan.assert_called_once_with(
+    api.stop_scan.assert_called_once_with(
         task_callback=task_callback,
     )
 

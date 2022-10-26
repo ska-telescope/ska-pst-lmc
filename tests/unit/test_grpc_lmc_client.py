@@ -13,9 +13,10 @@ from unittest.mock import MagicMock
 import grpc
 import pytest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    BeamConfiguration,
     ErrorCode,
-    GetAssignedResourcesRequest,
-    GetAssignedResourcesResponse,
+    GetBeamConfigurationRequest,
+    GetBeamConfigurationResponse,
     GetScanConfigurationRequest,
     GetScanConfigurationResponse,
     GetStateRequest,
@@ -24,12 +25,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GoToFaultResponse,
 )
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ObsState as GrpcObsState
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
-    ResourceConfiguration,
-    ScanConfiguration,
-    SmrbResources,
-    SmrbScanConfiguration,
-)
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ScanConfiguration, SmrbBeamConfiguration, SmrbScanConfiguration
 from ska_tango_base.control_model import ObsState
 
 from ska_pst_lmc.component.grpc_lmc_client import (
@@ -52,34 +48,34 @@ def grpc_client(
     return PstGrpcLmcClient(client_id=client_id, endpoint=grpc_endpoint, logger=logger)
 
 
-def test_grpc_client_get_assigned_resources(
+def test_grpc_client_get_beam_configuration(
     grpc_client: PstGrpcLmcClient,
     mock_servicer_context: MagicMock,
 ) -> None:
-    """Test getting the assigned resources of service."""
-    response = GetAssignedResourcesResponse(
-        resource_configuration=ResourceConfiguration(smrb=SmrbResources())
+    """Test getting the beam configuration of service."""
+    response = GetBeamConfigurationResponse(
+        beam_configuration=BeamConfiguration(smrb=SmrbBeamConfiguration())
     )
-    mock_servicer_context.get_assigned_resources = MagicMock(return_value=response)
-    grpc_client.get_assigned_resources()
+    mock_servicer_context.get_beam_configuration = MagicMock(return_value=response)
+    grpc_client.get_beam_configuration()
 
-    mock_servicer_context.get_assigned_resources.assert_called_once_with(GetAssignedResourcesRequest())
+    mock_servicer_context.get_beam_configuration.assert_called_once_with(GetBeamConfigurationRequest())
 
 
-def test_grpc_client_get_assigned_resources_throws_exception(
+def test_grpc_client_get_beam_configuration_throws_exception(
     grpc_client: PstGrpcLmcClient,
     mock_servicer_context: MagicMock,
     logger: logging.Logger,
 ) -> None:
-    """Test getting the assigned resources of service throws exception."""
-    mock_servicer_context.get_assigned_resources.side_effect = TestMockException(
+    """Test getting the beam configuration of service throws exception."""
+    mock_servicer_context.get_beam_configuration.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
-        error_code=ErrorCode.RESOURCES_NOT_ASSIGNED,
+        error_code=ErrorCode.NOT_CONFIGURED_FOR_BEAM,
         message="Resource not assigned.",
     )
 
     with pytest.raises(ResourcesNotAssignedException):
-        grpc_client.get_assigned_resources()
+        grpc_client.get_beam_configuration()
 
 
 def test_grpc_client_get_scan_configuration(

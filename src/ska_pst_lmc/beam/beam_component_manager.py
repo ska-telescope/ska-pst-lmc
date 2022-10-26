@@ -311,13 +311,13 @@ class PstBeamComponentManager(PstComponentManager):
             completion_callback=_completion_callback,
         )
 
-    def configure(
+    def configure_scan(
         self: PstBeamComponentManager, configuration: dict, task_callback: Callable
     ) -> TaskResponse:
         """
-        Configure the component.
+        Configure scan for the component.
 
-        :param configuration: the configuration to be configured
+        :param configuration: the scan configuration.
         :type configuration: dict
         """
 
@@ -334,8 +334,8 @@ class PstBeamComponentManager(PstComponentManager):
             completion_callback=_completion_callback,
         )
 
-    def deconfigure(self: PstBeamComponentManager, task_callback: Callable) -> TaskResponse:
-        """Deconfigure this component."""
+    def deconfigure_scan(self: PstBeamComponentManager, task_callback: Callable) -> TaskResponse:
+        """Deconfigure scan for this component."""
 
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'End' commands {command_ids} have completed.")
@@ -348,7 +348,7 @@ class PstBeamComponentManager(PstComponentManager):
             completion_callback=_completion_callback,
         )
 
-    def scan(self: PstBeamComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+    def start_scan(self: PstBeamComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
         """Start scanning."""
 
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
@@ -364,8 +364,8 @@ class PstBeamComponentManager(PstComponentManager):
             completion_callback=_completion_callback,
         )
 
-    def end_scan(self: PstBeamComponentManager, task_callback: Callable) -> TaskResponse:
-        """End scanning."""
+    def stop_scan(self: PstBeamComponentManager, task_callback: Callable) -> TaskResponse:
+        """Stop scanning."""
 
         def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
             self.logger.debug(f"All the 'EndScan' commands {command_ids} have completed.")

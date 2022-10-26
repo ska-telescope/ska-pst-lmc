@@ -112,7 +112,7 @@ class TestPstReceive:
         self: TestPstReceive,
         device_under_test: DeviceProxy,
         tango_device_command_checker: TangoDeviceCommandChecker,
-        assign_resources_request: dict,
+        configure_beam_request: dict,
         configure_scan_request: dict,
         scan_request: dict,
     ) -> None:
@@ -125,7 +125,7 @@ class TestPstReceive:
         )
         assert device_under_test.state() == DevState.ON
 
-        resources = json.dumps(assign_resources_request)
+        resources = json.dumps(configure_beam_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.AssignResources(resources),
             expected_obs_state_events=[
@@ -185,7 +185,7 @@ class TestPstReceive:
     def test_recv_abort_when_scanning(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
-        assign_resources_request: dict,
+        configure_beam_request: dict,
         configure_scan_request: dict,
         scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
@@ -198,7 +198,7 @@ class TestPstReceive:
         )
         assert device_under_test.state() == DevState.ON
 
-        resources = json.dumps(assign_resources_request)
+        resources = json.dumps(configure_beam_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.AssignResources(resources),
             expected_obs_state_events=[
@@ -312,7 +312,7 @@ class TestPstReceive:
     def test_simulation_mode_when_not_in_empty_obs_state(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
-        assign_resources_request: dict,
+        configure_beam_request: dict,
     ) -> None:
         """Test state model of PstReceive."""
         device_under_test.simulationMode = SimulationMode.TRUE
@@ -323,7 +323,7 @@ class TestPstReceive:
         time.sleep(0.1)
         assert device_under_test.state() == DevState.ON
 
-        resources = json.dumps(assign_resources_request)
+        resources = json.dumps(configure_beam_request)
         device_under_test.AssignResources(resources)
         time.sleep(0.5)
         assert device_under_test.obsState == ObsState.IDLE
@@ -365,7 +365,7 @@ class TestPstReceive:
     def test_recv_go_to_fault_when_resources_assigned(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
-        assign_resources_request: dict,
+        configure_beam_request: dict,
         configure_scan_request: dict,
         scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
@@ -378,7 +378,7 @@ class TestPstReceive:
         )
         assert device_under_test.state() == DevState.ON
 
-        resources = json.dumps(assign_resources_request)
+        resources = json.dumps(configure_beam_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.AssignResources(resources),
             expected_obs_state_events=[
@@ -406,7 +406,7 @@ class TestPstReceive:
     def test_recv_go_to_fault_when_configured(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
-        assign_resources_request: dict,
+        configure_beam_request: dict,
         configure_scan_request: dict,
         scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
@@ -419,7 +419,7 @@ class TestPstReceive:
         )
         assert device_under_test.state() == DevState.ON
 
-        resources = json.dumps(assign_resources_request)
+        resources = json.dumps(configure_beam_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.AssignResources(resources),
             expected_obs_state_events=[
@@ -456,7 +456,7 @@ class TestPstReceive:
     def test_recv_go_to_fault_when_scanning(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
-        assign_resources_request: dict,
+        configure_beam_request: dict,
         configure_scan_request: dict,
         scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
@@ -469,7 +469,7 @@ class TestPstReceive:
         )
         assert device_under_test.state() == DevState.ON
 
-        resources = json.dumps(assign_resources_request)
+        resources = json.dumps(configure_beam_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.AssignResources(resources),
             expected_obs_state_events=[

@@ -130,7 +130,7 @@ class TestPstBeam:
         self: TestPstBeam,
         device_under_test: DeviceProxy,
         multidevice_test_context: MultiDeviceTestContext,
-        assign_resources_request: dict,
+        configure_beam_request: dict,
         configure_scan_request: dict,
         scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
@@ -175,10 +175,10 @@ class TestPstBeam:
         )
         assert_state(DevState.ON)
 
-        # need to assign resources
+        # need to configure beam
         assert_obstate(ObsState.EMPTY)
 
-        resources = json.dumps(assign_resources_request)
+        resources = json.dumps(configure_beam_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.AssignResources(resources),
             expected_obs_state_events=[
@@ -269,7 +269,7 @@ class TestPstBeam:
         )
         assert_state(DevState.ON)
 
-        # need to assign resources
+        # need to configure beam
         assert_obstate(ObsState.EMPTY)
 
         tango_device_command_checker.assert_command(

@@ -25,7 +25,7 @@ def test_get_data_will_update_data_when_scanning(
     scan_request: dict,
 ) -> None:
     """Test to assert that simulator updates data."""
-    simulator.scan(args=scan_request)
+    simulator.start_scan(args=scan_request)
 
     empty: ReceiveData = ReceiveData()
     actual: ReceiveData = simulator.get_data()
@@ -38,7 +38,7 @@ def test_get_data_wont_update_data_when_scanning_stops(
     scan_request: dict,
 ) -> None:
     """Test to assert that simulator updates data."""
-    simulator.scan(args=scan_request)
+    simulator.start_scan(args=scan_request)
 
     empty: ReceiveData = ReceiveData()
 
@@ -46,7 +46,7 @@ def test_get_data_wont_update_data_when_scanning_stops(
 
     assert empty != last_scan
 
-    simulator.end_scan()
+    simulator.stop_scan()
     actual: ReceiveData = simulator.get_data()
 
     assert actual == last_scan

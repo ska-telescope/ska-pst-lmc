@@ -20,7 +20,7 @@ from tango.server import attribute, command, device_property, run
 import ska_pst_lmc.release as release
 from ska_pst_lmc.component.pst_device import PstBaseDevice
 from ska_pst_lmc.dsp.dsp_component_manager import PstDspComponentManager
-from ska_pst_lmc.dsp.dsp_model import DspMonitorData
+from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData
 
 __all__ = ["PstDsp", "main"]
 
@@ -52,7 +52,7 @@ class PstDsp(PstBaseDevice):
         self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
         self._version_id = release.VERSION
 
-        for f in dataclasses.fields(DspMonitorData):
+        for f in dataclasses.fields(DspDiskMonitorData):
             self.set_change_event(f.name, True, True)
             self.set_archive_event(f.name, True)
 
@@ -90,7 +90,7 @@ class PstDsp(PstBaseDevice):
         destructor and by the device Init command.
         """
 
-    def _update_monitor_data(self: PstDsp, data: DspMonitorData) -> None:
+    def _update_monitor_data(self: PstDsp, data: DspDiskMonitorData) -> None:
         values = {
             **dataclasses.asdict(data),
             "disk_used_bytes": data.disk_used_bytes,

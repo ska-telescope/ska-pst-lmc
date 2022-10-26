@@ -16,7 +16,7 @@ from typing import Any, Callable, List, Optional
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
 from ska_pst_lmc.component import MonitorDataHandler, PstApiComponentManager, TaskResponse
-from ska_pst_lmc.dsp.dsp_model import DspMonitorData, DspMonitorDataStore
+from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData, DspDiskMonitorDataStore
 from ska_pst_lmc.dsp.dsp_process_api import PstDspProcessApi, PstDspProcessApiGrpc, PstDspProcessApiSimulator
 from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources
 
@@ -33,7 +33,7 @@ class PstDspComponentManager(PstApiComponentManager):
         device_name: str,
         process_api_endpoint: str,
         logger: logging.Logger,
-        monitor_data_callback: Callable[[DspMonitorData], None],
+        monitor_data_callback: Callable[[DspDiskMonitorData], None],
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable[..., None],
         api: Optional[PstDspProcessApi] = None,
@@ -70,7 +70,7 @@ class PstDspComponentManager(PstApiComponentManager):
 
         # need a lock for updating component data
         self._monitor_data_handler = MonitorDataHandler(
-            data_store=DspMonitorDataStore(),
+            data_store=DspDiskMonitorDataStore(),
             monitor_data_callback=monitor_data_callback,
         )
         self._monitor_polling_rate = monitor_polling_rate
@@ -112,7 +112,7 @@ class PstDspComponentManager(PstApiComponentManager):
             )
 
     @property
-    def _monitor_data(self: PstDspComponentManager) -> DspMonitorData:
+    def _monitor_data(self: PstDspComponentManager) -> DspDiskMonitorData:
         """Get current monitoring data."""
         return self._monitor_data_handler.monitor_data
 
@@ -161,9 +161,11 @@ class PstDspComponentManager(PstApiComponentManager):
         """Get a list of current rate of writing per subband, in bytes/seconds."""
         return self._monitor_data.subband_write_rate
 
-    def assign(self: PstDspComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+    def configure_beam(
+        self: PstDspComponentManager, resources: dict, task_callback: Callable
+    ) -> TaskResponse:
         """
-        Assign resources to the component.
+        Configure the beam of the the component with the resources.
 
         :param resources: resources to be assigned
         """
@@ -173,15 +175,15 @@ class PstDspComponentManager(PstApiComponentManager):
         self.logger.debug(f"Submitting API with dsp_resources={dsp_resources[1]}")
 
         return self._submit_background_task(
-            functools.partial(self._api.assign_resources, resources=dsp_resources[1]),
+            functools.partial(self._api.configure_beam, resources=dsp_resources[1]),
             task_callback=task_callback,
         )
 
-    def scan(self: PstDspComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+    def start_scan(self: PstDspComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
         """Start scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
-            self._api.scan(args, task_callback=task_callback)
+            self._api.start_scan(args, task_callback=task_callback)
             self._api.monitor(
                 # for now only handling 1 subband
                 subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
@@ -190,11 +192,11 @@ class PstDspComponentManager(PstApiComponentManager):
 
         return self._submit_background_task(_task, task_callback=task_callback)
 
-    def end_scan(self: PstDspComponentManager, task_callback: Callable) -> TaskResponse:
-        """End scanning."""
+    def stop_scan(self: PstDspComponentManager, task_callback: Callable) -> TaskResponse:
+        """Stop scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
-            self._api.end_scan(task_callback=task_callback)
+            self._api.stop_scan(task_callback=task_callback)
 
             # reset the monitoring data
             self._monitor_data_handler.reset_monitor_data()

@@ -179,7 +179,7 @@ def test_component_manager_delegates_admin_mode(
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
 ) -> None:
-    """Test component manager delegates setting admin mode to sub-element devices."""
+    """Test component manager delegates setting admin mode to sub-component devices."""
     for a in list(AdminMode):
         component_manager.update_admin_mode(a)
 
@@ -194,7 +194,7 @@ def test_component_manager_calls_abort_on_subdevices(
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
 ) -> None:
-    """Test component manager delegates setting admin mode to sub-element devices."""
+    """Test component manager delegates setting admin mode to sub-component devices."""
     task_executor = MagicMock()
     task_executor.abort.return_value = (TaskStatus.IN_PROGRESS, "Aborting tasks")
 
@@ -215,13 +215,13 @@ def test_component_manager_calls_abort_on_subdevices(
 @pytest.fixture
 def request_params(
     method_name: str,
-    assign_resources_request: dict,
+    configure_beam_request: dict,
     configure_scan_request: dict,
     scan_request: dict,
 ) -> Optional[Any]:
     """Get request parameters for a given method name."""
     if method_name == "assign":
-        return assign_resources_request
+        return configure_beam_request
     elif method_name == "configure":
         return configure_scan_request
     elif method_name == "release":

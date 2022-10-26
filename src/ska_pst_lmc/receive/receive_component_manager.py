@@ -166,9 +166,11 @@ class PstReceiveComponentManager(PstApiComponentManager):
         """Get monitor data from data handler."""
         return self._monitor_data_handler.monitor_data
 
-    def assign(self: PstReceiveComponentManager, resources: dict, task_callback: Callable) -> TaskResponse:
+    def configure_beam(
+        self: PstReceiveComponentManager, resources: dict, task_callback: Callable
+    ) -> TaskResponse:
         """
-        Assign resources to the component.
+        Configure beam resources in the component.
 
         :param resources: resources to be assigned
         """
@@ -191,18 +193,18 @@ class PstReceiveComponentManager(PstApiComponentManager):
                 "subband": subband_resources,
             }
 
-            self._api.assign_resources(resources=resources, task_callback=task_callback)
+            self._api.configure_beam(resources=resources, task_callback=task_callback)
 
         return self._submit_background_task(
             _task,
             task_callback=task_callback,
         )
 
-    def scan(self: PstReceiveComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+    def start_scan(self: PstReceiveComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
         """Start scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
-            self._api.scan(args, task_callback=task_callback)
+            self._api.start_scan(args, task_callback=task_callback)
             self._api.monitor(
                 # for now only handling 1 subband
                 subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
@@ -211,11 +213,11 @@ class PstReceiveComponentManager(PstApiComponentManager):
 
         return self._submit_background_task(_task, task_callback=task_callback)
 
-    def end_scan(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
+    def stop_scan(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
         """End scanning."""
 
         def _task(task_callback: Callable[..., None]) -> None:
-            self._api.end_scan(task_callback=task_callback)
+            self._api.stop_scan(task_callback=task_callback)
 
             # reset the monitoring data
             self._monitor_data_handler.reset_monitor_data()

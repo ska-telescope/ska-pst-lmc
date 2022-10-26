@@ -46,12 +46,12 @@ class PstSmrbSimulator:
         if subband_ring_buffer_sizes is not None:
             configuration["subband_ring_buffer_sizes"] = subband_ring_buffer_sizes
 
-        self.configure(configuration=configuration)
+        self.configure_scan(configuration=configuration)
         self._scan = False
 
-    def configure(self: PstSmrbSimulator, configuration: dict) -> None:
+    def configure_scan(self: PstSmrbSimulator, configuration: dict) -> None:
         """
-        Configure the simulator.
+        Simulate configuring a scan.
 
         Only the "num_subbands" parameter is used by this simulator
         and the "subband_ring_buffer_sizes" which should be a list
@@ -96,19 +96,19 @@ class PstSmrbSimulator:
                 ),
             )
 
-    def deconfigure(self: PstSmrbSimulator) -> None:
-        """Simulate deconfigure."""
+    def deconfigure_scan(self: PstSmrbSimulator) -> None:
+        """Simulate deconfiguring of a scan."""
         self._scan = False
 
-    def scan(self: PstSmrbSimulator, args: dict) -> None:
-        """Start scanning.
+    def start_scan(self: PstSmrbSimulator, args: dict) -> None:
+        """Simulate start scanning.
 
         :param: the scan arguments.
         """
         self._scan = True
 
-    def end_scan(self: PstSmrbSimulator) -> None:
-        """End scanning."""
+    def stop_scan(self: PstSmrbSimulator) -> None:
+        """Simulate stop scanning."""
         self._scan = False
 
     def abort(self: PstSmrbSimulator) -> None:
