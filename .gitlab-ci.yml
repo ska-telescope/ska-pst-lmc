@@ -2,10 +2,13 @@ variables:
   # Needed if you want automatic submodule checkout
   # For details see https://docs.gitlab.com/ee/ci/yaml/README.html#git-submodule-strategy
   GIT_SUBMODULE_STRATEGY: recursive
-  SKA_PST_PYTHON_BUILDER_IMAGE: artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.33
-  SKA_PST_COMMON_PROTOBUF_IMAGE: artefact.skao.int/ska-pst-common-proto:0.1.0
+  SKA_PST_PYTHON_BUILDER_IMAGE: artefact.skao.int/ska-tango-images-pytango-builder:9.3.32
+  SKA_PST_PYTHON_RUNTIME_IMAGE: artefact.skao.int/ska-tango-images-pytango-runtime:9.3.19
+  SKA_PST_COMMON_PROTOBUF_IMAGE: artefact.skao.int/ska-pst-common-proto:0.3.0
+  SKA_PST_COMMON_BUILDER_IMAGE: artefact.skao.int/ska-pst-common-builder:0.3.0
   OCI_IMAGE_BUILD_CONTEXT: $(PWD)
   K8S_TEST_CLUSTER_TAG: k8srunner # k8srunner-psi-low
+  SKA_GEMNASIUM_IMAGE: artefact.skao.int/ska-cicd-gemnasium-scanning-alpine:0.8.2
 
 # GitLab CI in conjunction with GitLab Runner can use Docker Engine to test and build any application.
 # Docker, when used with GitLab CI, runs each job in a separate and isolated container using the predefined image that is set up in .gitlab-ci.yml.
@@ -42,14 +45,6 @@ clean shell runner:
 
 python-lint:
   image: $SKA_PST_PYTHON_BUILDER_IMAGE
-  before_script:
-    - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile"; exit 1;)'
-    - 'make help | grep python-lint'
-    - 'echo "python-lint: updating pip3"; time pip3 install --upgrade pip'
-    - 'echo "python-lint: installing tools"; time pip3 install poetry black isort pylint-junit'
-    - poetry config virtualenvs.create false
-    - poetry export --format requirements.txt --output requirements.txt --without-hashes --dev
-    - time pip3 install -r requirements.txt;
 
 #Join linting reports (This stage is temporary!)
 join_linting_reports:
@@ -87,11 +82,12 @@ python-generate-code:
   tags:
     - k8srunner
   before_script:
-    - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile; exit 1")'
-    - 'make help | grep python-build'
-    - 'echo "python-generate-code: updating pip3"; time pip3 install --upgrade pip'
-    - pip3 install poetry
-    - poetry config virtualenvs.create false
+    - poetry config virtualenvs.in-project true
+    - echo "python-generate-code Setting.. poetry config virtualenvs.create $POETRY_CONFIG_VIRTUALENVS_CREATE"
+    - poetry config virtualenvs.create $POETRY_CONFIG_VIRTUALENVS_CREATE
+    - echo "python-generate-code Installing with poetry"
+    - time poetry install --with dev
+
   script:
     - make PROTOBUF_DIR="$(pwd)/build/protobuf" GENERATED_PATH="$(pwd)/generated" python-generate-code
   artifacts:
@@ -100,9 +96,13 @@ python-generate-code:
 
 oci-image-build:
   variables:
+    BUILD_IMAGE: $SKA_PST_PYTHON_BUILDER_IMAGE
+    BASE_IMAGE: $SKA_PST_PYTHON_RUNTIME_IMAGE
     PROTOBUF_IMAGE: $SKA_PST_COMMON_PROTOBUF_IMAGE
+    PST_COMMON_BUILDER_IMAGE: $SKA_PST_COMMON_BUILDER_IMAGE
+
   script:
-    - make oci-build-all CAR_OCI_REGISTRY_HOST=${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME} OCI_BUILD_ADDITIONAL_ARGS=" --build-arg BUILD_IMAGE --build-arg BASE_IMAGE --build-arg PROTOBUF_IMAGE "
+    - make oci-build-all CAR_OCI_REGISTRY_HOST=${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME} OCI_BUILD_ADDITIONAL_ARGS=" --build-arg BUILD_IMAGE=${BUILD_IMAGE} --build-arg BASE_IMAGE=${BASE_IMAGE} --build-arg PROTOBUF_IMAGE=${PROTOBUF_IMAGE} --build-arg PST_COMMON_BUILDER_IMAGE=${PST_COMMON_BUILDER_IMAGE}"
 
 stop-k8s-test:
   image: "$SKA_K8S_TOOLS_DEPLOY_IMAGE"
@@ -160,48 +160,28 @@ k8s-test:
 
 python-build-for-publication: # Executed on a tag
   allow_failure: false
-  image: $SKA_K8S_TOOLS_DEPLOY_IMAGE
   needs:
     - python-generate-code
   before_script:
     - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile; exit 1")'
     - 'make help | grep python-build'
-    - 'echo "python-build-for-publication: updating pip3"; time pip3 install --upgrade pip'
-    - pip3 install poetry black isort build
-    - poetry config virtualenvs.create false
     - cp -fr generated/ska_pst_lmc_proto src/
 
 python-build-for-development: # Executed on non-tagged commit
   allow_failure: false
-  stage: build
   needs:
     - python-generate-code
   before_script:
     - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile; exit 1")'
     - 'make help | grep python-build'
-    - 'echo "python-build-for-development: updating pip3"; time pip3 install --upgrade pip'
-    - pip3 install poetry black isort build
-    - poetry config virtualenvs.create false
     - cp -fr generated/ska_pst_lmc_proto src/
 
 python-test:
   # allow_failure: true
   image: $SKA_PST_PYTHON_BUILDER_IMAGE
   retry: 2
-  tags:
-    - k8srunner
   needs:
     - python-generate-code
-  before_script:
-    - '[ -f .make/python.mk ] || (echo "File python.mk not included in Makefile; exit 1")'
-    - 'make help | grep python-test'
-    - 'echo "python-test: updating pip3"; time pip3 install --upgrade pip'
-    - pip3 install poetry
-    - poetry config virtualenvs.create false
-    - poetry export --format requirements.txt --output requirements.txt --without-hashes --dev
-    - time pip3 install -r requirements.txt
-  script:
-    - make python-test;
 
 # Include CI templates
 include:

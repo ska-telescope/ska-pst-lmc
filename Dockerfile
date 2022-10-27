@@ -1,6 +1,9 @@
-ARG BUILD_IMAGE="artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.33"
-ARG BASE_IMAGE="artefact.skao.int/ska-tango-images-pytango-runtime-alpine:9.3.20"
-ARG PROTOBUF_IMAGE="artefact.skao.int/ska-pst-common-proto:0.3.0"
+ARG BUILD_IMAGE="artefact.skao.int/ska-tango-images-pytango-builder:9.3.32"
+ARG BASE_IMAGE="artefact.skao.int/ska-tango-images-pytango-runtime:9.3.19"
+ARG PST_COMMON_BUILDER_IMAGE="registry.gitlab.com/ska-telescope/pst/ska-pst-common/ska-pst-common-builder:0.3.0"
+ARG PROTOBUF_IMAGE="registry.gitlab.com/ska-telescope/pst/ska-pst-common/ska-pst-common-proto:0.3.0"
+
+FROM $PST_COMMON_BUILDER_IMAGE AS pstbuilder
 
 FROM $PROTOBUF_IMAGE as proto
 
@@ -9,45 +12,57 @@ FROM $BUILD_IMAGE AS buildenv
 WORKDIR /app
 
 COPY --from=proto /app/protobuf/ska/pst/lmc/ska_pst_lmc.proto /app/protobuf/ska_pst_lmc_proto/ska_pst_lmc.proto
-RUN apk add --no-cache protobuf-dev grpc-dev curl python3 && \
-  mkdir -p /app/generated && \
-  curl -sSL https://install.python-poetry.org | python3 -
+COPY --from=pstbuilder /usr/local/lib/libprotobuf*.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libgrpc*.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libabsl*.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libaddress_sorting.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libcrypto.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libgpr.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libre2.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libssl.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libupb.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libz.so* ./lib/
 
 COPY pyproject.toml poetry.lock* /app/
-
-RUN poetry config virtualenvs.create false
+# This is needed to run tests
+COPY src/ska_pst_lmc/ /app/src/ska_pst_lmc/
+COPY tests/ /app/tests/
 
 RUN mkdir -p /app/tests && \
-  pip install --upgrade pip && \
-  poetry export --format requirements.txt --output requirements.txt --without-hashes && \
-  poetry export --format requirements.txt --output tests/requirements.txt --without-hashes --with dev && \
-  pip install -r tests/requirements.txt
+  poetry config virtualenvs.create false && \
+  poetry install --with dev
 
-RUN python3 -m grpc_tools.protoc --proto_path="$(pwd)/protobuf" \
+RUN mkdir -p "$(pwd)/generated" && \
+    python3 -m grpc_tools.protoc --proto_path="$(pwd)/protobuf" \
     --python_out="$(pwd)/generated" \
     --init_python_out="$(pwd)/generated" \
     --init_python_opt=imports=protobuf+grpcio \
     --grpc_python_out="$(pwd)/generated" \
     $(find "$(pwd)/protobuf" -iname "*.proto")
 
+RUN PYTHONPATH="/app/src:/app/generated" pytest --forked tests/
+
 FROM $BASE_IMAGE
 
 USER root
 
-# Tar is needed for how the k8s-test runs
-RUN apk -U upgrade \
-  && apk --update add --no-cache tar protobuf grpc
+COPY --from=pstbuilder /usr/local/lib/libprotobuf*.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libgrpc*.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libabsl*.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libaddress_sorting.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libcrypto.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libgpr.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libre2.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libssl.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libupb.so* ./lib/
+COPY --from=pstbuilder /usr/local/lib/libz.so* ./lib/
 
 WORKDIR /app
 
-COPY --from=buildenv --chown=tango:tango /app/generated/ /app/src/
-COPY --from=buildenv --chown=tango:tango /app/requirements.txt /app/
-COPY --from=buildenv --chown=tango:tango /app/tests/requirements.txt /app/tests
+COPY pyproject.toml poetry.lock* /app/
+COPY --from=buildenv --chown=tango:tango /app/generated/ /app/src
 
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt && \
-    rm pyproject.toml poetry.lock
+RUN poetry config virtualenvs.create false && \
+  poetry install --without dev
 
 USER tango
-
-ENV PYTHONPATH=/app/src:/usr/local/lib/python3.9/site-packages
