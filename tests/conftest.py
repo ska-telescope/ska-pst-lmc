@@ -18,7 +18,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer, add_Ps
 from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import ObsState, SimulationMode
 from ska_tango_base.executor import TaskStatus
-from ska_tango_base.testing.mock import MockCallable, MockChangeEventCallback
+from ska_tango_testing.mock import MockCallable, MockChangeEventCallback
 from tango import DeviceProxy
 from tango.test_context import DeviceTestContext, MultiDeviceTestContext, get_host_ip
 
