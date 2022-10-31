@@ -75,7 +75,9 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
 
         super().__init__(logger=logger, component_state_callback=component_state_callback)
 
-    def configure_beam(self: PstReceiveProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
+    def configure_beam(
+        self: PstReceiveProcessApiSimulator, resources: Dict[str, Any], task_callback: Callable
+    ) -> None:
         """Configure beam for the service.
 
         :param resources: dictionary of resources to allocate.
@@ -103,7 +105,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def configure_scan(
-        self: PstReceiveProcessApiSimulator, configuration: dict, task_callback: Callable
+        self: PstReceiveProcessApiSimulator, configuration: Dict[str, Any], task_callback: Callable
     ) -> None:
         """Configure a scan.
 
@@ -135,7 +137,9 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         self._component_state_callback(configured=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def start_scan(self: PstReceiveProcessApiSimulator, args: dict, task_callback: Callable) -> None:
+    def start_scan(
+        self: PstReceiveProcessApiSimulator, args: Dict[str, Any], task_callback: Callable
+    ) -> None:
         """Start scanning.
 
         :param args: arguments for the scan.
@@ -221,14 +225,16 @@ class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
     subband, rather than one for all of RECV as a whole.
     """
 
-    def _get_configure_beam_request(self: PstReceiveProcessApiGrpc, resources: dict) -> BeamConfiguration:
+    def _get_configure_beam_request(
+        self: PstReceiveProcessApiGrpc, resources: Dict[str, Any]
+    ) -> BeamConfiguration:
         subband_resources = ReceiveSubbandResources(**resources["subband"])
         return BeamConfiguration(
             receive=ReceiveBeamConfiguration(subband_resources=subband_resources, **resources["common"])
         )
 
     def _get_configure_scan_request(
-        self: PstReceiveProcessApiGrpc, configure_parameters: dict
+        self: PstReceiveProcessApiGrpc, configure_parameters: Dict[str, Any]
     ) -> ScanConfiguration:
         return ScanConfiguration(
             receive=ReceiveScanConfiguration(**generate_recv_scan_request(configure_parameters))

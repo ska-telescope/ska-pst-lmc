@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import time
-from typing import Generator
+from typing import Any, Dict, Generator
 from unittest.mock import MagicMock
 
 import pytest
@@ -112,8 +112,8 @@ class TestPstReceive:
         self: TestPstReceive,
         device_under_test: DeviceProxy,
         tango_device_command_checker: TangoDeviceCommandChecker,
-        configure_beam_request: dict,
-        configure_scan_request: dict,
+        configure_beam_request: Dict[str, Any],
+        configure_scan_request: Dict[str, Any],
         scan_request: dict,
     ) -> None:
         """Test state model of PstReceive."""
@@ -185,8 +185,8 @@ class TestPstReceive:
     def test_recv_abort_when_scanning(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
-        configure_beam_request: dict,
-        configure_scan_request: dict,
+        configure_beam_request: Dict[str, Any],
+        configure_scan_request: Dict[str, Any],
         scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
@@ -312,7 +312,7 @@ class TestPstReceive:
     def test_simulation_mode_when_not_in_empty_obs_state(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
-        configure_beam_request: dict,
+        configure_beam_request: Dict[str, Any],
     ) -> None:
         """Test state model of PstReceive."""
         device_under_test.simulationMode = SimulationMode.TRUE
@@ -365,8 +365,8 @@ class TestPstReceive:
     def test_recv_go_to_fault_when_resources_assigned(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
-        configure_beam_request: dict,
-        configure_scan_request: dict,
+        configure_beam_request: Dict[str, Any],
+        configure_scan_request: Dict[str, Any],
         scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
@@ -406,8 +406,8 @@ class TestPstReceive:
     def test_recv_go_to_fault_when_configured(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
-        configure_beam_request: dict,
-        configure_scan_request: dict,
+        configure_beam_request: Dict[str, Any],
+        configure_scan_request: Dict[str, Any],
         scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
@@ -456,8 +456,8 @@ class TestPstReceive:
     def test_recv_go_to_fault_when_scanning(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
-        configure_beam_request: dict,
-        configure_scan_request: dict,
+        configure_beam_request: Dict[str, Any],
+        configure_scan_request: Dict[str, Any],
         scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:

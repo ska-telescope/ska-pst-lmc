@@ -43,7 +43,7 @@ class PstReceiveSimulator:
 
     _subband_data: Dict[int, ReceiveData]
 
-    def __init__(self: PstReceiveSimulator, num_subbands: Optional[int] = None, **kwargs: dict) -> None:
+    def __init__(self: PstReceiveSimulator, num_subbands: Optional[int] = None, **kwargs: Any) -> None:
         """Initialise the simulator."""
         configuration: Dict[str, Any] = {}
         if num_subbands is not None:

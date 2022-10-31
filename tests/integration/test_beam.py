@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from typing import Any, Dict
 
 import backoff
 import pytest
@@ -19,7 +20,7 @@ from ska_tango_base.control_model import AdminMode, ObsState
 from tango import DevState
 
 from ska_pst_lmc import DeviceProxyFactory
-from tests.conftest import ChangeEventDict, TangoChangeEventHelper, TangoDeviceCommandChecker
+from tests.conftest import TangoDeviceCommandChecker
 
 
 @pytest.mark.integration
@@ -29,10 +30,10 @@ class TestPstBeam:
     @pytest.mark.forked
     def test_configure_then_scan_then_stop(
         self: TestPstBeam,
-        configure_beam_request: dict,
-        configure_scan_request: dict,
+        configure_beam_request: Dict[str, Any],
+        configure_scan_request: Dict[str, Any],
         scan_request: dict,
-        change_event_callbacks: ChangeEventDict,
+        tango_device_command_checker: TangoDeviceCommandChecker,
         logger: logging.Logger,
     ) -> None:
         """Test state model of PstReceive."""
@@ -41,15 +42,15 @@ class TestPstBeam:
         smrb_proxy = DeviceProxyFactory.get_device("low-pst/smrb/01")
         beam_proxy = DeviceProxyFactory.get_device("low-pst/beam/01")
 
-        tango_change_event_helper = TangoChangeEventHelper(
-            device_under_test=beam_proxy.device,
-            change_event_callbacks=change_event_callbacks,
-            logger=logger,
-        )
-        tango_device_command_checker = TangoDeviceCommandChecker(
-            tango_change_event_helper=tango_change_event_helper,
-            logger=logger,
-        )
+        # tango_change_event_helper = TangoChangeEventHelper(
+        #     device_under_test=beam_proxy.device,
+        #     change_event_callbacks=change_event_callbacks,
+        #     logger=logger,
+        # )
+        # tango_device_command_checker = TangoDeviceCommandChecker(
+        #     tango_change_event_helper=tango_change_event_helper,
+        #     logger=logger,
+        # )
 
         def assert_state(state: DevState) -> None:
             assert beam_proxy.state() == state

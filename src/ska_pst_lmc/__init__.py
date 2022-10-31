@@ -12,7 +12,6 @@ __all__ = [
     "DeviceProxyFactory",
     "PstBeam",
     "PstDsp",
-    "PstManagement",
     "PstReceive",
     "PstReceiveComponentManager",
     "PstReceiveSimulator",
@@ -28,7 +27,6 @@ __all__ = [
 from .beam import PstBeam
 from .device_proxy import DeviceProxyFactory, PstDeviceProxy
 from .dsp import PstDsp
-from .management import PstManagement
 from .receive import PstReceive, PstReceiveComponentManager, PstReceiveSimulator, ReceiveData
 from .smrb import (
     PstSmrb,

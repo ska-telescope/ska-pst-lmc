@@ -10,7 +10,7 @@
 import json
 import logging
 import threading
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -215,8 +215,8 @@ def test_component_manager_calls_abort_on_subdevices(
 @pytest.fixture
 def request_params(
     method_name: str,
-    configure_beam_request: dict,
-    configure_scan_request: dict,
+    configure_beam_request: Dict[str, Any],
+    configure_scan_request: Dict[str, Any],
     scan_request: dict,
 ) -> Optional[Any]:
     """Get request parameters for a given method name."""
@@ -227,7 +227,7 @@ def request_params(
     elif method_name == "release":
         return {}
     elif method_name == "scan":
-        return scan_request
+        return json.dumps(scan_request)
     else:
         return None
 
@@ -306,7 +306,10 @@ def test_remote_actions(
     assert message == "Task queued"
 
     if request_params is not None:
-        params_str = json.dumps(request_params)
+        if method_name == "scan":
+            params_str = request_params
+        else:
+            params_str = json.dumps(request_params)
         [
             remote_action_supplier(d).assert_called_once_with(params_str)  # type: ignore
             for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]

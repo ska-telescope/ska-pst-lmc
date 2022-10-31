@@ -11,7 +11,7 @@ import logging
 import threading
 import time
 import unittest
-from typing import Any, Callable
+from typing import Any, Callable, Dict
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -151,7 +151,7 @@ def test_recv_simulator_api_configure_scan(
     simulator: PstReceiveSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
 ) -> None:
     """Test that deconfigure_beam simulator calls task."""
     with unittest.mock.patch.object(

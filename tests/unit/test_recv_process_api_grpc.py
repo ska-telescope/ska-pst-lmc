@@ -13,7 +13,7 @@ import logging
 import threading
 import time
 from random import randint, random
-from typing import Generator
+from typing import Any, Dict, Generator
 from unittest.mock import ANY, MagicMock, call
 
 import grpc
@@ -102,7 +102,7 @@ def subband_id() -> int:
 @pytest.fixture
 def calculated_receive_subband_resources(
     beam_id: int,
-    configure_beam_request: dict,
+    configure_beam_request: Dict[str, Any],
     recv_network_interface: str,
     recv_udp_port: int,
 ) -> dict:
@@ -117,7 +117,7 @@ def calculated_receive_subband_resources(
 
 @pytest.fixture
 def mapped_configure_request(
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
 ) -> dict:
     """Map configure scan request to RECV properties."""
     return generate_recv_scan_request(request_params=configure_scan_request)
@@ -137,7 +137,7 @@ def subband_configure_beam_request(
 
 @pytest.fixture
 def expected_receive_resources_protobuf(
-    subband_configure_beam_request: dict,
+    subband_configure_beam_request: Dict[str, Any],
 ) -> ReceiveBeamConfiguration:
     """Create expected protobuf resources message for RECV."""
     return ReceiveBeamConfiguration(
@@ -160,7 +160,7 @@ def test_receive_grpc_configure_beam(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    subband_configure_beam_request: dict,
+    subband_configure_beam_request: Dict[str, Any],
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
@@ -187,7 +187,7 @@ def test_receive_grpc_configure_beam_when_already_assigned(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    subband_configure_beam_request: dict,
+    subband_configure_beam_request: Dict[str, Any],
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
@@ -217,7 +217,7 @@ def test_receive_grpc_configure_beam_when_throws_exception(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    subband_configure_beam_request: dict,
+    subband_configure_beam_request: Dict[str, Any],
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
@@ -319,7 +319,7 @@ def test_recv_grpc_configure_scan(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
     expected_receive_configure_protobuf: ReceiveScanConfiguration,
     task_callback: MagicMock,
 ) -> None:
@@ -346,7 +346,7 @@ def test_recv_grpc_configure_when_already_configured(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
     expected_receive_configure_protobuf: ReceiveScanConfiguration,
     task_callback: MagicMock,
 ) -> None:
@@ -375,7 +375,7 @@ def test_recv_grpc_configure_when_throws_exception(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
     expected_receive_configure_protobuf: ReceiveScanConfiguration,
     task_callback: MagicMock,
 ) -> None:

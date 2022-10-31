@@ -116,7 +116,7 @@ class PstTestClient(Device):
 # ----------
 
 
-def main(args: Optional[list] = None, **kwargs: dict) -> int:
+def main(args: Optional[list] = None, **kwargs: Any) -> int:
     """Run device server for PstTestClient device."""
     return run((PstTestClient,), args=args, **kwargs)
 

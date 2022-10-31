@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import List
+from typing import Any, Dict, List
 
 import backoff
 import pytest
@@ -130,8 +130,8 @@ class TestPstBeam:
         self: TestPstBeam,
         device_under_test: DeviceProxy,
         multidevice_test_context: MultiDeviceTestContext,
-        configure_beam_request: dict,
-        configure_scan_request: dict,
+        configure_beam_request: Dict[str, Any],
+        configure_scan_request: Dict[str, Any],
         scan_request: dict,
         tango_device_command_checker: TangoDeviceCommandChecker,
         logger: logging.Logger,

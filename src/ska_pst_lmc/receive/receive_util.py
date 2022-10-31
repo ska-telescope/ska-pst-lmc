@@ -12,7 +12,7 @@ __all__ = [
     "calculate_receive_subband_resources",
 ]
 
-from typing import Optional
+from typing import Any, Optional
 
 from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 
@@ -49,7 +49,7 @@ Currently only TRACK is supported but other modes could be supported in the futu
 """
 
 
-def get_udp_format(frequency_band: Optional[str] = None, **kwargs: dict) -> str:
+def get_udp_format(frequency_band: Optional[str] = None, **kwargs: Any) -> str:
     """Get UDP_FORMAT to be used in processing."""
     if frequency_band in MID_UDP_FORMATS:
         return MID_UDP_FORMATS[frequency_band]
@@ -152,7 +152,7 @@ def calculate_receive_subband_resources(
     request_params: dict,
     data_host: str,
     data_port: int,
-    **kwargs: dict,
+    **kwargs: Any,
 ) -> dict:
     """Calculate the RECV resources for all subbands from request.
 

@@ -23,6 +23,8 @@ __all__ = [
     "AggregateRemoteTask",
     "LongRunningCommandInterface",
     "TimeoutIterator",
+    "Callback",
+    "CallbackNoArgs",
 ]
 
 from .configuration import Configuration
@@ -31,3 +33,4 @@ from .background_task import BackgroundTaskProcessor, BackgroundTask, RunState, 
 from .remote_task import RemoteTask, AggregateRemoteTask
 from .long_running_command_interface import LongRunningCommandInterface
 from .timeout_iterator import TimeoutIterator
+from .callback import Callback, CallbackNoArgs

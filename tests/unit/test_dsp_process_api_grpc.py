@@ -13,7 +13,7 @@ import logging
 import threading
 import time
 from random import randint, random
-from typing import Generator
+from typing import Any, Dict, Generator
 from unittest.mock import ANY, MagicMock, call
 
 import grpc
@@ -96,7 +96,7 @@ def test_dsp_grpc_configure_beam(
     grpc_api: PstDspProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_beam_request: dict,
+    configure_beam_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
     """Test that DSP gRPC configure beam."""
@@ -124,7 +124,7 @@ def test_dsp_grpc_configure_beam_when_already_assigned(
     grpc_api: PstDspProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_beam_request: dict,
+    configure_beam_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
     """Test that DSP gRPC configure beam when resources alreay assigned."""
@@ -155,7 +155,7 @@ def test_dsp_grpc_configure_beam_when_throws_exception(
     grpc_api: PstDspProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_beam_request: dict,
+    configure_beam_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
     """Test that DSP gRPC configure beam throws an exception."""
@@ -259,7 +259,7 @@ def test_dsp_grpc_configure_scan(
     grpc_api: PstDspProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
     """Test that DSP gRPC calls configure_scan on remote service."""
@@ -286,7 +286,7 @@ def test_dsp_grpc_configure_when_already_configured(
     grpc_api: PstDspProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
     """Test that DSP gRPC configure scan and already configured."""
@@ -315,7 +315,7 @@ def test_dsp_grpc_configure_when_throws_exception(
     grpc_api: PstDspProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
     """Test that DSP gRPC configure scan throws an exception."""

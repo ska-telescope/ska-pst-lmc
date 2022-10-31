@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import functools
 import logging
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
@@ -23,6 +23,7 @@ from ska_pst_lmc.smrb.smrb_process_api import (
     PstSmrbProcessApiSimulator,
 )
 from ska_pst_lmc.smrb.smrb_util import calculate_smrb_subband_resources
+from ska_pst_lmc.util.callback import Callback, wrap_callback
 
 __all__ = ["PstSmrbComponentManager"]
 
@@ -191,18 +192,18 @@ class PstSmrbComponentManager(PstApiComponentManager):
         if self._simuation_mode == SimulationMode.TRUE:
             self._api = PstSmrbProcessApiSimulator(
                 logger=self.logger,
-                component_state_callback=self._component_state_callback,
+                component_state_callback=self._push_component_state_update,
             )
         else:
             self._api = PstSmrbProcessApiGrpc(
                 client_id=self._device_name,
                 grpc_endpoint=self.api_endpoint,
                 logger=self.logger,
-                component_state_callback=self._component_state_callback,
+                component_state_callback=self._push_component_state_update,
             )
 
     def configure_beam(
-        self: PstSmrbComponentManager, resources: dict, task_callback: Callable
+        self: PstSmrbComponentManager, resources: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
         """
         Configure beam resources in the component.
@@ -219,11 +220,13 @@ class PstSmrbComponentManager(PstApiComponentManager):
             task_callback=task_callback,
         )
 
-    def start_scan(self: PstSmrbComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+    def start_scan(
+        self: PstSmrbComponentManager, args: Dict[str, Any], task_callback: Callback = None
+    ) -> TaskResponse:
         """Start scanning."""
 
-        def _task(task_callback: Callable[..., None]) -> None:
-            self._api.start_scan(args, task_callback=task_callback)
+        def _task(task_callback: Callback = None) -> None:
+            self._api.start_scan(args=args, task_callback=wrap_callback(task_callback))
             self._api.monitor(
                 # for now only handling 1 subband
                 subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
@@ -232,11 +235,11 @@ class PstSmrbComponentManager(PstApiComponentManager):
 
         return self._submit_background_task(_task, task_callback=task_callback)
 
-    def stop_scan(self: PstSmrbComponentManager, task_callback: Callable) -> TaskResponse:
+    def stop_scan(self: PstSmrbComponentManager, task_callback: Callback = None) -> TaskResponse:
         """End scanning."""
 
-        def _task(task_callback: Callable[..., None]) -> None:
-            self._api.stop_scan(task_callback=task_callback)
+        def _task(task_callback: Callback = None) -> None:
+            self._api.stop_scan(task_callback=wrap_callback(task_callback))
 
             # reset the monitoring data
             self._monitor_data_handler.reset_monitor_data()

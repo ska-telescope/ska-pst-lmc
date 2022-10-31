@@ -9,7 +9,7 @@
 
 import logging
 import time
-from typing import Callable, cast
+from typing import Any, Callable, Dict, cast
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -91,7 +91,7 @@ def monitor_data() -> ReceiveData:
 @pytest.fixture
 def calculated_receive_subband_resources(
     beam_id: int,
-    configure_beam_request: dict,
+    configure_beam_request: Dict[str, Any],
     recv_network_interface: str,
     recv_udp_port: int,
 ) -> dict:
@@ -148,7 +148,7 @@ def test_recv_properties_comes_from_monitor_data(
 
 def test_recv_configure_beam(
     component_manager: PstReceiveComponentManager,
-    configure_beam_request: dict,
+    configure_beam_request: Dict[str, Any],
     task_callback: Callable,
     calculated_receive_subband_resources: dict,
 ) -> None:
@@ -160,7 +160,7 @@ def test_recv_configure_beam(
         task_callback=task_callback
     )
 
-    component_manager.assign(resources=configure_beam_request, task_callback=task_callback)
+    component_manager.configure_beam(resources=configure_beam_request, task_callback=task_callback)
 
     expected_request = {
         "common": calculated_receive_subband_resources["common"],
@@ -188,7 +188,7 @@ def test_recv_deconfigure_beam(
 
 def test_recv_configure_scan(
     component_manager: PstReceiveComponentManager,
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
     task_callback: Callable,
 ) -> None:
     """Test that the component manager calls the API for configure_scan service."""
@@ -239,7 +239,7 @@ def test_recv_scan(
     component_manager.start_scan(scan_request, task_callback=task_callback)
 
     api.start_scan.assert_called_once_with(
-        scan_request,
+        args=scan_request,
         task_callback=task_callback,
     )
 
@@ -341,13 +341,14 @@ def test_no_change_in_simulation_mode_value_wont_change_communication_state(
     simulation_mode: SimulationMode,
     pst_lmc_service: TestPstLmcService,
     mock_servicer_context: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test no change in simulation mode does not change communication state."""
     response = ConnectionResponse()
     mock_servicer_context.connect = MagicMock(return_value=response)
 
     update_communication_state = MagicMock(wraps=component_manager._update_communication_state)
-    component_manager._update_communication_state = update_communication_state
+    monkeypatch.setattr(component_manager, "_update_communication_state", update_communication_state)
 
     assert component_manager.communication_state == CommunicationStatus.DISABLED
     assert component_manager.simulation_mode == simulation_mode
@@ -371,13 +372,14 @@ def test_if_communicating_switching_simulation_mode_must_stop_then_restart(
     component_manager: PstReceiveComponentManager,
     pst_lmc_service: TestPstLmcService,
     mock_servicer_context: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test if communicating and simulation mode changes, then need to reconnect."""
     response = ConnectionResponse()
     mock_servicer_context.connect = MagicMock(return_value=response)
 
     update_communication_state = MagicMock(wraps=component_manager._update_communication_state)
-    component_manager._update_communication_state = update_communication_state
+    monkeypatch.setattr(component_manager, "_update_communication_state", update_communication_state)
 
     assert component_manager.communication_state == CommunicationStatus.DISABLED
     assert component_manager.simulation_mode == SimulationMode.TRUE
@@ -410,10 +412,11 @@ def test_if_communicating_switching_simulation_mode_must_stop_then_restart(
 
 def test_not_communicating_switching_simulation_mode_not_try_to_establish_connection(
     component_manager: PstReceiveComponentManager,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test if not communicating and change of simulation happens, don't do anything."""
     update_communication_state = MagicMock(wraps=component_manager._update_communication_state)
-    component_manager._update_communication_state = update_communication_state
+    monkeypatch.setattr(component_manager, "_update_communication_state", update_communication_state)
 
     assert component_manager.communication_state == CommunicationStatus.DISABLED
     assert component_manager.simulation_mode == SimulationMode.TRUE

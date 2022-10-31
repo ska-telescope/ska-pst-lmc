@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import tango
 from ska_tango_base.control_model import SimulationMode
@@ -25,7 +25,7 @@ from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData
 __all__ = ["PstDsp", "main"]
 
 
-class PstDsp(PstBaseDevice):
+class PstDsp(PstBaseDevice[PstDspComponentManager]):
     """A software TANGO device for managing the DSP component of the PST.LMC subsystem."""
 
     # -----------------
@@ -260,7 +260,7 @@ class PstDsp(PstBaseDevice):
 
         :return: The result code and the command unique ID
         """
-        return [f"{self.__class__.__name__}, {self.read_buildState()}"]
+        return [f"{self.__class__.__name__}, {self._build_state}"]
 
 
 # ----------
@@ -268,7 +268,7 @@ class PstDsp(PstBaseDevice):
 # ----------
 
 
-def main(args: Optional[list] = None, **kwargs: dict) -> int:
+def main(args: Optional[list] = None, **kwargs: Any) -> int:
     """
     Entry point for module.
 

@@ -9,20 +9,37 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+import functools
+from typing import Any, Callable, Generic, Optional, TypeVar, cast
 
 import tango
 from ska_tango_base import SKASubarray
+from ska_tango_base.base import BaseComponentManager
 from ska_tango_base.commands import SubmittedSlowCommand
 from ska_tango_base.control_model import ObsState, SimulationMode
 from tango import DebugIt
 from tango.server import attribute, command
 
+from ska_pst_lmc.component.component_manager import PstComponentManager
+
 __all__ = ["PstBaseDevice"]
 
+T = TypeVar("T", bound=PstComponentManager)
+"""Create a generic type for the component manager.
 
-class PstBaseDevice(SKASubarray):
-    """Base class for all the TANGO devices in PST.LMC."""
+Doing this allows us to cast the component manager used
+in the base to have the correct type and allow for tools
+like `mypy <http://mypy-lang.org/>`_ to check if there are
+errors.
+"""
+
+
+class PstBaseDevice(Generic[T], SKASubarray):
+    """Base class for all the TANGO devices in PST.LMC.
+
+    This extends from :py:class:`SKASubarray` but is also
+    generic in the type of the component manager.
+    """
 
     # ---------------
     # General methods
@@ -41,6 +58,10 @@ class PstBaseDevice(SKASubarray):
         """Set up the command objects."""
         super().init_command_objects()
 
+        def _callback(hook: Callable, running: bool) -> None:
+            action = "invoked" if running else "completed"
+            self.obs_state_model.perform_action(f"{hook}_{action}")
+
         self.register_command_object(
             "GoToFault",
             SubmittedSlowCommand(
@@ -50,6 +71,49 @@ class PstBaseDevice(SKASubarray):
                 "go_to_fault",
                 callback=None,
                 logger=None,
+            ),
+        )
+
+        self.register_command_object(
+            "AssignResources",
+            SubmittedSlowCommand(
+                "AssignResources",
+                self._command_tracker,
+                self.component_manager,
+                "configure_beam",
+                callback=functools.partial(_callback, "assign"),
+            ),
+        )
+
+        self.register_command_object(
+            "ReleaseAllResources",
+            SubmittedSlowCommand(
+                "ReleaseAllResources",
+                self._command_tracker,
+                self.component_manager,
+                "deconfigure_beam",
+                callback=functools.partial(_callback, "release"),
+            ),
+        )
+
+        self.register_command_object(
+            "ReleaseResources",
+            SubmittedSlowCommand(
+                "ReleaseAllResources",
+                self._command_tracker,
+                self.component_manager,
+                "deconfigure_beam",
+                callback=functools.partial(_callback, "release"),
+            ),
+        )
+
+        self.register_command_object(
+            "Scan",
+            SubmittedSlowCommand(
+                "Scan",
+                self._command_tracker,
+                self.component_manager,
+                "start_scan",
             ),
         )
 
@@ -64,7 +128,17 @@ class PstBaseDevice(SKASubarray):
         destructor and by the device Init command.
         """
 
-    def _component_state_changed(
+    def create_component_manager(self: PstBaseDevice) -> T:
+        """
+        Create and return a component manager for this device.
+
+        :raises NotImplementedError: for no implementation
+        """
+        raise NotImplementedError(
+            "PstBaseDevice is abstract; implement 'create_component_manager` method in " "a subclass.`"
+        )
+
+    def _component_state_changed(  # type: ignore[override]
         self: PstBaseDevice,
         obsfault: Optional[bool] = None,
         **kwargs: Any,
@@ -83,6 +157,20 @@ class PstBaseDevice(SKASubarray):
         if obsfault is not None:
             if obsfault:
                 self.obs_state_model.perform_action("component_obsfault")
+
+    @property  # type: ignore[override]
+    def component_manager(self: PstBaseDevice) -> T:  # type: ignore[override]
+        """Get component manager.
+
+        Overrides the super class property of component_manager to be typesafe.
+
+        :returns: the component manager casted to type T.
+        """
+        return cast(T, self._component_manager)
+
+    @component_manager.setter
+    def component_manager(self: PstBaseDevice, component_manager: BaseComponentManager) -> None:
+        self._component_manager = component_manager
 
     # ----------
     # Attributes

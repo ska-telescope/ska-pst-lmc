@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import tango
 from ska_tango_base.control_model import AdminMode, SimulationMode
@@ -23,7 +23,7 @@ from ska_pst_lmc.component.pst_device import PstBaseDevice
 __all__ = ["PstBeam", "main"]
 
 
-class PstBeam(PstBaseDevice):
+class PstBeam(PstBaseDevice[PstBeamComponentManager]):
     """A logical TANGO device representing a Beam Capability for PST.LMC.
 
     **Properties:**
@@ -128,7 +128,7 @@ class PstBeam(PstBaseDevice):
 
         :return: The result code and the command unique ID
         """
-        return [f"{self.__class__.__name__}, {self.read_buildState()}"]
+        return [f"{self.__class__.__name__}, {self._build_state}"]
 
     def _update_admin_mode(self: PstBeam, admin_mode: AdminMode) -> None:
         super()._update_admin_mode(admin_mode)
@@ -141,7 +141,7 @@ class PstBeam(PstBaseDevice):
 # ----------
 
 
-def main(args: Optional[list] = None, **kwargs: dict) -> int:
+def main(args: Optional[list] = None, **kwargs: Any) -> int:
     """
     Entry point for module.
 

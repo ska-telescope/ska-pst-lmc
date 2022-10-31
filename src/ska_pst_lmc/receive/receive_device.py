@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import tango
 from ska_tango_base.control_model import SimulationMode
@@ -25,7 +25,7 @@ from ska_pst_lmc.receive.receive_model import ReceiveData
 __all__ = ["PstReceive", "main"]
 
 
-class PstReceive(PstBaseDevice):
+class PstReceive(PstBaseDevice[PstReceiveComponentManager]):
     """A software TANGO device for managing the RECV component of the PST.LMC system."""
 
     # -----------------
@@ -201,7 +201,7 @@ class PstReceive(PstBaseDevice):
 
         :return: The result code and the command unique ID
         """
-        return [f"{self.__class__.__name__}, {self.read_buildState()}"]
+        return [f"{self.__class__.__name__}, {self._build_state}"]
 
 
 # ----------
@@ -209,7 +209,7 @@ class PstReceive(PstBaseDevice):
 # ----------
 
 
-def main(args: Optional[list] = None, **kwargs: dict) -> int:
+def main(args: Optional[list] = None, **kwargs: Any) -> int:
     """
     Entry point for module.
 

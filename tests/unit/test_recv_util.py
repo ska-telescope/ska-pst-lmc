@@ -7,7 +7,7 @@
 
 """This module contains tests for the RECV utility methods."""
 
-from typing import List
+from typing import Any, Dict, List
 
 import pytest
 
@@ -17,7 +17,7 @@ from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 
 def test_calculate_receive_subband_resources(
     beam_id: int,
-    configure_beam_request: dict,
+    configure_beam_request: Dict[str, Any],
     recv_network_interface: str,
     recv_udp_port: int,
 ) -> None:
@@ -92,7 +92,7 @@ def test_calculate_receive_subband_resources(
 )
 def test_udp_format_set_in_calculated_resources(
     beam_id: int,
-    configure_beam_request: dict,
+    configure_beam_request: Dict[str, Any],
     frequency_band: str,
     expected_udp_format: str,
     recv_network_interface: str,
@@ -124,7 +124,7 @@ def test_udp_format_set_in_calculated_resources(
 )
 def test_recv_util_calc_tsamp(
     beam_id: int,
-    configure_beam_request: dict,
+    configure_beam_request: Dict[str, Any],
     bandwidth_mhz: float,
     num_frequency_channels: int,
     oversampling_ratio: List[int],
@@ -166,7 +166,7 @@ def test_recv_util_calc_tsamp(
 )
 def test_recv_util_calc_bytes_per_seconds(
     beam_id: int,
-    configure_beam_request: dict,
+    configure_beam_request: Dict[str, Any],
     bandwidth_mhz: float,
     num_frequency_channels: int,
     npol: int,
@@ -204,7 +204,7 @@ def test_recv_util_calc_bytes_per_seconds(
 
 
 def test_map_configure_request(
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
 ) -> None:
     """Test that the correct RECV subband resources request is created."""
     actual = generate_recv_scan_request(configure_scan_request)
@@ -227,7 +227,7 @@ def test_map_configure_request(
 
 
 def test_map_configure_request_test_equinox(
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
 ) -> None:
     """Test that the correct RECV subband resources request is created."""
     configure_scan_request["coordinates"]["equinox"] = 2000.0
@@ -237,7 +237,7 @@ def test_map_configure_request_test_equinox(
 
 
 def test_map_configure_request_test_vector_not_set(
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
 ) -> None:
     """Test that the correct RECV subband resources request is created."""
     del configure_scan_request["test_vector_id"]

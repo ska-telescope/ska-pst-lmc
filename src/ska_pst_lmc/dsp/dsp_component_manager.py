@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import functools
 import logging
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
@@ -19,6 +19,7 @@ from ska_pst_lmc.component import MonitorDataHandler, PstApiComponentManager, Ta
 from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData, DspDiskMonitorDataStore
 from ska_pst_lmc.dsp.dsp_process_api import PstDspProcessApi, PstDspProcessApiGrpc, PstDspProcessApiSimulator
 from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources
+from ska_pst_lmc.util.callback import Callback, wrap_callback
 
 __all__ = ["PstDspComponentManager"]
 
@@ -101,14 +102,14 @@ class PstDspComponentManager(PstApiComponentManager):
         if self._simuation_mode == SimulationMode.TRUE:
             self._api = PstDspProcessApiSimulator(
                 logger=self.logger,
-                component_state_callback=self._component_state_callback,
+                component_state_callback=self._push_component_state_update,
             )
         else:
             self._api = PstDspProcessApiGrpc(
                 client_id=self._device_name,
                 grpc_endpoint=self.api_endpoint,
                 logger=self.logger,
-                component_state_callback=self._component_state_callback,
+                component_state_callback=self._push_component_state_update,
             )
 
     @property
@@ -162,7 +163,7 @@ class PstDspComponentManager(PstApiComponentManager):
         return self._monitor_data.subband_write_rate
 
     def configure_beam(
-        self: PstDspComponentManager, resources: dict, task_callback: Callable
+        self: PstDspComponentManager, resources: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
         """
         Configure the beam of the the component with the resources.
@@ -179,11 +180,13 @@ class PstDspComponentManager(PstApiComponentManager):
             task_callback=task_callback,
         )
 
-    def start_scan(self: PstDspComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+    def start_scan(
+        self: PstDspComponentManager, args: Dict[str, Any], task_callback: Callback = None
+    ) -> TaskResponse:
         """Start scanning."""
 
-        def _task(task_callback: Callable[..., None]) -> None:
-            self._api.start_scan(args, task_callback=task_callback)
+        def _task(task_callback: Callback = None) -> None:
+            self._api.start_scan(args=args, task_callback=wrap_callback(task_callback))
             self._api.monitor(
                 # for now only handling 1 subband
                 subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
@@ -192,11 +195,11 @@ class PstDspComponentManager(PstApiComponentManager):
 
         return self._submit_background_task(_task, task_callback=task_callback)
 
-    def stop_scan(self: PstDspComponentManager, task_callback: Callable) -> TaskResponse:
+    def stop_scan(self: PstDspComponentManager, task_callback: Callback = None) -> TaskResponse:
         """Stop scanning."""
 
-        def _task(task_callback: Callable[..., None]) -> None:
-            self._api.stop_scan(task_callback=task_callback)
+        def _task(task_callback: Callback = None) -> None:
+            self._api.stop_scan(task_callback=wrap_callback(task_callback))
 
             # reset the monitoring data
             self._monitor_data_handler.reset_monitor_data()
