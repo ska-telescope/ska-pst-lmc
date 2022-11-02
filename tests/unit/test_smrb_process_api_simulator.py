@@ -166,7 +166,7 @@ def test_smrb_simulator_api_deconfigure_scan(
 def test_smrb_simulator_api_start_scan(
     simulation_api: PstSmrbProcessApiSimulator,
     simulator: PstSmrbSimulator,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:

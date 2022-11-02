@@ -16,8 +16,8 @@ from typing import Any, Callable, Dict, Optional, Tuple
 
 from ska_tango_base.base import TaskExecutorComponentManager, check_communicating
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
+from ska_tango_base.csp.obs import CspObsComponentManager
 from ska_tango_base.executor import TaskStatus
-from ska_tango_base.subarray import SubarrayComponentManager
 
 from ska_pst_lmc.component.process_api import PstProcessApi
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
@@ -33,7 +33,7 @@ __all__ = [
 TaskResponse = Tuple[TaskStatus, str]
 
 
-class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager):
+class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
     """
     Base Component Manager for the PST.LMC. subsystem.
 
@@ -79,6 +79,9 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
         self._device_name = device_name
         self._simuation_mode = simulation_mode
         self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
+        self._scan_id = 0
+        self._config_id = ""
+        self._curr_configuration = {}
         super().__init__(logger, communication_state_callback, component_state_callback, *args, **kwargs)
 
     def start_communicating(self: PstComponentManager) -> None:
@@ -143,6 +146,21 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
         Default implementation of this is to do nothing. It is up to the individual devices
         to handle what it means when the simulation mode changes.
         """
+
+    @property
+    def config_id(self: PstComponentManager) -> str:
+        """Return the configuration id."""
+        return self._config_id
+
+    @property
+    def scan_id(self: PstComponentManager) -> int:
+        """Return the scan id."""
+        return self._scan_id
+
+    @config_id.setter
+    def config_id(self: PstComponentManager, config_id: str) -> None:
+        """Set the configuration id."""
+        self._config_id = config_id
 
     # ---------------
     # Commands
@@ -241,13 +259,13 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
         return self.submit_task(_task, task_callback=task_callback)
 
     def configure_beam(
-        self: PstComponentManager, resources: Dict[str, Any], task_callback: Callback = None
+        self: PstComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
         """
         Configure the beam specific configuration of the component.
 
-        :param resources: resources to be assigned
-        :type resources: Dict[str, Any]
+        :param configuration: configuration for beam
+        :type configuration: Dict[str, Any]
         :param task_callback: callback for background processing to update device status.
         :type task_callback: Callback
         """
@@ -262,22 +280,6 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
         :type task_callback: Callback
         """
         raise NotImplementedError("PstComponentManager is abstract.")
-
-    def configure(
-        self: PstComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
-    ) -> TaskResponse:
-        """
-        Configure the component for a scan.
-
-        .. deprecated:: 0.2.2
-            Use :meth:`configure_scan`
-
-        :param configuration: the configuration to be configured
-        :type configuration: Dict[str, Any]
-        :param task_callback: callback for background processing to update device status.
-        :type task_callback: Callback
-        """
-        return self.configure_scan(configuration=configuration, task_callback=task_callback)
 
     def configure_scan(
         self: PstComponentManager, configuration: Dict[str, Any], task_callback: Callback
@@ -311,18 +313,19 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
         """
         raise NotImplementedError("PstComponentManager is abstract.")
 
-    # def scan(self: PstComponentManager, args: str, task_callback: Callback = None) -> TaskResponse:
-    #     """Start scanning.
+    def scan(self: PstComponentManager, scan_id: int, task_callback: Callback = None) -> TaskResponse:
+        """Start scanning.
 
-    #     .. deprecated:: 0.2.2
-    #         Use :meth:`start_scan`
+        .. deprecated:: 0.2.2
+            Use :meth:`start_scan`
 
-    #     :param args: scan arguments (i.e start time), as a JSON encoded string
-    #     :type args: str
-    #     :param task_callback: callback for background processing to update device status.
-    #     :type task_callback: Callback
-    #     """
-    #     return self.start_scan(args=json.loads(args), task_callback=task_callback)
+        :param scan_id: the ID for the scan that is to be performed.
+        :type scan_id: int
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callable
+        """
+        args: Dict[str, Any] = {"scan_id": scan_id}
+        return self.start_scan(args=args, task_callback=task_callback)
 
     def start_scan(
         self: PstComponentManager, args: Dict[str, Any], task_callback: Callback = None
@@ -367,23 +370,6 @@ class PstComponentManager(TaskExecutorComponentManager, SubarrayComponentManager
             if task_callback:
                 task_callback(status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(configured=False)
-            if task_callback:
-                task_callback(status=TaskStatus.COMPLETED)
-
-        return self.submit_task(_task, task_callback=task_callback)
-
-    def restart(self: PstComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Deconfigure and release all resources."""
-
-        def _task(
-            *args: Any,
-            task_callback: Callback = None,
-            task_abort_event: Optional[Event] = None,
-            **kwargs: Any,
-        ) -> None:
-            if task_callback:
-                task_callback(status=TaskStatus.IN_PROGRESS)
-            self._push_component_state_update(configured=False, resourced=False)
             if task_callback:
                 task_callback(status=TaskStatus.COMPLETED)
 
@@ -585,14 +571,6 @@ class PstApiComponentManager(PstComponentManager):
         resources.
         """
         return self._submit_background_task(self._api.reset, task_callback=task_callback)
-
-    def restart(self: PstApiComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Restart service.
-
-        This is used to reset a service in ABORTED or FAULT states back to an EMPTY state.
-        This will deconfigure a scan and release all the resources the service has.
-        """
-        return self._submit_background_task(self._api.restart, task_callback=task_callback)
 
     def go_to_fault(self: PstApiComponentManager, task_callback: Callback = None) -> TaskResponse:
         """Put the service into a FAULT state."""

@@ -78,7 +78,7 @@ def api(
 
 @pytest.fixture
 def monitor_data(
-    scan_request: dict,
+    scan_request: Dict[str, Any],
 ) -> SmrbMonitorData:
     """Create an an instance of ReceiveData for monitor data."""
     from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
@@ -338,7 +338,7 @@ def test_smrb_cm_deconfigure_scan(
 
 def test_smrb_cm_smrb_scan(
     component_manager: PstSmrbComponentManager,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
     task_callback: Callable,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -416,24 +416,6 @@ def test_smrb_cm_smrb_obsreset(
     component_manager.obsreset(task_callback=task_callback)
 
     api.reset.assert_called_once_with(
-        task_callback=task_callback,
-    )
-
-
-def test_smrb_cm_smrb_restart(
-    component_manager: PstSmrbComponentManager,
-    task_callback: Callable,
-) -> None:
-    """Test that the component manager calls the API to restart service in ABORTED or FAULT state."""
-    api = MagicMock()
-    component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback,
-    )
-
-    component_manager.restart(task_callback=task_callback)
-
-    api.restart.assert_called_once_with(
         task_callback=task_callback,
     )
 

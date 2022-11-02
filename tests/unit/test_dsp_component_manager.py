@@ -75,7 +75,7 @@ def api(
 
 @pytest.fixture
 def monitor_data(
-    scan_request: dict,
+    scan_request: Dict[str, Any],
 ) -> DspDiskMonitorData:
     """Create an an instance of DspDiskMonitorData for monitor data."""
     from ska_pst_lmc.dsp.dsp_simulator import PstDspSimulator
@@ -335,7 +335,7 @@ def test_dsp_cm_deconfigure_scan(
 
 def test_dsp_cm_dsp_scan(
     component_manager: PstDspComponentManager,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
     task_callback: Callable,
 ) -> None:
     """Test that the component manager calls the API start a scan."""
@@ -410,24 +410,6 @@ def test_dsp_cm_dsp_obsreset(
     component_manager.obsreset(task_callback=task_callback)
 
     api.reset.assert_called_once_with(
-        task_callback=task_callback,
-    )
-
-
-def test_dsp_cm_dsp_restart(
-    component_manager: PstDspComponentManager,
-    task_callback: Callable,
-) -> None:
-    """Test that the component manager calls the API to restart service in ABORTED or FAULT state."""
-    api = MagicMock()
-    component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback,
-    )
-
-    component_manager.restart(task_callback=task_callback)
-
-    api.restart.assert_called_once_with(
         task_callback=task_callback,
     )
 

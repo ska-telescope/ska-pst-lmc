@@ -276,26 +276,6 @@ def test_recv_simulator_api_reset(
     component_state_callback.assert_called_with(configured=False)
 
 
-def test_recv_simulator_api_restart(
-    simulation_api: PstReceiveProcessApiSimulator,
-    simulator: PstReceiveSimulator,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that restart simulator calls task."""
-    with unittest.mock.patch.object(simulator, "restart", wraps=simulator.restart) as restart:
-        simulation_api.restart(task_callback)
-        restart.assert_called_once()
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(progress=55),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_with(configured=False, resourced=False)
-
-
 def test_recv_simulator_api_go_to_fault(
     simulation_api: PstReceiveProcessApiSimulator,
     component_state_callback: MagicMock,

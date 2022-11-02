@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import logging
 from threading import Event
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ska_tango_base.base import check_communicating
 from ska_tango_base.control_model import AdminMode, CommunicationStatus, PowerState
@@ -258,64 +258,6 @@ class PstBeamComponentManager(PstComponentManager):
             completion_callback=_completion_callback,
         )
 
-    def assign(
-        self: PstBeamComponentManager, resources: Set[str], task_callback: Callback = None
-    ) -> TaskResponse:
-        """
-        Assign resources to the component.
-
-        :param resources: resources to be assigned
-        """
-
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the 'AssignResources' commands {command_ids} have completed.")
-            self._push_component_state_update(resourced=True)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-
-        resources_str = json.dumps(resources)
-
-        return self._submit_remote_job(
-            action=lambda d: d.AssignResources(resources_str),
-            task_callback=task_callback,
-            completion_callback=_completion_callback,
-        )
-
-    def release(
-        self: PstBeamComponentManager, resources: Set[str], task_callback: Callback = None
-    ) -> TaskResponse:
-        """
-        Release resources from the component.
-
-        :param resources: resources to be released
-        """
-
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the 'ReleaseResources' commands {command_ids} have completed.")
-            self._push_component_state_update(resourced=False)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-
-        resources_str = json.dumps(resources)
-
-        return self._submit_remote_job(
-            action=lambda d: d.ReleaseResources(resources_str),
-            task_callback=task_callback,
-            completion_callback=_completion_callback,
-        )
-
-    def release_all(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Release all resources."""
-
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the 'ReleaseAllResources' commands {command_ids} have completed.")
-            self._push_component_state_update(resourced=False)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-
-        return self._submit_remote_job(
-            action=lambda d: d.ReleaseAllResources(),
-            task_callback=task_callback,
-            completion_callback=_completion_callback,
-        )
-
     def configure_scan(
         self: PstBeamComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
@@ -334,7 +276,7 @@ class PstBeamComponentManager(PstComponentManager):
         configuration_str = json.dumps(configuration)
 
         return self._submit_remote_job(
-            action=lambda d: d.Configure(configuration_str),
+            action=lambda d: d.ConfigureScan(configuration_str),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
@@ -348,21 +290,7 @@ class PstBeamComponentManager(PstComponentManager):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            action=lambda d: d.End(),
-            task_callback=task_callback,
-            completion_callback=_completion_callback,
-        )
-
-    def scan(self: PstBeamComponentManager, args: str, task_callback: Callback = None) -> TaskResponse:
-        """Start scanning."""
-
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the 'Scan' commands {command_ids} have completed.")
-            self._push_component_state_update(scanning=True)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-
-        return self._submit_remote_job(
-            action=lambda d: d.Scan(args),
+            action=lambda d: d.GoToIdle(),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
@@ -417,20 +345,6 @@ class PstBeamComponentManager(PstComponentManager):
 
         return self._submit_remote_job(
             action=lambda d: d.ObsReset(),
-            task_callback=task_callback,
-            completion_callback=_completion_callback,
-        )
-
-    def restart(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Deconfigure and release all resources."""
-
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the 'Restart' commands {command_ids} have completed.")
-            self._push_component_state_update(configured=False, resourced=False)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-
-        return self._submit_remote_job(
-            action=lambda d: d.Restart(),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )

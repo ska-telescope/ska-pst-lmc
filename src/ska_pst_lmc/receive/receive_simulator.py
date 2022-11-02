@@ -91,10 +91,6 @@ class PstReceiveSimulator:
         """Tell the component to reset whatever it was doing."""
         self._scan = False
 
-    def restart(self: PstReceiveSimulator) -> None:
-        """Tell the component to restart whatever it was doing."""
-        self._scan = False
-
     def _update(self: PstReceiveSimulator) -> None:
         """Simulate the update of RECV data."""
         for subband_data in self._subband_data.values():

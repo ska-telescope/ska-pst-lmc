@@ -18,14 +18,14 @@ from tango import DebugIt
 from tango.server import attribute, command, device_property, run
 
 import ska_pst_lmc.release as release
-from ska_pst_lmc.component.pst_device import PstBaseDevice
+from ska_pst_lmc.component.pst_device import PstBaseDevice, PstBaseProccesDevice
 from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
 from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData
 
 __all__ = ["PstSmrb", "main"]
 
 
-class PstSmrb(PstBaseDevice[PstSmrbComponentManager]):
+class PstSmrb(PstBaseProccesDevice[PstSmrbComponentManager]):
     """A software TANGO device for managing the SMRB component of the PST.LMC subsystem.
 
     This TANGO device is used to manage the Shared Memory Ring Buffer (SMRB) for the

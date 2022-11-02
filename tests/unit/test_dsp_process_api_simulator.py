@@ -164,7 +164,7 @@ def test_dsp_simulator_api_deconfigure_scan(
 def test_dsp_simulator_api_start_scan(
     simulation_api: PstDspProcessApiSimulator,
     simulator: PstDspSimulator,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
@@ -240,25 +240,6 @@ def test_dsp_simulator_api_reset(
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(configured=False)
-
-
-def test_dsp_simulator_api_restart(
-    simulation_api: PstDspProcessApiSimulator,
-    simulator: PstDspSimulator,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that restart simulator calls task."""
-    simulation_api.restart(task_callback)
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(progress=47),
-        call(progress=87),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_with(configured=False, resourced=False)
 
 
 def test_dsp_simulator_api_go_to_fault(

@@ -217,17 +217,13 @@ def request_params(
     method_name: str,
     configure_beam_request: Dict[str, Any],
     configure_scan_request: Dict[str, Any],
-    scan_request: dict,
+    scan_request: Dict[str, Any],
 ) -> Optional[Any]:
     """Get request parameters for a given method name."""
-    if method_name == "assign":
-        return configure_beam_request
-    elif method_name == "configure":
+    if method_name == "configure_scan":
         return configure_scan_request
-    elif method_name == "release":
-        return {}
     elif method_name == "scan":
-        return json.dumps(scan_request)
+        return int(scan_request["scan_id"])
     else:
         return None
 
@@ -239,15 +235,11 @@ def request_params(
         ("off", lambda d: d.Off, {"power": PowerState.OFF}),
         ("reset", lambda d: d.Reset, {"power": PowerState.OFF}),
         ("standby", lambda d: d.Standby, {"power": PowerState.STANDBY}),
-        ("assign", lambda d: d.AssignResources, {"resourced": True}),
-        ("release", lambda d: d.ReleaseResources, {"resourced": False}),
-        ("release_all", lambda d: d.ReleaseAllResources, {"resourced": False}),
-        ("configure", lambda d: d.Configure, {"configured": True}),
-        ("deconfigure", lambda d: d.End, {"configured": False}),
+        ("configure_scan", lambda d: d.ConfigureScan, {"configured": True}),
+        ("deconfigure_scan", lambda d: d.GoToIdle, {"configured": False}),
         ("scan", lambda d: d.Scan, {"scanning": True}),
         ("end_scan", lambda d: d.EndScan, {"scanning": False}),
         ("obsreset", lambda d: d.ObsReset, {"configured": False}),
-        ("restart", lambda d: d.Restart, {"configured": False, "resourced": False}),
         ("go_to_fault", lambda d: d.GoToFault, {"obsfault": True}),
     ],
 )
@@ -307,7 +299,7 @@ def test_remote_actions(
 
     if request_params is not None:
         if method_name == "scan":
-            params_str = request_params
+            params_str = json.dumps({"scan_id": request_params})
         else:
             params_str = json.dumps(request_params)
         [

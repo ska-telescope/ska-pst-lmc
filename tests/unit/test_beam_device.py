@@ -132,7 +132,7 @@ class TestPstBeam:
         multidevice_test_context: MultiDeviceTestContext,
         configure_beam_request: Dict[str, Any],
         configure_scan_request: Dict[str, Any],
-        scan_request: dict,
+        scan_request: Dict[str, Any],
         tango_device_command_checker: TangoDeviceCommandChecker,
         logger: logging.Logger,
     ) -> None:
@@ -171,26 +171,25 @@ class TestPstBeam:
         assert_state(DevState.OFF)
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
         )
         assert_state(DevState.ON)
 
-        # need to configure beam
-        assert_obstate(ObsState.EMPTY)
-
-        resources = json.dumps(configure_beam_request)
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.AssignResources(resources),
-            expected_obs_state_events=[
-                ObsState.RESOURCING,
-                ObsState.IDLE,
-            ],
-        )
         assert_obstate(ObsState.IDLE)
+
+        # resources = json.dumps(configure_beam_request)
+        # tango_device_command_checker.assert_command(
+        #     lambda: device_under_test.AssignResources(resources),
+        #     expected_obs_state_events=[
+        #         ObsState.RESOURCING,
+        #         ObsState.IDLE,
+        #     ],
+        # )
+        # assert_obstate(ObsState.IDLE)
 
         configuration = json.dumps(configure_scan_request)
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.Configure(configuration),
+            lambda: device_under_test.ConfigureScan(configuration),
             expected_obs_state_events=[
                 ObsState.CONFIGURING,
                 ObsState.READY,
@@ -198,7 +197,7 @@ class TestPstBeam:
         )
         assert_obstate(ObsState.READY)
 
-        scan = json.dumps(scan_request)
+        scan = str(scan_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.Scan(scan),
             expected_obs_state_events=[
@@ -265,12 +264,12 @@ class TestPstBeam:
         assert_state(DevState.OFF)
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
         )
         assert_state(DevState.ON)
 
         # need to configure beam
-        assert_obstate(ObsState.EMPTY)
+        assert_obstate(ObsState.IDLE)
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.GoToFault(),

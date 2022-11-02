@@ -42,8 +42,6 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     MonitorResponse,
     ResetRequest,
     ResetResponse,
-    RestartRequest,
-    RestartResponse,
     ScanConfiguration,
     StartScanRequest,
     StartScanResponse,
@@ -417,7 +415,7 @@ def test_dsp_grpc_deconfigure_when_throws_exception(
 def test_dsp_grpc_scan(
     grpc_api: PstDspProcessApiGrpc,
     mock_servicer_context: MagicMock,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
     expected_scan_request_protobuf: StartScanRequest,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
@@ -440,7 +438,7 @@ def test_dsp_grpc_scan(
 def test_dsp_grpc_scan_when_already_scanning(
     grpc_api: PstDspProcessApiGrpc,
     mock_servicer_context: MagicMock,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
     expected_scan_request_protobuf: StartScanRequest,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
@@ -466,7 +464,7 @@ def test_dsp_grpc_scan_when_already_scanning(
 def test_dsp_grpc_scan_when_throws_exception(
     grpc_api: PstDspProcessApiGrpc,
     mock_servicer_context: MagicMock,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
     expected_scan_request_protobuf: StartScanRequest,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
@@ -651,53 +649,6 @@ def test_dsp_grpc_reset_when_exception_thrown(
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
         call(status=TaskStatus.FAILED, result="Resetting error!", exception=ANY),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_once_with(obsfault=True)
-
-
-def test_dsp_grpc_restart(
-    grpc_api: PstDspProcessApiGrpc,
-    mock_servicer_context: MagicMock,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that DSP gRPC abort."""
-    response = RestartResponse()
-    mock_servicer_context.restart = MagicMock(return_value=response)
-
-    grpc_api.restart(task_callback=task_callback)
-
-    mock_servicer_context.restart.assert_called_once_with(RestartRequest())
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_once_with(configured=False, resourced=False)
-
-
-def test_dsp_grpc_restart_when_exception_thrown(
-    grpc_api: PstDspProcessApiGrpc,
-    mock_servicer_context: MagicMock,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that DSP gRPC restart when exception is thrown."""
-    mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
-    mock_servicer_context.restart.side_effect = TestMockException(
-        grpc_status_code=grpc.StatusCode.INTERNAL,
-        message="Restarting error!",
-    )
-
-    grpc_api.restart(task_callback=task_callback)
-
-    mock_servicer_context.restart.assert_called_once_with(RestartRequest())
-    mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(status=TaskStatus.FAILED, result="Restarting error!", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_once_with(obsfault=True)

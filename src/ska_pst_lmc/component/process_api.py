@@ -130,13 +130,6 @@ class PstProcessApi:
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
-    def restart(self: PstProcessApi, task_callback: Callable) -> None:
-        """Perform a restart of the component.
-
-        :param task_callback: callable to connect back to the component manager.
-        """
-        raise NotImplementedError("PstProcessApi is abstract class")
-
     def go_to_fault(self: PstProcessApi) -> None:
         """Set remote service in a FAULT state.
 
@@ -510,24 +503,6 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error(f"Error raised while resetting '{self._client_id}'", exc_info=True)
-            self.go_to_fault()
-            task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
-
-    def restart(self: PstProcessApiGrpc, task_callback: Callable) -> None:
-        """Restart service.
-
-        For SMRB we don't restart the actual process. We make sure that the service
-        is put into a EMPTY state by first deconfiguring and then releasing resources.
-
-        :param task_callback: callback to connect back to the component manager.
-        """
-        task_callback(status=TaskStatus.IN_PROGRESS)
-        try:
-            self._grpc_client.restart()
-            self._component_state_callback(configured=False, resourced=False)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-        except BaseGrpcException as e:
-            self._logger.error(f"Error raised while restarting '{self._client_id}'", exc_info=True)
             self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 

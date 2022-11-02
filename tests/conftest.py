@@ -59,9 +59,19 @@ def configure_beam_request() -> Dict[str, Any]:
         "oversampling_ratio": [4, 3],  # ovrsamp
     }
 
+@pytest.fixture
+def csp_configure_scan_request(configure_scan_request: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "common": {},
+        "pst": {
+            "scan": {
+                **configure_scan_request
+            }
+        }
+    }
 
 @pytest.fixture
-def configure_scan_request() -> Dict[str, Any]:
+def configure_scan_request(scan_id: int) -> Dict[str, Any]:
     """Return a valid configure scan object."""
     # this has been copied from the SKA Telmodel
     # see https://developer.skao.int/projects/ska-telmodel/en/latest/schemas/ska-csp-configure.html
@@ -69,7 +79,7 @@ def configure_scan_request() -> Dict[str, Any]:
         "activation_time": "2022-01-19T23:07:45Z",
         "timing_beam_id": "beam1",
         "capability": "capability1",
-        "scan_id": 1,
+        "scan_id": scan_id,
         "bits_per_sample": 32,
         "num_of_polarizations": 2,
         "udp_nsamp": 32,
@@ -114,16 +124,22 @@ def configure_scan_request() -> Dict[str, Any]:
         },
     }
 
+@pytest.fixture
+def scan_id() -> int:
+    """Fixture to generating scan id."""
+    return randint(1, 1000)
 
 @pytest.fixture
-def scan_request() -> dict:
+def scan_request(scan_id: int) -> Dict[str, Any]:
     """Fixture for scan requests."""
-    return {}
+    return {
+        "scan_id": scan_id
+    }
 
 
 @pytest.fixture
 def expected_scan_request_protobuf(
-    scan_request: dict,
+    scan_request: Dict[str, Any],
 ) -> StartScanRequest:
     """Fixture for build expected start_scan request."""
     return StartScanRequest(**scan_request)

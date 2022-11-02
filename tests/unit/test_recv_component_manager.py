@@ -226,7 +226,7 @@ def test_recv_deconfigure_scan(
 
 def test_recv_scan(
     component_manager: PstReceiveComponentManager,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
     task_callback: Callable,
 ) -> None:
     """Test that the component manager calls the API start a scan."""
@@ -294,24 +294,6 @@ def test_recv_obsreset(
     component_manager.obsreset(task_callback=task_callback)
 
     api.reset.assert_called_once_with(
-        task_callback=task_callback,
-    )
-
-
-def test_recv_restart(
-    component_manager: PstReceiveComponentManager,
-    task_callback: Callable,
-) -> None:
-    """Test that the component manager calls the API restart service in ABORTED or FAULT states."""
-    api = MagicMock()
-    component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback,
-    )
-
-    component_manager.restart(task_callback=task_callback)
-
-    api.restart.assert_called_once_with(
         task_callback=task_callback,
     )
 

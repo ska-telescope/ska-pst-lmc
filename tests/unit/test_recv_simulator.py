@@ -8,6 +8,7 @@
 """This module contains that the RECV simulator class."""
 
 
+from typing import Any, Dict
 import pytest
 
 from ska_pst_lmc.receive.receive_model import ReceiveData
@@ -22,7 +23,7 @@ def simulator() -> PstReceiveSimulator:
 
 def test_get_data_will_update_data_when_scanning(
     simulator: PstReceiveSimulator,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
 ) -> None:
     """Test to assert that simulator updates data."""
     simulator.start_scan(args=scan_request)
@@ -35,7 +36,7 @@ def test_get_data_will_update_data_when_scanning(
 
 def test_get_data_wont_update_data_when_scanning_stops(
     simulator: PstReceiveSimulator,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
 ) -> None:
     """Test to assert that simulator updates data."""
     simulator.start_scan(args=scan_request)

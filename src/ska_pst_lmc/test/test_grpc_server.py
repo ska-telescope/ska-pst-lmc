@@ -43,8 +43,6 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     MonitorResponse,
     ResetRequest,
     ResetResponse,
-    RestartRequest,
-    RestartResponse,
     StartScanRequest,
     StartScanResponse,
     Status,
@@ -234,15 +232,6 @@ class TestMockServicer(PstLmcServiceServicer):
         self._logger.debug("reset requested")
         try:
             return self._context.reset(request)
-        except TestMockException as e:
-            context.abort_with_status(e.as_grpc_status())
-            assert False, "Unreachable"
-
-    def restart(self: TestMockServicer, request: RestartRequest, context: ServicerContext) -> RestartResponse:
-        """Handle restart."""
-        self._logger.debug("restart requested")
-        try:
-            return self._context.restart(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
