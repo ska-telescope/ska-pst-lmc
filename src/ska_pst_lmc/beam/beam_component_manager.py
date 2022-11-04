@@ -20,8 +20,8 @@ from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component.component_manager import PstComponentManager
 from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
+from ska_pst_lmc.util import DeviceCommandJob, Job, SequentialJob, submit_job
 from ska_pst_lmc.util.callback import Callback
-from ska_pst_lmc.util.long_running_command_interface import LongRunningCommandInterface
 
 TaskResponse = Tuple[TaskStatus, str]
 RemoteTaskResponse = Tuple[List[TaskStatus], List[str]]
@@ -32,19 +32,16 @@ __all__ = [
 
 ActionResponse = Tuple[List[str], List[str]]
 RemoteDeviceAction = Callable[[PstDeviceProxy], ActionResponse]
-CompletionCallback = Callable[[Callable, List[str]], None]
 
 
 class _RemoteJob:
     def __init__(
         self: _RemoteJob,
-        action: RemoteDeviceAction,
-        long_running_client: LongRunningCommandInterface,
-        completion_callback: CompletionCallback,
+        job: Job,
+        completion_callback: Callback,
         logger: logging.Logger,
     ):
-        self._action = action
-        self._long_running_client = long_running_client
+        self._job = job
         self._completion_callback = completion_callback
         self._logger = logger
 
@@ -55,17 +52,14 @@ class _RemoteJob:
         task_abort_event: Optional[Event] = None,
         **kwargs: Any,
     ) -> None:
-        def _completion_callback(command_ids: List[str]) -> None:
-            self._completion_callback(task_callback, command_ids)  # type: ignore
+        def _completion_callback() -> None:
+            self._completion_callback(task_callback)  # type: ignore
 
         if task_callback:
             task_callback(status=TaskStatus.IN_PROGRESS)
 
         try:
-            self._long_running_client.execute_long_running_command(
-                self._action,
-                on_completion_callback=_completion_callback,
-            )
+            submit_job(job=self._job, callback=_completion_callback)
         except Exception as e:
             self._logger.warning("Error in submitting long running commands to remote devices", exc_info=True)
             if task_callback:
@@ -125,10 +119,6 @@ class PstBeamComponentManager(PstComponentManager):
         self._dsp_device = DeviceProxyFactory.get_device(dsp_fqdn)
         self._remote_devices = [self._smrb_device, self._recv_device, self._dsp_device]
         self._subscribed = False
-        self._long_running_client = LongRunningCommandInterface(
-            tango_devices=self._remote_devices,
-            logger=logger,
-        )
         super().__init__(
             device_name,
             logger,
@@ -165,13 +155,11 @@ class PstBeamComponentManager(PstComponentManager):
 
     def _submit_remote_job(
         self: PstBeamComponentManager,
-        action: RemoteDeviceAction,
+        job: Job,
         task_callback: Callback,
-        completion_callback: CompletionCallback,
+        completion_callback: Callback,
     ) -> TaskResponse:
-        remote_job = _RemoteJob(
-            action, self._long_running_client, completion_callback=completion_callback, logger=self.logger
-        )
+        remote_job = _RemoteJob(job, completion_callback=completion_callback, logger=self.logger)
 
         return self.submit_task(
             remote_job,
@@ -187,13 +175,13 @@ class PstBeamComponentManager(PstComponentManager):
             the command changes
         """
 
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the On commands {command_ids} have completed.")
+        def _completion_callback(task_callback: Callable) -> None:
+            self.logger.debug("All the 'on' commands have completed.")
             self._push_component_state_update(power=PowerState.ON)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            action=lambda d: d.On(),
+            job=DeviceCommandJob(devices=self._remote_devices, action=lambda d: d.On()),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
@@ -207,13 +195,16 @@ class PstBeamComponentManager(PstComponentManager):
             the command changes
         """
 
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the 'Off' commands {command_ids} have completed.")
+        def _completion_callback(task_callback: Callable) -> None:
+            self.logger.debug("All the 'Off' commands have completed.")
             self._push_component_state_update(power=PowerState.OFF)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            action=lambda d: d.Off(),
+            job=DeviceCommandJob(
+                devices=self._remote_devices,
+                action=lambda d: d.Off(),
+            ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
@@ -227,13 +218,16 @@ class PstBeamComponentManager(PstComponentManager):
             the command changes
         """
 
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the 'Standy' commands {command_ids} have completed.")
+        def _completion_callback(task_callback: Callable) -> None:
+            self.logger.debug("All the 'Standy' commands have completed.")
             self._push_component_state_update(power=PowerState.STANDBY)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            action=lambda d: d.Standby(),
+            job=DeviceCommandJob(
+                devices=self._remote_devices,
+                action=lambda d: d.Standby(),
+            ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
@@ -247,13 +241,16 @@ class PstBeamComponentManager(PstComponentManager):
             the command changes
         """
 
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the 'Reset' commands {command_ids} have completed.")
+        def _completion_callback(task_callback: Callable) -> None:
+            self.logger.debug("All the 'Reset' commands have completed.")
             self._push_component_state_update(power=PowerState.OFF)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            action=lambda d: d.Reset(),
+            job=DeviceCommandJob(
+                devices=self._remote_devices,
+                action=lambda d: d.Reset(),
+            ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
@@ -268,15 +265,38 @@ class PstBeamComponentManager(PstComponentManager):
         :type configuration: Dict[str, Any]
         """
 
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the 'Configure' commands {command_ids} have completed.")
+        def _completion_callback(task_callback: Callable) -> None:
+            self.logger.debug("All the 'ConfigureScan' commands have completed.")
             self._push_component_state_update(configured=True)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         configuration_str = json.dumps(configuration)
 
         return self._submit_remote_job(
-            action=lambda d: d.ConfigureScan(configuration_str),
+            job=SequentialJob(
+                tasks=[
+                    # first do configre_beam on SMRB
+                    DeviceCommandJob(
+                        devices=[self._smrb_device],
+                        action=lambda d: d.ConfigureBeam(configuration_str),
+                    ),
+                    # now do configure_beam on DSP and RECV, this can be done in parallel
+                    DeviceCommandJob(
+                        devices=[self._dsp_device, self._recv_device],
+                        action=lambda d: d.ConfigureBeam(configuration_str),
+                    ),
+                    # now configure scan on SMRB and RECV (smrb is no-op) in parallel
+                    DeviceCommandJob(
+                        devices=[self._smrb_device, self._recv_device],
+                        action=lambda d: d.ConfigureScan(configuration_str),
+                    ),
+                    # now configure scan on the DSP device.
+                    DeviceCommandJob(
+                        devices=[self._dsp_device],
+                        action=lambda d: d.ConfigureScan(configuration_str),
+                    ),
+                ]
+            ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
@@ -284,13 +304,30 @@ class PstBeamComponentManager(PstComponentManager):
     def deconfigure_scan(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
         """Deconfigure scan for this component."""
 
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the 'End' commands {command_ids} have completed.")
+        def _completion_callback(task_callback: Callable) -> None:
+            self.logger.debug("All the 'GoToIdle' commands have completed.")
             self._push_component_state_update(configured=False)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            action=lambda d: d.GoToIdle(),
+            job=SequentialJob(
+                tasks=[
+                    # need to deconfigure scan of all processes, this can be done in parallel.
+                    DeviceCommandJob(
+                        devices=self._remote_devices,
+                        action=lambda d: d.DeconfigureScan(),
+                    ),
+                    # need to release the ring buffer clients before deconfiguring SMRB
+                    DeviceCommandJob(
+                        devices=[self._dsp_device, self._recv_device],
+                        action=lambda d: d.DeconfigureBeam(),
+                    ),
+                    DeviceCommandJob(
+                        devices=[self._smrb_device],
+                        action=lambda d: d.DeconfigureBeam(),
+                    ),
+                ],
+            ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
@@ -300,15 +337,18 @@ class PstBeamComponentManager(PstComponentManager):
     ) -> TaskResponse:
         """Start scanning."""
 
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the 'Scan' commands {command_ids} have completed.")
+        def _completion_callback(task_callback: Callable) -> None:
+            self.logger.debug("All the 'Scan' commands have completed.")
             self._push_component_state_update(scanning=True)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-        args_str = json.dumps(args)
+        scan_id = int(args["scan_id"])
 
         return self._submit_remote_job(
-            action=lambda d: d.Scan(args_str),
+            job=DeviceCommandJob(
+                devices=self._remote_devices,
+                action=lambda d: d.Scan(scan_id),
+            ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
@@ -316,13 +356,16 @@ class PstBeamComponentManager(PstComponentManager):
     def stop_scan(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
         """Stop scanning."""
 
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the 'EndScan' commands {command_ids} have completed.")
+        def _completion_callback(task_callback: Callable) -> None:
+            self.logger.debug("All the 'EndScan' commands have completed.")
             self._push_component_state_update(scanning=False)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            action=lambda d: d.EndScan(),
+            job=DeviceCommandJob(
+                devices=self._remote_devices,
+                action=lambda d: d.EndScan(),
+            ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
@@ -338,13 +381,16 @@ class PstBeamComponentManager(PstComponentManager):
     def obsreset(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
         """Reset the component to unconfigured but do not release resources."""
 
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the 'ObsReset' commands {command_ids} have completed.")
+        def _completion_callback(task_callback: Callable) -> None:
+            self.logger.debug("All the 'ObsReset' commands have completed.")
             self._push_component_state_update(configured=False)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            action=lambda d: d.ObsReset(),
+            job=DeviceCommandJob(
+                devices=self._remote_devices,
+                action=lambda d: d.ObsReset(),
+            ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
@@ -352,13 +398,16 @@ class PstBeamComponentManager(PstComponentManager):
     def go_to_fault(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
         """Put all the sub-devices into a FAULT state."""
 
-        def _completion_callback(task_callback: Callable, command_ids: List[str]) -> None:
-            self.logger.debug(f"All the 'GoToFault' commands {command_ids} have completed.")
+        def _completion_callback(task_callback: Callable) -> None:
+            self.logger.debug("All the 'GoToFault' commands have completed.")
             self._push_component_state_update(obsfault=True)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            action=lambda d: d.GoToFault(),
+            job=DeviceCommandJob(
+                devices=self._remote_devices,
+                action=lambda d: d.GoToFault(),
+            ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )

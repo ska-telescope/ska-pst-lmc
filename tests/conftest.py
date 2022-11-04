@@ -27,6 +27,12 @@ from ska_pst_lmc.device_proxy import DeviceProxyFactory
 from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 from ska_pst_lmc.util.callback import Callback
+from ska_pst_lmc.util.job import (
+    DEVICE_COMMAND_JOB_EXECUTOR,
+    JOB_EXECUTOR,
+    DeviceCommandJobExecutor,
+    JobExecutor,
+)
 
 
 @pytest.fixture(scope="module")
@@ -59,16 +65,28 @@ def configure_beam_request() -> Dict[str, Any]:
         "oversampling_ratio": [4, 3],  # ovrsamp
     }
 
+
+@pytest.fixture
+def device_command_job_executor() -> Generator[DeviceCommandJobExecutor, None, None]:
+    """Return a generator for a device command job executor."""
+    DEVICE_COMMAND_JOB_EXECUTOR.start()
+    yield DEVICE_COMMAND_JOB_EXECUTOR
+    DEVICE_COMMAND_JOB_EXECUTOR.stop()
+
+
+@pytest.fixture
+def job_executor(device_command_job_executor: DeviceCommandJobExecutor) -> Generator[JobExecutor, None, None]:
+    """Return a generator for job executor."""
+    JOB_EXECUTOR.start()
+    yield JOB_EXECUTOR
+    JOB_EXECUTOR.stop()
+
+
 @pytest.fixture
 def csp_configure_scan_request(configure_scan_request: Dict[str, Any]) -> Dict[str, Any]:
-    return {
-        "common": {},
-        "pst": {
-            "scan": {
-                **configure_scan_request
-            }
-        }
-    }
+    """Return valid configure JSON object that CSP would send."""
+    return {"common": {}, "pst": {"scan": {**configure_scan_request}}}
+
 
 @pytest.fixture
 def configure_scan_request(scan_id: int) -> Dict[str, Any]:
@@ -124,17 +142,17 @@ def configure_scan_request(scan_id: int) -> Dict[str, Any]:
         },
     }
 
+
 @pytest.fixture
 def scan_id() -> int:
     """Fixture to generating scan id."""
     return randint(1, 1000)
 
+
 @pytest.fixture
 def scan_request(scan_id: int) -> Dict[str, Any]:
     """Fixture for scan requests."""
-    return {
-        "scan_id": scan_id
-    }
+    return {"scan_id": scan_id}
 
 
 @pytest.fixture

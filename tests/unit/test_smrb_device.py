@@ -121,7 +121,6 @@ class TestPstSmrb:
             ],
         )
 
-
         tango_device_command_checker.assert_command(
             lambda: device_under_test.Scan(str(scan_id)),
             expected_obs_state_events=[
@@ -200,7 +199,6 @@ class TestPstSmrb:
             ],
         )
 
-
         tango_device_command_checker.assert_command(
             lambda: device_under_test.Scan(str(scan_id)),
             expected_obs_state_events=[
@@ -237,7 +235,6 @@ class TestPstSmrb:
                 ObsState.READY,
             ],
         )
-
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.Scan(str(scan_id)),
@@ -451,7 +448,6 @@ class TestPstSmrb:
                 ObsState.READY,
             ],
         )
-
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.Scan(str(scan_id)),

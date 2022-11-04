@@ -11,11 +11,9 @@ from typing import Any, Callable, Optional
 
 __all__ = [
     "Callback",
-    "CallbackNoArgs",
 ]
 
 Callback = Optional[Callable[..., Any]]
-CallbackNoArgs = Optional[Callable[[], None]]
 
 
 def wrap_callback(callback: Callback) -> Callable[..., Any]:
@@ -32,19 +30,3 @@ def wrap_callback(callback: Callback) -> Callable[..., Any]:
         return callback
 
     return lambda *args, **kw: None
-
-
-def wrap_callback_noargs(callback: CallbackNoArgs) -> Callable[[], None]:
-    """Wrap callback doesn't take arguments.
-
-    This method converts an optional callback back to
-    a callable by returning a partial function that
-    when called checks to see if the supplied callback
-    has was `None` or not.
-
-    :param callback: the callback to wrap.
-    """
-    if callback is not None:
-        return callback
-
-    return lambda: None

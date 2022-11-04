@@ -18,7 +18,7 @@ from tango import DebugIt
 from tango.server import attribute, command, device_property, run
 
 import ska_pst_lmc.release as release
-from ska_pst_lmc.component.pst_device import PstBaseDevice, PstBaseProccesDevice
+from ska_pst_lmc.component.pst_device import PstBaseProccesDevice
 from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
 from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData
 

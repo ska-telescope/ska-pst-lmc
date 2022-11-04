@@ -21,7 +21,7 @@ from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component.process_api import PstProcessApi
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
-from ska_pst_lmc.util.callback import Callback, CallbackNoArgs, wrap_callback
+from ska_pst_lmc.util.callback import Callback, wrap_callback
 
 __all__ = [
     "PstApiComponentManager",
@@ -81,7 +81,6 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
         self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
         self._scan_id = 0
         self._config_id = ""
-        self._curr_configuration = {}
         super().__init__(logger, communication_state_callback, component_state_callback, *args, **kwargs)
 
     def start_communicating(self: PstComponentManager) -> None:
@@ -152,15 +151,15 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
         """Return the configuration id."""
         return self._config_id
 
-    @property
-    def scan_id(self: PstComponentManager) -> int:
-        """Return the scan id."""
-        return self._scan_id
-
     @config_id.setter
     def config_id(self: PstComponentManager, config_id: str) -> None:
         """Set the configuration id."""
         self._config_id = config_id
+
+    @property
+    def scan_id(self: PstComponentManager) -> int:
+        """Return the scan id."""
+        return self._scan_id
 
     # ---------------
     # Commands
@@ -484,7 +483,7 @@ class PstApiComponentManager(PstComponentManager):
         raise NotImplementedError("PstApiComponentManager is abstract.")
 
     def configure_beam(
-        self: PstApiComponentManager, resources: Dict[str, Any], task_callback: CallbackNoArgs = None
+        self: PstApiComponentManager, resources: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
         """
         Configure the beam resources of the component.
@@ -494,8 +493,6 @@ class PstApiComponentManager(PstComponentManager):
         :param task_callback: callback for background processing to update device status.
         :type task_callback: Callback
         """
-        # self._api.configure_beam(resources, wrap_callback_noargs(task_callback))
-        # return TaskStatus.QUEUED, "Resourcing"
         return self._submit_background_task(
             functools.partial(self._api.configure_beam, resources=resources), task_callback=task_callback
         )

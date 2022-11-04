@@ -9,6 +9,7 @@
 
 
 from typing import Any, Dict
+
 import pytest
 
 from ska_pst_lmc.receive.receive_model import ReceiveData

@@ -63,5 +63,7 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
+PstBeam = 'ska_pst_lmc.beam.beam_device:main'
+PstDsp = 'ska_pst_lmc.dsp.dsp_device:main'
+PstSmrb = 'ska_pst_lmc.smrb.smrb_device:main'
 PstReceive = 'ska_pst_lmc.receiver.receive_device:main'
-PstTestClient = 'ska_pst_lmc.test.test_device:main'

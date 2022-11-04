@@ -10,7 +10,9 @@
 import json
 import logging
 import threading
-from typing import Any, Callable, Dict, List, Optional, Tuple
+import time
+import uuid
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -20,6 +22,7 @@ from ska_tango_base.executor import TaskStatus
 from ska_pst_lmc.beam.beam_component_manager import PstBeamComponentManager
 from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
+from ska_pst_lmc.util.job import DEVICE_COMMAND_JOB_EXECUTOR, JobExecutor
 
 
 @pytest.fixture
@@ -235,8 +238,12 @@ def request_params(
         ("off", lambda d: d.Off, {"power": PowerState.OFF}),
         ("reset", lambda d: d.Reset, {"power": PowerState.OFF}),
         ("standby", lambda d: d.Standby, {"power": PowerState.STANDBY}),
-        ("configure_scan", lambda d: d.ConfigureScan, {"configured": True}),
-        ("deconfigure_scan", lambda d: d.GoToIdle, {"configured": False}),
+        ("configure_scan", [lambda d: d.ConfigureBeam, lambda d: d.ConfigureScan], {"configured": True}),
+        (
+            "deconfigure_scan",
+            [lambda d: d.DeconfigureBeam, lambda d: d.DeconfigureScan],
+            {"configured": False},
+        ),
         ("scan", lambda d: d.Scan, {"scanning": True}),
         ("end_scan", lambda d: d.EndScan, {"scanning": False}),
         ("obsreset", lambda d: d.ObsReset, {"configured": False}),
@@ -251,42 +258,36 @@ def test_remote_actions(
     component_state_callback: Callable,
     method_name: str,
     request_params: Optional[Any],
-    remote_action_supplier: Callable[[PstDeviceProxy], Callable],
+    remote_action_supplier: Union[
+        Callable[[PstDeviceProxy], Callable], List[Callable[[PstDeviceProxy], Callable]]
+    ],
     component_state_callback_params: Optional[dict],
-    monkeypatch: pytest.MonkeyPatch,
+    job_executor: JobExecutor,
 ) -> None:
     """Assert that actions that need to be delegated to remote devices."""
     task_callback = MagicMock()
 
-    def _submit_task(
-        func: Callable,
-        args: Optional[Any] = None,
-        kwargs: Optional[dict] = None,
-        task_callback: Optional[Callable] = None,
-    ) -> Tuple[TaskStatus, str]:
-        args = args or []
-        kwargs = kwargs or {}
-        func(*args, task_callback=task_callback, task_abort_event=threading.Event(), **kwargs)
-        if task_callback is not None:
-            task_callback(status=TaskStatus.QUEUED)
-        return TaskStatus.QUEUED, "Task queued"
-
-    monkeypatch.setattr(component_manager, "submit_task", _submit_task)
-
     component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
 
-    remote_action_supplier(smrb_device_proxy).return_value = (  # type: ignore
-        [TaskStatus.QUEUED],
-        ["smrb_job_id"],
-    )
-    remote_action_supplier(recv_device_proxy).return_value = (  # type: ignore
-        [TaskStatus.QUEUED],
-        ["recv_job_id"],
-    )
-    remote_action_supplier(dsp_device_proxy).return_value = (  # type: ignore
-        [TaskStatus.QUEUED],
-        ["dsp_job_id"],
-    )
+    def _device_side_effect(job_id: str) -> Callable[..., Tuple[List[TaskStatus], List[Optional[str]]]]:
+        def _complete_job() -> None:
+            time.sleep(0.05)
+            DEVICE_COMMAND_JOB_EXECUTOR._handle_subscription_event((job_id, ""))
+
+        def _side_effect(*arg: Any, **kwds: Any) -> Tuple[List[TaskStatus], List[Optional[str]]]:
+            threading.Thread(target=_complete_job).start()
+
+            return ([TaskStatus.QUEUED], [job_id])
+
+        return _side_effect
+
+    if type(remote_action_supplier) is not list:
+        remote_action_supplier = [remote_action_supplier]  # type: ignore
+
+    for (idx, supplier) in enumerate(remote_action_supplier):
+        supplier(smrb_device_proxy).side_effect = _device_side_effect(str(uuid.uuid4()))  # type: ignore
+        supplier(recv_device_proxy).side_effect = _device_side_effect(str(uuid.uuid4()))  # type: ignore
+        supplier(dsp_device_proxy).side_effect = _device_side_effect(str(uuid.uuid4()))  # type: ignore
 
     func = getattr(component_manager, method_name)
     if request_params is not None:
@@ -297,26 +298,24 @@ def test_remote_actions(
     assert status == TaskStatus.QUEUED
     assert message == "Task queued"
 
+    time.sleep(0.2)
+
     if request_params is not None:
         if method_name == "scan":
-            params_str = json.dumps({"scan_id": request_params})
+            params_str = request_params
         else:
             params_str = json.dumps(request_params)
         [
-            remote_action_supplier(d).assert_called_once_with(params_str)  # type: ignore
+            supplier(d).assert_called_once_with(params_str)  # type: ignore
             for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]
+            for supplier in remote_action_supplier
         ]
     else:
         [
-            remote_action_supplier(d).assert_called_once()  # type: ignore
+            supplier(d).assert_called_once()  # type: ignore
             for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]
+            for supplier in remote_action_supplier
         ]
-
-    # need to force an data update
-    [
-        component_manager._long_running_client._handle_command_completed(job_id)  # type: ignore
-        for job_id in ["smrb_job_id", "recv_job_id", "dsp_job_id"]
-    ]
 
     if component_state_callback_params:
         component_state_callback.assert_called_once_with(**component_state_callback_params)  # type: ignore

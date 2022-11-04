@@ -8,15 +8,15 @@
 """Module for the base Tango device used in PST.LMC."""
 
 from __future__ import annotations
-import functools
 
+import functools
 import json
 from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, TypeVar, cast
 
 import tango
 from ska_tango_base.base import BaseComponentManager
 from ska_tango_base.base.base_device import DevVarLongStringArrayType
-from ska_tango_base.commands import CommandTrackerProtocol, ResultCode, SubmittedSlowCommand
+from ska_tango_base.commands import ResultCode, SubmittedSlowCommand
 from ska_tango_base.control_model import ObsState, SimulationMode
 from ska_tango_base.csp import CspSubElementObsDevice
 from ska_tango_base.faults import StateModelError
@@ -25,7 +25,6 @@ from tango import DebugIt
 from tango.server import attribute, command
 
 from ska_pst_lmc.component.component_manager import PstComponentManager
-from ska_pst_lmc.util.callback import Callback
 
 __all__ = ["PstBaseDevice"]
 
@@ -37,6 +36,7 @@ in the base to have the correct type and allow for tools
 like `mypy <http://mypy-lang.org/>`_ to check if there are
 errors.
 """
+
 
 class PstBaseDevice(Generic[T], CspSubElementObsDevice):
     """Base class for all the TANGO devices in PST.LMC.
@@ -148,7 +148,9 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice):
         `validate_input` method to no assert the `id` field.
         """
 
-        def validate_input(self: PstBaseDevice.ConfigureScanCommand, argin: str) -> Tuple[Dict[str, Any], ResultCode, str]:
+        def validate_input(
+            self: PstBaseDevice.ConfigureScanCommand, argin: str
+        ) -> Tuple[Dict[str, Any], ResultCode, str]:
             """
             Validate the configuration parameters against allowed values, as needed.
 
@@ -162,10 +164,10 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice):
             except (json.JSONDecodeError) as err:
                 msg = f"Validate configuration failed with error:{err}"
                 self.logger.error(msg)
-                return (None, ResultCode.FAILED, msg)
+                return ({}, ResultCode.FAILED, msg)
             except Exception as other_errs:
                 msg = f"Validate configuration failed with unknown error: {other_errs}"
-                return (None, ResultCode.FAILED, msg)
+                return ({}, ResultCode.FAILED, msg)
 
             return (
                 configuration_dict,
@@ -181,7 +183,7 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice):
         memorized=True,
         hw_memorized=True,
     )
-    def simulationMode(self: PstBaseDevice):
+    def simulationMode(self: PstBaseDevice) -> SimulationMode:
         """
         Report the simulation mode of the device.
 
@@ -190,7 +192,7 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice):
         return self.component_manager.simulation_mode
 
     def _simulation_mode_allowed_obs_states(self: PstBaseDevice) -> List[ObsState]:
-        return [ ObsState.EMPTY, ObsState.IDLE]
+        return [ObsState.EMPTY, ObsState.IDLE]
 
     @simulationMode.write  # type: ignore[no-redef]
     def simulationMode(self: PstBaseDevice, value: SimulationMode) -> None:
@@ -228,6 +230,7 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice):
         (result_code, message) = handler()
         return [[result_code], [message]]
 
+
 class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
     """Base class for all the TANGO devices that manager an external process.
 
@@ -236,7 +239,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
     may not change as often as the scan configuration.
     """
 
-    def init_command_objects(self: PstBaseDevice) -> None:
+    def init_command_objects(self: PstBaseProccesDevice) -> None:
         """Set up the command objects."""
         super().init_command_objects()
 
@@ -248,11 +251,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
             ("ConfigureBeam", "configure_beam", "assign"),
             ("DeconfigureBeam", "deconfigure_beam", "release"),
         ]:
-            callback = (
-                None
-                if state_model_hook is None
-                else functools.partial(_callback, state_model_hook)
-            )
+            callback = None if state_model_hook is None else functools.partial(_callback, state_model_hook)
             self.register_command_object(
                 command_name,
                 SubmittedSlowCommand(
@@ -264,7 +263,6 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
                     logger=None,
                 ),
             )
-
 
     # ---------------
     # General methods
@@ -307,7 +305,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
     class InitCommand(CspSubElementObsDevice.InitCommand):
         """A class for the CspSubElementObsDevice's init_device() "command"."""
 
-        def do(self: PstBaseProccesDevice.InitCommand):
+        def do(self: PstBaseProccesDevice.InitCommand) -> Tuple[ResultCode, str]:
             """
             Stateless hook for device initialisation.
 
@@ -366,7 +364,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
         configuration: Dict[str, Any] = cast(Dict[str, Any], json.loads(argin))
         (result_code, message) = handler(configuration)
 
-        return [[result_code], [message]]
+        return ([result_code], [message])
 
     def is_DeconfigureBeam_allowed(self: PstBaseProccesDevice) -> bool:
         """
@@ -386,7 +384,6 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
             )
         return True
 
-
     @command(
         dtype_out="DevVarLongStringArray",
         doc_out="([Command ResultCode], [Unique ID of the command])",
@@ -404,8 +401,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
 
         (result_code, message) = handler()
 
-        return [[result_code], [message]]
-
+        return ([result_code], [message])
 
     def _simulation_mode_allowed_obs_states(self: PstBaseDevice) -> List[ObsState]:
-        return [ ObsState.EMPTY ]
+        return [ObsState.EMPTY]
