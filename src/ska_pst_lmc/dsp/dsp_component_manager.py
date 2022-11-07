@@ -88,15 +88,6 @@ class PstDspComponentManager(PstApiComponentManager):
             **kwargs,
         )
 
-    @property
-    def beam_id(self: PstDspComponentManager) -> int:
-        """Return the beam id for the current DSP component.
-
-        This should be determined from the FQDN as that should have
-        the beam 1 encoded in it.
-        """
-        return 1
-
     def _update_api(self: PstDspComponentManager) -> None:
         """Update instance of API based on simulation mode."""
         if self._simuation_mode == SimulationMode.TRUE:

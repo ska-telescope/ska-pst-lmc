@@ -42,6 +42,7 @@ def smrb_device_proxy(smrb_fqdn: str) -> PstDeviceProxy:
     """Create SMRB Device Proxy fixture."""
     proxy = MagicMock()
     proxy.fqdn = smrb_fqdn
+    proxy.__repr__ = MagicMock(return_value=f"PstDeviceProxy('{smrb_fqdn}')")  # type: ignore
     return proxy
 
 
@@ -56,6 +57,7 @@ def recv_device_proxy(recv_fqdn: str) -> PstDeviceProxy:
     """Create RECV device proxy fixture."""
     proxy = MagicMock()
     proxy.fqdn = recv_fqdn
+    proxy.__repr__ = MagicMock(return_value=f"PstDeviceProxy('{recv_fqdn}')")  # type: ignore
     return proxy
 
 
@@ -70,6 +72,7 @@ def dsp_device_proxy(dsp_fqdn: str) -> PstDeviceProxy:
     """Create RECV device proxy fixture."""
     proxy = MagicMock()
     proxy.fqdn = dsp_fqdn
+    proxy.__repr__ = MagicMock(return_value=f"PstDeviceProxy('{dsp_fqdn}')")  # type: ignore
     return proxy
 
 
@@ -218,13 +221,12 @@ def test_component_manager_calls_abort_on_subdevices(
 @pytest.fixture
 def request_params(
     method_name: str,
-    configure_beam_request: Dict[str, Any],
-    configure_scan_request: Dict[str, Any],
+    csp_configure_scan_request: Dict[str, Any],
     scan_request: Dict[str, Any],
 ) -> Optional[Any]:
     """Get request parameters for a given method name."""
     if method_name == "configure_scan":
-        return configure_scan_request
+        return csp_configure_scan_request
     elif method_name == "scan":
         return int(scan_request["scan_id"])
     else:
@@ -250,7 +252,7 @@ def request_params(
         ("go_to_fault", lambda d: d.GoToFault, {"obsfault": True}),
     ],
 )
-def test_remote_actions(
+def test_remote_actions(  # noqa: C901 - override checking of complexity for this test
     component_manager: PstBeamComponentManager,
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
@@ -298,11 +300,16 @@ def test_remote_actions(
     assert status == TaskStatus.QUEUED
     assert message == "Task queued"
 
-    time.sleep(0.2)
+    time.sleep(0.5)
 
     if request_params is not None:
         if method_name == "scan":
-            params_str = request_params
+            params_str = str(request_params)
+        elif method_name == "configure_scan":
+            # ensure we use a the common and pst scan configuration
+            scan_configuration = {**request_params["common"], **request_params["pst"]["scan"]}
+
+            params_str = json.dumps(scan_configuration)
         else:
             params_str = json.dumps(request_params)
         [

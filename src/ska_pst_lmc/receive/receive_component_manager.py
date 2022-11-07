@@ -109,15 +109,6 @@ class PstReceiveComponentManager(PstApiComponentManager):
             )
 
     @property
-    def beam_id(self: PstReceiveComponentManager) -> int:
-        """Return the beam id for the current RECV component.
-
-        This should be determined from the FQDN as that should have
-        the beam 1 encoded in it.
-        """
-        return 1
-
-    @property
     def received_rate(self: PstReceiveComponentManager) -> float:
         """Get the current data receive rate from the CBF interface.
 

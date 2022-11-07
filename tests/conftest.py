@@ -85,7 +85,14 @@ def job_executor(device_command_job_executor: DeviceCommandJobExecutor) -> Gener
 @pytest.fixture
 def csp_configure_scan_request(configure_scan_request: Dict[str, Any]) -> Dict[str, Any]:
     """Return valid configure JSON object that CSP would send."""
-    return {"common": {}, "pst": {"scan": {**configure_scan_request}}}
+    return {
+        "common": {
+            "config_id": "sbi-mvp01-20200325-00001-science_A",
+            "frequency_band": "1",
+            "subarray_id": 1,
+        },
+        "pst": {"scan": {**configure_scan_request}},
+    }
 
 
 @pytest.fixture
@@ -361,6 +368,7 @@ def change_event_callbacks() -> MockTangoEventCallbackGroup:
         "longRunningCommandStatus",
         "longRunningCommandResult",
         "obsState",
+        timeout=5.0,
     )
 
 

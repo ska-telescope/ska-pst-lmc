@@ -93,15 +93,6 @@ class PstSmrbComponentManager(PstApiComponentManager):
         )
 
     @property
-    def beam_id(self: PstSmrbComponentManager) -> int:
-        """Return the beam id for the current SMRB component.
-
-        This should be determined from the FQDN as that should have
-        the beam 1 encoded in it.
-        """
-        return 1
-
-    @property
     def ring_buffer_utilisation(self: PstSmrbComponentManager) -> float:
         """Get the percentage of the ring buffer elements that are full of data.
 

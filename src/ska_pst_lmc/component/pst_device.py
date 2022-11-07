@@ -250,6 +250,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
         for (command_name, method_name, state_model_hook) in [
             ("ConfigureBeam", "configure_beam", "assign"),
             ("DeconfigureBeam", "deconfigure_beam", "release"),
+            ("DeconfigureScan", "deconfigure_scan", None),
         ]:
             callback = None if state_model_hook is None else functools.partial(_callback, state_model_hook)
             self.register_command_object(
@@ -398,6 +399,43 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
         :rtype: (ResultCode, str)
         """
         handler = self.get_command_object("DeconfigureBeam")
+
+        (result_code, message) = handler()
+
+        return ([result_code], [message])
+
+    def is_DeconfigureScan_allowed(self: PstBaseProccesDevice) -> bool:
+        """
+        Return whether the `DeconfigureScan` command may be called in the current state.
+
+        :return: whether the command may be called in the current device
+            state
+        :rtype: bool
+        """
+        # If we return False here, Tango will raise an exception that incorrectly blames
+        # refusal on device state.
+        # e.g. "ConfigureBeam not allowed when the device is in ON state".
+        # So let's raise an exception ourselves.
+        if self._obs_state not in [ObsState.READY]:
+            raise StateModelError(
+                f"DeconfigureScan command not permitted in observation state {self._obs_state.name}"
+            )
+        return True
+
+    @command(
+        dtype_out="DevVarLongStringArray",
+        doc_out="([Command ResultCode], [Unique ID of the command])",
+    )
+    @DebugIt()
+    def DeconfigureScan(self: PstBaseProccesDevice) -> DevVarLongStringArrayType:
+        """
+        Deconfigure the scan for process device.
+
+        :return: A tuple containing a return code and a string message indicating status.
+            The message is for information purpose only.
+        :rtype: (ResultCode, str)
+        """
+        handler = self.get_command_object("DeconfigureScan")
 
         (result_code, message) = handler()
 

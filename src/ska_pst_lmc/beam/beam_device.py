@@ -29,8 +29,6 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
     **Properties:**
 
     - Device Property
-        beam_id
-            - Type:'DevString'
         RecvFQDN
             - Type:'DevString'
         SmrbFQDN
@@ -44,10 +42,6 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
     # -----------------
     # Device Properties
     # -----------------
-
-    beam_id = device_property(
-        dtype=str,
-    )
 
     RecvFQDN = device_property(
         dtype=str,
@@ -97,6 +91,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
             logger=self.logger,
             communication_state_callback=self._communication_state_changed,
             component_state_callback=self._component_state_changed,
+            beam_id=self.DeviceID,
         )
 
     def always_executed_hook(self: PstBeam) -> None:

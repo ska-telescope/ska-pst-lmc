@@ -54,6 +54,7 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable,
         *args: Any,
+        beam_id: int = 1,
         simulation_mode: SimulationMode = SimulationMode.TRUE,
         **kwargs: Any,
     ) -> None:
@@ -75,13 +76,26 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
         :param component_fault_callback: callback to be called when the
             component faults (or stops faulting)
         :type component_fault_callback: `Callable`
+        :param beam_id: the ID of the beam that this component manger is for.
+            The default value is 1 (used for testing).
+        :type beam_id: int
         """
         self._device_name = device_name
         self._simuation_mode = simulation_mode
         self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
         self._scan_id = 0
         self._config_id = ""
+        self._beam_id = beam_id
         super().__init__(logger, communication_state_callback, component_state_callback, *args, **kwargs)
+
+    @property
+    def beam_id(self: PstComponentManager) -> int:
+        """Return the beam id for the current component.
+
+        This value is set during the construction of the component manager,
+        and is injected from the `DeviceID` property of the TANGO device.
+        """
+        return self._beam_id
 
     def start_communicating(self: PstComponentManager) -> None:
         """

@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import backoff
 import pytest
@@ -130,9 +130,8 @@ class TestPstBeam:
         self: TestPstBeam,
         device_under_test: DeviceProxy,
         multidevice_test_context: MultiDeviceTestContext,
-        configure_beam_request: Dict[str, Any],
-        configure_scan_request: Dict[str, Any],
-        scan_request: Dict[str, Any],
+        csp_configure_scan_request: Dict[str, Any],
+        scan_id: int,
         tango_device_command_checker: TangoDeviceCommandChecker,
         logger: logging.Logger,
     ) -> None:
@@ -156,11 +155,17 @@ class TestPstBeam:
             factor=1,
             max_time=5.0,
         )
-        def assert_obstate(obsState: ObsState) -> None:
+        def assert_obstate(obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
             assert device_under_test.obsState == obsState
-            assert recv_proxy.obsState == obsState
-            assert smrb_proxy.obsState == obsState
-            assert dsp_proxy.obsState == obsState
+
+            if subObsState is not None:
+                assert recv_proxy.obsState == subObsState
+                assert smrb_proxy.obsState == subObsState
+                assert dsp_proxy.obsState == subObsState
+            else:
+                assert recv_proxy.obsState == obsState
+                assert smrb_proxy.obsState == obsState
+                assert dsp_proxy.obsState == obsState
 
         device_under_test.adminMode = AdminMode.ONLINE
         time.sleep(0.1)
@@ -175,19 +180,9 @@ class TestPstBeam:
         )
         assert_state(DevState.ON)
 
-        assert_obstate(ObsState.IDLE)
+        assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
 
-        # resources = json.dumps(configure_beam_request)
-        # tango_device_command_checker.assert_command(
-        #     lambda: device_under_test.AssignResources(resources),
-        #     expected_obs_state_events=[
-        #         ObsState.RESOURCING,
-        #         ObsState.IDLE,
-        #     ],
-        # )
-        # assert_obstate(ObsState.IDLE)
-
-        configuration = json.dumps(configure_scan_request)
+        configuration = json.dumps(csp_configure_scan_request)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.ConfigureScan(configuration),
             expected_obs_state_events=[
@@ -197,7 +192,7 @@ class TestPstBeam:
         )
         assert_obstate(ObsState.READY)
 
-        scan = str(scan_request)
+        scan = str(scan_id)
         tango_device_command_checker.assert_command(
             lambda: device_under_test.Scan(scan),
             expected_obs_state_events=[
@@ -212,8 +207,15 @@ class TestPstBeam:
                 ObsState.READY,
             ],
         )
+        assert_obstate(ObsState.READY)
 
-        logger.info("Device is now in ready state.")
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.GoToIdle(),
+            expected_obs_state_events=[
+                ObsState.IDLE,
+            ],
+        )
+        assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.Off(),
@@ -249,11 +251,11 @@ class TestPstBeam:
             factor=1,
             max_time=5.0,
         )
-        def assert_obstate(obsState: ObsState) -> None:
+        def assert_obstate(obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
             assert device_under_test.obsState == obsState
-            assert recv_proxy.obsState == obsState
-            assert smrb_proxy.obsState == obsState
-            assert dsp_proxy.obsState == obsState
+            assert recv_proxy.obsState == subObsState or obsState
+            assert smrb_proxy.obsState == subObsState or obsState
+            assert dsp_proxy.obsState == subObsState or obsState
 
         device_under_test.adminMode = AdminMode.ONLINE
         time.sleep(0.1)
@@ -269,7 +271,7 @@ class TestPstBeam:
         assert_state(DevState.ON)
 
         # need to configure beam
-        assert_obstate(ObsState.IDLE)
+        assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.GoToFault(),

@@ -77,6 +77,7 @@ class PstDsp(PstBaseProccesDevice[PstDspComponentManager]):
             component_state_callback=self._component_state_changed,
             monitor_polling_rate=self.monitor_polling_rate,
             monitor_data_callback=self._update_monitor_data,
+            beam_id=self.DeviceID,
         )
 
     def always_executed_hook(self: PstDsp) -> None:

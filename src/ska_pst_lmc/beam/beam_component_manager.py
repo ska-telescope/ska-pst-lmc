@@ -181,7 +181,11 @@ class PstBeamComponentManager(PstComponentManager):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            job=DeviceCommandJob(devices=self._remote_devices, action=lambda d: d.On()),
+            job=DeviceCommandJob(
+                devices=self._remote_devices,
+                action=lambda d: d.On(),
+                command_name="On",
+            ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
@@ -204,6 +208,7 @@ class PstBeamComponentManager(PstComponentManager):
             job=DeviceCommandJob(
                 devices=self._remote_devices,
                 action=lambda d: d.Off(),
+                command_name="Off",
             ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
@@ -227,6 +232,7 @@ class PstBeamComponentManager(PstComponentManager):
             job=DeviceCommandJob(
                 devices=self._remote_devices,
                 action=lambda d: d.Standby(),
+                command_name="Standby",
             ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
@@ -250,6 +256,7 @@ class PstBeamComponentManager(PstComponentManager):
             job=DeviceCommandJob(
                 devices=self._remote_devices,
                 action=lambda d: d.Reset(),
+                command_name="Reset",
             ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
@@ -268,9 +275,19 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'ConfigureScan' commands have completed.")
             self._push_component_state_update(configured=True)
+            self._config_id = configuration["common"]["config_id"]
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-        configuration_str = json.dumps(configuration)
+        # we only care about PST and common parts of the JSON
+        # when sending to subordinated devices. Merge these into on configuration
+        # request
+        common_configure = configuration["common"]
+        pst_configuration = configuration["pst"]["scan"]
+        request = {
+            **common_configure,
+            **pst_configuration,
+        }
+        request_str = json.dumps(request)
 
         return self._submit_remote_job(
             job=SequentialJob(
@@ -278,22 +295,26 @@ class PstBeamComponentManager(PstComponentManager):
                     # first do configre_beam on SMRB
                     DeviceCommandJob(
                         devices=[self._smrb_device],
-                        action=lambda d: d.ConfigureBeam(configuration_str),
+                        action=lambda d: d.ConfigureBeam(request_str),
+                        command_name="ConfigureBeam",
                     ),
                     # now do configure_beam on DSP and RECV, this can be done in parallel
                     DeviceCommandJob(
                         devices=[self._dsp_device, self._recv_device],
-                        action=lambda d: d.ConfigureBeam(configuration_str),
+                        action=lambda d: d.ConfigureBeam(request_str),
+                        command_name="ConfigureBeam",
                     ),
                     # now configure scan on SMRB and RECV (smrb is no-op) in parallel
                     DeviceCommandJob(
                         devices=[self._smrb_device, self._recv_device],
-                        action=lambda d: d.ConfigureScan(configuration_str),
+                        action=lambda d: d.ConfigureScan(request_str),
+                        command_name="ConfigureScan",
                     ),
                     # now configure scan on the DSP device.
                     DeviceCommandJob(
                         devices=[self._dsp_device],
-                        action=lambda d: d.ConfigureScan(configuration_str),
+                        action=lambda d: d.ConfigureScan(request_str),
+                        command_name="ConfigureScan",
                     ),
                 ]
             ),
@@ -305,7 +326,7 @@ class PstBeamComponentManager(PstComponentManager):
         """Deconfigure scan for this component."""
 
         def _completion_callback(task_callback: Callable) -> None:
-            self.logger.debug("All the 'GoToIdle' commands have completed.")
+            self.logger.debug("All the 'DeconfigureScan' commands have completed.")
             self._push_component_state_update(configured=False)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
@@ -316,15 +337,18 @@ class PstBeamComponentManager(PstComponentManager):
                     DeviceCommandJob(
                         devices=self._remote_devices,
                         action=lambda d: d.DeconfigureScan(),
+                        command_name="DeconfigureScan",
                     ),
                     # need to release the ring buffer clients before deconfiguring SMRB
                     DeviceCommandJob(
                         devices=[self._dsp_device, self._recv_device],
                         action=lambda d: d.DeconfigureBeam(),
+                        command_name="DeconfigureBeam",
                     ),
                     DeviceCommandJob(
                         devices=[self._smrb_device],
                         action=lambda d: d.DeconfigureBeam(),
+                        command_name="DeconfigureBeam",
                     ),
                 ],
             ),
@@ -336,18 +360,19 @@ class PstBeamComponentManager(PstComponentManager):
         self: PstBeamComponentManager, args: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
         """Start scanning."""
+        scan_id = args["scan_id"]
 
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'Scan' commands have completed.")
             self._push_component_state_update(scanning=True)
+            self._scan_id = scan_id
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
-
-        scan_id = int(args["scan_id"])
 
         return self._submit_remote_job(
             job=DeviceCommandJob(
                 devices=self._remote_devices,
-                action=lambda d: d.Scan(scan_id),
+                action=lambda d: d.Scan(str(scan_id)),
+                command_name="Scan",
             ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
@@ -365,6 +390,7 @@ class PstBeamComponentManager(PstComponentManager):
             job=DeviceCommandJob(
                 devices=self._remote_devices,
                 action=lambda d: d.EndScan(),
+                command_name="EndScan",
             ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
@@ -390,6 +416,7 @@ class PstBeamComponentManager(PstComponentManager):
             job=DeviceCommandJob(
                 devices=self._remote_devices,
                 action=lambda d: d.ObsReset(),
+                command_name="ObsReset",
             ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
@@ -407,6 +434,7 @@ class PstBeamComponentManager(PstComponentManager):
             job=DeviceCommandJob(
                 devices=self._remote_devices,
                 action=lambda d: d.GoToFault(),
+                command_name="GoToFault",
             ),
             task_callback=task_callback,
             completion_callback=_completion_callback,

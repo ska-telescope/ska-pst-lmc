@@ -77,6 +77,7 @@ class PstSmrb(PstBaseProccesDevice[PstSmrbComponentManager]):
             communication_state_callback=self._communication_state_changed,
             component_state_callback=self._component_state_changed,
             monitor_polling_rate=self.monitor_polling_rate,
+            beam_id=self.DeviceID,
         )
 
     def always_executed_hook(self: PstSmrb) -> None:

@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import backoff
 import pytest
@@ -30,8 +30,7 @@ class TestPstBeam:
     @pytest.mark.forked
     def test_configure_then_scan_then_stop(
         self: TestPstBeam,
-        configure_beam_request: Dict[str, Any],
-        configure_scan_request: Dict[str, Any],
+        csp_configure_scan_request: Dict[str, Any],
         scan_request: Dict[str, Any],
         tango_device_command_checker: TangoDeviceCommandChecker,
         logger: logging.Logger,
@@ -41,16 +40,6 @@ class TestPstBeam:
         recv_proxy = DeviceProxyFactory.get_device("low-pst/recv/01")
         smrb_proxy = DeviceProxyFactory.get_device("low-pst/smrb/01")
         beam_proxy = DeviceProxyFactory.get_device("low-pst/beam/01")
-
-        # tango_change_event_helper = TangoChangeEventHelper(
-        #     device_under_test=beam_proxy.device,
-        #     change_event_callbacks=change_event_callbacks,
-        #     logger=logger,
-        # )
-        # tango_device_command_checker = TangoDeviceCommandChecker(
-        #     tango_change_event_helper=tango_change_event_helper,
-        #     logger=logger,
-        # )
 
         def assert_state(state: DevState) -> None:
             assert beam_proxy.state() == state
@@ -64,11 +53,11 @@ class TestPstBeam:
             factor=1,
             max_time=5.0,
         )
-        def assert_obstate(obsState: ObsState) -> None:
+        def assert_obstate(obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
             assert beam_proxy.obsState == obsState
-            assert recv_proxy.obsState == obsState
-            assert smrb_proxy.obsState == obsState
-            assert dsp_proxy.obsState == obsState
+            assert recv_proxy.obsState == subObsState or obsState
+            assert smrb_proxy.obsState == subObsState or obsState
+            assert dsp_proxy.obsState == subObsState or obsState
 
         # better handle of setup and teardown
         assert_state(DevState.DISABLE)
@@ -83,24 +72,14 @@ class TestPstBeam:
 
         try:
             tango_device_command_checker.assert_command(
-                lambda: beam_proxy.On(), expected_obs_state_events=[ObsState.EMPTY]
+                lambda: beam_proxy.On(), expected_obs_state_events=[ObsState.IDLE]
             )
             assert_state(DevState.ON)
 
             # need to configure beam
-            assert_obstate(ObsState.EMPTY)
+            assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
 
-            resources = json.dumps(configure_beam_request)
-            tango_device_command_checker.assert_command(
-                lambda: beam_proxy.AssignResources(resources),
-                expected_obs_state_events=[
-                    ObsState.RESOURCING,
-                    ObsState.IDLE,
-                ],
-            )
-            assert_obstate(ObsState.IDLE)
-
-            configuration = json.dumps(configure_scan_request)
+            configuration = json.dumps(csp_configure_scan_request)
             tango_device_command_checker.assert_command(
                 lambda: beam_proxy.Configure(configuration),
                 expected_obs_state_events=[
@@ -127,6 +106,14 @@ class TestPstBeam:
             )
 
             logger.info("Device is now in ready state.")
+
+            tango_device_command_checker.assert_command(
+                lambda: beam_proxy.GoToIdle(),
+                expected_obs_state_events=[
+                    ObsState.IDLE,
+                ],
+            )
+            assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
 
             tango_device_command_checker.assert_command(
                 lambda: beam_proxy.Off(),

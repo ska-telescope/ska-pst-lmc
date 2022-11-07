@@ -15,7 +15,7 @@ import logging
 import queue
 import threading
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Tuple, Union, cast
 
 from ska_tango_base.base.base_device import DevVarLongStringArrayType
@@ -45,40 +45,37 @@ This queue is shared between the :py:class:`JobExecutor` and the
 """
 
 
+@dataclass
 class SequentialJob:
     """A class used to handle sequential jobs.
 
     Instances of this class take a list of jobs that will all
     be run in sequentially. This job is not complete until the
     last job is complete.
+
+    :ivar tasks: a list of subtasks/jobs to be performed sequentially
+    :type tasks: List[Job]
     """
 
-    def __init__(self: SequentialJob, tasks: List[Job]) -> None:
-        """Initialise sequential job.
-
-        :param tasks: a list of subtasks/jobs to be performed sequentially
-        :type tasks: List[Job]
-        """
-        self.tasks = tasks
+    tasks: List[Job]
 
 
+@dataclass
 class ParallelJob:
     """A class used to handle jobs that can be run in parallel.
 
     Instances of this class take a list of jobs that can be all
     run in parallel. This job is not complete until all the jobs
     are complete.
+
+    :ivar tasks: a list of subtasks/jobs to be performed concurrently
+    :type tasks: List[Job]
     """
 
-    def __init__(self: ParallelJob, tasks: List[Job]) -> None:
-        """Initialise parallel job.
-
-        :param tasks: a list of subtasks/jobs to be performed concurrently
-        :type tasks: List[Job]
-        """
-        self.tasks = tasks
+    tasks: List[Job]
 
 
+@dataclass
 class DeviceCommandJob:
     """A class used to handle a command to be executed on remote devices.
 
@@ -90,18 +87,16 @@ class DeviceCommandJob:
 
     Commands are sent to the DeviceCommandExecutor to allow to be tracked
     by listening to events on the `longRunningCommandResult` property.
+
+    :ivar devices: list of devices to perform action upon.
+    :type devices: List[PstDeviceProxy]
+    :ivar action: the callbable to perform on each device proxy.
+    :type action: Callable[[PstDeviceProxy], DevVarLongStringArrayType]
     """
 
-    def __init__(self: DeviceCommandJob, devices: List[PstDeviceProxy], action: DeviceAction) -> None:
-        """Initialise device command job.
-
-        :param devices: list of devices to perform action upon.
-        :type devices: List[PstDeviceProxy]
-        :param action: the callbable to perform on each device proxy.
-        :type action: Callable[[PstDeviceProxy], DevVarLongStringArrayType]
-        """
-        self.devices = devices
-        self.action = action
+    devices: List[PstDeviceProxy]
+    action: DeviceAction = field(repr=False)
+    command_name: str
 
 
 Job = Union[SequentialJob, ParallelJob, DeviceCommandJob]
@@ -118,6 +113,14 @@ class JobContext:
     job: Job
     callback: Callback = None
 
+    def __repr__(self: JobContext) -> str:
+        """Create a string representation of JobContext.
+
+        :return: a string representation of a JobContext
+        :rtype: str
+        """
+        return f"JobContext(job='{self.job}')"
+
 
 @dataclass
 class _ParallelJobContext:
@@ -131,8 +134,8 @@ class _ParallelJobContext:
     """
 
     job_id: str
-    tasks_signals: List[threading.Event]
-    signal: threading.Event
+    tasks_signals: List[threading.Event] = field(repr=False)
+    signal: threading.Event = field(repr=False)
 
 
 @dataclass
@@ -141,16 +144,16 @@ class _ParallelJobTaskContext:
 
     :ivar job_id: a UUID string representing the job.
     :ivar task_id: a UUID string representing the subtask.
-    :ivar signal: the signal used to notify the subtask is complete. This signal is
-        also stored in the `task_signals` field of a `_ParallelJobContext`.
     :ivar job: the job the subtask is to perform, this maybe a `SequentialJob`, a
         `DeviceCommandJob` or even another `ParallelJob`.
+    :ivar signal: the signal used to notify the subtask is complete. This signal is
+        also stored in the `task_signals` field of a `_ParallelJobContext`.
     """
 
     job_id: str
     task_id: str
-    signal: threading.Event
     job: Job
+    signal: threading.Event = field(repr=False)
 
 
 @dataclass
@@ -165,8 +168,9 @@ class DeviceCommandJobContext:
     """
 
     device: PstDeviceProxy
-    action: DeviceAction
-    signal: threading.Event
+    command_name: str
+    action: DeviceAction = field(repr=False)
+    signal: threading.Event = field(repr=False)
 
 
 class DeviceCommandJobExecutor:
@@ -227,7 +231,6 @@ class DeviceCommandJobExecutor:
     def stop(self: DeviceCommandJobExecutor) -> None:
         """Stop the executor."""
         if self._running:
-            _logger.debug("Shutting down DeviceCommandJobExecutor")
             self._running = False
             self._stop.set()
             self._tpe.shutdown()
@@ -236,11 +239,12 @@ class DeviceCommandJobExecutor:
 
     def start(self: DeviceCommandJobExecutor) -> None:
         """Start the executor."""
-        _logger.debug("Starting JobExecutor")
         self._running = True
         # need to reset this each time we start.
         self._stop = threading.Event()
-        self._tpe = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+        self._tpe = concurrent.futures.ThreadPoolExecutor(
+            max_workers=4, thread_name_prefix="DeviceCommanJobThread"
+        )
         self._tpe.submit(self._process_queue)
 
     def _ensure_subscription(self: DeviceCommandJobExecutor, device: PstDeviceProxy) -> None:
@@ -264,12 +268,16 @@ class DeviceCommandJobExecutor:
         The loop is only stopped when instances of this class are
         destroyed.
         """
-        while not self._stop.is_set():
-            try:
-                job_context = cast(DeviceCommandJobContext, self._job_queue.get(timeout=0.1))
-                self._handle_job(job_context)
-            except queue.Empty:
-                continue
+        try:
+            while not self._stop.is_set():
+                try:
+                    job_context = cast(DeviceCommandJobContext, self._job_queue.get(timeout=0.1))
+                    _logger.debug(f"DeviceCommandJobExecutor received a device job: {job_context}")
+                    self._handle_job(job_context)
+                except queue.Empty:
+                    continue
+        except Exception:
+            _logger.exception("Error processing device command queue", exc_info=True)
 
     def _handle_job(self: DeviceCommandJobExecutor, job_context: DeviceCommandJobContext) -> None:
         """Handle job request that has been received.
@@ -279,7 +287,6 @@ class DeviceCommandJobExecutor:
         in an internal map that can be then used to later signal that a job has completed.
         """
         # ensure subscription
-        _logger.debug(f"Received a command to run on device {job_context.device.fqdn}")
         device = job_context.device
         action = job_context.action
 
@@ -341,6 +348,8 @@ class JobExecutor:
         self._main_job_queue = job_queue
         self._device_command_job_queue = device_command_job_queue
 
+        self._sequential_job_queue: queue.Queue[JobContext] = queue.Queue(maxsize=1)
+
         self._parallel_lock = threading.Lock()
         self._parallel_job_queue: queue.Queue[_ParallelJobTaskContext] = queue.Queue()
         self._parallel_job_context_map: Dict[str, _ParallelJobContext] = {}
@@ -366,23 +375,32 @@ class JobExecutor:
 
     def start(self: JobExecutor) -> None:
         """Start the job executor."""
-        _logger.debug("Starting JobExecutor")
         self._running = True
         # need to reset this each time we start.
         self._stop = threading.Event()
-        self._tpe = concurrent.futures.ThreadPoolExecutor(max_workers=self._max_parallel_workers + 1)
-        self._tpe.submit(self._process_main_queue)
-        self._tpe.submit(self._process_parallel_queue)
-        self._tpe.submit(self._process_parallel_queue)
-        self._tpe.submit(self._process_parallel_queue)
+
+        self._main_tpe = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="MainJob")
+        self._main_tpe.submit(self._process_main_queue)
+
+        self._sequential_tpe = concurrent.futures.ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="SequentialJob"
+        )
+        self._sequential_tpe.submit(self._process_sequential_queue)
+
+        self._parallel_tpe = concurrent.futures.ThreadPoolExecutor(
+            max_workers=self._max_parallel_workers, thread_name_prefix="ParallelJob"
+        )
+        for _ in range(self._max_parallel_workers):
+            self._parallel_tpe.submit(self._process_parallel_queue)
 
     def stop(self: JobExecutor) -> None:
         """Stop the executor."""
         if self._running:
-            _logger.debug("Shutting down JobExecutor")
             self._running = False
             self._stop.set()
-            self._tpe.shutdown()
+            self._main_tpe.shutdown()
+            self._sequential_tpe.shutdown()
+            self._parallel_tpe.shutdown()
 
     def submit_job(self: JobExecutor, job: Job, callback: Callback = None) -> None:
         """Submit a job to be executed.
@@ -405,6 +423,7 @@ class JobExecutor:
         :param job_context: the job context object to submit.
         :type job_context: JobContext
         """
+        _logger.debug(f"Submitting job with context={job_context}")
         self._main_job_queue.put(job_context)
 
     def _process_main_queue(self: JobExecutor) -> None:
@@ -413,12 +432,39 @@ class JobExecutor:
         This method is perfomed in the background by a thread. It will run in
         and infinite loop until the instance of this class is destroyed.
         """
-        while not self._stop.is_set():
-            try:
-                job_context = cast(JobContext, self._main_job_queue.get(timeout=0.1))
-                self._handle_job(job_context)
-            except queue.Empty:
-                continue
+        try:
+            while not self._stop.is_set():
+                try:
+                    job_context = cast(JobContext, self._main_job_queue.get(timeout=0.1))
+                    _logger.debug(f"Main process loop receieved job with context={job_context}")
+                    self._handle_job(job_context)
+                except queue.Empty:
+                    continue
+        except Exception:
+            _logger.exception("Error processing main queue", exc_info=True)
+
+    def _process_sequential_queue(self: JobExecutor) -> None:
+        """Process messages on the sequential queue.
+
+        This method is perfomed in the background by a thread. It will run in
+        and infinite loop until the instance of this class is destroyed.
+        """
+        try:
+            while not self._stop.is_set():
+                try:
+                    job_context = cast(JobContext, self._sequential_job_queue.get(timeout=0.1))
+                    evt = threading.Event()
+                    sequential_job_context = JobContext(job=job_context.job, callback=evt.set)
+                    _logger.debug(f"Sequential process loop receieved job with context={job_context}")
+                    self._handle_job(sequential_job_context)
+                    evt.wait()
+                    self._sequential_job_queue.task_done()
+                    if job_context.callback:
+                        job_context.callback()
+                except queue.Empty:
+                    continue
+        except Exception:
+            _logger.exception("Error processing sequential queue", exc_info=True)
 
     def _process_parallel_queue(self: JobExecutor) -> None:
         """Process messages on the parallel job queue.
@@ -428,18 +474,22 @@ class JobExecutor:
 
         The threads running this are different to the main queue thread.
         """
-        while not self._stop.is_set():
-            try:
-                task_context = self._parallel_job_queue.get(timeout=0.1)
-                self._handle_parallel_task(task_context=task_context)
-            except queue.Empty:
-                continue
+        try:
+            while not self._stop.is_set():
+                try:
+                    task_context = self._parallel_job_queue.get(timeout=0.1)
+                    _logger.debug(f"Parallel process loop receieved job with context={task_context}")
+                    self._handle_parallel_task(task_context=task_context)
+                except queue.Empty:
+                    continue
+        except Exception:
+            _logger.exception("Error during processing parallel queue", exc_info=True)
 
     def _handle_sequential_job(self: JobExecutor, job: SequentialJob, callback: Callback = None) -> None:
         """Handle a `SequentialJob` request.
 
         This method will process a `SequentialJob` by submitting each of the individual subtasks
-        as a job onto the main job queue to be processed, as there is only one thread processing
+        as a job onto the sequential job queue to be processed, as there is only one thread processing
         that queue they are guaranteed to run sequentially.
 
         Only when the last task is complete will the callback be called.
@@ -451,12 +501,15 @@ class JobExecutor:
         """
         tasks = [JobContext(job=j) for j in job.tasks]
 
-        # ensure last task will call the callback once complete.
-        tasks[-1].callback = callback
         for t in tasks:
-            self._main_job_queue.put(t)
+            # wait for each subtask by using an event as the callback
+            task_evt = threading.Event()
+            t.callback = task_evt.set
+            self._sequential_job_queue.put(t)
+            task_evt.wait()
 
-        # self._main_job_queue.task_done()
+        if callback:
+            callback()
 
     def _handle_parallel_job(self: JobExecutor, job: ParallelJob, callback: Callback = None) -> None:
         """Handle a `ParallelJob` request.
@@ -500,9 +553,9 @@ class JobExecutor:
         :type task_context: _ParallelJobTaskContext
         """
         job_context = JobContext(job=task_context.job, callback=task_context.signal.set)
+
         self._handle_job(job_context)
         task_context.signal.wait()
-
         self._handle_task_complete(task_context)
 
     def _handle_task_complete(self: JobExecutor, task_context: _ParallelJobTaskContext) -> None:
@@ -534,22 +587,29 @@ class JobExecutor:
         :param callback: callback to call once all device commands are complete, defaults to None
         :type callback: Callback, optional
         """
-        if len(job.devices) > 1:
-            # run this as a
-            parallel_job = ParallelJob(
-                tasks=[DeviceCommandJob(devices=[d], action=job.action) for d in job.devices]
-            )
-            self._handle_parallel_job(job=parallel_job, callback=callback)
-            return
+        try:
+            evt = threading.Event()
+            if len(job.devices) > 1:
+                # run this as a parallel job, this will reenter this method but fall into the else
+                parallel_job = ParallelJob(
+                    tasks=[
+                        DeviceCommandJob(devices=[d], action=job.action, command_name=job.command_name)
+                        for d in job.devices
+                    ]
+                )
+                self._handle_parallel_job(job=parallel_job, callback=evt.set)
+            else:
+                device_job_context = DeviceCommandJobContext(
+                    device=job.devices[0], action=job.action, signal=evt, command_name=job.command_name
+                )
+                _logger.debug(f"Submitting {device_job_context} to device command job queue.")
+                self._device_command_job_queue.put(device_job_context)
 
-        evt = threading.Event()
-        self._device_command_job_queue.put(
-            DeviceCommandJobContext(device=job.devices[0], action=job.action, signal=evt)
-        )
-
-        evt.wait()
-        if callback:
-            callback()
+            evt.wait()
+            if callback:
+                callback()
+        except Exception:
+            _logger.exception("Error and handling DeviceCommandJob", exc_info=True)
 
     def _handle_job(self: JobExecutor, job_context: JobContext) -> None:
         """Handle a job.

@@ -20,6 +20,9 @@ server:
         devices:
         - name: "low-pst/dsp/01"
           properties:
+          - name: "DeviceID"
+            values:
+            - "1"
           - name: "process_api_endpoint"
             values:
             - "{{.Release.Name}}-{{.Values.dsp.dsp_process_api_endpoint}}"
@@ -36,6 +39,9 @@ server:
         devices:
         - name: "low-pst/recv/01"
           properties:
+          - name: "DeviceID"
+            values:
+            - "1"
           - name: "process_api_endpoint"
             values:
             - "{{.Release.Name}}-{{.Values.recv.recv_process_api_endpoint}}"
@@ -52,6 +58,9 @@ server:
         devices:
         - name: "low-pst/smrb/01"
           properties:
+          - name: "DeviceID"
+            values:
+            - "1"
           - name: "process_api_endpoint"
             values:
             - "{{.Release.Name}}-{{.Values.smrb.smrb_process_api_endpoint}}"
@@ -68,6 +77,9 @@ server:
         devices:
         - name: "low-pst/beam/01"
           properties:
+          - name: "DeviceID"
+            values:
+            - "1"
           - name: "beam_id"
             values:
             - "1"
