@@ -26,7 +26,24 @@ from .callback import Callback
 
 _logger = logging.getLogger(__name__)
 
-__all__ = ["DeviceAction", "Job", "SequentialJob", "ParallelJob", "DeviceCommandJob", "submit_job"]
+__all__ = [
+    "DeviceAction",
+    "DeviceCommandJob",
+    "DeviceCommandJobExecutor",
+    "DeviceCommandJobContext",
+    "Job",
+    "JobContext",
+    "JobExecutor",
+    "SequentialJob",
+    "ParallelJob",
+    "ParallelJobContext",
+    "ParallelJobTaskContext",
+    "JOB_QUEUE",
+    "DEVICE_COMMAND_JOB_QUEUE",
+    "JOB_EXECUTOR",
+    "DEVICE_COMMAND_JOB_EXECUTOR",
+    "submit_job",
+]
 
 DeviceAction = Callable[[PstDeviceProxy], DevVarLongStringArrayType]
 """A type alias representing a callable of a long running command on a device proxy."""
@@ -53,7 +70,7 @@ class SequentialJob:
     be run in sequentially. This job is not complete until the
     last job is complete.
 
-    :ivar tasks: a list of subtasks/jobs to be performed sequentially
+    :param tasks: a list of subtasks/jobs to be performed sequentially
     :type tasks: List[Job]
     """
 
@@ -68,7 +85,7 @@ class ParallelJob:
     run in parallel. This job is not complete until all the jobs
     are complete.
 
-    :ivar tasks: a list of subtasks/jobs to be performed concurrently
+    :param tasks: a list of subtasks/jobs to be performed concurrently
     :type tasks: List[Job]
     """
 
@@ -88,9 +105,9 @@ class DeviceCommandJob:
     Commands are sent to the DeviceCommandExecutor to allow to be tracked
     by listening to events on the `longRunningCommandResult` property.
 
-    :ivar devices: list of devices to perform action upon.
+    :param devices: list of devices to perform action upon.
     :type devices: List[PstDeviceProxy]
-    :ivar action: the callbable to perform on each device proxy.
+    :param action: the callbable to perform on each device proxy.
     :type action: Callable[[PstDeviceProxy], DevVarLongStringArrayType]
     """
 
@@ -100,14 +117,15 @@ class DeviceCommandJob:
 
 
 Job = Union[SequentialJob, ParallelJob, DeviceCommandJob]
+"""Type alias for the different sorts of jobs."""
 
 
 @dataclass
 class JobContext:
     """A data class representing a job and the callback to use when complete.
 
-    :ivar job: the job the needs to be executed.
-    :ivar callback: the optional callback to use when job is complete, default is None.
+    :param job: the job the needs to be executed.
+    :param callback: the optional callback to use when job is complete, default is None.
     """
 
     job: Job
@@ -123,13 +141,13 @@ class JobContext:
 
 
 @dataclass
-class _ParallelJobContext:
+class ParallelJobContext:
     """A data class representiong the job context for a `ParallelJob`.
 
-    :ivar job_id: a UUID string representing the job.
-    :ivar task_signals: a list of :py:class:`threading.Event` used to track the state of
+    :param job_id: a UUID string representing the job.
+    :param task_signals: a list of :py:class:`threading.Event` used to track the state of
         the subtasks. There is one signal per subtask.
-    :ivar signal: the signal used to notify the whole job is complete, which in turn can
+    :param signal: the signal used to notify the whole job is complete, which in turn can
         then call the job's associated callback.
     """
 
@@ -139,15 +157,15 @@ class _ParallelJobContext:
 
 
 @dataclass
-class _ParallelJobTaskContext:
+class ParallelJobTaskContext:
     """A data class representing the job context of a subtask for a `ParallelJob`.
 
-    :ivar job_id: a UUID string representing the job.
-    :ivar task_id: a UUID string representing the subtask.
-    :ivar job: the job the subtask is to perform, this maybe a `SequentialJob`, a
+    :param job_id: a UUID string representing the job.
+    :param task_id: a UUID string representing the subtask.
+    :param job: the job the subtask is to perform, this maybe a `SequentialJob`, a
         `DeviceCommandJob` or even another `ParallelJob`.
-    :ivar signal: the signal used to notify the subtask is complete. This signal is
-        also stored in the `task_signals` field of a `_ParallelJobContext`.
+    :param signal: the signal used to notify the subtask is complete. This signal is
+        also stored in the `task_signals` field of a `ParallelJobContext`.
     """
 
     job_id: str
@@ -160,9 +178,9 @@ class _ParallelJobTaskContext:
 class DeviceCommandJobContext:
     """A data class representing the job context of a `DeviceCommandJob`.
 
-    :ivar device: the device that the action is to be performed against.
-    :ivar action: the action to perform on the device proxy.
-    :ivar signal: the signal used to notify the command is complete. Since
+    :param device: the device that the action is to be performed against.
+    :param action: the action to perform on the device proxy.
+    :param signal: the signal used to notify the command is complete. Since
         device commands run in the background on a remote device, this signal
         is used to notify the executor that this remote job is complete.
     """
@@ -351,8 +369,8 @@ class JobExecutor:
         self._sequential_job_queue: queue.Queue[JobContext] = queue.Queue(maxsize=1)
 
         self._parallel_lock = threading.Lock()
-        self._parallel_job_queue: queue.Queue[_ParallelJobTaskContext] = queue.Queue()
-        self._parallel_job_context_map: Dict[str, _ParallelJobContext] = {}
+        self._parallel_job_queue: queue.Queue[ParallelJobTaskContext] = queue.Queue()
+        self._parallel_job_context_map: Dict[str, ParallelJobContext] = {}
 
         self._max_parallel_workers = max_parallel_workers
         self._stop = threading.Event()
@@ -526,11 +544,11 @@ class JobExecutor:
         """
         job_id = str(uuid.uuid4())
         task_contexts = [
-            _ParallelJobTaskContext(job_id=job_id, task_id=str(uuid.uuid4()), signal=threading.Event(), job=t)
+            ParallelJobTaskContext(job_id=job_id, task_id=str(uuid.uuid4()), signal=threading.Event(), job=t)
             for t in job.tasks
         ]
 
-        job_context = _ParallelJobContext(
+        job_context = ParallelJobContext(
             job_id=job_id, tasks_signals=[tc.signal for tc in task_contexts], signal=threading.Event()
         )
 
@@ -543,14 +561,14 @@ class JobExecutor:
         if callback:
             callback()
 
-    def _handle_parallel_task(self: JobExecutor, task_context: _ParallelJobTaskContext) -> None:
+    def _handle_parallel_task(self: JobExecutor, task_context: ParallelJobTaskContext) -> None:
         """Handle a parallel job subtask.
 
         This converts the `task_context` into a `JobContext` and calls the :py:meth:`_handle_job`
         method to be processed, this doesn't happen on the main thread so it won't block.
 
         :param task_context: the subtask context
-        :type task_context: _ParallelJobTaskContext
+        :type task_context: ParallelJobTaskContext
         """
         job_context = JobContext(job=task_context.job, callback=task_context.signal.set)
 
@@ -558,11 +576,11 @@ class JobExecutor:
         task_context.signal.wait()
         self._handle_task_complete(task_context)
 
-    def _handle_task_complete(self: JobExecutor, task_context: _ParallelJobTaskContext) -> None:
+    def _handle_task_complete(self: JobExecutor, task_context: ParallelJobTaskContext) -> None:
         """Handle parallel task being complete.
 
         :param task_context: the task context of the completed task.
-        :type task_context: _ParallelJobTaskContext
+        :type task_context: ParallelJobTaskContext
         """
         with self._parallel_lock:
             job_context = self._parallel_job_context_map[task_context.job_id]

@@ -6,10 +6,9 @@ Functionality provided within this module is:
 
     * Validation of JSON requests
     * Background Task processing
-    * Long running command processing
+    * Job processing, including running jobs in parallel/sequential and on remote Device TANGO devices
     * Custom timeout iterator (see :py:class:`TimeoutIterator`)
 """
-
 
 __all__ = [
     "validate",
@@ -24,10 +23,20 @@ __all__ = [
     "TimeoutIterator",
     "Callback",
     "DeviceAction",
+    "DeviceCommandJob",
+    "DeviceCommandJobExecutor",
+    "DeviceCommandJobContext",
     "Job",
+    "JobContext",
+    "JobExecutor",
     "SequentialJob",
     "ParallelJob",
-    "DeviceCommandJob",
+    "ParallelJobContext",
+    "ParallelJobTaskContext",
+    "JOB_QUEUE",
+    "DEVICE_COMMAND_JOB_QUEUE",
+    "JOB_EXECUTOR",
+    "DEVICE_COMMAND_JOB_EXECUTOR",
     "submit_job",
 ]
 
@@ -37,4 +46,21 @@ from .background_task import BackgroundTaskProcessor, BackgroundTask, RunState, 
 from .remote_task import RemoteTask, AggregateRemoteTask
 from .timeout_iterator import TimeoutIterator
 from .callback import Callback
-from .job import DeviceAction, Job, SequentialJob, ParallelJob, DeviceCommandJob, submit_job
+from .job import (
+    DeviceAction,
+    DeviceCommandJob,
+    DeviceCommandJobExecutor,
+    DeviceCommandJobContext,
+    Job,
+    JobContext,
+    JobExecutor,
+    SequentialJob,
+    ParallelJob,
+    ParallelJobContext,
+    ParallelJobTaskContext,
+    JOB_QUEUE,
+    DEVICE_COMMAND_JOB_QUEUE,
+    JOB_EXECUTOR,
+    DEVICE_COMMAND_JOB_EXECUTOR,
+    submit_job,
+)

@@ -43,6 +43,12 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
 
     This class also helps abstract away calling out to whether we're
     using a simulated process or a real subprocess.
+
+    This component manager extects from the :py:class:`CspObsComponentManager`.
+    For more details about this check the
+    `CSP obs component manager
+    <https://developer.skao.int/projects/ska-tango-base/en/latest/api/csp/obs/component_manager.html>`_
+    docs.
     """
 
     _simuation_mode: SimulationMode

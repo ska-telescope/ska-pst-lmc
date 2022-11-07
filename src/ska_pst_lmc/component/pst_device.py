@@ -26,7 +26,10 @@ from tango.server import attribute, command
 
 from ska_pst_lmc.component.component_manager import PstComponentManager
 
-__all__ = ["PstBaseDevice"]
+__all__ = [
+    "PstBaseDevice",
+    "PstBaseProccesDevice",
+]
 
 T = TypeVar("T", bound=PstComponentManager)
 """Create a generic type for the component manager.

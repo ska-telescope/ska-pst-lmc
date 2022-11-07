@@ -10,9 +10,7 @@
 This API is not a part of the component manager, as the component manager
 is also concerned with callbacks to the TANGO device and has state model
 management. This API is expected to be used to call to an external process
-or be simulated. Most of the API is taken from the component manager.
-For specifics of the API see
-https://developer.skao.int/projects/ska-tango-base/en/latest/api/subarray/component_manager.html
+or be simulated.
 """
 
 from __future__ import annotations
