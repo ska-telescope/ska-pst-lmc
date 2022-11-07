@@ -37,6 +37,7 @@ ska-tango-base:
         failureThreshold: 3
 
 ska-pst-lmc:
+  loggingLevel: 5
   image:
     registry: registry.gitlab.com/ska-telescope/pst/ska-pst-lmc
   deviceServers:

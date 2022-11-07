@@ -29,7 +29,7 @@ global:
   - "--tries=10"
   - "--sleep=5"
 
-loggingLevel: 5
+loggingLevel: 4 # This is INFO level
 
 beam:
   simulationMode: 1
@@ -47,7 +47,6 @@ recv:
 dsp:
   simulationMode: 1
   monitor_polling_rate: 5000
-  dspLoggingLevel: 5
   dsp_process_api_endpoint: ska-pst-dsp:8080 # these should come from pod name and port configs
 
 dsconfig:
