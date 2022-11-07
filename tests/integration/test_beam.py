@@ -17,10 +17,11 @@ from typing import Any, Dict, Optional
 import backoff
 import pytest
 from ska_tango_base.control_model import AdminMode, ObsState
+from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DevState
 
 from ska_pst_lmc import DeviceProxyFactory
-from tests.conftest import TangoDeviceCommandChecker
+from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker
 
 
 @pytest.mark.integration
@@ -31,15 +32,26 @@ class TestPstBeam:
     def test_configure_then_scan_then_stop(
         self: TestPstBeam,
         csp_configure_scan_request: Dict[str, Any],
-        scan_request: Dict[str, Any],
-        tango_device_command_checker: TangoDeviceCommandChecker,
+        scan_id: int,
+        change_event_callbacks: MockTangoEventCallbackGroup,
         logger: logging.Logger,
     ) -> None:
-        """Test state model of PstReceive."""
+        """Test state model of PstBeam."""
         dsp_proxy = DeviceProxyFactory.get_device("low-pst/dsp/01")
         recv_proxy = DeviceProxyFactory.get_device("low-pst/recv/01")
         smrb_proxy = DeviceProxyFactory.get_device("low-pst/smrb/01")
         beam_proxy = DeviceProxyFactory.get_device("low-pst/beam/01")
+
+        tango_change_event_helper = TangoChangeEventHelper(
+            device_under_test=beam_proxy.device,
+            change_event_callbacks=change_event_callbacks,
+            logger=logger,
+        )
+        tango_device_command_checker = TangoDeviceCommandChecker(
+            tango_change_event_helper=tango_change_event_helper,
+            change_event_callbacks=change_event_callbacks,
+            logger=logger,
+        )
 
         def assert_state(state: DevState) -> None:
             assert beam_proxy.state() == state
@@ -81,7 +93,7 @@ class TestPstBeam:
 
             configuration = json.dumps(csp_configure_scan_request)
             tango_device_command_checker.assert_command(
-                lambda: beam_proxy.Configure(configuration),
+                lambda: beam_proxy.ConfigureScan(configuration),
                 expected_obs_state_events=[
                     ObsState.CONFIGURING,
                     ObsState.READY,
@@ -89,7 +101,7 @@ class TestPstBeam:
             )
             assert_obstate(ObsState.READY)
 
-            scan = str(scan_request)
+            scan = str(scan_id)
             tango_device_command_checker.assert_command(
                 lambda: beam_proxy.Scan(scan),
                 expected_obs_state_events=[
@@ -104,8 +116,6 @@ class TestPstBeam:
                     ObsState.READY,
                 ],
             )
-
-            logger.info("Device is now in ready state.")
 
             tango_device_command_checker.assert_command(
                 lambda: beam_proxy.GoToIdle(),
