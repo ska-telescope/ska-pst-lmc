@@ -234,6 +234,14 @@ class PstDeviceProxy:
         """Get Tango Device Proxy object."""
         return self._device
 
+    def __repr__(self: PstDeviceProxy) -> str:
+        """Create a string representation of PstDeviceProxy.
+
+        :return: a string representation of a PstDeviceProxy
+        :rtype: str
+        """
+        return f"PstDeviceProxy(fqdn='{self._fqdn}')"
+
 
 class DeviceProxyFactory:
     """

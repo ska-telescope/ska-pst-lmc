@@ -33,7 +33,6 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     MonitorRequest,
     MonitorResponse,
     ResetRequest,
-    RestartRequest,
     StartScanRequest,
     Status,
     StopScanRequest,
@@ -349,18 +348,6 @@ class PstGrpcLmcClient:
         """
         try:
             self._service.reset(ResetRequest())
-        except grpc.RpcError as e:
-            _handle_grpc_error(e)
-
-    def restart(self: PstGrpcLmcClient) -> None:
-        """Restart service.
-
-        This method is to be used by the LMC device that is currently in an
-        ABORTED or FAULT state to restart the service and put it back in
-        and EMPTY unresourced stated.
-        """
-        try:
-            self._service.restart(RestartRequest())
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 

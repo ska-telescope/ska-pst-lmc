@@ -29,6 +29,8 @@ global:
   - "--tries=10"
   - "--sleep=5"
 
+loggingLevel: 4 # This is INFO level
+
 beam:
   simulationMode: 1
 

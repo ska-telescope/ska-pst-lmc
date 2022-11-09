@@ -43,7 +43,7 @@ class PstReceiveSimulator:
 
     _subband_data: Dict[int, ReceiveData]
 
-    def __init__(self: PstReceiveSimulator, num_subbands: Optional[int] = None, **kwargs: dict) -> None:
+    def __init__(self: PstReceiveSimulator, num_subbands: Optional[int] = None, **kwargs: Any) -> None:
         """Initialise the simulator."""
         configuration: Dict[str, Any] = {}
         if num_subbands is not None:
@@ -89,10 +89,6 @@ class PstReceiveSimulator:
 
     def reset(self: PstReceiveSimulator) -> None:
         """Tell the component to reset whatever it was doing."""
-        self._scan = False
-
-    def restart(self: PstReceiveSimulator) -> None:
-        """Tell the component to restart whatever it was doing."""
         self._scan = False
 
     def _update(self: PstReceiveSimulator) -> None:

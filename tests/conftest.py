@@ -18,13 +18,21 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer, add_Ps
 from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import ObsState, SimulationMode
 from ska_tango_base.executor import TaskStatus
-from ska_tango_base.testing.mock import MockCallable, MockChangeEventCallback
+from ska_tango_testing.mock import MockCallable
+from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DeviceProxy
 from tango.test_context import DeviceTestContext, MultiDeviceTestContext, get_host_ip
 
 from ska_pst_lmc.device_proxy import DeviceProxyFactory
 from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
+from ska_pst_lmc.util.callback import Callback
+from ska_pst_lmc.util.job import (
+    DEVICE_COMMAND_JOB_EXECUTOR,
+    JOB_EXECUTOR,
+    DeviceCommandJobExecutor,
+    JobExecutor,
+)
 
 
 @pytest.fixture(scope="module")
@@ -34,7 +42,7 @@ def beam_id() -> int:
 
 
 @pytest.fixture
-def configure_beam_request() -> dict:
+def configure_beam_request() -> Dict[str, Any]:
     """Return a valid configure beam object."""
     return {
         # CSP JSON fields / PST fields
@@ -59,7 +67,36 @@ def configure_beam_request() -> dict:
 
 
 @pytest.fixture
-def configure_scan_request() -> dict:
+def device_command_job_executor() -> Generator[DeviceCommandJobExecutor, None, None]:
+    """Return a generator for a device command job executor."""
+    DEVICE_COMMAND_JOB_EXECUTOR.start()
+    yield DEVICE_COMMAND_JOB_EXECUTOR
+    DEVICE_COMMAND_JOB_EXECUTOR.stop()
+
+
+@pytest.fixture
+def job_executor(device_command_job_executor: DeviceCommandJobExecutor) -> Generator[JobExecutor, None, None]:
+    """Return a generator for job executor."""
+    JOB_EXECUTOR.start()
+    yield JOB_EXECUTOR
+    JOB_EXECUTOR.stop()
+
+
+@pytest.fixture
+def csp_configure_scan_request(configure_scan_request: Dict[str, Any]) -> Dict[str, Any]:
+    """Return valid configure JSON object that CSP would send."""
+    return {
+        "common": {
+            "config_id": "sbi-mvp01-20200325-00001-science_A",
+            "frequency_band": "1",
+            "subarray_id": 1,
+        },
+        "pst": {"scan": {**configure_scan_request}},
+    }
+
+
+@pytest.fixture
+def configure_scan_request(scan_id: int) -> Dict[str, Any]:
     """Return a valid configure scan object."""
     # this has been copied from the SKA Telmodel
     # see https://developer.skao.int/projects/ska-telmodel/en/latest/schemas/ska-csp-configure.html
@@ -67,7 +104,7 @@ def configure_scan_request() -> dict:
         "activation_time": "2022-01-19T23:07:45Z",
         "timing_beam_id": "beam1",
         "capability": "capability1",
-        "scan_id": 1,
+        "scan_id": scan_id,
         "bits_per_sample": 32,
         "num_of_polarizations": 2,
         "udp_nsamp": 32,
@@ -114,14 +151,20 @@ def configure_scan_request() -> dict:
 
 
 @pytest.fixture
-def scan_request() -> dict:
+def scan_id() -> int:
+    """Fixture to generating scan id."""
+    return randint(1, 1000)
+
+
+@pytest.fixture
+def scan_request(scan_id: int) -> Dict[str, Any]:
     """Fixture for scan requests."""
-    return {}
+    return {"scan_id": scan_id}
 
 
 @pytest.fixture
 def expected_scan_request_protobuf(
-    scan_request: dict,
+    scan_request: Dict[str, Any],
 ) -> StartScanRequest:
     """Fixture for build expected start_scan request."""
     return StartScanRequest(**scan_request)
@@ -312,29 +355,21 @@ def callbacks() -> dict:
     return collections.defaultdict(MockCallable)
 
 
-class ChangeEventDict:
-    """Internal texting class that acts like a dictionary for creating mock callbacks."""
-
-    def __init__(self: ChangeEventDict) -> None:
-        """Initialise object."""
-        self._dict: dict = {}
-
-    def __getitem__(self: ChangeEventDict, key: Any) -> MockChangeEventCallback:
-        """Get a mock change event callback to be used in testing."""
-        if key not in self._dict:
-            self._dict[key] = MockChangeEventCallback(key, filter_for_change=True)
-        return self._dict[key]
-
-
 @pytest.fixture()
-def change_event_callbacks() -> ChangeEventDict:
+def change_event_callbacks() -> MockTangoEventCallbackGroup:
     """
     Return a dictionary of Tango device change event callbacks with asynchrony support.
 
     :return: a collections.defaultdict that returns change event
         callbacks by name.
     """
-    return ChangeEventDict()
+    return MockTangoEventCallbackGroup(
+        "longRunningCommandProgress",
+        "longRunningCommandStatus",
+        "longRunningCommandResult",
+        "obsState",
+        timeout=5.0,
+    )
 
 
 class TangoChangeEventHelper:
@@ -343,7 +378,7 @@ class TangoChangeEventHelper:
     def __init__(
         self: TangoChangeEventHelper,
         device_under_test: DeviceProxy,
-        change_event_callbacks: ChangeEventDict,
+        change_event_callbacks: MockTangoEventCallbackGroup,
         logger: logging.Logger,
     ) -> None:
         """Initialise change event helper."""
@@ -356,7 +391,7 @@ class TangoChangeEventHelper:
         """Free resources held."""
         self.release()
 
-    def subscribe(self: TangoChangeEventHelper, attribute_name: str) -> MockChangeEventCallback:
+    def subscribe(self: TangoChangeEventHelper, attribute_name: str) -> None:
         """Subscribe to change events of an attribute.
 
         This returns a :py:class:`MockChangeEventCallback` that can
@@ -369,7 +404,6 @@ class TangoChangeEventHelper:
         )
         self.logger.debug(f"Subscribed to events of '{attribute_name}'. subscription_id = {subscription_id}")
         self.subscriptions[attribute_name] = subscription_id
-        return self.change_event_callbacks[attribute_name]
 
     def release(self: TangoChangeEventHelper) -> None:
         """Release any subscriptions that are held."""
@@ -381,7 +415,9 @@ class TangoChangeEventHelper:
 
 @pytest.fixture()
 def tango_change_event_helper(
-    device_under_test: DeviceProxy, change_event_callbacks: ChangeEventDict, logger: logging.Logger
+    device_under_test: DeviceProxy,
+    change_event_callbacks: MockTangoEventCallbackGroup,
+    logger: logging.Logger,
 ) -> TangoChangeEventHelper:
     """
     Return a helper to simplify subscription to the device under test with a callback.
@@ -410,19 +446,25 @@ class TangoDeviceCommandChecker:
     def __init__(
         self: TangoDeviceCommandChecker,
         tango_change_event_helper: TangoChangeEventHelper,
+        change_event_callbacks: MockTangoEventCallbackGroup,
         logger: logging.Logger,
     ) -> None:
         """Initialise command checker."""
-        self.long_running_command_result_callback = tango_change_event_helper.subscribe(
-            "longRunningCommandResult"
-        )
-        self.long_running_command_result_callback.assert_next_change_event(("", ""))
+        tango_change_event_helper.subscribe("longRunningCommandProgress")
+        change_event_callbacks["longRunningCommandProgress"].assert_change_event(None)
 
-        self.long_running_command_status_callback = tango_change_event_helper.subscribe(
-            "longRunningCommandStatus"
-        )
-        self.obs_state_callback = tango_change_event_helper.subscribe("obsState")
+        tango_change_event_helper.subscribe("longRunningCommandResult")
+        change_event_callbacks["longRunningCommandResult"].assert_change_event(("", ""))
+
+        tango_change_event_helper.subscribe("longRunningCommandStatus")
+        change_event_callbacks["longRunningCommandStatus"].assert_change_event(None)
+
+        tango_change_event_helper.subscribe("obsState")
+
+        self.change_event_callbacks = change_event_callbacks
         self._logger = logger
+
+        self._command_states: Dict[str, str] = {}
 
     def assert_command(
         self: TangoDeviceCommandChecker,
@@ -458,44 +500,40 @@ class TangoDeviceCommandChecker:
         [[result], [command_id]] = command()
         assert result == expected_result_code
 
-        def assert_command_status(status: TaskStatus) -> None:
-            self._logger.debug(f"Checking next command status event is {status.name}")
-            evt = self.long_running_command_status_callback.get_next_change_event()
-
-            # need to covert to map
-            evt_iter = iter(evt)
-            evt_map: Dict[str, str] = {k: TaskStatus[v] for (k, v) in zip(evt_iter, evt_iter)}
-
-            assert command_id in evt_map
-            assert evt_map[command_id] == status
-
         if expected_command_status_events:
             for expected_command_status in expected_command_status_events:
-                assert_command_status(expected_command_status)
-        else:
-            self.long_running_command_status_callback.assert_not_called()
+                self._command_states[command_id] = expected_command_status.name
+                expected_result = tuple([item for kv in self._command_states.items() for item in kv])
+                self.change_event_callbacks["longRunningCommandStatus"].assert_change_event(
+                    expected_result,
+                )
 
-        self.long_running_command_result_callback.assert_next_change_event(
-            (command_id, expected_command_result)
+        else:
+            self.change_event_callbacks["longRunningCommandStatus"].assert_not_called()
+
+        self.change_event_callbacks["longRunningCommandResult"].assert_change_event(
+            (command_id, expected_command_result),
         )
 
         if expected_obs_state_events:
             for expected_obs_state in expected_obs_state_events:
                 self._logger.debug(f"Checking next obsState event is {expected_obs_state.name}")
-                self.obs_state_callback.assert_next_change_event(expected_obs_state)
+                self.change_event_callbacks["obsState"].assert_change_event(expected_obs_state.value)
         else:
             self._logger.debug("Checking obsState does not change.")
-            self.obs_state_callback.assert_not_called()
+            self.change_event_callbacks["obsState"].assert_not_called()
 
 
 @pytest.fixture
 def tango_device_command_checker(
     tango_change_event_helper: TangoChangeEventHelper,
+    change_event_callbacks: MockTangoEventCallbackGroup,
     logger: logging.Logger,
 ) -> TangoDeviceCommandChecker:
     """Fixture that returns a TangoChangeEventHelper."""
     return TangoDeviceCommandChecker(
         tango_change_event_helper=tango_change_event_helper,
+        change_event_callbacks=change_event_callbacks,
         logger=logger,
     )
 
@@ -566,7 +604,7 @@ def component_state_callback() -> Callable:
 
 
 @pytest.fixture
-def task_callback() -> Callable:
+def task_callback() -> Callback:
     """Create a mock component to validate task callbacks."""
     return MagicMock()
 

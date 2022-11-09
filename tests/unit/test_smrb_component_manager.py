@@ -9,7 +9,7 @@
 
 import logging
 import time
-from typing import Callable, cast
+from typing import Any, Callable, Dict, cast
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -78,7 +78,7 @@ def api(
 
 @pytest.fixture
 def monitor_data(
-    scan_request: dict,
+    scan_request: Dict[str, Any],
 ) -> SmrbMonitorData:
     """Create an an instance of ReceiveData for monitor data."""
     from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
@@ -90,7 +90,7 @@ def monitor_data(
 
 
 @pytest.fixture
-def calculated_smrb_subband_resources(beam_id: int, configure_beam_request: dict) -> dict:
+def calculated_smrb_subband_resources(beam_id: int, configure_beam_request: Dict[str, Any]) -> dict:
     """Fixture to calculate expected smrb subband resources."""
     resources = calculate_smrb_subband_resources(
         beam_id=beam_id,
@@ -171,13 +171,14 @@ def test_smrb_cm_no_change_in_simulation_mode_value_wont_change_communication_st
     simulation_mode: SimulationMode,
     pst_lmc_service: TestPstLmcService,
     mock_servicer_context: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test no change in simulation mode does not change communication state."""
     response = ConnectionResponse()
     mock_servicer_context.connect = MagicMock(return_value=response)
 
     update_communication_state = MagicMock(wraps=component_manager._update_communication_state)
-    component_manager._update_communication_state = update_communication_state
+    monkeypatch.setattr(component_manager, "_update_communication_state", update_communication_state)
 
     assert component_manager.communication_state == CommunicationStatus.DISABLED
     assert component_manager.simulation_mode == simulation_mode
@@ -201,13 +202,14 @@ def test_smrb_cm_if_communicating_switching_simulation_mode_must_stop_then_resta
     component_manager: PstSmrbComponentManager,
     pst_lmc_service: TestPstLmcService,
     mock_servicer_context: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test if communicating and simulation mode changes, then need to reconnect."""
     response = ConnectionResponse()
     mock_servicer_context.connect = MagicMock(return_value=response)
 
     update_communication_state = MagicMock(wraps=component_manager._update_communication_state)
-    component_manager._update_communication_state = update_communication_state
+    monkeypatch.setattr(component_manager, "_update_communication_state", update_communication_state)
 
     assert component_manager.communication_state == CommunicationStatus.DISABLED
     assert component_manager.simulation_mode == SimulationMode.TRUE
@@ -240,10 +242,11 @@ def test_smrb_cm_if_communicating_switching_simulation_mode_must_stop_then_resta
 
 def test_smrb_cm_not_communicating_switching_simulation_mode_not_try_to_establish_connection(
     component_manager: PstSmrbComponentManager,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test if not communicating and change of simulation happens, don't do anything."""
     update_communication_state = MagicMock(wraps=component_manager._update_communication_state)
-    component_manager._update_communication_state = update_communication_state
+    monkeypatch.setattr(component_manager, "_update_communication_state", update_communication_state)
 
     assert component_manager.communication_state == CommunicationStatus.DISABLED
     assert component_manager.simulation_mode == SimulationMode.TRUE
@@ -260,7 +263,7 @@ def test_smrb_cm_not_communicating_switching_simulation_mode_not_try_to_establis
 
 def test_smrb_cm_smrb_configure_beam(
     component_manager: PstSmrbComponentManager,
-    configure_beam_request: dict,
+    configure_beam_request: Dict[str, Any],
     task_callback: Callable,
     calculated_smrb_subband_resources: dict,
 ) -> None:
@@ -272,7 +275,7 @@ def test_smrb_cm_smrb_configure_beam(
         task_callback=task_callback
     )
 
-    component_manager.assign(resources=configure_beam_request, task_callback=task_callback)
+    component_manager.configure_beam(resources=configure_beam_request, task_callback=task_callback)
 
     api.configure_beam.assert_called_once_with(
         resources=calculated_smrb_subband_resources, task_callback=task_callback
@@ -297,7 +300,7 @@ def test_smrb_cm_smrb_deconfigure_beam(
 
 def test_smrb_cm_configure_scan(
     component_manager: PstSmrbComponentManager,
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
     task_callback: Callable,
 ) -> None:
     """Test that the component manager calls the API for configure."""
@@ -335,7 +338,7 @@ def test_smrb_cm_deconfigure_scan(
 
 def test_smrb_cm_smrb_scan(
     component_manager: PstSmrbComponentManager,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
     task_callback: Callable,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -351,7 +354,7 @@ def test_smrb_cm_smrb_scan(
     component_manager.start_scan(scan_request, task_callback=task_callback)
 
     api.start_scan.assert_called_once_with(
-        scan_request,
+        args=scan_request,
         task_callback=task_callback,
     )
     api.monitor.assert_called_once_with(
@@ -413,24 +416,6 @@ def test_smrb_cm_smrb_obsreset(
     component_manager.obsreset(task_callback=task_callback)
 
     api.reset.assert_called_once_with(
-        task_callback=task_callback,
-    )
-
-
-def test_smrb_cm_smrb_restart(
-    component_manager: PstSmrbComponentManager,
-    task_callback: Callable,
-) -> None:
-    """Test that the component manager calls the API to restart service in ABORTED or FAULT state."""
-    api = MagicMock()
-    component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback,
-    )
-
-    component_manager.restart(task_callback=task_callback)
-
-    api.restart.assert_called_once_with(
         task_callback=task_callback,
     )
 

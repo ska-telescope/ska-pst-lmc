@@ -20,12 +20,18 @@ server:
         devices:
         - name: "low-pst/dsp/01"
           properties:
+          - name: "DeviceID"
+            values:
+            - "1"
           - name: "process_api_endpoint"
             values:
             - "{{.Release.Name}}-{{.Values.dsp.dsp_process_api_endpoint}}"
           - name: "monitoring_polling_rate"
             values:
             - "{{.Values.dsp.monitor_polling_rate}}"
+          - name: "LoggingLevelDefault"
+            values:
+            - "{{.Values.loggingLevel}}"
           attribute_properties:
           - attribute: "simulationMode"
             properties:
@@ -36,12 +42,18 @@ server:
         devices:
         - name: "low-pst/recv/01"
           properties:
+          - name: "DeviceID"
+            values:
+            - "1"
           - name: "process_api_endpoint"
             values:
             - "{{.Release.Name}}-{{.Values.recv.recv_process_api_endpoint}}"
           - name: "monitoring_polling_rate"
             values:
             - "{{.Values.recv.monitor_polling_rate}}"
+          - name: "LoggingLevelDefault"
+            values:
+            - "{{.Values.loggingLevel}}"
           attribute_properties:
           - attribute: "simulationMode"
             properties:
@@ -52,12 +64,18 @@ server:
         devices:
         - name: "low-pst/smrb/01"
           properties:
+          - name: "DeviceID"
+            values:
+            - "1"
           - name: "process_api_endpoint"
             values:
             - "{{.Release.Name}}-{{.Values.smrb.smrb_process_api_endpoint}}"
           - name: "monitoring_polling_rate"
             values:
             - "{{.Values.smrb.monitor_polling_rate}}"
+          - name: "LoggingLevelDefault"
+            values:
+            - "{{.Values.loggingLevel}}"
           attribute_properties:
           - attribute: "simulationMode"
             properties:
@@ -68,6 +86,9 @@ server:
         devices:
         - name: "low-pst/beam/01"
           properties:
+          - name: "DeviceID"
+            values:
+            - "1"
           - name: "beam_id"
             values:
             - "1"
@@ -83,6 +104,9 @@ server:
           - name: "SendFQDN"
             values:
             - "low-pst/send/01"
+          - name: "LoggingLevelDefault"
+            values:
+            - "{{.Values.loggingLevel}}"
           attribute_properties:
           - attribute: "simulationMode"
             properties:

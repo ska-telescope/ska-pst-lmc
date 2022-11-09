@@ -17,6 +17,7 @@ __all__ = [
     "PstProcessApiGrpc",
     "PstGrpcLmcClient",
     "PstBaseDevice",
+    "PstBaseProcessDevice",
 ]
 
 from .monitor_data_handler import MonitorDataHandler, MonitorDataStore
@@ -26,5 +27,5 @@ from .component_manager import (
     TaskResponse,
 )
 from .process_api import PstProcessApi, PstProcessApiGrpc
-from .pst_device import PstBaseDevice
+from .pst_device import PstBaseDevice, PstBaseProcessDevice
 from .grpc_lmc_client import PstGrpcLmcClient

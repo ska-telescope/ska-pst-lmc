@@ -11,7 +11,7 @@ import logging
 import threading
 import time
 import unittest
-from typing import Any, Callable
+from typing import Any, Callable, Dict
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -151,9 +151,9 @@ def test_recv_simulator_api_configure_scan(
     simulator: PstReceiveSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
 ) -> None:
-    """Test that deconfigure_beam simulator calls task."""
+    """Test that configure_scan simulator calls task."""
     with unittest.mock.patch.object(
         simulator, "configure_scan", wraps=simulator.configure_scan
     ) as configure_scan:
@@ -176,7 +176,7 @@ def test_recv_simulator_api_deconfigure_scan(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that deconfigure_beam simulator calls task."""
+    """Test that deconfigure_scan simulator calls task."""
     with unittest.mock.patch.object(
         simulator, "deconfigure_scan", wraps=simulator.deconfigure_scan
     ) as deconfigure_scan:
@@ -199,7 +199,7 @@ def test_recv_simulator_api_start_scan(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that deconfigure_beam simulator calls task."""
+    """Test that start_scan simulator calls task."""
     args = {"foo": "bar"}
     with unittest.mock.patch.object(simulator, "start_scan", wraps=simulator.start_scan) as start_scan:
         simulation_api.start_scan(args, task_callback)
@@ -274,26 +274,6 @@ def test_recv_simulator_api_reset(
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(configured=False)
-
-
-def test_recv_simulator_api_restart(
-    simulation_api: PstReceiveProcessApiSimulator,
-    simulator: PstReceiveSimulator,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that restart simulator calls task."""
-    with unittest.mock.patch.object(simulator, "restart", wraps=simulator.restart) as restart:
-        simulation_api.restart(task_callback)
-        restart.assert_called_once()
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(progress=55),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_with(configured=False, resourced=False)
 
 
 def test_recv_simulator_api_go_to_fault(

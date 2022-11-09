@@ -13,7 +13,7 @@ import logging
 import threading
 import time
 from random import randint
-from typing import Generator
+from typing import Any, Dict, Generator
 from unittest.mock import ANY, MagicMock, call
 
 import grpc
@@ -39,8 +39,6 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     MonitorResponse,
     ResetRequest,
     ResetResponse,
-    RestartRequest,
-    RestartResponse,
     ScanConfiguration,
     SmrbBeamConfiguration,
     SmrbMonitorData,
@@ -97,7 +95,7 @@ def test_smrb_grpc_configure_beam(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_beam_request: dict,
+    configure_beam_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
     """Test that SMRB gRPC configure beam."""
@@ -119,14 +117,14 @@ def test_smrb_grpc_configure_beam(
     component_state_callback.assert_called_once_with(resourced=True)
 
 
-def test_smrb_grpc_configure_beam_when_already_assigned(
+def test_smrb_grpc_configure_beam_when_beam_configured(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_beam_request: dict,
+    configure_beam_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
-    """Test that SMRB gRPC configure beam when resources alreay assigned."""
+    """Test that SMRB gRPC configure beam when beam already configured."""
     mock_servicer_context.configure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.CONFIGURED_FOR_BEAM_ALREADY,
@@ -152,7 +150,7 @@ def test_smrb_grpc_configure_beam_when_throws_exception(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_beam_request: dict,
+    configure_beam_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
     """Test that SMRB gRPC configure beam throws an exception."""
@@ -254,7 +252,7 @@ def test_smrb_grpc_configure_scan(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
     """Test that SMRB gRPC calls configure_scan on remote service."""
@@ -280,7 +278,7 @@ def test_smrb_grpc_configure_when_already_configured(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
     """Test that SMRB gRPC configure scan and already configured."""
@@ -308,7 +306,7 @@ def test_smrb_grpc_configure_when_throws_exception(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
     """Test that SMRB gRPC configure scan throws an exception."""
@@ -409,7 +407,7 @@ def test_smrb_grpc_deconfigure_when_throws_exception(
 def test_smrb_grpc_scan(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
     expected_scan_request_protobuf: StartScanRequest,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
@@ -432,7 +430,7 @@ def test_smrb_grpc_scan(
 def test_smrb_grpc_scan_when_already_scanning(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
     expected_scan_request_protobuf: StartScanRequest,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
@@ -458,7 +456,7 @@ def test_smrb_grpc_scan_when_already_scanning(
 def test_smrb_grpc_scan_when_throws_exception(
     grpc_api: PstSmrbProcessApiGrpc,
     mock_servicer_context: MagicMock,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
     expected_scan_request_protobuf: StartScanRequest,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
@@ -643,53 +641,6 @@ def test_smrb_grpc_reset_when_exception_thrown(
     expected_calls = [
         call(status=TaskStatus.IN_PROGRESS),
         call(status=TaskStatus.FAILED, result="Resetting error!", exception=ANY),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_once_with(obsfault=True)
-
-
-def test_smrb_grpc_restart(
-    grpc_api: PstSmrbProcessApiGrpc,
-    mock_servicer_context: MagicMock,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that SMRB gRPC abort."""
-    response = RestartResponse()
-    mock_servicer_context.restart = MagicMock(return_value=response)
-
-    grpc_api.restart(task_callback=task_callback)
-
-    mock_servicer_context.restart.assert_called_once_with(RestartRequest())
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_once_with(configured=False, resourced=False)
-
-
-def test_smrb_grpc_restart_when_exception_thrown(
-    grpc_api: PstSmrbProcessApiGrpc,
-    mock_servicer_context: MagicMock,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that SMRB gRPC restart when exception is thrown."""
-    mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
-    mock_servicer_context.restart.side_effect = TestMockException(
-        grpc_status_code=grpc.StatusCode.INTERNAL,
-        message="Restarting error!",
-    )
-
-    grpc_api.restart(task_callback=task_callback)
-
-    mock_servicer_context.restart.assert_called_once_with(RestartRequest())
-    mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(status=TaskStatus.FAILED, result="Restarting error!", exception=ANY),
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_once_with(obsfault=True)

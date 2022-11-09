@@ -13,6 +13,7 @@ import logging
 import threading
 import time
 import unittest
+from typing import Any, Dict
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -119,9 +120,9 @@ def test_dsp_simulator_api_configure_scan(
     simulator: PstDspSimulator,
     component_state_callback: MagicMock,
     task_callback: MagicMock,
-    configure_scan_request: dict,
+    configure_scan_request: Dict[str, Any],
 ) -> None:
-    """Test that deconfigure_beam simulator calls task."""
+    """Test that configure_scan simulator calls task."""
     with unittest.mock.patch.object(simulator, "configure_scan", wraps=simulator.configure_scan) as configure:
         simulation_api.configure_scan(configure_scan_request, task_callback)
         configure.assert_called_with(configuration=configure_scan_request)
@@ -142,7 +143,7 @@ def test_dsp_simulator_api_deconfigure_scan(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that deconfigure_beam simulator calls task."""
+    """Test that deconfigure_scan simulator calls task."""
     with unittest.mock.patch.object(
         simulator, "deconfigure_scan", wraps=simulator.deconfigure_scan
     ) as deconfigure_scan:
@@ -163,7 +164,7 @@ def test_dsp_simulator_api_deconfigure_scan(
 def test_dsp_simulator_api_start_scan(
     simulation_api: PstDspProcessApiSimulator,
     simulator: PstDspSimulator,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
@@ -239,25 +240,6 @@ def test_dsp_simulator_api_reset(
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(configured=False)
-
-
-def test_dsp_simulator_api_restart(
-    simulation_api: PstDspProcessApiSimulator,
-    simulator: PstDspSimulator,
-    component_state_callback: MagicMock,
-    task_callback: MagicMock,
-) -> None:
-    """Test that restart simulator calls task."""
-    simulation_api.restart(task_callback)
-
-    expected_calls = [
-        call(status=TaskStatus.IN_PROGRESS),
-        call(progress=47),
-        call(progress=87),
-        call(status=TaskStatus.COMPLETED, result="Completed"),
-    ]
-    task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_with(configured=False, resourced=False)
 
 
 def test_dsp_simulator_api_go_to_fault(

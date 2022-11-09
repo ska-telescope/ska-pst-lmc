@@ -182,19 +182,6 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         self._component_state_callback(configured=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-    def restart(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
-        """Restart service when in ABORTED / FAULT state.
-
-        :param task_callback: callable to connect back to the component manager.
-        """
-        task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
-        task_callback(progress=47)
-        time.sleep(0.1)
-        task_callback(progress=87)
-        self._component_state_callback(configured=False, resourced=False)
-        task_callback(status=TaskStatus.COMPLETED, result="Completed")
-
     def _simulated_monitor_data_generator(
         self: PstDspProcessApiSimulator, polling_rate: int
     ) -> Generator[Dict[int, Any], None, None]:

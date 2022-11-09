@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import tango
 from ska_tango_base.control_model import SimulationMode
@@ -18,14 +18,14 @@ from tango import DebugIt
 from tango.server import attribute, command, device_property, run
 
 import ska_pst_lmc.release as release
-from ska_pst_lmc.component.pst_device import PstBaseDevice
+from ska_pst_lmc.component.pst_device import PstBaseProcessDevice
 from ska_pst_lmc.dsp.dsp_component_manager import PstDspComponentManager
 from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData
 
 __all__ = ["PstDsp", "main"]
 
 
-class PstDsp(PstBaseDevice):
+class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
     """A software TANGO device for managing the DSP component of the PST.LMC subsystem."""
 
     # -----------------
@@ -77,6 +77,7 @@ class PstDsp(PstBaseDevice):
             component_state_callback=self._component_state_changed,
             monitor_polling_rate=self.monitor_polling_rate,
             monitor_data_callback=self._update_monitor_data,
+            beam_id=self.DeviceID,
         )
 
     def always_executed_hook(self: PstDsp) -> None:
@@ -260,7 +261,7 @@ class PstDsp(PstBaseDevice):
 
         :return: The result code and the command unique ID
         """
-        return [f"{self.__class__.__name__}, {self.read_buildState()}"]
+        return [f"{self.__class__.__name__}, {self._build_state}"]
 
 
 # ----------
@@ -268,7 +269,7 @@ class PstDsp(PstBaseDevice):
 # ----------
 
 
-def main(args: Optional[list] = None, **kwargs: dict) -> int:
+def main(args: Optional[list] = None, **kwargs: Any) -> int:
     """
     Entry point for module.
 

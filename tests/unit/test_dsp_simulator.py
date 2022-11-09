@@ -67,7 +67,7 @@ def test_dps_simulator_configure_scan(simulator: PstDspSimulator) -> None:
 
 def test_dsp_simulator_until_scan_get_data_returns_initial_data(
     simulator: PstDspSimulator,
-    scan_request: dict,
+    scan_request: Dict[str, Any],
 ) -> None:
     """Test that start_scan/stop_scan will only update data while scanning."""
     initial_data = simulator.get_data()

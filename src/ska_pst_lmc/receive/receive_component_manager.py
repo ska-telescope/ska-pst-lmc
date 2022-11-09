@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Dict, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
@@ -24,6 +24,7 @@ from ska_pst_lmc.receive.receive_process_api import (
     PstReceiveProcessApiSimulator,
 )
 from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources
+from ska_pst_lmc.util.callback import Callback, wrap_callback
 
 
 class PstReceiveComponentManager(PstApiComponentManager):
@@ -97,24 +98,15 @@ class PstReceiveComponentManager(PstApiComponentManager):
         if self._simuation_mode == SimulationMode.TRUE:
             self._api = PstReceiveProcessApiSimulator(
                 logger=self.logger,
-                component_state_callback=self._component_state_callback,
+                component_state_callback=self._push_component_state_update,
             )
         else:
             self._api = PstReceiveProcessApiGrpc(
                 client_id=self._device_name,
                 grpc_endpoint=self.api_endpoint,
                 logger=self.logger,
-                component_state_callback=self._component_state_callback,
+                component_state_callback=self._push_component_state_update,
             )
-
-    @property
-    def beam_id(self: PstReceiveComponentManager) -> int:
-        """Return the beam id for the current RECV component.
-
-        This should be determined from the FQDN as that should have
-        the beam 1 encoded in it.
-        """
-        return 1
 
     @property
     def received_rate(self: PstReceiveComponentManager) -> float:
@@ -167,7 +159,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
         return self._monitor_data_handler.monitor_data
 
     def configure_beam(
-        self: PstReceiveComponentManager, resources: dict, task_callback: Callable
+        self: PstReceiveComponentManager, resources: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
         """
         Configure beam resources in the component.
@@ -184,7 +176,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
 
         # deal only with subband 1 for now. otherwise we have to deal with tracking
         # multiple long running tasks.
-        def _task(task_callback: Callable) -> None:
+        def _task(task_callback: Callback) -> None:
             common_resources = recv_resources["common"]
             subband_resources = recv_resources["subbands"][1]
 
@@ -193,18 +185,20 @@ class PstReceiveComponentManager(PstApiComponentManager):
                 "subband": subband_resources,
             }
 
-            self._api.configure_beam(resources=resources, task_callback=task_callback)
+            self._api.configure_beam(resources=resources, task_callback=wrap_callback(task_callback))
 
         return self._submit_background_task(
             _task,
             task_callback=task_callback,
         )
 
-    def start_scan(self: PstReceiveComponentManager, args: dict, task_callback: Callable) -> TaskResponse:
+    def start_scan(
+        self: PstReceiveComponentManager, args: Dict[str, Any], task_callback: Callback = None
+    ) -> TaskResponse:
         """Start scanning."""
 
-        def _task(task_callback: Callable[..., None]) -> None:
-            self._api.start_scan(args, task_callback=task_callback)
+        def _task(task_callback: Callback) -> None:
+            self._api.start_scan(args=args, task_callback=wrap_callback(task_callback))
             self._api.monitor(
                 # for now only handling 1 subband
                 subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
@@ -213,11 +207,11 @@ class PstReceiveComponentManager(PstApiComponentManager):
 
         return self._submit_background_task(_task, task_callback=task_callback)
 
-    def stop_scan(self: PstReceiveComponentManager, task_callback: Callable) -> TaskResponse:
+    def stop_scan(self: PstReceiveComponentManager, task_callback: Callback = None) -> TaskResponse:
         """End scanning."""
 
-        def _task(task_callback: Callable[..., None]) -> None:
-            self._api.stop_scan(task_callback=task_callback)
+        def _task(task_callback: Callback) -> None:
+            self._api.stop_scan(task_callback=wrap_callback(task_callback))
 
             # reset the monitoring data
             self._monitor_data_handler.reset_monitor_data()

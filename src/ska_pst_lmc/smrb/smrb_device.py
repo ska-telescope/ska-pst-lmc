@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import tango
 from ska_tango_base.control_model import SimulationMode
@@ -18,14 +18,14 @@ from tango import DebugIt
 from tango.server import attribute, command, device_property, run
 
 import ska_pst_lmc.release as release
-from ska_pst_lmc.component.pst_device import PstBaseDevice
+from ska_pst_lmc.component.pst_device import PstBaseProcessDevice
 from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
 from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData
 
 __all__ = ["PstSmrb", "main"]
 
 
-class PstSmrb(PstBaseDevice):
+class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
     """A software TANGO device for managing the SMRB component of the PST.LMC subsystem.
 
     This TANGO device is used to manage the Shared Memory Ring Buffer (SMRB) for the
@@ -77,6 +77,7 @@ class PstSmrb(PstBaseDevice):
             communication_state_callback=self._communication_state_changed,
             component_state_callback=self._component_state_changed,
             monitor_polling_rate=self.monitor_polling_rate,
+            beam_id=self.DeviceID,
         )
 
     def always_executed_hook(self: PstSmrb) -> None:
@@ -263,7 +264,7 @@ class PstSmrb(PstBaseDevice):
 
         :return: The result code and the command unique ID
         """
-        return [f"{self.__class__.__name__}, {self.read_buildState()}"]
+        return [f"{self.__class__.__name__}, {self._build_state}"]
 
 
 # ----------
@@ -271,7 +272,7 @@ class PstSmrb(PstBaseDevice):
 # ----------
 
 
-def main(args: Optional[list] = None, **kwargs: dict) -> int:
+def main(args: Optional[list] = None, **kwargs: Any) -> int:
     """
     Entry point for module.
 
