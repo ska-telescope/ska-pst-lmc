@@ -402,7 +402,7 @@ class PstBeamComponentManager(PstComponentManager):
         self._smrb_device.Abort()
         self._recv_device.Abort()
         self._dsp_device.Abort()
-        return super().abort_tasks(task_callback)
+        return self.abort_commands(task_callback)
 
     def obsreset(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
         """Reset the component and put it into a READY state."""
