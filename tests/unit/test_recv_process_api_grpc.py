@@ -181,7 +181,7 @@ def test_receive_grpc_configure_beam(
     component_state_callback.assert_called_once_with(resourced=True)
 
 
-def test_receive_grpc_configure_beam_when_already_assigned(
+def test_receive_grpc_configure_beam_when_beam_configured(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
@@ -189,7 +189,7 @@ def test_receive_grpc_configure_beam_when_already_assigned(
     expected_receive_resources_protobuf: dict,
     task_callback: MagicMock,
 ) -> None:
-    """Test that RECV gRPC configure beam when resources alreay assigned."""
+    """Test that RECV gRPC configure beam when beam already configured."""
     mock_servicer_context.configure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.CONFIGURED_FOR_BEAM_ALREADY,

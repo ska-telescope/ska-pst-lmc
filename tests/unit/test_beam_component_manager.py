@@ -69,7 +69,7 @@ def dsp_fqdn() -> str:
 
 @pytest.fixture
 def dsp_device_proxy(dsp_fqdn: str) -> PstDeviceProxy:
-    """Create RECV device proxy fixture."""
+    """Create DSP device proxy fixture."""
     proxy = MagicMock()
     proxy.fqdn = dsp_fqdn
     proxy.__repr__ = MagicMock(return_value=f"PstDeviceProxy('{dsp_fqdn}')")  # type: ignore

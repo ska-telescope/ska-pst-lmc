@@ -335,7 +335,7 @@ class TestPstSmrb:
         assert device_under_test.simulationMode == SimulationMode.FALSE
 
     @pytest.mark.forked
-    def test_recv_go_to_fault_when_resources_assigned(
+    def test_recv_go_to_fault_when_beam_configured(
         self: TestPstSmrb,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],

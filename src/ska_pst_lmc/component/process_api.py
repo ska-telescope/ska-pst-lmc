@@ -72,7 +72,7 @@ class PstProcessApi:
     def configure_beam(self: PstProcessApi, resources: Dict[str, Any], task_callback: Callable) -> None:
         """Configure beam for service.
 
-        :param resources: Dict[str, Any]ionary of resources to allocate.
+        :param resources: Dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
@@ -87,7 +87,7 @@ class PstProcessApi:
     def configure_scan(self: PstProcessApi, configuration: Dict[str, Any], task_callback: Callable) -> None:
         """Configure a scan.
 
-        :param configuration: the configuration of for the scan.
+        :param configuration: the scan configuration for the device.
         :param task_callback: callable to connect back to the component manager.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
@@ -321,7 +321,7 @@ class PstProcessApiGrpc(PstProcessApi):
     def configure_beam(self: PstProcessApiGrpc, resources: Dict[str, Any], task_callback: Callable) -> None:
         """Configure the beam with the resources.
 
-        :param resources: Dict[str, Any]ionary of resources to allocate.
+        :param resources: Dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
         """
         self._logger.debug(f"Assigning resources for '{self._client_id}': {resources}")

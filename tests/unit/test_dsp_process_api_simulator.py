@@ -122,7 +122,7 @@ def test_dsp_simulator_api_configure_scan(
     task_callback: MagicMock,
     configure_scan_request: Dict[str, Any],
 ) -> None:
-    """Test that deconfigure_beam simulator calls task."""
+    """Test that configure_scan simulator calls task."""
     with unittest.mock.patch.object(simulator, "configure_scan", wraps=simulator.configure_scan) as configure:
         simulation_api.configure_scan(configure_scan_request, task_callback)
         configure.assert_called_with(configuration=configure_scan_request)
@@ -143,7 +143,7 @@ def test_dsp_simulator_api_deconfigure_scan(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that deconfigure_beam simulator calls task."""
+    """Test that deconfigure_scan simulator calls task."""
     with unittest.mock.patch.object(
         simulator, "deconfigure_scan", wraps=simulator.deconfigure_scan
     ) as deconfigure_scan:

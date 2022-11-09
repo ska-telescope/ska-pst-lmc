@@ -73,7 +73,7 @@ ska-taranta-auth:
   enabled: false
 
 ska-pst-smrb:
-  enabled: false
+  enabled: true
   hostIPC: true
   tolerations: []
   config:
@@ -82,7 +82,7 @@ ska-pst-smrb:
         SMRB_CORE_CMD: "/usr/local/bin/ska_pst_smrb_core -vvv -c 8080"
 
 ska-pst-recv:
-  enabled: false
+  enabled: true
   hostIPC: true
   service:
     protocol: TCP

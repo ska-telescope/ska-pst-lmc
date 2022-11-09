@@ -28,7 +28,7 @@ from ska_pst_lmc.component.component_manager import PstComponentManager
 
 __all__ = [
     "PstBaseDevice",
-    "PstBaseProccesDevice",
+    "PstBaseProcessDevice",
 ]
 
 T = TypeVar("T", bound=PstComponentManager)
@@ -234,7 +234,7 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice):
         return [[result_code], [message]]
 
 
-class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
+class PstBaseProcessDevice(Generic[T], PstBaseDevice[T]):
     """Base class for all the TANGO devices that manager an external process.
 
     This extends from :py:class:`PstBaseDevice` but exposes the ConfigureBeam
@@ -242,7 +242,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
     may not change as often as the scan configuration.
     """
 
-    def init_command_objects(self: PstBaseProccesDevice) -> None:
+    def init_command_objects(self: PstBaseProcessDevice) -> None:
         """Set up the command objects."""
         super().init_command_objects()
 
@@ -272,7 +272,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
     # General methods
     # ---------------
 
-    def _init_state_model(self: PstBaseProccesDevice) -> None:
+    def _init_state_model(self: PstBaseProcessDevice) -> None:
         """Set up the state model for the device."""
         super()._init_state_model()
         self.obs_state_model = ObsStateModel(
@@ -281,7 +281,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
         )
 
     def _component_state_changed(  # type: ignore[override]
-        self: PstBaseProccesDevice,
+        self: PstBaseProcessDevice,
         resourced: Optional[bool] = None,
         **kwargs: Any,
     ) -> None:
@@ -309,7 +309,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
     class InitCommand(CspSubElementObsDevice.InitCommand):
         """A class for the CspSubElementObsDevice's init_device() "command"."""
 
-        def do(self: PstBaseProccesDevice.InitCommand) -> Tuple[ResultCode, str]:
+        def do(self: PstBaseProcessDevice.InitCommand) -> Tuple[ResultCode, str]:
             """
             Stateless hook for device initialisation.
 
@@ -326,7 +326,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
             message = "PstBaseProccesDevice.InitCommand completed OK"
             return (ResultCode.OK, message)
 
-    def is_ConfigureBeam_allowed(self: PstBaseProccesDevice) -> bool:
+    def is_ConfigureBeam_allowed(self: PstBaseProcessDevice) -> bool:
         """
         Return whether the `ConfigureBeam` command may be called in the current state.
 
@@ -352,7 +352,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
         "The message is for information purpose only.",
     )
     @DebugIt()
-    def ConfigureBeam(self: PstBaseProccesDevice, argin: str) -> DevVarLongStringArrayType:
+    def ConfigureBeam(self: PstBaseProcessDevice, argin: str) -> DevVarLongStringArrayType:
         """
         Configure the observing device parameters for the current scan.
 
@@ -370,7 +370,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
 
         return ([result_code], [message])
 
-    def is_DeconfigureBeam_allowed(self: PstBaseProccesDevice) -> bool:
+    def is_DeconfigureBeam_allowed(self: PstBaseProcessDevice) -> bool:
         """
         Return whether the `DeconfigureBeam` command may be called in the current state.
 
@@ -393,7 +393,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
         doc_out="([Command ResultCode], [Unique ID of the command])",
     )
     @DebugIt()
-    def DeconfigureBeam(self: PstBaseProccesDevice) -> DevVarLongStringArrayType:
+    def DeconfigureBeam(self: PstBaseProcessDevice) -> DevVarLongStringArrayType:
         """
         Deconfigure the beam for process device.
 
@@ -407,7 +407,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
 
         return ([result_code], [message])
 
-    def is_DeconfigureScan_allowed(self: PstBaseProccesDevice) -> bool:
+    def is_DeconfigureScan_allowed(self: PstBaseProcessDevice) -> bool:
         """
         Return whether the `DeconfigureScan` command may be called in the current state.
 
@@ -430,7 +430,7 @@ class PstBaseProccesDevice(Generic[T], PstBaseDevice[T]):
         doc_out="([Command ResultCode], [Unique ID of the command])",
     )
     @DebugIt()
-    def DeconfigureScan(self: PstBaseProccesDevice) -> DevVarLongStringArrayType:
+    def DeconfigureScan(self: PstBaseProcessDevice) -> DevVarLongStringArrayType:
         """
         Deconfigure the scan for process device.
 

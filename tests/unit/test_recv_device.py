@@ -351,13 +351,13 @@ class TestPstReceive:
         assert device_under_test.simulationMode == SimulationMode.FALSE
 
     @pytest.mark.forked
-    def test_recv_go_to_fault_when_resources_assigned(
+    def test_recv_go_to_fault_when_beam_configured(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
-        """Test that when device is SCANNING and abort is requested."""
+        """Test that when device is IDEL and GoToFault is requested."""
         assert device_under_test.state() == DevState.OFF
 
         tango_device_command_checker.assert_command(
@@ -397,7 +397,7 @@ class TestPstReceive:
         configure_scan_request: Dict[str, Any],
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
-        """Test that when device is SCANNING and abort is requested."""
+        """Test that when device is READY and GoToFault is requested."""
         assert device_under_test.state() == DevState.OFF
 
         tango_device_command_checker.assert_command(
@@ -439,7 +439,7 @@ class TestPstReceive:
         scan_id: int,
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
-        """Test that when device is SCANNING and abort is requested."""
+        """Test that when device is SCANNING and GoToFault is requested."""
         assert device_under_test.state() == DevState.OFF
 
         tango_device_command_checker.assert_command(

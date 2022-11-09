@@ -176,7 +176,7 @@ class PstBeamComponentManager(PstComponentManager):
         """
 
         def _completion_callback(task_callback: Callable) -> None:
-            self.logger.debug("All the 'on' commands have completed.")
+            self.logger.debug("All the 'On' commands have completed.")
             self._push_component_state_update(power=PowerState.ON)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
@@ -224,7 +224,7 @@ class PstBeamComponentManager(PstComponentManager):
         """
 
         def _completion_callback(task_callback: Callable) -> None:
-            self.logger.debug("All the 'Standy' commands have completed.")
+            self.logger.debug("All the 'Standby' commands have completed.")
             self._push_component_state_update(power=PowerState.STANDBY)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
@@ -405,7 +405,7 @@ class PstBeamComponentManager(PstComponentManager):
         return super().abort_tasks(task_callback)
 
     def obsreset(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Reset the component to unconfigured but do not release resources."""
+        """Reset the component and put it into a READY state."""
 
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'ObsReset' commands have completed.")

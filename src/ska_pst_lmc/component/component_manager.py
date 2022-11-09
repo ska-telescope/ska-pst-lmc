@@ -352,7 +352,7 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
         """Start scanning.
 
         :param args: scan arguments (i.e start time)
-        :type args: str
+        :type args: Dict[str, Any]
         :param task_callback: callback for background processing to update device status.
         :type task_callback: Callback
         """
@@ -557,7 +557,7 @@ class PstApiComponentManager(PstComponentManager):
         """Start scanning.
 
         :param args: scan arguments (i.e start time)
-        :type args: str
+        :type args: Dict[str, Any]
         :param task_callback: callback for background processing to update device status.
         :type task_callback: Callback
         """
