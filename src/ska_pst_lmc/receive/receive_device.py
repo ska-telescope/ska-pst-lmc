@@ -18,6 +18,7 @@ from tango import DebugIt
 from tango.server import attribute, command, device_property, run
 
 import ska_pst_lmc.release as release
+from ska_pst_lmc.component import as_device_attribute_name
 from ska_pst_lmc.component.pst_device import PstBaseProcessDevice
 from ska_pst_lmc.receive.receive_component_manager import PstReceiveComponentManager
 from ska_pst_lmc.receive.receive_model import ReceiveData
@@ -60,8 +61,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         self._version_id = release.VERSION
 
         for f in dataclasses.fields(ReceiveData):
-            self.set_change_event(f.name, True, True)
-            self.set_archive_event(f.name, True)
+            self.set_change_event(as_device_attribute_name(f.name), True, True)
+            self.set_archive_event(as_device_attribute_name(f.name), True)
 
     def create_component_manager(
         self: PstReceive,
@@ -98,8 +99,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
 
     def _update_monitor_data(self: PstReceive, data: ReceiveData) -> None:
         for (key, value) in dataclasses.asdict(data).items():
-            self.push_change_event(key, value)
-            self.push_archive_event(key, value)
+            self.push_change_event(as_device_attribute_name(key), value)
+            self.push_archive_event(as_device_attribute_name(key), value)
 
     # ----------
     # Attributes
@@ -114,7 +115,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         min_value=0,
         doc="Current data receive rate from the CBF interface",
     )
-    def received_rate(self: PstReceive) -> float:
+    def receivedRate(self: PstReceive) -> float:
         """Get the current data receive rate from the CBF interface.
 
         :returns: current data receive rate from the CBF interface in Gb/s.
@@ -129,7 +130,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         display_unit="B",
         doc="Total number of bytes received from the CBF in the current scan",
     )
-    def received_data(self: PstReceive) -> int:
+    def receivedData(self: PstReceive) -> int:
         """Get the total amount of data received from CBF interface for current scan.
 
         :returns: total amount of data received from CBF interface for current scan in Bytes
@@ -151,7 +152,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         min_warning=-1,
         doc="Current rate of CBF ingest data being dropped or lost by the receiving process",
     )
-    def dropped_rate(self: PstReceive) -> float:
+    def droppedRate(self: PstReceive) -> float:
         """Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
 
         :returns: current rate of CBF ingest data being dropped or lost in MB/s.
@@ -167,7 +168,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         display_unit="B",
         doc="Total number of bytes dropped in the current scan",
     )
-    def dropped_data(self: PstReceive) -> int:
+    def droppedData(self: PstReceive) -> int:
         """Get the total number of bytes dropped in the current scan.
 
         :returns: total number of bytes dropped in the current scan in Bytes.
@@ -180,7 +181,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         label="Out of order packets",
         doc="The total number of packets received out of order in the current scan",
     )
-    def misordered_packets(self: PstReceive) -> int:
+    def misorderedPackets(self: PstReceive) -> int:
         """Get the total number of packets received out of order in the current scan.
 
         :returns: total number of packets received out of order in the current scan.

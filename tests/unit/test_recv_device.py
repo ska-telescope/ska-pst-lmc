@@ -82,7 +82,7 @@ class TestPstReceive:
             "memorized": {"adminMode": str(AdminMode.ONLINE.value)},
         }
 
-    def test_State(self: TestPstReceive, device_under_test: DeviceProxy) -> None:
+    def test_recv_mgmt_State(self: TestPstReceive, device_under_test: DeviceProxy) -> None:
         """
         Test for State.
 
@@ -91,7 +91,7 @@ class TestPstReceive:
         assert device_under_test.state() == DevState.OFF
         assert device_under_test.Status() == "The device is in OFF state."
 
-    def test_GetVersionInfo(self: TestPstReceive, device_under_test: DeviceProxy) -> None:
+    def test_recv_mgmt_GetVersionInfo(self: TestPstReceive, device_under_test: DeviceProxy) -> None:
         """
         Test for GetVersionInfo.
 
@@ -108,7 +108,7 @@ class TestPstReceive:
         assert re.match(version_pattern, version_info[0])
 
     @pytest.mark.forked
-    def test_configure_then_scan_then_stop(
+    def test_recv_mgmt_configure_then_scan_then_stop(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
         tango_device_command_checker: TangoDeviceCommandChecker,
@@ -152,11 +152,11 @@ class TestPstReceive:
 
         # shoud now be able to get some properties
         time.sleep(0.2)
-        assert device_under_test.received_rate > 0.0
-        assert device_under_test.received_data > 0
-        assert device_under_test.dropped_rate > 0.0
-        assert device_under_test.dropped_data > 0
-        assert device_under_test.misordered_packets >= 0
+        assert device_under_test.receivedRate > 0.0
+        assert device_under_test.receivedData > 0
+        assert device_under_test.droppedRate > 0.0
+        assert device_under_test.droppedData > 0
+        assert device_under_test.misorderedPackets >= 0
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.EndScan(),
@@ -181,7 +181,7 @@ class TestPstReceive:
         )
 
     @pytest.mark.forked
-    def test_recv_abort_when_scanning(
+    def test_recv_mgmt_abort_when_scanning(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],
@@ -273,7 +273,7 @@ class TestPstReceive:
         )
 
     @pytest.mark.forked
-    def test_simulation_mode(
+    def test_recv_mgmt_simulation_mode(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
         pst_lmc_service: TestPstLmcService,
@@ -298,7 +298,7 @@ class TestPstReceive:
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
     @pytest.mark.forked
-    def test_simulation_mode_when_not_in_empty_obs_state(
+    def test_recv_mgmt_simulation_mode_when_not_in_empty_obs_state(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],
@@ -326,7 +326,7 @@ class TestPstReceive:
         ].desc == "ValueError: Unable to change simulation mode unless in EMPTY observation state"
 
     @pytest.mark.forked
-    def test_simulation_mode_when_in_empty_obs_state(
+    def test_recv_mgmt_simulation_mode_when_in_empty_obs_state(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
         pst_lmc_service: TestPstLmcService,
@@ -351,7 +351,7 @@ class TestPstReceive:
         assert device_under_test.simulationMode == SimulationMode.FALSE
 
     @pytest.mark.forked
-    def test_recv_go_to_fault_when_beam_configured(
+    def test_recv_mgmt_go_to_fault_when_beam_configured(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],
@@ -390,7 +390,7 @@ class TestPstReceive:
         )
 
     @pytest.mark.forked
-    def test_recv_go_to_fault_when_configured(
+    def test_recv_mgmt_go_to_fault_when_configured(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],
@@ -431,7 +431,7 @@ class TestPstReceive:
         )
 
     @pytest.mark.forked
-    def test_recv_go_to_fault_when_scanning(
+    def test_recv_mgmt_go_to_fault_when_scanning(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],

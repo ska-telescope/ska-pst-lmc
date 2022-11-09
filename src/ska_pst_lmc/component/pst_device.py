@@ -41,6 +41,26 @@ errors.
 """
 
 
+def as_device_attribute_name(attr_name: str) -> str:
+    """Convert attribute name to a TANGO device attribute name.
+
+    Device attribute names should be in lower camel case
+    (i.e. availableDiskSpace) not Python's snake case
+    (i.e. available_disk_space).  This is a utility method that
+    makes the conversion easier.
+
+    :param attr_name: the attribute name to convert from snake case.
+    :type attr_name: str
+    :return: the lower camel case version of input string.
+    :rtype: str
+    """
+    # split attribute name by underscores
+    head, *tail = attr_name.split("_")
+
+    # capitalise the first letter of each component except first.
+    return head + "".join(x.title() for x in tail)
+
+
 class PstBaseDevice(Generic[T], CspSubElementObsDevice):
     """Base class for all the TANGO devices in PST.LMC.
 
