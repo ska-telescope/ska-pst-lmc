@@ -305,7 +305,7 @@ def multidevice_test_context(
     if "port" not in server_configuration:
         server_configuration["port"] = _generate_port()
     if "timeout" not in server_configuration:
-        server_configuration["timeout"] = 1
+        server_configuration["timeout"] = 5
     if "daemon" not in server_configuration:
         server_configuration["daemon"] = True
 
@@ -356,7 +356,13 @@ def callbacks() -> dict:
 
 
 @pytest.fixture()
-def change_event_callbacks() -> MockTangoEventCallbackGroup:
+def additional_change_events_callbacks() -> List[str]:
+    """Return additional change event callbacks."""
+    return []
+
+
+@pytest.fixture()
+def change_event_callbacks(additional_change_events_callbacks: List[str]) -> MockTangoEventCallbackGroup:
     """
     Return a dictionary of Tango device change event callbacks with asynchrony support.
 
@@ -368,6 +374,7 @@ def change_event_callbacks() -> MockTangoEventCallbackGroup:
         "longRunningCommandStatus",
         "longRunningCommandResult",
         "obsState",
+        *additional_change_events_callbacks,
         timeout=5.0,
     )
 

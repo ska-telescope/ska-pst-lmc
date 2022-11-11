@@ -18,8 +18,8 @@ from tango import DebugIt
 from tango.server import attribute, command, device_property, run
 
 import ska_pst_lmc.release as release
-from ska_pst_lmc.component.pst_device import PstBaseProcessDevice
 from ska_pst_lmc.component import as_device_attribute_name
+from ska_pst_lmc.component.pst_device import PstBaseProcessDevice
 from ska_pst_lmc.dsp.dsp_component_manager import PstDspComponentManager
 from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData
 
@@ -54,12 +54,12 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         self._version_id = release.VERSION
 
         for f in dataclasses.fields(DspDiskMonitorData):
-            self.set_change_event(as_device_attribute_name(f.name), True, True)
-            self.set_archive_event(as_device_attribute_name(f.name), True)
+            self.set_change_event(as_device_attribute_name(f.name), True, False)
+            self.set_archive_event(as_device_attribute_name(f.name), True, False)
 
         for n in ["diskUsedBytes", "diskUsedPercentage"]:
-            self.set_change_event(n, True, True)
-            self.set_archive_event(n, True)
+            self.set_change_event(n, True, False)
+            self.set_archive_event(n, True, False)
 
     def create_component_manager(
         self: PstDsp,

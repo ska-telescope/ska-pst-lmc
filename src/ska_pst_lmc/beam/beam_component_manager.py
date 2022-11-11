@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
 from threading import Event
@@ -18,8 +19,9 @@ from ska_tango_base.base import check_communicating
 from ska_tango_base.control_model import AdminMode, CommunicationStatus, PowerState
 from ska_tango_base.executor import TaskStatus
 
+from ska_pst_lmc.component import as_device_attribute_name
 from ska_pst_lmc.component.component_manager import PstComponentManager
-from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
+from ska_pst_lmc.device_proxy import ChangeEventSubscription, DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.util import DeviceCommandJob, Job, SequentialJob, submit_job
 from ska_pst_lmc.util.callback import Callback
 
@@ -97,6 +99,7 @@ class PstBeamComponentManager(PstComponentManager):
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable,
         *args: Any,
+        property_callback: Callable[[str, Any], None],
         **kwargs: Any,
     ) -> None:
         """Initialise component manager.
@@ -119,6 +122,8 @@ class PstBeamComponentManager(PstComponentManager):
         self._dsp_device = DeviceProxyFactory.get_device(dsp_fqdn)
         self._remote_devices = [self._smrb_device, self._recv_device, self._dsp_device]
         self._subscribed = False
+        self._property_callback = property_callback
+
         super().__init__(
             device_name,
             logger,
@@ -129,6 +134,82 @@ class PstBeamComponentManager(PstComponentManager):
             fault=None,
             **kwargs,
         )
+
+        # need to subcribe to properties
+        self._received_rate: float = 0.0
+        self._received_data: int = 0
+        self._dropped_data: int = 0
+        self._dropped_rate: float = 0.0
+        self._write_rate: float = 0.0
+        self._bytes_written: int = 0
+
+        self._monitoring_subscriptions: List[ChangeEventSubscription] = []
+
+    @property
+    def received_rate(self: PstBeamComponentManager) -> float:
+        """Get current recevied data rate."""
+        return self._received_rate
+
+    @received_rate.setter
+    def received_rate(self: PstBeamComponentManager, received_rate: float) -> None:
+        """Set current recevied data rate."""
+        self._received_rate = received_rate
+        self._property_callback("received_rate", received_rate)
+
+    @property
+    def received_data(self: PstBeamComponentManager) -> int:
+        """Get current recevied data in bytes."""
+        return self._received_data
+
+    @received_data.setter
+    def received_data(self: PstBeamComponentManager, received_data: int) -> None:
+        """Set current recevied data in bytes."""
+        self._received_data = received_data
+        self._property_callback("received_data", received_data)
+
+    @property
+    def dropped_rate(self: PstBeamComponentManager) -> float:
+        """Get current dropped data rate."""
+        return self._dropped_rate
+
+    @dropped_rate.setter
+    def dropped_rate(self: PstBeamComponentManager, dropped_rate: float) -> None:
+        """Set current dropped data rate."""
+        self._dropped_rate = dropped_rate
+        self._property_callback("dropped_rate", dropped_rate)
+
+    @property
+    def dropped_data(self: PstBeamComponentManager) -> int:
+        """Get current dropped data in bytes."""
+        return self._dropped_data
+
+    @dropped_data.setter
+    def dropped_data(self: PstBeamComponentManager, dropped_data: int) -> None:
+        """Set current dropped data in bytes."""
+        self._dropped_data = dropped_data
+        self._property_callback("dropped_data", dropped_data)
+
+    @property
+    def write_rate(self: PstBeamComponentManager) -> float:
+        """Get current data write rate."""
+        return self._write_rate
+
+    @write_rate.setter
+    def write_rate(self: PstBeamComponentManager, write_rate: int) -> None:
+        """Set current data write rate."""
+        self._write_rate = write_rate
+        self._property_callback("write_rate", write_rate)
+
+    @property
+    def bytes_written(self: PstBeamComponentManager) -> int:
+        """Get current amount of bytes written."""
+        return self._bytes_written
+
+    @bytes_written.setter
+    def bytes_written(self: PstBeamComponentManager, bytes_written: int) -> None:
+        """Set current amount of bytes written."""
+        self._bytes_written = bytes_written
+        self._property_callback("bytes_written", bytes_written)
 
     def _handle_communication_state_change(
         self: PstBeamComponentManager, communication_state: CommunicationStatus
@@ -166,6 +247,45 @@ class PstBeamComponentManager(PstComponentManager):
             task_callback=task_callback,
         )
 
+    def _subscribe_monitoring_events(self: PstBeamComponentManager) -> None:
+        """Subscribe to monitoring attributes of remote devices."""
+        self.logger.debug(f"{self._device_name} subscribing to monitoring events")
+        subscriptions_config = {
+            self._recv_device: ["received_rate", "received_data", "dropped_data", "dropped_rate"],
+            self._dsp_device: ["write_rate", "bytes_written"],
+        }
+
+        def _set_attr(attribute: str, value: Any) -> None:
+            try:
+                setattr(self, attribute, value)
+            except Exception:
+                self.logger.exception(f"Error in trying to set value to attribute {attribute}", exc_info=True)
+
+        def _subscribe_change_event(device: PstDeviceProxy, attribute: str) -> ChangeEventSubscription:
+            try:
+                device_attribute = as_device_attribute_name(attribute)
+                self.logger.info(f"Tring to subscribe to change event of {device}.{device_attribute}")
+                return device.subscribe_change_event(
+                    attribute_name=device_attribute,
+                    callback=functools.partial(_set_attr, attribute),
+                )
+            except Exception:
+                self.logger.exception(f"Error in subscribing to change event of {device}")
+                raise
+
+        self._monitoring_subscriptions = [
+            _subscribe_change_event(device, property)
+            for device, property_names in subscriptions_config.items()
+            for property in property_names
+        ]
+
+    def _unsubscribe_monitoring_events(self: PstBeamComponentManager) -> None:
+        """Unsubscribed from current monitoring attributes of remote devices."""
+        for s in self._monitoring_subscriptions:
+            s.unsubscribe()
+
+        self._monitoring_subscriptions = []
+
     @check_communicating
     def on(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
         """
@@ -178,6 +298,9 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'On' commands have completed.")
             self._push_component_state_update(power=PowerState.ON)
+
+            self._subscribe_monitoring_events()
+
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
@@ -203,6 +326,9 @@ class PstBeamComponentManager(PstComponentManager):
             self.logger.debug("All the 'Off' commands have completed.")
             self._push_component_state_update(power=PowerState.OFF)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+        # need to unsubscribe from monitoring events.
+        self._unsubscribe_monitoring_events()
 
         return self._submit_remote_job(
             job=DeviceCommandJob(

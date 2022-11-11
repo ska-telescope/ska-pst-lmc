@@ -57,12 +57,20 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         util = tango.Util.instance()
         util.set_serial_model(tango.SerialModel.NO_SYNC)
         super().init_device()
+
+        self._received_rate = 0.0
+        self._received_data = 0
+        self._dropped_rate = 0.0
+        self._dropped_data = 0
+        self._misordered_packets = 0
+
         self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
         self._version_id = release.VERSION
 
         for f in dataclasses.fields(ReceiveData):
-            self.set_change_event(as_device_attribute_name(f.name), True, True)
-            self.set_archive_event(as_device_attribute_name(f.name), True)
+            attr_name = as_device_attribute_name(f.name)
+            self.set_change_event(attr_name, True, False)
+            self.set_archive_event(attr_name, True, False)
 
     def create_component_manager(
         self: PstReceive,
@@ -98,16 +106,21 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         """
 
     def _update_monitor_data(self: PstReceive, data: ReceiveData) -> None:
-        for (key, value) in dataclasses.asdict(data).items():
-            self.push_change_event(as_device_attribute_name(key), value)
-            self.push_archive_event(as_device_attribute_name(key), value)
+        try:
+            for (key, value) in dataclasses.asdict(data).items():
+                setattr(self, f"_{key}", value)
+                attr_name = as_device_attribute_name(key)
+                self.push_change_event(attr_name, value)
+                self.push_archive_event(attr_name, value)
+        except Exception:
+            self.logger.warning(f"Error in updating monitoring data: {data}", exc_info=True)
 
     # ----------
     # Attributes
     # ----------
 
     @attribute(
-        dtype="DevFloat",
+        dtype=float,
         unit="Gigabits per second",
         standard_unit="Gigabits per second",
         display_unit="Gb/s",
@@ -121,10 +134,10 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :returns: current data receive rate from the CBF interface in Gb/s.
         :rtype: float
         """
-        return self.component_manager.received_rate
+        return self._received_rate
 
     @attribute(
-        dtype="DevULong64",
+        dtype=int,
         unit="Bytes",
         standard_unit="Bytes",
         display_unit="B",
@@ -136,10 +149,10 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
         """
-        return self.component_manager.received_data
+        return self._received_data
 
     @attribute(
-        dtype="DevFloat",
+        dtype=float,
         label="Drop Rate",
         unit="Megabits per second",
         standard_unit="Megabits per second",
@@ -158,10 +171,10 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :returns: current rate of CBF ingest data being dropped or lost in MB/s.
         :rtype: float
         """
-        return self.component_manager.dropped_rate
+        return self._dropped_rate
 
     @attribute(
-        dtype="DevULong64",
+        dtype=int,
         label="Dropped",
         unit="Bytes",
         standard_unit="Bytes",
@@ -174,10 +187,10 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :returns: total number of bytes dropped in the current scan in Bytes.
         :rtype: int
         """
-        return self.component_manager.dropped_data
+        return self._dropped_data
 
     @attribute(
-        dtype="DevULong64",
+        dtype=int,
         label="Out of order packets",
         doc="The total number of packets received out of order in the current scan",
     )
@@ -187,7 +200,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :returns: total number of packets received out of order in the current scan.
         :rtype: int
         """
-        return self.component_manager.misordered_packets
+        return self._misordered_packets
 
     # --------
     # Commands

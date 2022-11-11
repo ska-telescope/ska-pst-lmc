@@ -12,7 +12,7 @@ import logging
 import threading
 import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -77,6 +77,27 @@ def dsp_device_proxy(dsp_fqdn: str) -> PstDeviceProxy:
 
 
 @pytest.fixture
+def device_proxy(
+    device_fqdn: str,
+    recv_device_proxy: PstDeviceProxy,
+    smrb_device_proxy: PstDeviceProxy,
+    dsp_device_proxy: PstDeviceProxy,
+) -> PstDeviceProxy:
+    """Create a generic device proxy fixture."""
+    if recv_device_proxy.fqdn == device_fqdn:
+        return recv_device_proxy
+    elif smrb_device_proxy.fqdn == device_fqdn:
+        return smrb_device_proxy
+    elif dsp_device_proxy.fqdn == device_fqdn:
+        return dsp_device_proxy
+    else:
+        proxy = MagicMock()
+        proxy.fqdn = device_fqdn
+        proxy.__repr__ = MagicMock(return_value=f"PstDeviceProxy('{device_fqdn}')")  # type: ignore
+        return proxy
+
+
+@pytest.fixture
 def background_task_processor() -> BackgroundTaskProcessor:
     """Create Background Processor fixture."""
     return MagicMock()
@@ -95,6 +116,12 @@ def component_state_callback() -> Callable:
 
 
 @pytest.fixture
+def property_callback() -> Callable:
+    """Create callback to use when update updated."""
+    return MagicMock()
+
+
+@pytest.fixture
 def component_manager(
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
@@ -103,6 +130,7 @@ def component_manager(
     communication_state_callback: Callable[[CommunicationStatus], None],
     component_state_callback: Callable,
     background_task_processor: BackgroundTaskProcessor,
+    property_callback: Callable,
     monkeypatch: pytest.MonkeyPatch,
 ) -> PstBeamComponentManager:
     """Create PST Beam Component fixture."""
@@ -129,6 +157,7 @@ def component_manager(
         communication_state_callback,
         component_state_callback,
         background_task_processor=background_task_processor,
+        property_callback=property_callback,
     )
 
 
@@ -150,7 +179,7 @@ def component_manager(
         (CommunicationStatus.ESTABLISHED, CommunicationStatus.ESTABLISHED, [], None),
     ],
 )
-def test_component_manager_handle_communication_state_change(
+def test_beam_component_manager_handle_communication_state_change(
     component_manager: PstBeamComponentManager,
     communication_state_callback: Callable[[CommunicationStatus], None],
     component_state_callback: Callable,
@@ -179,7 +208,7 @@ def test_component_manager_handle_communication_state_change(
         component_state_callback.assert_not_called()  # type: ignore
 
 
-def test_component_manager_delegates_admin_mode(
+def test_beam_component_manager_delegates_admin_mode(
     component_manager: PstBeamComponentManager,
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
@@ -194,7 +223,7 @@ def test_component_manager_delegates_admin_mode(
         assert dsp_device_proxy.adminMode == a
 
 
-def test_component_manager_calls_abort_on_subdevices(
+def test_beam_component_manager_calls_abort_on_subdevices(
     component_manager: PstBeamComponentManager,
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
@@ -231,6 +260,24 @@ def request_params(
         return int(scan_request["scan_id"])
     else:
         return None
+
+
+def _complete_job_side_effect(job_id: str) -> Callable[..., Tuple[List[TaskStatus], List[Optional[str]]]]:
+    """Create a complete job side effect.
+
+    This is used to stub out completion of remote jobs.
+    """
+
+    def _complete_job() -> None:
+        time.sleep(0.05)
+        DEVICE_COMMAND_JOB_EXECUTOR._handle_subscription_event((job_id, ""))
+
+    def _side_effect(*arg: Any, **kwds: Any) -> Tuple[List[TaskStatus], List[Optional[str]]]:
+        threading.Thread(target=_complete_job).start()
+
+        return ([TaskStatus.QUEUED], [job_id])
+
+    return _side_effect
 
 
 @pytest.mark.parametrize(
@@ -271,25 +318,13 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
 
     component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
 
-    def _device_side_effect(job_id: str) -> Callable[..., Tuple[List[TaskStatus], List[Optional[str]]]]:
-        def _complete_job() -> None:
-            time.sleep(0.05)
-            DEVICE_COMMAND_JOB_EXECUTOR._handle_subscription_event((job_id, ""))
-
-        def _side_effect(*arg: Any, **kwds: Any) -> Tuple[List[TaskStatus], List[Optional[str]]]:
-            threading.Thread(target=_complete_job).start()
-
-            return ([TaskStatus.QUEUED], [job_id])
-
-        return _side_effect
-
     if type(remote_action_supplier) is not list:
         remote_action_supplier = [remote_action_supplier]  # type: ignore
 
     for (idx, supplier) in enumerate(remote_action_supplier):
-        supplier(smrb_device_proxy).side_effect = _device_side_effect(str(uuid.uuid4()))  # type: ignore
-        supplier(recv_device_proxy).side_effect = _device_side_effect(str(uuid.uuid4()))  # type: ignore
-        supplier(dsp_device_proxy).side_effect = _device_side_effect(str(uuid.uuid4()))  # type: ignore
+        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect(str(uuid.uuid4()))  # type: ignore
+        supplier(recv_device_proxy).side_effect = _complete_job_side_effect(str(uuid.uuid4()))  # type: ignore
+        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect(str(uuid.uuid4()))  # type: ignore
 
     func = getattr(component_manager, method_name)
     if request_params is not None:
@@ -331,3 +366,91 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
 
     calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
     task_callback.assert_has_calls(calls)
+
+
+@pytest.mark.parametrize(
+    "property_name, device_fqdn, device_attr_name, initial_value, update_value",
+    [
+        ("received_rate", "test/recv/1", "receivedRate", 0.0, 12.3),
+        ("received_data", "test/recv/1", "receivedData", 0, 1138),
+        ("dropped_rate", "test/recv/1", "droppedRate", 0.1, 0.3),
+        ("dropped_data", "test/recv/1", "droppedData", 1, 11),
+        ("write_rate", "test/dsp/1", "writeRate", 0.2, 52.3),
+        ("bytes_written", "test/dsp/1", "bytesWritten", 2, 42),
+    ],
+)
+def test_beam_component_manager_monitor_attributes(
+    component_manager: PstBeamComponentManager,
+    property_name: str,
+    device_proxy: PstDeviceProxy,
+    device_attr_name: str,
+    initial_value: Any,
+    update_value: Any,
+    property_callback: Callable,
+) -> None:
+    """Test that component manager subscribes to monitoring events."""
+    # ensure subscriptions
+    component_manager._subscribe_monitoring_events()
+
+    setattr(component_manager, property_name, initial_value)
+
+    subscription_callbacks = [
+        cal.kwargs["callback"]
+        for cal in cast(MagicMock, device_proxy.subscribe_change_event).call_args_list
+        if cal.kwargs["attribute_name"] == device_attr_name
+    ]
+
+    assert len(subscription_callbacks) == 1
+
+    # get the callback
+    callback = subscription_callbacks[0]
+
+    # execute callback to ensure we make the value get updated
+    callback(update_value)
+
+    assert getattr(component_manager, property_name) == update_value
+
+    # still need worry about the event callback to TANGO device
+    cast(MagicMock, property_callback).assert_called_with(property_name, update_value)
+
+
+def test_beam_component_manager_monitor_subscription_lifecycle(
+    component_manager: PstBeamComponentManager,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test the BEAM component manager subscribes/unsubscribes to monitoring events."""
+    # Patch the component manager to a) not use background processing,
+    # b) spy on some methods to check if called.
+
+    def _submit_job(
+        *args: Any, task_callback: Callable, completion_callback: Callable, **kwargs: Any
+    ) -> None:
+        completion_callback(task_callback)
+
+    monkeypatch.setattr(component_manager, "_submit_remote_job", _submit_job)
+
+    subscribe_monitoring_events_spy = MagicMock(wraps=component_manager._subscribe_monitoring_events)
+    monkeypatch.setattr(component_manager, "_subscribe_monitoring_events", subscribe_monitoring_events_spy)
+
+    unsubscribe_monitoring_events_spy = MagicMock(wraps=component_manager._unsubscribe_monitoring_events)
+    monkeypatch.setattr(
+        component_manager, "_unsubscribe_monitoring_events", unsubscribe_monitoring_events_spy
+    )
+
+    # when created the component manager has no subscriptions
+    assert len(component_manager._monitoring_subscriptions) == 0
+
+    # call On
+    component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
+    component_manager.on(task_callback=MagicMock())
+
+    # check that the monitoring event subscriptions were set up.
+    subscribe_monitoring_events_spy.assert_called_once()
+    assert len(component_manager._monitoring_subscriptions) > 0
+
+    # call off
+    component_manager.off(task_callback=MagicMock())
+
+    # check that the monitoring event subscriptions were stopped.
+    unsubscribe_monitoring_events_spy.assert_called_once()
+    assert len(component_manager._monitoring_subscriptions) == 0
