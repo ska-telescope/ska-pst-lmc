@@ -85,6 +85,16 @@ To make sure your development environment is ready for, follow the [Installation
 
 At the very least have [Docker](https://docs.docker.com/get-docker/) and install [Minikube](https://minikube.sigs.k8s.io/docs/) - (see - [SKA Deploy Minikube](https://gitlab.com/ska-telescope/sdi/ska-cicd-deploy-minikube))
 
+### Download the source code
+
+First, clone the PST.LMC repo and submodules to your local file system
+
+    git clone --recursive git@gitlab.com:ska-telescope/pst/ska-pst-lmc.git
+
+then change to the newly cloned directory and create the build/ sub-directory
+
+    cd ska-pst-lmc
+    mkdir build
 
 ### Poetry setup
 
