@@ -52,7 +52,11 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
 from ska_tango_base.commands import TaskStatus
 
 from ska_pst_lmc.receive.receive_model import ReceiveData
-from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApi, PstReceiveProcessApiGrpc
+from ska_pst_lmc.receive.receive_process_api import (
+    GIGABITS_PER_BYTE,
+    PstReceiveProcessApi,
+    PstReceiveProcessApiGrpc,
+)
 from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources, generate_recv_scan_request
 from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
@@ -625,7 +629,12 @@ def test_recv_grpc_handle_monitor_response(
     subband_monitor_data_callback: MagicMock,
 ) -> None:
     """Test the handling of monitor data."""
-    receive_rate = random()
+    import numpy as np
+
+    receive_rate = float(
+        np.float32(random() / GIGABITS_PER_BYTE)
+    )  # hack so we use f32 precision use in protobuf
+    receive_rate_gbs = receive_rate * GIGABITS_PER_BYTE  # python's default is f64
     data_received = randint(1, 100)
     data_drop_rate = random()
     data_dropped = randint(1, 100)
@@ -648,7 +657,7 @@ def test_recv_grpc_handle_monitor_response(
         subband_data=ReceiveData(
             # grab from the protobuf message given there can be rounding issues.
             received_data=receive_monitor_data.data_received,
-            received_rate=receive_monitor_data.receive_rate,
+            received_rate=receive_rate_gbs,
             dropped_data=receive_monitor_data.data_dropped,
             dropped_rate=receive_monitor_data.data_drop_rate,
             misordered_packets=receive_monitor_data.misordered_packets,
@@ -664,7 +673,12 @@ def test_recv_grpc_simulated_monitor_calls_callback(
     logger: logging.Logger,
 ) -> None:
     """Test simulatued monitoring calls subband_monitor_data_callback."""
-    receive_rate = random()
+    import numpy as np
+
+    receive_rate = float(
+        np.float32(random() / GIGABITS_PER_BYTE)
+    )  # hack so we use f32 precision use in protobuf
+    receive_rate_gbs = receive_rate * GIGABITS_PER_BYTE  # python's default is f64
     data_received = randint(1, 100)
     data_drop_rate = random()
     data_dropped = randint(1, 100)
@@ -709,7 +723,7 @@ def test_recv_grpc_simulated_monitor_calls_callback(
             subband_id=1,
             subband_data=ReceiveData(
                 received_data=monitior_data.data_received,
-                received_rate=monitior_data.receive_rate,
+                received_rate=receive_rate_gbs,  # we get B/s not Gb/s,
                 dropped_data=monitior_data.data_dropped,
                 dropped_rate=monitior_data.data_drop_rate,
                 misordered_packets=monitior_data.misordered_packets,

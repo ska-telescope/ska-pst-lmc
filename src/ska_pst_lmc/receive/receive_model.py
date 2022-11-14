@@ -24,7 +24,7 @@ class ReceiveData:
     :vartype received_rate: float
     :ivar dropped_data: amount of data dropped during current scan, in bytes.
     :vartype dropped_data: int
-    :ivar dropped_rate: the rate of data dropped during current scan, in Gb/s.
+    :ivar dropped_rate: the rate of data dropped during current scan, in Bytes/s.
     :vartype dropped_rate: float
     :ivar misordered_packets: the number of misordered packets received during current scan.
     :vartype misordered_packets: int

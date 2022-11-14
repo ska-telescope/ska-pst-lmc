@@ -154,9 +154,9 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
     @attribute(
         dtype=float,
         label="Drop Rate",
-        unit="Megabits per second",
-        standard_unit="Megabits per second",
-        display_unit="MB/s",
+        unit="Bytes per second",
+        standard_unit="Bytes per second",
+        display_unit="B/s",
         max_value=200,
         min_value=-1,
         max_alarm=10,
@@ -168,7 +168,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
     def droppedRate(self: PstReceive) -> float:
         """Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
 
-        :returns: current rate of CBF ingest data being dropped or lost in MB/s.
+        :returns: current rate of CBF ingest data being dropped or lost in B/s.
         :rtype: float
         """
         return self._dropped_rate
@@ -184,7 +184,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
     def droppedData(self: PstReceive) -> int:
         """Get the total number of bytes dropped in the current scan.
 
-        :returns: total number of bytes dropped in the current scan in Bytes.
+        :returns: total number of bytes dropped in the current scan.
         :rtype: int
         """
         return self._dropped_data

@@ -142,12 +142,12 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
         unit="Bytes",
         standard_unit="Bytes",
         display_unit="B",
-        doc="Amount of data read from ring buffer",
+        doc="Amount of data read from the ring buffer",
     )
     def ringBufferRead(self: PstSmrb) -> int:
-        """Get the amount of data read from ring buffer, in bytes.
+        """Get the amount of data read from the ring buffer, in bytes.
 
-        :returns: the amount of data read from ring buffer, in bytes.
+        :returns: the amount of data read from then ring buffer, in bytes.
         :rtype: int
         """
         return self.component_manager.ring_buffer_read
@@ -161,9 +161,9 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
         doc="Amount of data written to ring buffer",
     )
     def ringBufferWritten(self: PstSmrb) -> int:
-        """Get the amount of data written to ring buffer, in bytes.
+        """Get the amount of data written to the ring buffer, in bytes.
 
-        :returns: the amount of data written to ring buffer, in bytes.
+        :returns: the amount of data written to the ring buffer, in bytes.
         :rtype: int
         """
         return self.component_manager.ring_buffer_written

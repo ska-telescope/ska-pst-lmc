@@ -31,7 +31,7 @@ from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker
 def additional_change_events_callbacks() -> List[str]:
     """Return additional change event callbacks."""
     return [
-        "receivedrate",
+        "receivedRate",
         "receivedData",
         "droppedRate",
         "droppedData",
@@ -310,7 +310,7 @@ class TestPstBeam:
     @pytest.mark.parametrize(
         "monitor_attribute, source_device_fqdn, default_value",
         [
-            ("receivedrate", "test/recv/1", 0.0),
+            ("receivedRate", "test/recv/1", 0.0),
             ("receivedData", "test/recv/1", 0),
             ("droppedRate", "test/recv/1", 0.0),
             ("droppedData", "test/recv/1", 0),
@@ -422,7 +422,5 @@ class TestPstBeam:
         for idx, value in enumerate(attribute_value_queue.queue):
             if value is None:
                 break
-
-            logger.info(f"Asserting value at idx={idx} is {value}")
 
             change_event_callbacks[monitor_attribute].assert_change_event(value)

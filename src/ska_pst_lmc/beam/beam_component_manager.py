@@ -147,34 +147,34 @@ class PstBeamComponentManager(PstComponentManager):
 
     @property
     def received_rate(self: PstBeamComponentManager) -> float:
-        """Get current recevied data rate."""
+        """Get current received data rate in Gb/s."""
         return self._received_rate
 
     @received_rate.setter
     def received_rate(self: PstBeamComponentManager, received_rate: float) -> None:
-        """Set current recevied data rate."""
+        """Set current received data rate in Gb/s."""
         self._received_rate = received_rate
         self._property_callback("received_rate", received_rate)
 
     @property
     def received_data(self: PstBeamComponentManager) -> int:
-        """Get current recevied data in bytes."""
+        """Get current received data in bytes."""
         return self._received_data
 
     @received_data.setter
     def received_data(self: PstBeamComponentManager, received_data: int) -> None:
-        """Set current recevied data in bytes."""
+        """Set current received data in bytes."""
         self._received_data = received_data
         self._property_callback("received_data", received_data)
 
     @property
     def dropped_rate(self: PstBeamComponentManager) -> float:
-        """Get current dropped data rate."""
+        """Get current dropped data rate in bytes per second."""
         return self._dropped_rate
 
     @dropped_rate.setter
     def dropped_rate(self: PstBeamComponentManager, dropped_rate: float) -> None:
-        """Set current dropped data rate."""
+        """Set current dropped data rate in bytes per second."""
         self._dropped_rate = dropped_rate
         self._property_callback("dropped_rate", dropped_rate)
 
@@ -191,23 +191,23 @@ class PstBeamComponentManager(PstComponentManager):
 
     @property
     def write_rate(self: PstBeamComponentManager) -> float:
-        """Get current data write rate."""
+        """Get current data write rate in bytes per second."""
         return self._write_rate
 
     @write_rate.setter
     def write_rate(self: PstBeamComponentManager, write_rate: int) -> None:
-        """Set current data write rate."""
+        """Set current data write rate in bytes per second."""
         self._write_rate = write_rate
         self._property_callback("write_rate", write_rate)
 
     @property
     def bytes_written(self: PstBeamComponentManager) -> int:
-        """Get current amount of bytes written."""
+        """Get current amount of bytes written to file."""
         return self._bytes_written
 
     @bytes_written.setter
     def bytes_written(self: PstBeamComponentManager, bytes_written: int) -> None:
-        """Set current amount of bytes written."""
+        """Set current amount of bytes written to file."""
         self._bytes_written = bytes_written
         self._property_callback("bytes_written", bytes_written)
 
@@ -264,7 +264,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _subscribe_change_event(device: PstDeviceProxy, attribute: str) -> ChangeEventSubscription:
             try:
                 device_attribute = as_device_attribute_name(attribute)
-                self.logger.info(f"Tring to subscribe to change event of {device}.{device_attribute}")
+                self.logger.info(f"Trying to subscribe to change event of {device}.{device_attribute}")
                 return device.subscribe_change_event(
                     attribute_name=device_attribute,
                     callback=functools.partial(_set_attr, attribute),

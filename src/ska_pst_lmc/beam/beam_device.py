@@ -194,9 +194,9 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         doc="Available time, in seconds, for writing available.",
     )
     def availableRecordingTime(self: PstBeam) -> float:
-        """Get current rate of writing to the disk.
+        """Get available time, in seconds, for writing available.
 
-        :returns: use space on the disk that DSP is writing to, in bytes.
+        :returns: available time, in seconds, for writing available.
         :rtype: float
         """
         return self._available_recording_time
@@ -237,9 +237,9 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
     @attribute(
         dtype=float,
         label="Drop Rate",
-        unit="Megabits per second",
-        standard_unit="Megabits per second",
-        display_unit="MB/s",
+        unit="Bytes per second",
+        standard_unit="Bytes per second",
+        display_unit="B/s",
         max_value=200,
         min_value=-1,
         max_alarm=10,
@@ -251,7 +251,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
     def droppedRate(self: PstBeam) -> float:
         """Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
 
-        :returns: current rate of CBF ingest data being dropped or lost in MB/s.
+        :returns: current rate of CBF ingest data being dropped or lost in Bytes/s.
         :rtype: float
         """
         return self._dropped_rate
@@ -267,7 +267,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
     def droppedData(self: PstBeam) -> int:
         """Get the total number of bytes dropped in the current scan.
 
-        :returns: total number of bytes dropped in the current scan in Bytes.
+        :returns: total number of bytes dropped in the current scan.
         :rtype: int
         """
         return self._dropped_data
