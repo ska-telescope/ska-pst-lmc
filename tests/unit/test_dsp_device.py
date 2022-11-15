@@ -62,7 +62,7 @@ class TestPstDsp:
             "memorized": {"adminMode": str(AdminMode.ONLINE.value)},
         }
 
-    def test_State(self: TestPstDsp, device_under_test: DeviceProxy) -> None:
+    def test_dsp_mgmt_State(self: TestPstDsp, device_under_test: DeviceProxy) -> None:
         """
         Test for State.
 
@@ -71,7 +71,7 @@ class TestPstDsp:
         assert device_under_test.state() == DevState.OFF
         assert device_under_test.Status() == "The device is in OFF state."
 
-    def test_GetVersionInfo(self: TestPstDsp, device_under_test: DeviceProxy) -> None:
+    def test_dsp_mgmt_GetVersionInfo(self: TestPstDsp, device_under_test: DeviceProxy) -> None:
         """
         Test for GetVersionInfo.
 
@@ -88,7 +88,7 @@ class TestPstDsp:
         assert re.match(version_pattern, version_info[0])
 
     @pytest.mark.forked
-    def test_configure_then_scan_then_stop(
+    def test_dsp_mgmt_configure_then_scan_then_stop(
         self: TestPstDsp,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],
@@ -131,30 +131,29 @@ class TestPstDsp:
 
         # still need to sleep. Wait for 2 polling periods
         time.sleep(0.2)
-        assert device_under_test.disk_capacity > 0
-        assert device_under_test.disk_available_bytes > 0
-        print(device_under_test.disk_used_bytes)
-        assert device_under_test.disk_used_bytes > 0
+        assert device_under_test.diskCapacity > 0
+        assert device_under_test.diskAvailableBytes > 0
+        assert device_under_test.diskUsedBytes > 0
         assert (
-            device_under_test.disk_capacity
-            == device_under_test.disk_available_bytes + device_under_test.disk_used_bytes
+            device_under_test.diskCapacity
+            == device_under_test.diskAvailableBytes + device_under_test.diskUsedBytes
         )
-        assert device_under_test.disk_used_percentage >= 0.0
+        assert device_under_test.diskUsedPercentage >= 0.0
         np.testing.assert_almost_equal(
-            device_under_test.disk_used_percentage,
-            100.0 * device_under_test.disk_used_bytes / device_under_test.disk_capacity,
+            device_under_test.diskUsedPercentage,
+            100.0 * device_under_test.diskUsedBytes / device_under_test.diskCapacity,
         )
-        assert device_under_test.write_rate >= 0.0
-        assert device_under_test.bytes_written > 0
+        assert device_under_test.writeRate >= 0.0
+        assert device_under_test.bytesWritten > 0
 
-        for wr in device_under_test.subband_write_rate:
+        for wr in device_under_test.subbandWriteRate:
             assert wr >= 0.0
 
-        for bw in device_under_test.subband_bytes_written:
+        for bw in device_under_test.subbandBytesWritten:
             assert bw > 0
 
-        assert device_under_test.bytes_written == np.sum(device_under_test.subband_bytes_written)
-        np.testing.assert_almost_equal(device_under_test.write_rate, np.sum(device_under_test.write_rate))
+        assert device_under_test.bytesWritten == np.sum(device_under_test.subbandBytesWritten)
+        np.testing.assert_almost_equal(device_under_test.writeRate, np.sum(device_under_test.writeRate))
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.EndScan(),
@@ -179,7 +178,7 @@ class TestPstDsp:
         )
 
     @pytest.mark.forked
-    def test_abort_when_scanning(
+    def test_dsp_mgmt_abort_when_scanning(
         self: TestPstDsp,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],
@@ -271,7 +270,7 @@ class TestPstDsp:
         )
 
     @pytest.mark.forked
-    def test_simulation_mode(
+    def test_dsp_mgmt_simulation_mode(
         self: TestPstDsp,
         device_under_test: DeviceProxy,
         pst_lmc_service: TestPstLmcService,
@@ -296,7 +295,7 @@ class TestPstDsp:
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
     @pytest.mark.forked
-    def test_simulation_mode_when_not_in_empty_obs_state(
+    def test_dsp_mgmt_simulation_mode_when_not_in_empty_obs_state(
         self: TestPstDsp,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],
@@ -324,7 +323,7 @@ class TestPstDsp:
         ].desc == "ValueError: Unable to change simulation mode unless in EMPTY observation state"
 
     @pytest.mark.forked
-    def test_simulation_mode_when_in_empty_obs_state(
+    def test_dsp_mgmt_simulation_mode_when_in_empty_obs_state(
         self: TestPstDsp,
         device_under_test: DeviceProxy,
         pst_lmc_service: TestPstLmcService,
@@ -349,7 +348,7 @@ class TestPstDsp:
         assert device_under_test.simulationMode == SimulationMode.FALSE
 
     @pytest.mark.forked
-    def test_recv_go_to_fault_when_beam_configured(
+    def test_dsp_mgmt_go_to_fault_when_beam_configured(
         self: TestPstDsp,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],
@@ -388,7 +387,7 @@ class TestPstDsp:
         )
 
     @pytest.mark.forked
-    def test_recv_go_to_fault_when_configured(
+    def test_dsp_mgmt_go_to_fault_when_configured(
         self: TestPstDsp,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],
@@ -429,7 +428,7 @@ class TestPstDsp:
         )
 
     @pytest.mark.forked
-    def test_recv_go_to_fault_when_scanning(
+    def test_dsp_mgmt_go_to_fault_when_scanning(
         self: TestPstDsp,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],

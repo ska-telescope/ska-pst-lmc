@@ -14,10 +14,10 @@ import logging
 from threading import Event
 from typing import Any, Callable, Dict, Optional, Tuple
 
-from ska_tango_base.base import TaskExecutorComponentManager, check_communicating
+from ska_tango_base.base import check_communicating
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 from ska_tango_base.csp.obs import CspObsComponentManager
-from ska_tango_base.executor import TaskStatus
+from ska_tango_base.executor import TaskExecutorComponentManager, TaskStatus
 
 from ska_pst_lmc.component.process_api import PstProcessApi
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor

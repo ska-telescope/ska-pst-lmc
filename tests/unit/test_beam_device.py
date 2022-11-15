@@ -11,17 +11,33 @@ from __future__ import annotations
 
 import json
 import logging
+import queue
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import backoff
 import pytest
 from ska_tango_base.control_model import AdminMode, ObsState
+from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DeviceProxy, DevState
 from tango.test_context import MultiDeviceTestContext
 
 from ska_pst_lmc import PstBeam, PstDsp, PstReceive, PstSmrb
-from tests.conftest import TangoDeviceCommandChecker
+from ska_pst_lmc.device_proxy import DeviceProxyFactory
+from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker
+
+
+@pytest.fixture
+def additional_change_events_callbacks() -> List[str]:
+    """Return additional change event callbacks."""
+    return [
+        "receivedRate",
+        "receivedData",
+        "droppedRate",
+        "droppedData",
+        "writeRate",
+        "bytesWritten",
+    ]
 
 
 @pytest.fixture()
@@ -53,7 +69,9 @@ def devices_info() -> List[dict]:
             "devices": [
                 {
                     "name": "test/dsp/1",
-                    "properties": {},
+                    "properties": {
+                        "monitor_polling_rate": 100,
+                    },
                 }
             ],
         },
@@ -62,7 +80,9 @@ def devices_info() -> List[dict]:
             "devices": [
                 {
                     "name": "test/recv/1",
-                    "properties": {},
+                    "properties": {
+                        "monitor_polling_rate": 100,
+                    },
                 }
             ],
         },
@@ -71,7 +91,9 @@ def devices_info() -> List[dict]:
             "devices": [
                 {
                     "name": "test/smrb/1",
-                    "properties": {},
+                    "properties": {
+                        "monitor_polling_rate": 100,
+                    },
                 }
             ],
         },
@@ -96,7 +118,7 @@ def devices_info() -> List[dict]:
 class TestPstBeam:
     """Test class used for testing the PstReceive TANGO device."""
 
-    def test_State(self: TestPstBeam, device_under_test: DeviceProxy) -> None:
+    def test_beam_mgmt_State(self: TestPstBeam, device_under_test: DeviceProxy) -> None:
         """
         Test for State.
 
@@ -108,7 +130,7 @@ class TestPstBeam:
         assert device_under_test.state() == DevState.OFF
         assert device_under_test.Status() == "The device is in OFF state."
 
-    def test_GetVersionInfo(self: TestPstBeam, device_under_test: DeviceProxy) -> None:
+    def test_beam_mgmt_GetVersionInfo(self: TestPstBeam, device_under_test: DeviceProxy) -> None:
         """
         Test for GetVersionInfo.
 
@@ -125,7 +147,7 @@ class TestPstBeam:
         assert re.match(version_pattern, version_info[0])
 
     @pytest.mark.forked
-    def test_configure_then_scan_then_stop(
+    def test_beam_mgmt_configure_then_scan_then_stop(
         self: TestPstBeam,
         device_under_test: DeviceProxy,
         multidevice_test_context: MultiDeviceTestContext,
@@ -222,7 +244,7 @@ class TestPstBeam:
         assert_state(DevState.OFF)
 
     @pytest.mark.forked
-    def test_go_to_fault(
+    def test_beam_mgmt_go_to_fault(
         self: TestPstBeam,
         device_under_test: DeviceProxy,
         multidevice_test_context: MultiDeviceTestContext,
@@ -283,3 +305,122 @@ class TestPstBeam:
             lambda: device_under_test.Off(),
         )
         assert_state(DevState.OFF)
+
+    @pytest.mark.forked
+    @pytest.mark.parametrize(
+        "monitor_attribute, source_device_fqdn, default_value",
+        [
+            ("receivedRate", "test/recv/1", 0.0),
+            ("receivedData", "test/recv/1", 0),
+            ("droppedRate", "test/recv/1", 0.0),
+            ("droppedData", "test/recv/1", 0),
+            ("writeRate", "test/dsp/1", 0.0),
+            ("bytesWritten", "test/dsp/1", 0),
+        ],
+    )
+    def test_beam_mgmt_scan_monitoring_values(
+        self: TestPstBeam,
+        device_under_test: DeviceProxy,
+        monitor_attribute: str,
+        source_device_fqdn: str,
+        csp_configure_scan_request: Dict[str, Any],
+        scan_id: int,
+        default_value: Any,
+        tango_change_event_helper: TangoChangeEventHelper,
+        tango_device_command_checker: TangoDeviceCommandChecker,
+        change_event_callbacks: MockTangoEventCallbackGroup,
+        logger: logging.Logger,
+    ) -> None:
+        """Test that monitoring values are updated."""
+        # use a queue to assert changes
+        attribute_value_queue: queue.Queue[Any] = queue.Queue()
+
+        source_device = DeviceProxyFactory.get_device(source_device_fqdn)
+        time.sleep(0.2)
+
+        # can now subscribe to event
+        tango_change_event_helper.subscribe(monitor_attribute)
+        change_event_callbacks[monitor_attribute].assert_change_event(default_value)
+
+        def _attribute_value_callback(value: Any) -> None:
+            # change_event_callbacks[monitor_attribute].assert_change_event(value)
+            attribute_value_queue.put(value)
+
+        source_device.subscribe_change_event(monitor_attribute, _attribute_value_callback)
+
+        device_under_test.adminMode = AdminMode.ONLINE
+        time.sleep(0.2)
+        assert source_device.adminMode == AdminMode.ONLINE
+
+        def assert_state(state: DevState) -> None:
+            assert device_under_test.state() == state
+            assert source_device.state() == state
+
+        @backoff.on_exception(
+            backoff.expo,
+            AssertionError,
+            factor=1,
+            max_time=5.0,
+        )
+        def assert_obstate(obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
+            assert device_under_test.obsState == obsState
+            assert source_device.obsState == subObsState or obsState
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
+        )
+        assert_state(DevState.ON)
+
+        assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
+
+        # assert default value on both devices
+        def _get_values() -> Tuple[Any, Any]:
+            return getattr(device_under_test, monitor_attribute), getattr(source_device, monitor_attribute)
+
+        initial_values = _get_values()
+
+        assert (
+            initial_values[0] == default_value
+        ), f"{monitor_attribute} on {device_under_test} not {default_value} but {initial_values[0]}"
+        assert (
+            initial_values[1] == default_value
+        ), f"{monitor_attribute} on {source_device} not {default_value} but {initial_values[1]}"
+
+        # need to set up scanning
+        configuration = json.dumps(csp_configure_scan_request)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.ConfigureScan(configuration),
+            expected_obs_state_events=[
+                ObsState.CONFIGURING,
+                ObsState.READY,
+            ],
+        )
+        assert_obstate(ObsState.READY)
+
+        scan = str(scan_id)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.Scan(scan),
+            expected_obs_state_events=[
+                ObsState.SCANNING,
+            ],
+        )
+        assert_obstate(ObsState.SCANNING)
+
+        # wait for a monitoring period?
+        time.sleep(0.25)
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.EndScan(),
+            expected_obs_state_events=[
+                ObsState.READY,
+            ],
+        )
+        assert_obstate(ObsState.READY)
+
+        # use None as a sentinal value to break out of assertion loop
+        attribute_value_queue.put(None)
+        for idx, value in enumerate(attribute_value_queue.queue):
+            if value is None:
+                break
+
+            change_event_callbacks[monitor_attribute].assert_change_event(value)
