@@ -18,15 +18,15 @@ from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 def test_calculate_receive_subband_resources(
     beam_id: int,
     configure_beam_request: Dict[str, Any],
-    recv_network_interface: str,
-    recv_udp_port: int,
+    recv_data_host: str,
+    subband_udp_ports: List[int],
 ) -> None:
     """Test that the correct RECV subband resources request is created."""
     actual = calculate_receive_subband_resources(
         beam_id=beam_id,
         request_params=configure_beam_request,
-        data_host=recv_network_interface,
-        data_port=recv_udp_port,
+        data_host=recv_data_host,
+        subband_udp_ports=subband_udp_ports,
     )
 
     assert "common" in actual
@@ -95,16 +95,16 @@ def test_udp_format_set_in_calculated_resources(
     configure_beam_request: Dict[str, Any],
     frequency_band: str,
     expected_udp_format: str,
-    recv_network_interface: str,
-    recv_udp_port: int,
+    recv_data_host: str,
+    subband_udp_ports: List[int],
 ) -> None:
     """Test that we add the correct udp_format field."""
     configure_beam_request["frequency_band"] = frequency_band
     calculated_resources = calculate_receive_subband_resources(
         beam_id=beam_id,
         request_params=configure_beam_request,
-        data_host=recv_network_interface,
-        data_port=recv_udp_port,
+        data_host=recv_data_host,
+        subband_udp_ports=subband_udp_ports,
     )
 
     assert "udp_format" in calculated_resources["common"]
@@ -129,8 +129,8 @@ def test_recv_util_calc_tsamp(
     num_frequency_channels: int,
     oversampling_ratio: List[int],
     expected_tsamp: float,
-    recv_network_interface: str,
-    recv_udp_port: int,
+    recv_data_host: str,
+    subband_udp_ports: List[int],
 ) -> None:
     """Test calculations for tsamp.
 
@@ -145,8 +145,8 @@ def test_recv_util_calc_tsamp(
     calculated_resources = calculate_receive_subband_resources(
         beam_id=beam_id,
         request_params=configure_beam_request,
-        data_host=recv_network_interface,
-        data_port=recv_udp_port,
+        data_host=recv_data_host,
+        subband_udp_ports=subband_udp_ports,
     )
 
     assert "tsamp" in calculated_resources["common"]
@@ -173,8 +173,8 @@ def test_recv_util_calc_bytes_per_seconds(
     nbits: int,
     oversampling_ratio: List[int],
     expected_bytes_per_second: float,
-    recv_network_interface: str,
-    recv_udp_port: int,
+    recv_data_host: str,
+    subband_udp_ports: List[int],
 ) -> None:
     """Test calculations for bytes_per_seconds.
 
@@ -191,8 +191,8 @@ def test_recv_util_calc_bytes_per_seconds(
     calculated_resources = calculate_receive_subband_resources(
         beam_id=beam_id,
         request_params=configure_beam_request,
-        data_host=recv_network_interface,
-        data_port=recv_udp_port,
+        data_host=recv_data_host,
+        subband_udp_ports=subband_udp_ports,
     )
 
     assert "bytes_per_second" in calculated_resources["common"]

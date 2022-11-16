@@ -55,6 +55,10 @@ class PstReceiveProcessApi(PstProcessApi):
     data.
     """
 
+    def data_host(self: PstReceiveProcessApi) -> str:
+        """Get host name/IP of where data is to be sent to."""
+        raise NotImplementedError("PstReceiveProcessApi is abstract")
+
 
 class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi):
     """A simulator implemenation version of the  API of `PstReceiveProcessApi`."""
@@ -208,6 +212,17 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
             self._logger.debug(f"Sleeping {polling_rate}ms")
             time.sleep(polling_rate / 1000.0)
 
+    def data_host(self: PstReceiveProcessApiSimulator) -> str:
+        """Get host name/IP of where data is to be sent to.
+
+        This simulation will get IP address returns loopback IP
+        address 127.0.0.1.
+
+        :return: the IP address that is the systems default route.
+        :rtype: str
+        """
+        return "127.0.0.1"
+
 
 class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
     """This is an gRPC implementation of the `PstReceiveProcessApi`.
@@ -246,3 +261,11 @@ class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
                 misordered_packets=receive_monitor_data.misordered_packets,
             ),
         )
+
+    def data_host(self: PstReceiveProcessApiGrpc) -> str:
+        """Get data host information from RECV.CORE.
+
+        This implementation will first retreive the environment information from
+        RECV.CORE and expects that the `data_host` environment variable is set.
+        """
+        return str(self.get_env()["data_host"])

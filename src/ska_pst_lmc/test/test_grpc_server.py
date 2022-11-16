@@ -33,6 +33,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ErrorCode,
     GetBeamConfigurationRequest,
     GetBeamConfigurationResponse,
+    GetEnvironmentRequest,
+    GetEnvironmentResponse,
     GetScanConfigurationRequest,
     GetScanConfigurationResponse,
     GetStateRequest,
@@ -265,6 +267,17 @@ class TestMockServicer(PstLmcServiceServicer):
         self._logger.debug("monitor request")
         try:
             return self._context.monitor(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
+
+    def get_env(
+        self: TestMockServicer, request: GetEnvironmentRequest, context: ServicerContext
+    ) -> GetEnvironmentResponse:
+        """Get environment."""
+        self._logger.debug("get_env")
+        try:
+            return self._context.get_env(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"

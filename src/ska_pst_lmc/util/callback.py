@@ -30,3 +30,25 @@ def wrap_callback(callback: Callback) -> Callable[..., Any]:
         return callback
 
     return lambda *args, **kw: None
+
+
+def callback_safely(callback: Callback, *args: Any, **kwargs: Any) -> Any:
+    """Call callback safely.
+
+    As a callback could be None this method ensures that it is only called
+    when it is not None.  This removes the need for all the code littered with.
+
+    .. code-block:: python
+
+        if callback:
+            callback(*args, **kwargs)
+
+    This above code can then be replaced with:
+
+    .. code-block:: python
+
+        callback_safely(callback, *args, **kwargs)
+
+    """
+    if callback:
+        return callback(*args, **kwargs)

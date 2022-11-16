@@ -9,6 +9,7 @@
 
 import json
 import logging
+import sys
 import threading
 import time
 import uuid
@@ -21,6 +22,7 @@ from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.beam.beam_component_manager import PstBeamComponentManager
 from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
+from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 from ska_pst_lmc.util.job import DEVICE_COMMAND_JOB_EXECUTOR, JobExecutor
 
@@ -116,9 +118,9 @@ def component_state_callback() -> Callable:
 
 
 @pytest.fixture
-def property_callback() -> Callable:
-    """Create callback to use when update updated."""
-    return MagicMock()
+def patch_submit_job() -> bool:
+    """Patch submit_job."""
+    return False
 
 
 @pytest.fixture
@@ -132,6 +134,7 @@ def component_manager(
     background_task_processor: BackgroundTaskProcessor,
     property_callback: Callable,
     monkeypatch: pytest.MonkeyPatch,
+    patch_submit_job: bool,
 ) -> PstBeamComponentManager:
     """Create PST Beam Component fixture."""
     smrb_fqdn = smrb_device_proxy.fqdn
@@ -148,7 +151,7 @@ def component_manager(
 
     monkeypatch.setattr(DeviceProxyFactory, "get_device", _get_device)
 
-    return PstBeamComponentManager(
+    component_manager = PstBeamComponentManager(
         "test/beam/1",
         smrb_fqdn,
         recv_fqdn,
@@ -159,6 +162,23 @@ def component_manager(
         background_task_processor=background_task_processor,
         property_callback=property_callback,
     )
+
+    if patch_submit_job:
+        from ska_pst_lmc.beam.beam_component_manager import _RemoteJob
+        from ska_pst_lmc.util.callback import Callback
+
+        def _remote_job_call(
+            remote_job: _RemoteJob, *args: None, task_callback: Callback, **kwargs: Any
+        ) -> None:
+            remote_job._completion_callback(task_callback)  # type: ignore
+
+        def _submit_task(job: Callable, *args: Any, task_callback: Callback, **kwargs: Any) -> None:
+            job(task_callback=task_callback)
+
+        monkeypatch.setattr(component_manager, "submit_task", _submit_task)
+        monkeypatch.setattr(_RemoteJob, "__call__", _remote_job_call)
+
+    return component_manager
 
 
 @pytest.mark.parametrize(
@@ -377,6 +397,9 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
         ("dropped_data", "test/recv/1", "droppedData", 1, 11),
         ("write_rate", "test/dsp/1", "writeRate", 0.2, 52.3),
         ("bytes_written", "test/dsp/1", "bytesWritten", 2, 42),
+        ("disk_available_bytes", "test/dsp/1", "diskAvailableBytes", sys.maxsize, 1235),
+        ("available_recording_time", "test/dsp/1", "availableRecordingTime", DEFAULT_RECORDING_TIME, 9876.0),
+        ("ring_buffer_utilisation", "test/smrb/1", "ringBufferUtilisation", 0.0, 12.5),
     ],
 )
 def test_beam_component_manager_monitor_attributes(
@@ -390,7 +413,7 @@ def test_beam_component_manager_monitor_attributes(
 ) -> None:
     """Test that component manager subscribes to monitoring events."""
     # ensure subscriptions
-    component_manager._subscribe_monitoring_events()
+    component_manager._subscribe_change_events()
 
     setattr(component_manager, property_name, initial_value)
 
@@ -414,6 +437,71 @@ def test_beam_component_manager_monitor_attributes(
     cast(MagicMock, property_callback).assert_called_with(property_name, update_value)
 
 
+def test_beam_component_manager_channel_block_configuration(
+    component_manager: PstBeamComponentManager,
+    recv_device_proxy: PstDeviceProxy,
+    property_callback: Callable,
+) -> None:
+    """Test that component manager handles channel block configuration from RECV subband configuration."""
+    component_manager._subscribe_change_events()
+
+    component_manager.channel_block_configuration = {}
+
+    subscription_callbacks = [
+        cal.kwargs["callback"]
+        for cal in cast(MagicMock, recv_device_proxy.subscribe_change_event).call_args_list
+        if cal.kwargs["attribute_name"] == "subbandBeamConfiguration"
+    ]
+
+    assert len(subscription_callbacks) == 1
+
+    # get the callback
+    callback = subscription_callbacks[0]
+
+    # execute callback to ensure empty resources will be handled correctly
+    callback("{}")
+
+    assert component_manager.channel_block_configuration == {}
+
+    # still need worry about the event callback to TANGO device
+    cast(MagicMock, property_callback).assert_called_with("channel_block_configuration", "{}")
+
+    callback(
+        json.dumps(
+            {
+                "common": {"nsubband": 2},
+                "subbands": {
+                    1: {
+                        "data_host": "10.10.0.1",
+                        "data_port": 30000,
+                        "start_channel": 0,
+                        "end_channel": 10,
+                    },
+                    2: {
+                        "data_host": "10.10.0.1",
+                        "data_port": 30001,
+                        "start_channel": 10,
+                        "end_channel": 16,
+                    },
+                },
+            }
+        )
+    )
+
+    expected_channel_block_configuration = {
+        "num_channel_blocks": 2,
+        "channel_blocks": [
+            {"data_host": "10.10.0.1", "data_port": 30000, "start_channel": 0, "num_channels": 10},
+            {"data_host": "10.10.0.1", "data_port": 30001, "start_channel": 10, "num_channels": 6},
+        ],
+    }
+
+    assert component_manager.channel_block_configuration == expected_channel_block_configuration
+    cast(MagicMock, property_callback).assert_called_with(
+        "channel_block_configuration", json.dumps(expected_channel_block_configuration)
+    )
+
+
 def test_beam_component_manager_monitor_subscription_lifecycle(
     component_manager: PstBeamComponentManager,
     monkeypatch: pytest.MonkeyPatch,
@@ -429,28 +517,86 @@ def test_beam_component_manager_monitor_subscription_lifecycle(
 
     monkeypatch.setattr(component_manager, "_submit_remote_job", _submit_job)
 
-    subscribe_monitoring_events_spy = MagicMock(wraps=component_manager._subscribe_monitoring_events)
-    monkeypatch.setattr(component_manager, "_subscribe_monitoring_events", subscribe_monitoring_events_spy)
+    subscribe_change_events_spy = MagicMock(wraps=component_manager._subscribe_change_events)
+    monkeypatch.setattr(component_manager, "_subscribe_change_events", subscribe_change_events_spy)
 
-    unsubscribe_monitoring_events_spy = MagicMock(wraps=component_manager._unsubscribe_monitoring_events)
-    monkeypatch.setattr(
-        component_manager, "_unsubscribe_monitoring_events", unsubscribe_monitoring_events_spy
-    )
+    unsubscribe_change_events_spy = MagicMock(wraps=component_manager._unsubscribe_change_events)
+    monkeypatch.setattr(component_manager, "_unsubscribe_change_events", unsubscribe_change_events_spy)
 
     # when created the component manager has no subscriptions
-    assert len(component_manager._monitoring_subscriptions) == 0
+    assert len(component_manager._change_event_subscriptions) == 0
 
     # call On
     component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
     component_manager.on(task_callback=MagicMock())
 
     # check that the monitoring event subscriptions were set up.
-    subscribe_monitoring_events_spy.assert_called_once()
-    assert len(component_manager._monitoring_subscriptions) > 0
+    subscribe_change_events_spy.assert_called_once()
+    assert len(component_manager._change_event_subscriptions) > 0
 
     # call off
     component_manager.off(task_callback=MagicMock())
 
     # check that the monitoring event subscriptions were stopped.
-    unsubscribe_monitoring_events_spy.assert_called_once()
-    assert len(component_manager._monitoring_subscriptions) == 0
+    unsubscribe_change_events_spy.assert_called_once()
+    assert len(component_manager._change_event_subscriptions) == 0
+
+
+@pytest.mark.parametrize("patch_submit_job", [True])
+def test_beam_component_manager_stores_config_id(
+    component_manager: PstBeamComponentManager,
+    csp_configure_scan_request: Dict[str, Any],
+) -> None:
+    """Test to see the BEAM component manager sets config id configure/deconfigure scan."""
+    task_callback = MagicMock()
+
+    assert component_manager.config_id == ""
+
+    component_manager.configure_scan(csp_configure_scan_request, task_callback=task_callback)
+
+    # assert current scan config is configure_scan request
+    assert component_manager.config_id == csp_configure_scan_request["common"]["config_id"]
+
+    component_manager.deconfigure_scan(task_callback=task_callback)
+    assert component_manager.config_id == ""
+
+
+@pytest.mark.parametrize("patch_submit_job", [True])
+def test_beam_component_manager_configure_scan_sets_expected_data_rate(
+    component_manager: PstBeamComponentManager,
+    csp_configure_scan_request: Dict[str, Any],
+) -> None:
+    """Test to BEAM component manager updates expected data rate on configure/deconfigure scan."""
+    from ska_pst_lmc.dsp.dsp_util import generate_dsp_scan_request
+
+    task_callback = MagicMock()
+
+    dsp_scan_request = generate_dsp_scan_request(csp_configure_scan_request["pst"]["scan"])
+
+    assert component_manager.expected_data_rate == 0.0
+
+    component_manager.configure_scan(configuration=csp_configure_scan_request, task_callback=task_callback)
+
+    assert component_manager.expected_data_rate == dsp_scan_request["bytes_per_second"]
+
+    component_manager.deconfigure_scan(task_callback=task_callback)
+
+    assert component_manager.expected_data_rate == 0.0
+
+
+@pytest.mark.parametrize("patch_submit_job", [True])
+def test_beam_component_manager_updates_scan_id_on_start_scan_stop_scan(
+    component_manager: PstBeamComponentManager, scan_id: int
+) -> None:
+    """Test to BEAM component manager updates scan_id on start_scan/end_scan."""
+    task_callback = MagicMock()
+
+    assert component_manager.scan_id == 0
+
+    component_manager.start_scan({"scan_id": scan_id}, task_callback=task_callback)
+
+    assert component_manager.scan_id == scan_id
+
+    component_manager.stop_scan(task_callback=task_callback)
+
+    assert component_manager.scan_id == 0

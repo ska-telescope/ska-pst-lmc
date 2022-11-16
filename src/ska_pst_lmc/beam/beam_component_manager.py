@@ -23,7 +23,7 @@ from ska_pst_lmc.component import as_device_attribute_name
 from ska_pst_lmc.component.component_manager import PstComponentManager
 from ska_pst_lmc.device_proxy import ChangeEventSubscription, DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.util import DeviceCommandJob, Job, SequentialJob, submit_job
-from ska_pst_lmc.util.callback import Callback
+from ska_pst_lmc.util.callback import Callback, callback_safely
 
 TaskResponse = Tuple[TaskStatus, str]
 RemoteTaskResponse = Tuple[List[TaskStatus], List[str]]
@@ -57,8 +57,7 @@ class _RemoteJob:
         def _completion_callback() -> None:
             self._completion_callback(task_callback)  # type: ignore
 
-        if task_callback:
-            task_callback(status=TaskStatus.IN_PROGRESS)
+        callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
 
         try:
             submit_job(job=self._job, callback=_completion_callback)
@@ -135,15 +134,103 @@ class PstBeamComponentManager(PstComponentManager):
             **kwargs,
         )
 
-        # need to subcribe to properties
-        self._received_rate: float = 0.0
-        self._received_data: int = 0
-        self._dropped_data: int = 0
-        self._dropped_rate: float = 0.0
-        self._write_rate: float = 0.0
-        self._bytes_written: int = 0
+        self._initialise_monitoring_properties()
+        self._change_event_subscriptions: List[ChangeEventSubscription] = []
 
-        self._monitoring_subscriptions: List[ChangeEventSubscription] = []
+    def _initialise_monitoring_properties(self: PstBeamComponentManager) -> None:
+        """
+        Initialise all the monitored properties.
+
+        This method will set all the properties to there default values. This
+        calls the `_reset_monitoring_properties` method. Most properties can
+        be reset, but the `disk_available_bytes` property is not reset once
+        it has been updated by the system.
+        """
+        import sys
+
+        self.disk_available_bytes = sys.maxsize
+        self._reset_monitoring_properties()
+
+    def _reset_monitoring_properties(self: PstBeamComponentManager) -> None:
+        """
+        Reset monitored attributes.
+
+        This method resets the values to a sensible default when not in
+        a configured state.
+        """
+        from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
+
+        self.received_rate = 0.0
+        self.received_data = 0
+        self.dropped_data = 0
+        self.dropped_rate = 0.0
+        self.write_rate = 0.0
+        self.bytes_written = 0
+        self.available_recording_time = DEFAULT_RECORDING_TIME
+        self.ring_buffer_utilisation = 0.0
+        self.expected_data_rate = 0.0
+        self.channel_block_configuration = {}
+        self.config_id = ""
+        self.scan_id = 0
+
+    @property
+    def channel_block_configuration(self: PstBeamComponentManager) -> Dict[str, Any]:
+        """Get current channel block configuration."""
+        return self._channel_block_configuration
+
+    @channel_block_configuration.setter
+    def channel_block_configuration(self: PstBeamComponentManager, config: Dict[str, Any]) -> None:
+        """Set channel black configuration."""
+        self._channel_block_configuration = config
+        self._property_callback("channel_block_configuration", json.dumps(config))
+
+    def _update_channel_block_configuration(
+        self: PstBeamComponentManager, subband_beam_configuration: str
+    ) -> None:
+        """Update the channel block configuration.
+
+        This calculates the new channel block configuration and is only called
+        after a successful `ConfigureScan` request. It uses the SMRB util to work
+        determine the subband configuration and then maps that to what is need
+        by the client of the BEAM.MGMT.
+
+        .. code-block:: python
+
+            {
+                "num_channel_blocks": 2,
+                "channel_blocks": [
+                    {
+                        "data_host": "10.10.0.1",
+                        "data_port": 20000,
+                        "start_channel": 0,
+                        "num_channels": 12,
+                    },
+                    {
+                        "data_host": "10.10.0.1",
+                        "data_port": 20001,
+                        "start_channel": 12,
+                        "num_channels": 10,
+                    },
+                ]
+            }
+
+        """
+        subband_resources = json.loads(subband_beam_configuration)
+        if subband_resources:
+            self.channel_block_configuration = {
+                "num_channel_blocks": subband_resources["common"]["nsubband"],
+                "channel_blocks": [
+                    {
+                        "data_host": subband["data_host"],
+                        "data_port": subband["data_port"],
+                        "start_channel": subband["start_channel"],
+                        "num_channels": subband["end_channel"] - subband["start_channel"],
+                    }
+                    for subband in subband_resources["subbands"].values()
+                ],
+            }
+        else:
+            self.channel_block_configuration = {}
 
     @property
     def received_rate(self: PstBeamComponentManager) -> float:
@@ -211,6 +298,50 @@ class PstBeamComponentManager(PstComponentManager):
         self._bytes_written = bytes_written
         self._property_callback("bytes_written", bytes_written)
 
+    @property
+    def disk_available_bytes(self: PstBeamComponentManager) -> int:
+        """Get available bytes for disk to be written to during scan."""
+        return self._disk_available_bytes
+
+    @disk_available_bytes.setter
+    def disk_available_bytes(self: PstBeamComponentManager, disk_available_bytes: int) -> None:
+        """Set available bytes for disk to be written to during scan."""
+        self._disk_available_bytes = disk_available_bytes
+        self._property_callback("disk_available_bytes", disk_available_bytes)
+
+    @property
+    def available_recording_time(self: PstBeamComponentManager) -> float:
+        """Get available bytes for disk to be written to during scan."""
+        return self._available_recording_time
+
+    @available_recording_time.setter
+    def available_recording_time(self: PstBeamComponentManager, available_recording_time: float) -> None:
+        """Set available bytes for disk to be written to during scan."""
+        self._available_recording_time = available_recording_time
+        self._property_callback("available_recording_time", available_recording_time)
+
+    @property
+    def ring_buffer_utilisation(self: PstBeamComponentManager) -> float:
+        """Get current utilisation of ring buffer for current scan configuration."""
+        return self._ring_buffer_utilisation
+
+    @ring_buffer_utilisation.setter
+    def ring_buffer_utilisation(self: PstBeamComponentManager, ring_buffer_utilisation: float) -> None:
+        """Set available bytes for disk to be written to during scan."""
+        self._ring_buffer_utilisation = ring_buffer_utilisation
+        self._property_callback("ring_buffer_utilisation", ring_buffer_utilisation)
+
+    @property
+    def expected_data_rate(self: PstBeamComponentManager) -> float:
+        """Get the expected data rate for DSP processing for current scan configuration."""
+        return self._expected_data_rate
+
+    @expected_data_rate.setter
+    def expected_data_rate(self: PstBeamComponentManager, expected_data_rate: float) -> None:
+        """Set the expected data rate for DSP processing for current scan configuration."""
+        self._expected_data_rate = expected_data_rate
+        self._property_callback("expected_data_rate", expected_data_rate)
+
     def _handle_communication_state_change(
         self: PstBeamComponentManager, communication_state: CommunicationStatus
     ) -> None:
@@ -247,12 +378,24 @@ class PstBeamComponentManager(PstComponentManager):
             task_callback=task_callback,
         )
 
-    def _subscribe_monitoring_events(self: PstBeamComponentManager) -> None:
+    def _subscribe_change_events(self: PstBeamComponentManager) -> None:
         """Subscribe to monitoring attributes of remote devices."""
         self.logger.debug(f"{self._device_name} subscribing to monitoring events")
         subscriptions_config = {
-            self._recv_device: ["received_rate", "received_data", "dropped_data", "dropped_rate"],
-            self._dsp_device: ["write_rate", "bytes_written"],
+            self._recv_device: [
+                "received_rate",
+                "received_data",
+                "dropped_data",
+                "dropped_rate",
+                "subband_beam_configuration",
+            ],
+            self._dsp_device: [
+                "write_rate",
+                "bytes_written",
+                "disk_available_bytes",
+                "available_recording_time",
+            ],
+            self._smrb_device: ["ring_buffer_utilisation"],
         }
 
         def _set_attr(attribute: str, value: Any) -> None:
@@ -264,27 +407,32 @@ class PstBeamComponentManager(PstComponentManager):
         def _subscribe_change_event(device: PstDeviceProxy, attribute: str) -> ChangeEventSubscription:
             try:
                 device_attribute = as_device_attribute_name(attribute)
-                self.logger.info(f"Trying to subscribe to change event of {device}.{device_attribute}")
+
+                if attribute == "subband_beam_configuration":
+                    callback = self._update_channel_block_configuration
+                else:
+                    callback = functools.partial(_set_attr, attribute)
+
                 return device.subscribe_change_event(
                     attribute_name=device_attribute,
-                    callback=functools.partial(_set_attr, attribute),
+                    callback=callback,
                 )
             except Exception:
                 self.logger.exception(f"Error in subscribing to change event of {device}")
                 raise
 
-        self._monitoring_subscriptions = [
+        self._change_event_subscriptions = [
             _subscribe_change_event(device, property)
             for device, property_names in subscriptions_config.items()
             for property in property_names
         ]
 
-    def _unsubscribe_monitoring_events(self: PstBeamComponentManager) -> None:
+    def _unsubscribe_change_events(self: PstBeamComponentManager) -> None:
         """Unsubscribed from current monitoring attributes of remote devices."""
-        for s in self._monitoring_subscriptions:
+        for s in self._change_event_subscriptions:
             s.unsubscribe()
 
-        self._monitoring_subscriptions = []
+        self._change_event_subscriptions = []
 
     @check_communicating
     def on(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
@@ -299,7 +447,7 @@ class PstBeamComponentManager(PstComponentManager):
             self.logger.debug("All the 'On' commands have completed.")
             self._push_component_state_update(power=PowerState.ON)
 
-            self._subscribe_monitoring_events()
+            self._subscribe_change_events()
 
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
@@ -328,7 +476,7 @@ class PstBeamComponentManager(PstComponentManager):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         # need to unsubscribe from monitoring events.
-        self._unsubscribe_monitoring_events()
+        self._unsubscribe_change_events()
 
         return self._submit_remote_job(
             job=DeviceCommandJob(
@@ -397,18 +545,25 @@ class PstBeamComponentManager(PstComponentManager):
         :param configuration: the scan configuration.
         :type configuration: Dict[str, Any]
         """
-
-        def _completion_callback(task_callback: Callable) -> None:
-            self.logger.debug("All the 'ConfigureScan' commands have completed.")
-            self._push_component_state_update(configured=True)
-            self._config_id = configuration["common"]["config_id"]
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
-
         # we only care about PST and common parts of the JSON
         # when sending to subordinated devices. Merge these into on configuration
         # request
         common_configure = configuration["common"]
         pst_configuration = configuration["pst"]["scan"]
+
+        def _completion_callback(task_callback: Callable) -> None:
+            from ska_pst_lmc.dsp.dsp_util import generate_dsp_scan_request
+
+            self.logger.debug("All the 'ConfigureScan' commands have completed.")
+            self._push_component_state_update(configured=True)
+
+            # Update monitored properties
+            self.config_id = configuration["common"]["config_id"]
+            dsp_scan_request = generate_dsp_scan_request(pst_configuration)
+            self.expected_data_rate = dsp_scan_request["bytes_per_second"]
+
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
         request = {
             **common_configure,
             **pst_configuration,
@@ -454,6 +609,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'DeconfigureScan' commands have completed.")
             self._push_component_state_update(configured=False)
+            self._reset_monitoring_properties()
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
@@ -491,7 +647,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'Scan' commands have completed.")
             self._push_component_state_update(scanning=True)
-            self._scan_id = scan_id
+            self.scan_id = scan_id
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
@@ -510,6 +666,7 @@ class PstBeamComponentManager(PstComponentManager):
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'EndScan' commands have completed.")
             self._push_component_state_update(scanning=False)
+            self.scan_id = 0
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(

@@ -21,7 +21,7 @@ from ska_tango_base.executor import TaskExecutorComponentManager, TaskStatus
 
 from ska_pst_lmc.component.process_api import PstProcessApi
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
-from ska_pst_lmc.util.callback import Callback, wrap_callback
+from ska_pst_lmc.util.callback import Callback, callback_safely, wrap_callback
 
 __all__ = [
     "PstApiComponentManager",
@@ -181,6 +181,11 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
         """Return the scan id."""
         return self._scan_id
 
+    @scan_id.setter
+    def scan_id(self: PstComponentManager, scan_id: int) -> None:
+        """Set the scan id."""
+        self._scan_id = scan_id
+
     # ---------------
     # Commands
     # ---------------
@@ -200,11 +205,9 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
             task_abort_event: Optional[Event] = None,
             **kwargs: Any,
         ) -> None:
-            if task_callback:
-                task_callback(status=TaskStatus.IN_PROGRESS)
+            callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(power=PowerState.OFF)
-            if task_callback:
-                task_callback(status=TaskStatus.COMPLETED, result="Completed")
+            callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
 
         return self.submit_task(_task, task_callback=task_callback)
 
@@ -223,11 +226,9 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
             task_abort_event: Optional[Event] = None,
             **kwargs: Any,
         ) -> None:
-            if task_callback:
-                task_callback(status=TaskStatus.IN_PROGRESS)
+            callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(power=PowerState.STANDBY)
-            if task_callback:
-                task_callback(status=TaskStatus.COMPLETED)
+            callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
 
         return self.submit_task(_task, task_callback=task_callback)
 
@@ -246,11 +247,9 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
             task_abort_event: Optional[Event] = None,
             **kwargs: Any,
         ) -> None:
-            if task_callback:
-                task_callback(status=TaskStatus.IN_PROGRESS)
+            callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(power=PowerState.ON)
-            if task_callback:
-                task_callback(status=TaskStatus.COMPLETED, result="Completed")
+            callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
 
         return self.submit_task(_task, task_callback=task_callback)
 
@@ -269,11 +268,9 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
             task_abort_event: Optional[Event] = None,
             **kwargs: Any,
         ) -> None:
-            if task_callback:
-                task_callback(status=TaskStatus.IN_PROGRESS)
+            callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(fault=False, power=PowerState.OFF)
-            if task_callback:
-                task_callback(status=TaskStatus.COMPLETED)
+            callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
 
         return self.submit_task(_task, task_callback=task_callback)
 
@@ -386,11 +383,9 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
             task_abort_event: Optional[Event] = None,
             **kwargs: Any,
         ) -> None:
-            if task_callback:
-                task_callback(status=TaskStatus.IN_PROGRESS)
+            callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(configured=False)
-            if task_callback:
-                task_callback(status=TaskStatus.COMPLETED)
+            callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
 
         return self.submit_task(_task, task_callback=task_callback)
 

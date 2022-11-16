@@ -626,15 +626,15 @@ def simulation_mode(request: pytest.FixtureRequest) -> SimulationMode:
 
 
 @pytest.fixture
-def recv_network_interface() -> str:
+def recv_data_host() -> str:
     """Get network interface for RECV to listen on."""
-    return "0.0.0.0"
+    return "127.0.0.1"
 
 
 @pytest.fixture
-def recv_udp_port() -> int:
+def subband_udp_ports() -> List[int]:
     """Get UDP port for RECV to listen on."""
-    return randint(20000, 30000)
+    return [randint(20000, 30000) for _ in range(4)]
 
 
 @pytest.fixture
@@ -646,4 +646,10 @@ def subband_monitor_data_callback() -> MagicMock:
 @pytest.fixture
 def monitor_data_callback() -> MagicMock:
     """Create fixture for monitor data callback testing."""
+    return MagicMock()
+
+
+@pytest.fixture
+def property_callback() -> MagicMock:
+    """Create fixture for testing property callbacks."""
     return MagicMock()

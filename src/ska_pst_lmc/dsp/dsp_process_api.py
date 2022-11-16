@@ -191,6 +191,16 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
             self._logger.debug(f"Sleeping {polling_rate}ms")
             time.sleep(polling_rate / 1000.0)
 
+    def get_env(self: PstDspProcessApiSimulator) -> Dict[str, Any]:
+        """Get simulated environment values for DSP.DISK."""
+        import shutil
+
+        (disk_capacity, _, disk_available_bytes) = shutil.disk_usage("/")
+        return {
+            "disk_capacity": disk_capacity,
+            "disk_available_bytes": disk_available_bytes,
+        }
+
 
 class PstDspProcessApiGrpc(PstProcessApiGrpc, PstDspProcessApi):
     """This is an gRPC implementation of the `PstDspProcessApi` API.

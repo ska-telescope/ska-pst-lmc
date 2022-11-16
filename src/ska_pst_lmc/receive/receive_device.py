@@ -34,12 +34,9 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
     # -----------------
     process_api_endpoint = device_property(dtype=str, doc="Endpoint for the RECV.CORE service.")
 
-    network_interface = device_property(
-        dtype=str, default_value="0.0.0.0", doc="Network interface for RECV to listen on."
+    subband_udp_ports = device_property(
+        dtype=(int,), default_value=[20000], doc="The UDP ports for RECV subbands to listen on."
     )
-
-    # the default value here is just a placeholder, this can be changed in the future.
-    udp_port = device_property(dtype=int, default_value=20000, doc="The UDP port for RECV to listen on.")
 
     monitor_polling_rate = device_property(
         dtype=int, default_value=5000, doc="Rate at which monitor polling should happen, in milliseconds."
@@ -72,6 +69,9 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
             self.set_change_event(attr_name, True, False)
             self.set_archive_event(attr_name, True, False)
 
+        self.set_change_event("subbandBeamConfiguration", True, False)
+        self.set_archive_event("subbandBeamConfiguration", True, False)
+
     def create_component_manager(
         self: PstReceive,
     ) -> PstReceiveComponentManager:
@@ -87,11 +87,11 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
             logger=self.logger,
             communication_state_callback=self._communication_state_changed,
             component_state_callback=self._component_state_changed,
-            network_interface=self.network_interface,
-            udp_port=self.udp_port,
+            subband_udp_ports=self.subband_udp_ports,
             monitor_polling_rate=self.monitor_polling_rate,
             monitor_data_callback=self._update_monitor_data,
             beam_id=self.DeviceID,
+            property_callback=self._update_attribute_value,
         )
 
     def always_executed_hook(self: PstReceive) -> None:
@@ -106,14 +106,18 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         """
 
     def _update_monitor_data(self: PstReceive, data: ReceiveData) -> None:
+        for (key, value) in dataclasses.asdict(data).items():
+            self._update_attribute_value(key, value)
+
+    def _update_attribute_value(self: PstReceive, key: str, value: Any) -> None:
         try:
-            for (key, value) in dataclasses.asdict(data).items():
-                setattr(self, f"_{key}", value)
-                attr_name = as_device_attribute_name(key)
-                self.push_change_event(attr_name, value)
-                self.push_archive_event(attr_name, value)
+            setattr(self, f"_{key}", value)
+
+            attr_key = as_device_attribute_name(key)
+            self.push_change_event(attr_key, value)
+            self.push_archive_event(attr_key, value)
         except Exception:
-            self.logger.warning(f"Error in updating monitoring data: {data}", exc_info=True)
+            self.logger.warning(f"Error in attempting to set device attribute {key}.", exc_info=True)
 
     # ----------
     # Attributes
@@ -201,6 +205,38 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :rtype: int
         """
         return self._misordered_packets
+
+    @attribute(
+        dtype=str,
+        label="Data receive IP address.",
+        doc="The IP address that PST RECV is listening for data.",
+    )
+    def dataReceiveIpAddress(self: PstReceive) -> str:
+        """Get the data receive IP address.
+
+        It is only valid to call this method when the Tango device is turned on
+        and communicating.
+        """
+        return self.component_manager.data_host
+
+    @attribute(
+        dtype=str,
+        label="The current subband beam configuration.",
+        doc="Current calculated subband beam configuration.",
+    )
+    def subbandBeamConfiguration(self: PstReceive) -> str:
+        """Get current subband beam configuration.
+
+        Retrieves the current subband configuration that is calculated during
+        the `ConfigureBeam` request. When RECV is deconfigured for beam then
+        the response is an empty JSON object `{}`.
+
+        :return: current subband beam configuration.
+        :rtype: str
+        """
+        import json
+
+        return json.dumps(self.component_manager.subband_beam_configuration)
 
     # --------
     # Commands

@@ -97,6 +97,29 @@ class DspDiskMonitorData:
 class DspDiskMonitorDataStore(MonitorDataStore[DspDiskSubbandMonitorData, DspDiskMonitorData]):
     """Data store use to aggregate the subband data for DSP."""
 
+    _disk_capacity: int
+    _disk_available_bytes: int
+
+    def __init__(self: DspDiskMonitorDataStore) -> None:
+        """Initialise data monitor store."""
+        # default disk available bytes to being Python's max sized int.
+        self._disk_available_bytes = sys.maxsize
+        self._disk_capacity = sys.maxsize
+        super().__init__()
+
+    def update_disk_stats(
+        self: DspDiskMonitorDataStore, disk_capacity: int, disk_available_bytes: int
+    ) -> None:
+        """Update disk statistics.
+
+        :param disk_capacity: the total disk capacity.
+        :type disk_capacity: int
+        :param disk_available_bytes: the available amount of disk space.
+        :type disk_available_bytes: int
+        """
+        self._disk_capacity = disk_capacity
+        self._disk_available_bytes = disk_available_bytes
+
     @property
     def monitor_data(self: DspDiskMonitorDataStore) -> DspDiskMonitorData:
         """Get current monitoring data for DSP.
@@ -107,7 +130,11 @@ class DspDiskMonitorDataStore(MonitorDataStore[DspDiskSubbandMonitorData, DspDis
         """
         number_subbands: int = len(self._subband_data)
         if number_subbands == 0:
-            return DspDiskMonitorData()
+            # always used the last value stored, rather than
+            # returning the default value.
+            return DspDiskMonitorData(
+                disk_available_bytes=self._disk_available_bytes, disk_capacity=self._disk_capacity
+            )
 
         # use max long as initial value, we will want min value
         disk_capacity: int = sys.maxsize
@@ -132,6 +159,9 @@ class DspDiskMonitorDataStore(MonitorDataStore[DspDiskSubbandMonitorData, DspDis
 
         # need to reduce the recording time per disk A/(total current rate)
         available_recording_time = disk_available_bytes / (write_rate + 1e-8)
+
+        self._disk_available_bytes = disk_available_bytes
+        self._disk_capacity = disk_capacity
 
         return DspDiskMonitorData(
             disk_capacity=disk_capacity,

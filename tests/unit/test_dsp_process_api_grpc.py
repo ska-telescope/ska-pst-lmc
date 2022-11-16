@@ -36,6 +36,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     DspDiskMonitorData,
     DspDiskScanConfiguration,
     ErrorCode,
+    GetEnvironmentResponse,
     GoToFaultRequest,
     GoToFaultResponse,
     MonitorData,
@@ -728,3 +729,23 @@ def test_dsp_grpc_go_to_fault(
 
     mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
     component_state_callback.assert_called_once_with(obsfault=True)
+
+
+def test_dsp_grpc_api_get_env(
+    grpc_api: PstDspProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+) -> None:
+    """Test the get_env on gRPC API."""
+    disk_available_bytes = randint(1, 30)
+    disk_capacity = randint(30, 60)
+
+    response = GetEnvironmentResponse()
+    response.values["disk_available_bytes"].unsigned_int_value = disk_available_bytes
+    response.values["disk_capacity"].unsigned_int_value = disk_capacity
+    mock_servicer_context.get_env = MagicMock(return_value=response)
+
+    actual = grpc_api.get_env()
+
+    expected = {"disk_available_bytes": disk_available_bytes, "disk_capacity": disk_capacity}
+
+    assert expected == actual

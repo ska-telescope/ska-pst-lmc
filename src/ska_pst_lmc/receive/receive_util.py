@@ -12,7 +12,7 @@ __all__ = [
     "calculate_receive_subband_resources",
 ]
 
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 
@@ -58,8 +58,8 @@ def get_udp_format(frequency_band: Optional[str] = None, **kwargs: Any) -> str:
 
 
 def generate_recv_scan_request(
-    request_params: dict,
-) -> dict:
+    request_params: Dict[str, Any],
+) -> Dict[str, Any]:
     """Map the LMC configure request to what is needed by RECV.CORE.
 
     This is a common method to map a CSP JSON configure scan request
@@ -93,8 +93,8 @@ def generate_recv_scan_request(
 
 
 def calculate_receive_common_resources(
-    request_params: dict,
-) -> dict:
+    request_params: Dict[str, Any],
+) -> Dict[str, Any]:
     """Calculate the RECV common resources.
 
     This method has been refactored out of `calculate_receive_subband_resources`
@@ -149,11 +149,11 @@ def calculate_receive_common_resources(
 
 def calculate_receive_subband_resources(
     beam_id: int,
-    request_params: dict,
+    request_params: Dict[str, Any],
     data_host: str,
-    data_port: int,
+    subband_udp_ports: List[int],
     **kwargs: Any,
-) -> dict:
+) -> Dict[str, Any]:
     """Calculate the RECV resources for all subbands from request.
 
     This is a common method to map a CSP JSON request to the appropriate
@@ -163,6 +163,13 @@ def calculate_receive_subband_resources(
     :param request_params: a dictionary of request parameters that is used to
         configure PST, the specific parameters for RECV are extracted within
         this method.
+    :type request_paras: Dict[str, Any]
+    :param data_host: the data host IP in which the data will be received on.
+    :type data_host: str
+    :param subband_udp_ports: a list of UDP ports for each of the subbands.
+        Max length is 4 given there is a maximum of 4 subbands.
+    :type subband_udp_ports: List[int]
+
     :returns: a dict of dicts, with "common" and "subbands" as the top level
         keys.  The `common` values comes from the :py:func:`calculate_receive_common_resources`
         function.  The `subbands` is a dict of dicts with subband ids as the keys, while
@@ -205,7 +212,7 @@ def calculate_receive_subband_resources(
                 "bandwidth_out": bandwidth / MEGA_HERTZ,
                 "frequency_out": request_params["centre_frequency"] / MEGA_HERTZ,
                 "data_host": data_host,
-                "data_port": data_port,
+                "data_port": subband_udp_ports[0],
             },
         },
     }

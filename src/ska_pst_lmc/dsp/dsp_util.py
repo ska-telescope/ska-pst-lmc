@@ -52,7 +52,7 @@ def calculate_dsp_subband_resources(beam_id: int, **kwargs: Any) -> Dict[int, di
     }
 
 
-def generate_dsp_scan_request(request_params: dict) -> dict:
+def generate_dsp_scan_request(request_params: Dict[str, Any]) -> Dict[str, Any]:
     recv_common_resources = calculate_receive_common_resources(request_params=request_params)
     bytes_per_second = recv_common_resources["bytes_per_second"]
     scanlen_max = request_params.get("max_scan_length", 0.0)

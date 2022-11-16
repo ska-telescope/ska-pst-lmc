@@ -22,7 +22,7 @@ from ska_tango_base.base.base_device import DevVarLongStringArrayType
 
 from ska_pst_lmc.device_proxy import ChangeEventSubscription, PstDeviceProxy
 
-from .callback import Callback
+from .callback import Callback, callback_safely
 
 _logger = logging.getLogger(__name__)
 
@@ -526,8 +526,7 @@ class JobExecutor:
             self._sequential_job_queue.put(t)
             task_evt.wait()
 
-        if callback:
-            callback()
+        callback_safely(callback)
 
     def _handle_parallel_job(self: JobExecutor, job: ParallelJob, callback: Callback = None) -> None:
         """Handle a `ParallelJob` request.
@@ -558,8 +557,7 @@ class JobExecutor:
                 self._parallel_job_queue.put(tc)
 
         job_context.signal.wait()
-        if callback:
-            callback()
+        callback_safely(callback)
 
     def _handle_parallel_task(self: JobExecutor, task_context: ParallelJobTaskContext) -> None:
         """Handle a parallel job subtask.
@@ -624,8 +622,7 @@ class JobExecutor:
                 self._device_command_job_queue.put(device_job_context)
 
             evt.wait()
-            if callback:
-                callback()
+            callback_safely(callback)
         except Exception:
             _logger.exception("Error and handling DeviceCommandJob", exc_info=True)
 

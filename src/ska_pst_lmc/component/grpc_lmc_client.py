@@ -22,9 +22,11 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ConnectionRequest,
     DeconfigureBeamRequest,
     DeconfigureScanRequest,
+    EnvValue,
     ErrorCode,
     GetBeamConfigurationRequest,
     GetBeamConfigurationResponse,
+    GetEnvironmentRequest,
     GetScanConfigurationRequest,
     GetScanConfigurationResponse,
     GetStateRequest,
@@ -317,6 +319,34 @@ class PstGrpcLmcClient:
         try:
             result: GetStateResponse = self._service.get_state(GetStateRequest())
             return ObsState(result.state)
+        except grpc.RpcError as e:
+            _handle_grpc_error(e)
+
+    def get_env(self: PstGrpcLmcClient) -> Dict[str, Any]:
+        """Get the enviroment values from the remote gRPC service.
+
+        This will map the Protobuf `EnvVal` objects to the appropriate
+        Python types.
+
+        :return: the enviroment values from the remote gRPC service.
+        :rtype: Dict[str, Any]
+        """
+
+        def _map_value(value: EnvValue) -> Any:
+            if value.HasField("string_value"):
+                return value.string_value
+            elif value.HasField("float_value"):
+                return value.float_value
+            elif value.HasField("signed_int_value"):
+                return value.signed_int_value
+            else:
+                return value.unsigned_int_value
+
+        try:
+            response = self._service.get_env(GetEnvironmentRequest())
+
+            values = response.values
+            return {k: _map_value(values[k]) for k in values}
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 

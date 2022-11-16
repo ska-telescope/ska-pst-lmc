@@ -17,6 +17,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ErrorCode,
     GetBeamConfigurationRequest,
     GetBeamConfigurationResponse,
+    GetEnvironmentRequest,
+    GetEnvironmentResponse,
     GetScanConfigurationRequest,
     GetScanConfigurationResponse,
     GetStateRequest,
@@ -158,3 +160,41 @@ def test_grpc_client_go_to_fault_throws_exception(
 
     with pytest.raises(UnknownGrpcException):
         grpc_client.go_to_fault()
+
+
+def test_grpc_client_get_env(
+    grpc_client: PstGrpcLmcClient,
+    mock_servicer_context: MagicMock,
+) -> None:
+    """Test handles getting environment from remote system."""
+    response = GetEnvironmentResponse()
+    response.values["foo"].string_value = "bar"
+    response.values["cat"].float_value = 0.5
+    response.values["dog"].unsigned_int_value = 42
+    response.values["bat"].signed_int_value = -10
+
+    mock_servicer_context.get_env = MagicMock(return_value=response)
+    client_response = grpc_client.get_env()
+    expected_response = {
+        "foo": "bar",
+        "cat": 0.5,
+        "dog": 42,
+        "bat": -10,
+    }
+
+    mock_servicer_context.get_env.assert_called_once_with(GetEnvironmentRequest())
+    assert expected_response == client_response
+
+
+def test_grpc_client_get_env_throws_exception(
+    grpc_client: PstGrpcLmcClient,
+    mock_servicer_context: MagicMock,
+) -> None:
+    """Tests calling get_env on remote service throws a fault."""
+    mock_servicer_context.get_env.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.INTERNAL,
+        message="Interal server error.",
+    )
+
+    with pytest.raises(UnknownGrpcException):
+        grpc_client.get_env()

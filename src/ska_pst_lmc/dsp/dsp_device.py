@@ -79,6 +79,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
             monitor_polling_rate=self.monitor_polling_rate,
             monitor_data_callback=self._update_monitor_data,
             beam_id=self.DeviceID,
+            property_callback=self._update_attribute_value,
         )
 
     def always_executed_hook(self: PstDsp) -> None:
@@ -100,15 +101,22 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         }
 
         for (key, value) in values.items():
-            self.push_change_event(as_device_attribute_name(key), value)
-            self.push_archive_event(as_device_attribute_name(key), value)
+            self._update_attribute_value(key, value)
+
+    def _update_attribute_value(self: PstDsp, key: str, value: Any) -> None:
+        try:
+            attr_key = as_device_attribute_name(key)
+            self.push_change_event(attr_key, value)
+            self.push_archive_event(attr_key, value)
+        except Exception:
+            self.logger.warning(f"Error in attempting to set device attribute {key}.", exc_info=True)
 
     # ----------
     # Attributes
     # ----------
 
     @attribute(
-        dtype="DevULong64",
+        dtype=int,
         unit="Bytes",
         standard_unit="Bytes",
         display_unit="B",
@@ -123,7 +131,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         return self.component_manager.disk_capacity
 
     @attribute(
-        dtype="DevULong64",
+        dtype=int,
         unit="Bytes",
         standard_unit="Bytes",
         display_unit="B",
@@ -138,7 +146,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         return self.component_manager.disk_available_bytes
 
     @attribute(
-        dtype="DevULong64",
+        dtype=int,
         unit="Bytes",
         standard_unit="Bytes",
         display_unit="B",
@@ -155,7 +163,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         return self.component_manager.disk_used_bytes
 
     @attribute(
-        dtype="DevFloat",
+        dtype=float,
         unit="Percentage",
         display_unit="%",
         max_value=100,
@@ -175,7 +183,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         return self.component_manager.disk_used_percentage
 
     @attribute(
-        dtype="DevFloat",
+        dtype=float,
         unit="Bytes per second",
         display_unit="B/s",
         doc="Current rate of writing to the disk.",
@@ -189,7 +197,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         return self.component_manager.write_rate
 
     @attribute(
-        dtype="DevULong64",
+        dtype=int,
         unit="Bytes",
         display_unit="B",
         doc="Number of bytes written during scan.",
@@ -203,7 +211,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         return self.component_manager.bytes_written
 
     @attribute(
-        dtype="DevFloat",
+        dtype=float,
         unit="Seconds",
         display_unit="s",
         min_alarm=10.0,
@@ -219,7 +227,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         return self.component_manager.available_recording_time
 
     @attribute(
-        dtype=("DevULong64",),
+        dtype=(int,),
         max_dim_x=4,
         unit="Bytes",
         display_unit="B",
@@ -234,7 +242,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         return self.component_manager.subband_bytes_written
 
     @attribute(
-        dtype=("DevFloat",),
+        dtype=(float,),
         max_dim_x=4,
         unit="Bytes per second",
         display_unit="B/s",

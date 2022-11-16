@@ -275,3 +275,20 @@ def test_dsp_simulator_api_go_to_fault_if_monitoring_event_is_not_set(
     component_state_callback.assert_called_once_with(obsfault=True)
 
     assert simulation_api._monitor_abort_event.is_set(), "Expected the monitoring event to be set"
+
+
+def test_dsp_simulator_api_get_env(
+    simulation_api: PstDspProcessApiSimulator,
+) -> None:
+    """Test the get_env on simulator API."""
+    import shutil
+
+    (disk_capacity, _, disk_available_bytes) = shutil.disk_usage("/")
+    expected = {
+        "disk_capacity": disk_capacity,
+        "disk_available_bytes": disk_available_bytes,
+    }
+
+    actual = simulation_api.get_env()
+
+    assert actual == expected
