@@ -696,10 +696,26 @@ class PstBeamComponentManager(PstComponentManager):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            job=DeviceCommandJob(
-                devices=self._remote_devices,
-                action=lambda d: d.ObsReset(),
-                command_name="ObsReset",
+            job=SequentialJob(
+                tasks=[
+                    # This will put the subordinate classes into IDLE state
+                    DeviceCommandJob(
+                        devices=self._remote_devices,
+                        action=lambda d: d.ObsReset(),
+                        command_name="ObsReset",
+                    ),
+                    # need to release the ring buffer clients before deconfiguring SMRB
+                    DeviceCommandJob(
+                        devices=[self._dsp_device, self._recv_device],
+                        action=lambda d: d.DeconfigureBeam(),
+                        command_name="DeconfigureBeam",
+                    ),
+                    DeviceCommandJob(
+                        devices=[self._smrb_device],
+                        action=lambda d: d.DeconfigureBeam(),
+                        command_name="DeconfigureBeam",
+                    ),
+                ],
             ),
             task_callback=task_callback,
             completion_callback=_completion_callback,

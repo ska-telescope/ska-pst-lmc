@@ -307,6 +307,15 @@ class TestPstBeam:
         assert_obstate(ObsState.FAULT)
 
         tango_device_command_checker.assert_command(
+            lambda: device_under_test.ObsReset(),
+            expected_obs_state_events=[
+                ObsState.RESETTING,
+                ObsState.IDLE,
+            ],
+        )
+        assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
+
+        tango_device_command_checker.assert_command(
             lambda: device_under_test.Off(),
         )
         assert_state(DevState.OFF)
