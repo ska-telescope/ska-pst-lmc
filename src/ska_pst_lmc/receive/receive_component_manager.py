@@ -174,14 +174,14 @@ class PstReceiveComponentManager(PstApiComponentManager):
         return self._data_host
 
     @property
-    def subband_udp_ports(self: PstReceiveComponentManager) -> str:
+    def subband_udp_ports(self: PstReceiveComponentManager) -> List[int]:
         """Get data ports used by all the subbands for receiving data during a scan.
 
         :return: the data host used for receiving data during a scan.
         :rtype: str
         """
         if not self._subband_udp_ports:
-            self._subband_udp_ports = [ self._api.get_env()["data_port"] ]
+            self._subband_udp_ports = [self._api.get_env()["data_port"]]
 
         return self._subband_udp_ports
 
@@ -229,7 +229,9 @@ class PstReceiveComponentManager(PstApiComponentManager):
                     "subband": recv_resources["subbands"][1],
                 }
 
-                self._api.configure_beam(resources=subband_resources, task_callback=wrap_callback(task_callback))
+                self._api.configure_beam(
+                    resources=subband_resources, task_callback=wrap_callback(task_callback)
+                )
                 self.subband_beam_configuration = recv_resources
             except Exception:
                 self.logger.exception("Error in configuring scan for RECV", exc_info=True)
