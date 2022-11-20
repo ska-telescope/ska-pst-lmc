@@ -4,47 +4,77 @@
    contain the root `toctree` directive.
 
 
-.. HOME SECTION ==================================================
+.. HOME SECTION ===========================================================
 
 .. Hidden toctree to manage the sidebar navigation.
 
-Welcome to SKA PST LMC documentation!
-=====================================
+SKA PST LMC - Local Monitoring and Control
+==========================================
 
-The repository for the Local Monitoring and Control (LMC) software
-the Pulsar Timing Sub-element (PST) within the Central Signal Processor
+This site documents the Local Monitoring and Control (LMC) software
+of the Pulsar Timing Sub-element (PST) within the Central Signal Processor
 (CSP) Element of the Square Kilometre Array (SKA) Low and Mid telescopes.
 
-.. README =============================================================
+In addition to the notes for developers of the PST.LMC software, this
+documentation includes
 
-.. toctree::
-  :caption: Developer Readme
-  :maxdepth: 2
+- an overview of the LMC architecture;
+- installation and deployment instructions;
+- instructions for testing PST.LMC in simulation mode;
+- the LMC library internal API (for PST LMC developers);
+- the PST.LMC TANGO API (properties, commands, and attributes);
 
-  ../../README
 
-.. API =============================================================
+For a description of the fully-integrated PST, please see the ska-pst-integration_ documentation.
 
-.. automodule:: ska_pst_lmc
+.. _ska-pst-integration: https://www.python.org/
 
-.. toctree::
-  :caption: API
-  :maxdepth: 3
-
-  PST.LMC API<api/index>
-
-.. Architecture =============================================================
+.. Architecture ===========================================================
 
 .. toctree::
   :caption: Architecture
-  :maxdepth: 3
+  :maxdepth: 2
 
-  Architecture<architecture/index>
+  Overview<architecture/index>
+  Devices<architecture/devices>
+  Integration<architecture/integration>
 
 .. Deployment =============================================================
 
 .. toctree::
   :caption: Deployment
-  :maxdepth: 3
+  :maxdepth: 2
 
-  Deployment<deployment/index>
+  deployment/requirements
+  deployment/standalone
+  deployment/using-make
+  deployment/helm-chart
+
+.. Operation ==============================================================
+
+.. toctree::
+  :caption: Operation
+  :maxdepth: 2
+
+  operation/example
+  operation/troubleshooting
+
+
+.. Development ============================================================
+
+.. toctree::
+  :caption: Development
+  :maxdepth: 2
+
+  Gitlab README<../../README>
+
+.. API ====================================================================
+
+.. automodule:: ska_pst_lmc
+
+.. toctree::
+  :caption: API
+  :maxdepth: 2
+
+  TANGO API<api/tango>
+  PST.LMC API<api/index>

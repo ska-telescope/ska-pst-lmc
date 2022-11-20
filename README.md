@@ -5,77 +5,14 @@ SKA PST LMC
 
 Release: 0.3.1
 
-Check the [PST.LMC Documentation](https://developer.skao.int/projects/ska-pst-lmc) for the API and detailed documentation
-of this project.
-
 ## About
 
 The repository for the Local Monitoring and Control (LMC) software the Pulsar Timing Sub-element (PST) within the Central Signal Processor (CSP) element of the Square Kilometre Array (SKA) Low and Mid telescopes.
 
 This project is for the PST Tango devices used within the LMC.
 
-## TANGO Devices
-
-### Base classes
-
-The `ska_pst_lmc.component` module is for common base classes for TANGO device components. For now the only class
-in this module is the `PstComponentManager`, though a base PST Process API may also be added here.
-
-Common reusable code (i.e. code that code be used by a completely separate project) is to be added to the `ska_pst_lmc.util`
-module and not the component submodule.
-
-### BEAM Device
-
-This device is a logical device for managing devices like RECV and SMRB. This uses references to a `PstDeviceProxy` which
-is a wrapper around the `tango.DeviceProxy` class. This allows for not having to import TANGO classes within component
-classes.
-
-The component manager proxies commands to the remote devices that are configured based on the TANGO device's attributes of `RecvFQDN`, `SmrbFQDN`, `DspFQDN`.
-
-### RECV Device
-
-This device is used for managing and monitoring the RECV process within the PST.LMC sub-system. This is the base example for
-which the other devices are to be modelled upon. It includes the use of:
-
-* SKASubarray TANGO Device (found in the [ska-tango-base](https://gitlab.com/ska-telescope/ska-tango-base))
-* A Component Manager extending from `PstComponentManager`
-* A process API
-* A RECV Model module
-* A simulator
-
-While the Process API is similar to the Component Manager, it's goal is different. The Component Manager uses the API which
-will ultimately connect to the RECV process or a stubbed/simulator process. It is meant to deal with the communication with
-the external process and also not worry about the state model, which is a part of the component manager.
-
-### SMRB Device
-
-This device is used for managing and monitoring the Shared Memory Ring Buffer (SMRB) process within the PST.LMC sub-system.
-It includes the use of:
-
-* SKASubarray TANGO Device (found in the [ska-tango-base](https://gitlab.com/ska-telescope/ska-tango-base))
-* A Component Manager extending from `PstComponentManager`
-* A process API
-* A SMRB Model module
-* A simulator
-
-While the Process API is similar to the Component Manager, it's goal is different. The Component Manager uses the API which
-will ultimately connect to the SMRB process or a stubbed/simulator process. It is meant to deal with the communication with
-the external process and also not worry about the state model, which is a part of the component manager.
-
-### DSP Device
-
-This device is used for managing and monitoring the Digital Signal Processing (DSP) process within the PST.LMC sub-system.
-It includes the use of:
-
-* SKASubarray TANGO Device (found in the [ska-tango-base](https://gitlab.com/ska-telescope/ska-tango-base))
-* A Component Manager extending from `PstComponentManager`
-* A process API
-* A SMRB Model module
-* A simulator
-
-While the Process API is similar to the Component Manager, it's goal is different. The Component Manager uses the API which
-will ultimately connect to the DSP process or a stubbed/simulator process. It is meant to deal with the communication with
-the external process and also not worry about the state model, which is a part of the component manager.
+Check the [PST.LMC Documentation](https://developer.skao.int/projects/ska-pst-lmc) for the API and detailed documentation
+of this project.
 
 ## Developer Setup
 
