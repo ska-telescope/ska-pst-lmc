@@ -71,7 +71,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
             logger=logger,
             component_state_callback=component_state_callback,
         )
-        self._subband_udp_ports = subband_udp_ports
+        self._subband_udp_ports: List[int] = []
 
         # Set up handling of monitor data.
         self._monitor_data_handler = MonitorDataHandler(
@@ -174,6 +174,18 @@ class PstReceiveComponentManager(PstApiComponentManager):
         return self._data_host
 
     @property
+    def subband_udp_ports(self: PstReceiveComponentManager) -> str:
+        """Get data ports used by all the subbands for receiving data during a scan.
+
+        :return: the data host used for receiving data during a scan.
+        :rtype: str
+        """
+        if not self._subband_udp_ports:
+            self._subband_udp_ports = [ self._api.get_env()["data_port"] ]
+
+        return self._subband_udp_ports
+
+    @property
     def subband_beam_configuration(self: PstReceiveComponentManager) -> Dict[str, Any]:
         """Get the current subband beam configuration.
 
@@ -200,27 +212,27 @@ class PstReceiveComponentManager(PstApiComponentManager):
 
         :param resources: resources to be assigned
         """
-        recv_resources = calculate_receive_subband_resources(
-            self.beam_id,
-            request_params=resources,
-            data_host=self.data_host,
-            subband_udp_ports=self._subband_udp_ports,
-        )
-        self.logger.debug(f"Submitting API with recv_resources={recv_resources}")
-
         # deal only with subband 1 for now. otherwise we have to deal with tracking
         # multiple long running tasks.
         def _task(task_callback: Callback) -> None:
-            common_resources = recv_resources["common"]
-            subband_resources = recv_resources["subbands"][1]
+            try:
+                recv_resources = calculate_receive_subband_resources(
+                    self.beam_id,
+                    request_params=resources,
+                    data_host=self.data_host,
+                    subband_udp_ports=self.subband_udp_ports,
+                )
+                self.logger.debug(f"Submitting API with recv_resources={recv_resources}")
 
-            resources = {
-                "common": common_resources,
-                "subband": subband_resources,
-            }
+                subband_resources = {
+                    "common": recv_resources["common"],
+                    "subband": recv_resources["subbands"][1],
+                }
 
-            self._api.configure_beam(resources=resources, task_callback=wrap_callback(task_callback))
-            self.subband_beam_configuration = recv_resources
+                self._api.configure_beam(resources=subband_resources, task_callback=wrap_callback(task_callback))
+                self.subband_beam_configuration = recv_resources
+            except Exception:
+                self.logger.exception("Error in configuring scan for RECV", exc_info=True)
 
         return self._submit_background_task(
             _task,
@@ -246,12 +258,16 @@ class PstReceiveComponentManager(PstApiComponentManager):
         """Start scanning."""
 
         def _task(task_callback: Callback) -> None:
-            self._api.start_scan(args=args, task_callback=wrap_callback(task_callback))
-            self._api.monitor(
-                # for now only handling 1 subband
-                subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
-                polling_rate=self._monitor_polling_rate,
-            )
+            try:
+                self._api.start_scan(args=args, task_callback=wrap_callback(task_callback))
+                self._api.monitor(
+                    # for now only handling 1 subband
+                    subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
+                    polling_rate=self._monitor_polling_rate,
+                )
+            except Exception:
+                self.logger.exception("Error in starting scan for RECV.MGMT", exc_info=True)
+                raise
 
         return self._submit_background_task(_task, task_callback=task_callback)
 

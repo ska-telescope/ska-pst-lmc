@@ -13,7 +13,10 @@ __all__ = [
     "calculate_smrb_subband_resources",
 ]
 
-from typing import Dict
+from typing import Any, Dict
+
+SIZE_OF_FLOAT32_IN_BYTES = 4
+BITS_PER_BYTE = 8
 
 DATA_KEY_SUFFIX: int = 0
 WEIGHTS_KEY_SUFFIX: int = 2
@@ -27,6 +30,9 @@ DATA_BUFFER_BUFSZ_FACTOR: int = 1
 WEIGHTS_NBITS = 16
 WEIGHTS_BUFFER_NBUFS: int = 4
 WEIGHTS_BUFFER_BUFSZ_FACTOR: int = 1
+
+LOW_PACKET_NCHAN = 24
+MID_PACKET_NCHAN = 185
 
 
 def generate_data_key(beam_id: int, subband_id: int) -> str:
@@ -60,7 +66,7 @@ def generate_weights_key(beam_id: int, subband_id: int) -> str:
     return "{0:02x}{1}{2}".format(beam_id, subband_id, WEIGHTS_KEY_SUFFIX)
 
 
-def calculate_smrb_subband_resources(beam_id: int, request_params: dict) -> Dict[int, dict]:
+def calculate_smrb_subband_resources(beam_id: int, request_params: Dict[str, Any]) -> Dict[int, dict]:
     """Calculate the ring buffer (RB) resources from request.
 
     This is a common method used to calculate the keys, number of buffers, and
@@ -97,9 +103,19 @@ def calculate_smrb_subband_resources(beam_id: int, request_params: dict) -> Dict
     # this should be 1 as udp_nsamp should equal wt_nsamp
     wt_nweight = udp_nsamp // wt_nsamp
 
-    data_buffer_resolution = obsnchan * obsnpol * nbits // 8 * udp_nsamp
+    data_buffer_resolution = obsnchan * obsnpol * nbits // BITS_PER_BYTE * udp_nsamp
     # this should be efficitvely 2 * obsnchan as WEIGHTS_NBITS is 16
-    weights_buffer_resolution = obsnchan * WEIGHTS_NBITS // 8 * wt_nweight
+
+    if request_params.get("frequency_band", "0") in [None, "0"]:
+        # LowCBF
+        nchan_per_packet = LOW_PACKET_NCHAN
+    else:
+        # MidCBF
+        nchan_per_packet = MID_PACKET_NCHAN
+
+    weights_buffer_resolution = (
+        obsnchan // nchan_per_packet * SIZE_OF_FLOAT32_IN_BYTES
+    ) + obsnchan * WEIGHTS_NBITS // BITS_PER_BYTE * wt_nweight
 
     return {
         1: {

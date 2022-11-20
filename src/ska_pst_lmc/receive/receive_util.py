@@ -71,7 +71,6 @@ def generate_recv_scan_request(
     """
     result = {
         "activation_time": request_params["activation_time"],
-        "scan_id": request_params["scan_id"],
         "observer": request_params["observer_id"],
         "projid": request_params["project_id"],
         "pnt_id": request_params["pointing_id"],

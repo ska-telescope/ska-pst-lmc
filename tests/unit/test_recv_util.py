@@ -210,7 +210,6 @@ def test_map_configure_request(
     actual = generate_recv_scan_request(configure_scan_request)
 
     assert actual["activation_time"] == configure_scan_request["activation_time"]
-    assert actual["scan_id"] == configure_scan_request["scan_id"]
     assert actual["observer"] == configure_scan_request["observer_id"]
     assert actual["projid"] == configure_scan_request["project_id"]
     assert actual["pnt_id"] == configure_scan_request["pointing_id"]
