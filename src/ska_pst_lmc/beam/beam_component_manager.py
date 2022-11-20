@@ -311,12 +311,12 @@ class PstBeamComponentManager(PstComponentManager):
 
     @property
     def available_recording_time(self: PstBeamComponentManager) -> float:
-        """Get available bytes for disk to be written to during scan."""
+        """Get the available recording time, for the disk being written to during the scan, in seconds."""
         return self._available_recording_time
 
     @available_recording_time.setter
     def available_recording_time(self: PstBeamComponentManager, available_recording_time: float) -> None:
-        """Set available bytes for disk to be written to during scan."""
+        """Set the available recording time, for the disk being written to during the scan, in seconds."""
         self._available_recording_time = available_recording_time
         self._property_callback("available_recording_time", available_recording_time)
 
@@ -327,18 +327,18 @@ class PstBeamComponentManager(PstComponentManager):
 
     @ring_buffer_utilisation.setter
     def ring_buffer_utilisation(self: PstBeamComponentManager, ring_buffer_utilisation: float) -> None:
-        """Set available bytes for disk to be written to during scan."""
+        """Set current utilisation of ring buffer for current scan configuration."""
         self._ring_buffer_utilisation = ring_buffer_utilisation
         self._property_callback("ring_buffer_utilisation", ring_buffer_utilisation)
 
     @property
     def expected_data_rate(self: PstBeamComponentManager) -> float:
-        """Get the expected data rate for DSP processing for current scan configuration."""
+        """Get the expected data rate for DSP output for current scan configuration."""
         return self._expected_data_rate
 
     @expected_data_rate.setter
     def expected_data_rate(self: PstBeamComponentManager, expected_data_rate: float) -> None:
-        """Set the expected data rate for DSP processing for current scan configuration."""
+        """Set the expected data rate for DSP output for current scan configuration."""
         self._expected_data_rate = expected_data_rate
         self._property_callback("expected_data_rate", expected_data_rate)
 
@@ -428,7 +428,7 @@ class PstBeamComponentManager(PstComponentManager):
         ]
 
     def _unsubscribe_change_events(self: PstBeamComponentManager) -> None:
-        """Unsubscribed from current monitoring attributes of remote devices."""
+        """Unsubscribe from current monitoring attributes of remote devices."""
         for s in self._change_event_subscriptions:
             s.unsubscribe()
 

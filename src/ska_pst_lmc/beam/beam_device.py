@@ -344,7 +344,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
 
     @attribute(
         dtype=float,
-        unit="Gigibites per second",
+        unit="Gigibits per second",
         display_unit="Gb/s",
         doc="Expected rate of data to be received by PST Beam component.",
     )

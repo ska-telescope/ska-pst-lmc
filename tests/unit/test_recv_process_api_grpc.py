@@ -849,11 +849,13 @@ def test_recv_grpc_get_env(
     """Test get_env via gRPC."""
     response = GetEnvironmentResponse()
     response.values["data_host"].string_value = "10.10.0.5"
+    response.values["data_port"].signed_int_value = 32080
     mock_servicer_context.get_env = MagicMock(return_value=response)
 
     client_response = grpc_api.get_env()
     expected_response = {
         "data_host": "10.10.0.5",
+        "data_port": 32080,
     }
 
     assert expected_response == client_response

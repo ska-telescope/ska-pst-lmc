@@ -95,7 +95,7 @@ class DspDiskMonitorData:
 
 
 class DspDiskMonitorDataStore(MonitorDataStore[DspDiskSubbandMonitorData, DspDiskMonitorData]):
-    """Data store use to aggregate the subband data for DSP."""
+    """Data store used to aggregate the subband data for DSP."""
 
     _disk_capacity: int
     _disk_available_bytes: int

@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+from functools import cache
 from typing import Any, Callable, Dict, List, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
@@ -161,6 +162,10 @@ class PstReceiveComponentManager(PstApiComponentManager):
         """Get monitor data from data handler."""
         return self._monitor_data_handler.monitor_data
 
+    @cache
+    def _get_env(self: PstReceiveComponentManager) -> Dict[str, Any]:
+        return self._api.get_env()
+
     @property
     def data_host(self: PstReceiveComponentManager) -> str:
         """Get data host used for receiving data during a scan.
@@ -169,7 +174,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
         :rtype: str
         """
         if self._data_host is None:
-            self._data_host = self._api.data_host()
+            self._data_host = self._get_env()["data_host"]
 
         return self._data_host
 
@@ -181,7 +186,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
         :rtype: str
         """
         if not self._subband_udp_ports:
-            self._subband_udp_ports = [self._api.get_env()["data_port"]]
+            self._subband_udp_ports = [self._get_env()["data_port"]]
 
         return self._subband_udp_ports
 

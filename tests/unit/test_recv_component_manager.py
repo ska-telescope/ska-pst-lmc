@@ -154,6 +154,7 @@ def test_recv_configure_beam(
     task_callback: Callable,
     calculated_receive_subband_resources: dict,
     recv_data_host: str,
+    subband_udp_ports: List[int],
     property_callback: Callable,
 ) -> None:
     """Test that configure beam calls the API correctly."""
@@ -161,8 +162,10 @@ def test_recv_configure_beam(
 
     api = MagicMock()
     component_manager._api = api
-    # override the background processing.
-    component_manager._api.data_host.return_value = recv_data_host
+    component_manager._api.get_env.return_value = {
+        "data_host": recv_data_host,
+        "data_port": subband_udp_ports[0],
+    }
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
         task_callback=task_callback
     )
