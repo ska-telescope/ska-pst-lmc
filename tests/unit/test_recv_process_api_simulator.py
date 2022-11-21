@@ -309,3 +309,14 @@ def test_recv_simulator_api_go_to_fault_if_monitoring_event_is_not_set(
     component_state_callback.assert_called_once_with(obsfault=True)
 
     assert simulation_api._monitor_abort_event.is_set(), "Expected the monitoring event to be set"
+
+
+def test_recv_simulator_api_get_env(
+    simulation_api: PstReceiveProcessApiSimulator,
+) -> None:
+    """Test get_env returns expected values."""
+    output = simulation_api.get_env()
+
+    expected = {"data_host": "127.0.0.1", "data_port": 32080}
+
+    assert output == expected

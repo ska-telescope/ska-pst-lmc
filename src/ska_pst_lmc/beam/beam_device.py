@@ -70,6 +70,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
 
         This overrides the :py:class:`SKABaseDevice`.
         """
+        import sys
+
         util = tango.Util.instance()
         util.set_serial_model(tango.SerialModel.NO_SYNC)
         super().init_device()
@@ -83,16 +85,23 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         self._write_rate = 0.0
         self._bytes_written = 0
         self._ingest_configuration = ""
-        self._disk_available_bytes = 0
+        self._disk_available_bytes = sys.maxsize
         self._available_recording_time = DEFAULT_RECORDING_TIME
+        self._ring_buffer_utilisation = 0.0
+        self._expected_data_rate = 0.0
 
         for prop in [
-            "receivedrate",
-            "receiveddata",
-            "droppedrate",
-            "droppeddata",
-            "writerate",
-            "byteswritten",
+            "receivedRate",
+            "receivedData",
+            "droppedRate",
+            "droppedData",
+            "writeRate",
+            "bytesWritten",
+            "diskAvailableBytes",
+            "expectedDataRate",
+            "availableRecordingTime",
+            "ringBufferUtilisation",
+            "expectedDataRate",
         ]:
             self.set_change_event(prop, True, False)
             self.set_archive_event(prop, True, False)
@@ -131,11 +140,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
 
     def _update_attribute_value(self: PstBeam, key: str, value: Any) -> None:
         try:
-            self.logger.info(f"Device has update for {key} with value {value}")
             setattr(self, f"_{key}", value)
-
             attr_key = as_device_attribute_name(key)
-            self.logger.info(f"Firing change event for {attr_key}")
             self.push_change_event(attr_key, value)
             self.push_archive_event(attr_key, value)
         except Exception:
@@ -299,6 +305,56 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         :rtype: int
         """
         return self._bytes_written
+
+    @attribute(
+        dtype=str,
+        doc="The channel block configuration based on scan configuration.",
+    )
+    def channelBlockConfiguration(self: PstBeam) -> str:
+        """Get the channel block configuration.
+
+        This is a JSON serialised string of the channel block configuration
+        that is calculated during the `ConfigureScan` command.
+
+        :returns: the channel block configuration as a JSON string.
+        :rtype: str
+        """
+        import json
+
+        return json.dumps(self.component_manager.channel_block_configuration)
+
+    @attribute(
+        dtype=float,
+        label="Utilisation",
+        unit="Percentage",
+        display_unit="%",
+        max_value=100,
+        min_value=0,
+        max_alarm=90,
+        max_warning=80,
+        doc="Percentage of the ring buffer elements that are full of data",
+    )
+    def ringBufferUtilisation(self: PstBeam) -> float:
+        """Get the percentage of the ring buffer elements that are full of data.
+
+        :returns: the percentage of the ring buffer elements that are full of data.
+        :rtype: float
+        """
+        return self._ring_buffer_utilisation
+
+    @attribute(
+        dtype=float,
+        unit="Gigabits per second",
+        display_unit="Gb/s",
+        doc="Expected rate of data to be received by PST Beam component.",
+    )
+    def expectedDataRate(self: PstBeam) -> float:
+        """Get the expected rate of data to be received by PST Beam component.
+
+        :returns: the expected rate of data to be received by PST Beam component.
+        :rtype: float
+        """
+        return self._expected_data_rate
 
     # --------
     # Commands

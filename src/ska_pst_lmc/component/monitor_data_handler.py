@@ -97,8 +97,7 @@ class MonitorDataHandler(Generic[S, T]):
         """
         with self._monitor_lock:
             self._data_store.update_subband(subband_id=subband_id, subband_data=subband_data)
-            self._monitor_data = self._data_store.monitor_data
-            self._monitor_data_callback(self.monitor_data)
+            self.update_monitor_data(notify=True)
 
     @property
     def monitor_data(self: MonitorDataHandler) -> T:
@@ -109,5 +108,18 @@ class MonitorDataHandler(Generic[S, T]):
         """Reset the monitor data store."""
         with self._monitor_lock:
             self._data_store.reset()
-            self._monitor_data = self._data_store.monitor_data
+            self.update_monitor_data(notify=True)
+
+    def update_monitor_data(self: MonitorDataHandler, notify: bool) -> None:
+        """Update monitoring data.
+
+        This method is used internally as well as by DSP to recalculate
+        monitoring data. To force callback `notify` must be set to `True`.
+
+        :param notify: whether to notify callback that there has been an update.
+        :type notify: bool
+        """
+        self._monitor_data = self._data_store.monitor_data
+
+        if notify:
             self._monitor_data_callback(self._monitor_data)

@@ -208,6 +208,19 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
             self._logger.debug(f"Sleeping {polling_rate}ms")
             time.sleep(polling_rate / 1000.0)
 
+    def get_env(self: PstReceiveProcessApiSimulator) -> Dict[str, Any]:
+        """Get simulated environment values for RECV.CORE.
+
+        This returns the following:
+
+        * data_host = '127.0.0.1'
+        * data_port = 32080
+        """
+        return {
+            "data_host": "127.0.0.1",
+            "data_port": 32080,
+        }
+
 
 class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
     """This is an gRPC implementation of the `PstReceiveProcessApi`.

@@ -36,6 +36,7 @@ def component_manager(
     communication_state_callback: Callable[[CommunicationStatus], None],
     component_state_callback: Callable,
     monitor_data_callback: Callable,
+    property_callback: Callable,
 ) -> PstDspComponentManager:
     """Create instance of a component manager."""
     return PstDspComponentManager(
@@ -47,6 +48,7 @@ def component_manager(
         component_state_callback=component_state_callback,
         api=api,
         monitor_data_callback=monitor_data_callback,
+        property_callback=property_callback,
     )
 
 
@@ -263,10 +265,13 @@ def test_dsp_cm_dsp_configure_beam(
     configure_beam_request: Dict[str, Any],
     task_callback: Callable,
     calculated_dsp_subband_resources: dict,
+    api: PstDspProcessApi,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test that configure beam calls the API correctly."""
-    api = MagicMock()
-    component_manager._api = api
+    configure_beam = MagicMock()
+    monkeypatch.setattr(api, "configure_beam", configure_beam)
+
     # override the background processing.
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
         task_callback=task_callback
@@ -274,7 +279,7 @@ def test_dsp_cm_dsp_configure_beam(
 
     component_manager.configure_beam(resources=configure_beam_request, task_callback=task_callback)
 
-    api.configure_beam.assert_called_once_with(
+    configure_beam.assert_called_once_with(
         resources=calculated_dsp_subband_resources, task_callback=task_callback
     )
 

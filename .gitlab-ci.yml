@@ -157,6 +157,7 @@ k8s-test:
   rules:
     - exists:
         - tests/**/*
+  when: manual
 
 python-build-for-publication: # Executed on a tag
   allow_failure: false

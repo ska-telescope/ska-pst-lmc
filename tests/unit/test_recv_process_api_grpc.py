@@ -13,7 +13,7 @@ import logging
 import threading
 import time
 from random import randint, random
-from typing import Any, Dict, Generator
+from typing import Any, Dict, Generator, List
 from unittest.mock import ANY, MagicMock, call
 
 import grpc
@@ -33,6 +33,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     DeconfigureScanRequest,
     DeconfigureScanResponse,
     ErrorCode,
+    GetEnvironmentResponse,
     GoToFaultRequest,
     GoToFaultResponse,
     MonitorData,
@@ -105,15 +106,15 @@ def subband_id() -> int:
 def calculated_receive_subband_resources(
     beam_id: int,
     configure_beam_request: Dict[str, Any],
-    recv_network_interface: str,
-    recv_udp_port: int,
+    recv_data_host: str,
+    subband_udp_ports: List[int],
 ) -> dict:
     """Calculate RECV subband resources."""
     return calculate_receive_subband_resources(
         beam_id=beam_id,
         request_params=configure_beam_request,
-        data_host=recv_network_interface,
-        data_port=recv_udp_port,
+        data_host=recv_data_host,
+        subband_udp_ports=subband_udp_ports,
     )
 
 
@@ -839,3 +840,22 @@ def test_recv_grpc_go_to_fault(
 
     mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
     component_state_callback.assert_called_once_with(obsfault=True)
+
+
+def test_recv_grpc_get_env(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+) -> None:
+    """Test get_env via gRPC."""
+    response = GetEnvironmentResponse()
+    response.values["data_host"].string_value = "10.10.0.5"
+    response.values["data_port"].signed_int_value = 32080
+    mock_servicer_context.get_env = MagicMock(return_value=response)
+
+    client_response = grpc_api.get_env()
+    expected_response = {
+        "data_host": "10.10.0.5",
+        "data_port": 32080,
+    }
+
+    assert expected_response == client_response

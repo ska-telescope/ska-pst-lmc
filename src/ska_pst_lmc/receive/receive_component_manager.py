@@ -10,7 +10,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Dict, Optional
+from functools import cache
+from typing import Any, Callable, Dict, List, Optional
 
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 
@@ -40,11 +41,11 @@ class PstReceiveComponentManager(PstApiComponentManager):
         monitor_data_callback: Callable[[ReceiveData], None],
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable[..., None],
-        network_interface: str,
-        udp_port: int,
+        subband_udp_ports: List[int],
         api: Optional[PstReceiveProcessApi] = None,
         monitor_polling_rate: int = 5000,
         *args: Any,
+        property_callback: Callable[[str, Any], None],
         **kwargs: Any,
     ):
         """Initialise instance of the component manager.
@@ -71,8 +72,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
             logger=logger,
             component_state_callback=component_state_callback,
         )
-        self._network_interface = network_interface
-        self._udp_port = udp_port
+        self._subband_udp_ports: List[int] = []
 
         # Set up handling of monitor data.
         self._monitor_data_handler = MonitorDataHandler(
@@ -80,6 +80,8 @@ class PstReceiveComponentManager(PstApiComponentManager):
             monitor_data_callback=monitor_data_callback,
         )
         self._monitor_polling_rate = monitor_polling_rate
+        self._data_host: Optional[str] = None
+        self._property_callback = property_callback
 
         super().__init__(
             device_name,
@@ -92,6 +94,8 @@ class PstReceiveComponentManager(PstApiComponentManager):
             fault=None,
             **kwargs,
         )
+
+        self._subband_beam_configuration: Dict[str, Any] = {}
 
     def _update_api(self: PstReceiveComponentManager) -> None:
         """Update instance of API based on simulation mode."""
@@ -158,6 +162,53 @@ class PstReceiveComponentManager(PstApiComponentManager):
         """Get monitor data from data handler."""
         return self._monitor_data_handler.monitor_data
 
+    @cache
+    def _get_env(self: PstReceiveComponentManager) -> Dict[str, Any]:
+        return self._api.get_env()
+
+    @property
+    def data_host(self: PstReceiveComponentManager) -> str:
+        """Get data host used for receiving data during a scan.
+
+        :return: the data host used for receiving data during a scan.
+        :rtype: str
+        """
+        if self._data_host is None:
+            self._data_host = self._get_env()["data_host"]
+
+        return self._data_host
+
+    @property
+    def subband_udp_ports(self: PstReceiveComponentManager) -> List[int]:
+        """Get data ports used by all the subbands for receiving data during a scan.
+
+        :return: the data host used for receiving data during a scan.
+        :rtype: str
+        """
+        if not self._subband_udp_ports:
+            self._subband_udp_ports = [self._get_env()["data_port"]]
+
+        return self._subband_udp_ports
+
+    @property
+    def subband_beam_configuration(self: PstReceiveComponentManager) -> Dict[str, Any]:
+        """Get the current subband beam configuration.
+
+        This is the current subband beam configuration that is calculated during the
+        `configure_beam`.
+
+        :return: the current subband beam configuration.
+        :rtype: Dict[str, Any]
+        """
+        return self._subband_beam_configuration
+
+    @subband_beam_configuration.setter
+    def subband_beam_configuration(self: PstReceiveComponentManager, config: Dict[str, Any]) -> None:
+        import json
+
+        self._subband_beam_configuration = config
+        self._property_callback("subbandBeamConfiguration", json.dumps(self._subband_beam_configuration))
+
     def configure_beam(
         self: PstReceiveComponentManager, resources: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
@@ -166,31 +217,47 @@ class PstReceiveComponentManager(PstApiComponentManager):
 
         :param resources: resources to be assigned
         """
-        recv_resources = calculate_receive_subband_resources(
-            self.beam_id,
-            request_params=resources,
-            data_host=self._network_interface,
-            data_port=self._udp_port,
-        )
-        self.logger.debug(f"Submitting API with recv_resources={recv_resources}")
-
         # deal only with subband 1 for now. otherwise we have to deal with tracking
         # multiple long running tasks.
         def _task(task_callback: Callback) -> None:
-            common_resources = recv_resources["common"]
-            subband_resources = recv_resources["subbands"][1]
+            try:
+                recv_resources = calculate_receive_subband_resources(
+                    self.beam_id,
+                    request_params=resources,
+                    data_host=self.data_host,
+                    subband_udp_ports=self.subband_udp_ports,
+                )
+                self.logger.debug(f"Submitting API with recv_resources={recv_resources}")
 
-            resources = {
-                "common": common_resources,
-                "subband": subband_resources,
-            }
+                subband_resources = {
+                    "common": recv_resources["common"],
+                    "subband": recv_resources["subbands"][1],
+                }
 
-            self._api.configure_beam(resources=resources, task_callback=wrap_callback(task_callback))
+                self._api.configure_beam(
+                    resources=subband_resources, task_callback=wrap_callback(task_callback)
+                )
+                self.subband_beam_configuration = recv_resources
+            except Exception:
+                self.logger.exception("Error in configuring scan for RECV", exc_info=True)
 
         return self._submit_background_task(
             _task,
             task_callback=task_callback,
         )
+
+    def deconfigure_beam(self: PstReceiveComponentManager, task_callback: Callback = None) -> TaskResponse:
+        """Deconfigure the RECV component's beam configuration.
+
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callback
+        """
+
+        def _task(task_callback: Callback) -> None:
+            self._api.deconfigure_beam(task_callback=wrap_callback(task_callback))
+            self.subband_beam_configuration = {}
+
+        return self._submit_background_task(_task, task_callback=task_callback)
 
     def start_scan(
         self: PstReceiveComponentManager, args: Dict[str, Any], task_callback: Callback = None
@@ -198,12 +265,16 @@ class PstReceiveComponentManager(PstApiComponentManager):
         """Start scanning."""
 
         def _task(task_callback: Callback) -> None:
-            self._api.start_scan(args=args, task_callback=wrap_callback(task_callback))
-            self._api.monitor(
-                # for now only handling 1 subband
-                subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
-                polling_rate=self._monitor_polling_rate,
-            )
+            try:
+                self._api.start_scan(args=args, task_callback=wrap_callback(task_callback))
+                self._api.monitor(
+                    # for now only handling 1 subband
+                    subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
+                    polling_rate=self._monitor_polling_rate,
+                )
+            except Exception:
+                self.logger.exception("Error in starting scan for RECV.MGMT", exc_info=True)
+                raise
 
         return self._submit_background_task(_task, task_callback=task_callback)
 

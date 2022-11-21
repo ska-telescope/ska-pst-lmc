@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import queue
+import sys
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -24,6 +25,7 @@ from tango.test_context import MultiDeviceTestContext
 
 from ska_pst_lmc import PstBeam, PstDsp, PstReceive, PstSmrb
 from ska_pst_lmc.device_proxy import DeviceProxyFactory
+from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
 from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker
 
 
@@ -37,6 +39,9 @@ def additional_change_events_callbacks() -> List[str]:
         "droppedData",
         "writeRate",
         "bytesWritten",
+        "diskAvailableBytes",
+        "availableRecordingTime",
+        "ringBufferUtilisation",
     ]
 
 
@@ -302,6 +307,15 @@ class TestPstBeam:
         assert_obstate(ObsState.FAULT)
 
         tango_device_command_checker.assert_command(
+            lambda: device_under_test.ObsReset(),
+            expected_obs_state_events=[
+                ObsState.RESETTING,
+                ObsState.IDLE,
+            ],
+        )
+        assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
+
+        tango_device_command_checker.assert_command(
             lambda: device_under_test.Off(),
         )
         assert_state(DevState.OFF)
@@ -316,6 +330,9 @@ class TestPstBeam:
             ("droppedData", "test/recv/1", 0),
             ("writeRate", "test/dsp/1", 0.0),
             ("bytesWritten", "test/dsp/1", 0),
+            ("diskAvailableBytes", "test/dsp/1", sys.maxsize),
+            ("availableRecordingTime", "test/dsp/1", DEFAULT_RECORDING_TIME),
+            ("ringBufferUtilisation", "test/smrb/1", 0.0),
         ],
     )
     def test_beam_mgmt_scan_monitoring_values(
@@ -343,7 +360,6 @@ class TestPstBeam:
         change_event_callbacks[monitor_attribute].assert_change_event(default_value)
 
         def _attribute_value_callback(value: Any) -> None:
-            # change_event_callbacks[monitor_attribute].assert_change_event(value)
             attribute_value_queue.put(value)
 
         source_device.subscribe_change_event(monitor_attribute, _attribute_value_callback)
@@ -379,12 +395,15 @@ class TestPstBeam:
 
         initial_values = _get_values()
 
-        assert (
-            initial_values[0] == default_value
-        ), f"{monitor_attribute} on {device_under_test} not {default_value} but {initial_values[0]}"
-        assert (
-            initial_values[1] == default_value
-        ), f"{monitor_attribute} on {source_device} not {default_value} but {initial_values[1]}"
+        if monitor_attribute != "diskAvailableBytes":
+            # diskAvailableBytes actually changes from a default value a new value when the On command
+            # happens
+            assert (
+                initial_values[0] == default_value
+            ), f"{monitor_attribute} on {device_under_test} not {default_value} but {initial_values[0]}"
+            assert (
+                initial_values[1] == default_value
+            ), f"{monitor_attribute} on {source_device} not {default_value} but {initial_values[1]}"
 
         # need to set up scanning
         configuration = json.dumps(csp_configure_scan_request)

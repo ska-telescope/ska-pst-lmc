@@ -156,6 +156,10 @@ class PstProcessApi:
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
+    def get_env(self: PstProcessApi) -> Dict[str, Any]:
+        """Get the environment properties for the service."""
+        raise NotImplementedError("PstProcessApi is abstract class")
+
 
 class PstProcessApiSimulator(PstProcessApi):
     """Abstract class for the Simulated API of the PST.LMC processes like RECV, SMRB, etc."""
@@ -517,6 +521,10 @@ class PstProcessApiGrpc(PstProcessApi):
             self._logger.warn(
                 f"Error in trying to put remote service '{self._client_id}' in FAULT state.", exc_info=True
             )
+
+    def get_env(self: PstProcessApiGrpc) -> Dict[str, Any]:
+        """Get the environment properties from the remote gRPC service."""
+        return self._grpc_client.get_env()
 
     def _stop_monitoring(self: PstProcessApiGrpc) -> None:
         if self._monitor_abort_event is not None:

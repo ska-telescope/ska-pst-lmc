@@ -9,7 +9,7 @@
 
 import logging
 import time
-from typing import Any, Callable, Dict, cast
+from typing import Any, Callable, Dict, List, cast
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -38,9 +38,10 @@ def component_manager(
     api: PstReceiveProcessApi,
     communication_state_callback: Callable[[CommunicationStatus], None],
     component_state_callback: Callable,
-    recv_network_interface: str,
-    recv_udp_port: int,
+    recv_data_host: str,
+    subband_udp_ports: List[int],
     monitor_data_callback: Callable,
+    property_callback: Callable,
 ) -> PstReceiveComponentManager:
     """Create instance of a component manager."""
     return PstReceiveComponentManager(
@@ -51,9 +52,10 @@ def component_manager(
         communication_state_callback=communication_state_callback,
         component_state_callback=component_state_callback,
         api=api,
-        network_interface=recv_network_interface,
-        udp_port=recv_udp_port,
+        network_interface=recv_data_host,
+        subband_udp_ports=subband_udp_ports,
         monitor_data_callback=monitor_data_callback,
+        property_callback=property_callback,
     )
 
 
@@ -92,15 +94,15 @@ def monitor_data() -> ReceiveData:
 def calculated_receive_subband_resources(
     beam_id: int,
     configure_beam_request: Dict[str, Any],
-    recv_network_interface: str,
-    recv_udp_port: int,
+    recv_data_host: str,
+    subband_udp_ports: List[int],
 ) -> dict:
     """Calculate expected subband resources."""
     return calculate_receive_subband_resources(
         beam_id=beam_id,
         request_params=configure_beam_request,
-        data_host=recv_network_interface,
-        data_port=recv_udp_port,
+        data_host=recv_data_host,
+        subband_udp_ports=subband_udp_ports,
     )
 
 
@@ -151,11 +153,19 @@ def test_recv_configure_beam(
     configure_beam_request: Dict[str, Any],
     task_callback: Callable,
     calculated_receive_subband_resources: dict,
+    recv_data_host: str,
+    subband_udp_ports: List[int],
+    property_callback: Callable,
 ) -> None:
     """Test that configure beam calls the API correctly."""
+    import json
+
     api = MagicMock()
     component_manager._api = api
-    # override the background processing.
+    component_manager._api.get_env.return_value = {
+        "data_host": recv_data_host,
+        "data_port": subband_udp_ports[0],
+    }
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
         task_callback=task_callback
     )
@@ -168,11 +178,16 @@ def test_recv_configure_beam(
     }
 
     api.configure_beam.assert_called_once_with(resources=expected_request, task_callback=task_callback)
+    assert component_manager.subband_beam_configuration == calculated_receive_subband_resources
+    cast(MagicMock, property_callback).assert_called_once_with(
+        "subbandBeamConfiguration", json.dumps(calculated_receive_subband_resources)
+    )
 
 
 def test_recv_deconfigure_beam(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
+    property_callback: Callable,
 ) -> None:
     """Test that configure beam calls the API correctly."""
     api = MagicMock()
@@ -184,6 +199,8 @@ def test_recv_deconfigure_beam(
     component_manager.deconfigure_beam(task_callback=task_callback)
 
     api.deconfigure_beam.assert_called_once_with(task_callback=task_callback)
+    assert component_manager.subband_beam_configuration == {}
+    cast(MagicMock, property_callback).assert_called_once_with("subbandBeamConfiguration", "{}")
 
 
 def test_recv_configure_scan(

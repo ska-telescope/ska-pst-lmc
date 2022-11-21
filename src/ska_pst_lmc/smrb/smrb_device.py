@@ -58,8 +58,8 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
         self._version_id = release.VERSION
 
         for f in dataclasses.fields(SmrbMonitorData):
-            self.set_change_event(as_device_attribute_name(f.name), True, True)
-            self.set_archive_event(as_device_attribute_name(f.name), True)
+            self.set_change_event(as_device_attribute_name(f.name), True, False)
+            self.set_archive_event(as_device_attribute_name(f.name), True, False)
 
     def create_component_manager(
         self: PstSmrb,
@@ -102,7 +102,7 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
     # ------------------
 
     @attribute(
-        dtype="DevFloat",
+        dtype=float,
         label="Utilisation",
         unit="Percentage",
         display_unit="%",
@@ -121,7 +121,7 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
         return self.component_manager.ring_buffer_utilisation
 
     @attribute(
-        dtype="DevULong64",
+        dtype=int,
         label="Ring Buffer Size",
         unit="Bytes",
         standard_unit="Bytes",
@@ -137,7 +137,7 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
         return self.component_manager.ring_buffer_size
 
     @attribute(
-        dtype="DevULong64",
+        dtype=int,
         label="Ring Buffer Read",
         unit="Bytes",
         standard_unit="Bytes",
@@ -153,7 +153,7 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
         return self.component_manager.ring_buffer_read
 
     @attribute(
-        dtype="DevULong64",
+        dtype=int,
         label="Ring Buffer Written",
         unit="Bytes",
         standard_unit="Bytes",
@@ -169,7 +169,7 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
         return self.component_manager.ring_buffer_written
 
     @attribute(
-        dtype="DevUShort",
+        dtype=int,
         doc="Number of sub-bands",
     )
     def numberSubbands(self: PstSmrb) -> int:
@@ -181,7 +181,7 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
         return self.component_manager.number_subbands
 
     @attribute(
-        dtype=("DevFloat",),
+        dtype=(float,),
         max_dim_x=4,
         unit="Percent",
         standard_unit="Percent",
@@ -201,7 +201,7 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
         return self.component_manager.subband_ring_buffer_utilisations
 
     @attribute(
-        dtype=("DevULong64",),
+        dtype=(int,),
         max_dim_x=4,
         label="Sub-band ring buffer sizes",
         unit="Bytes",
@@ -218,7 +218,7 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
         return self.component_manager.subband_ring_buffer_sizes
 
     @attribute(
-        dtype=("DevULong64",),
+        dtype=(int,),
         max_dim_x=4,
         label="Sub-band ring buffer read",
         unit="Bytes",
@@ -235,7 +235,7 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
         return self.component_manager.subband_ring_buffer_read
 
     @attribute(
-        dtype=("DevULong64",),
+        dtype=(int,),
         max_dim_x=4,
         label="Sub-band ring buffer written",
         unit="Bytes",

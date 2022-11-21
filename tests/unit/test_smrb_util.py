@@ -8,9 +8,15 @@
 """This module contains tests for the SMRB utility methods."""
 
 
+from typing import Any, Dict, Optional
+
 import pytest
 
-from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
+from ska_pst_lmc.smrb.smrb_util import (
+    calculate_smrb_subband_resources,
+    generate_data_key,
+    generate_weights_key,
+)
 
 
 @pytest.mark.parametrize(
@@ -65,3 +71,56 @@ def test_generate_weights_key(beam_id: int, subband_id: int, expected_key: str) 
     """Test generating SMRB weights keys."""
     actual = generate_weights_key(beam_id=beam_id, subband_id=subband_id)
     assert actual == expected_key
+
+
+@pytest.mark.parametrize(
+    "frequency_band, nchan, nbits, udp_nsamp, wt_nsamp",
+    [
+        (None, 432, 32, 32, 32),
+        ("0", 432, 32, 32, 32),
+        ("1", 1110, 32, 4, 4),
+        ("2", 3700, 32, 4, 4),
+        ("3", 6475, 24, 4, 4),
+        ("4", 11110, 16, 4, 4),
+        ("5a", 11655, 16, 4, 4),
+        ("5b", 11655, 16, 4, 4),
+    ],
+)
+def test_calculate_ringbuffer_sizes(
+    frequency_band: Optional[str],
+    nchan: int,
+    nbits: int,
+    udp_nsamp: int,
+    wt_nsamp: int,
+    configure_scan_request: Dict[str, Any],
+) -> None:
+    """Test calculating of data and weight buffer sizes."""
+    npol = configure_scan_request["num_of_polarizations"]
+    wt_npol = 1
+    wt_nbits = 16  # always 16 bits
+
+    if frequency_band is None or frequency_band == "0":
+        # LowCBF
+        nchan_per_packet = 24
+    else:
+        # MidCBF
+        nchan_per_packet = 185
+
+    expected_db_bufsz = nchan * npol * nbits * udp_nsamp // 8
+    expected_wb_bufsz = (nchan // nchan_per_packet * 4) + (
+        nchan * wt_npol * wt_nbits * udp_nsamp
+    ) // wt_nsamp // 8
+
+    request_params = {
+        **configure_scan_request,
+        "num_frequency_channels": nchan,
+        "frequency_band": frequency_band,
+        "bits_per_sample": nbits,
+        "udp_nsamp": udp_nsamp,
+        "wt_nsamp": wt_nsamp,
+    }
+
+    output = calculate_smrb_subband_resources(beam_id=1, request_params=request_params)
+
+    assert output[1]["db_bufsz"] == expected_db_bufsz
+    assert output[1]["wb_bufsz"] == expected_wb_bufsz

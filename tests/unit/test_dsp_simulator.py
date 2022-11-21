@@ -27,7 +27,7 @@ def test_dsp_simulator_using_constructor() -> None:
     simulator = PstDspSimulator(
         num_subbands=2,
         disk_capacity=1000,
-        subband_bytes_written=[150, 50],
+        disk_available_bytes=800,
         subband_write_rates=[0.3, 0.1],
     )
     assert simulator.num_subbands == 2
@@ -42,12 +42,14 @@ def test_dsp_simulator_using_constructor() -> None:
     assert data.subband_write_rate[0] == 0.3
     assert data.subband_write_rate[1] == 0.1
 
-    assert data.subband_bytes_written[0] == 150
-    assert data.subband_bytes_written[1] == 50
+    assert data.subband_bytes_written[0] == 0
+    assert data.subband_bytes_written[1] == 0
 
 
 def test_dps_simulator_configure_scan(simulator: PstDspSimulator) -> None:
     """Test that configuration of simulator sets up data."""
+    import shutil
+
     configuration: Dict[str, Any] = {
         "num_subbands": 2,
     }
@@ -57,7 +59,7 @@ def test_dps_simulator_configure_scan(simulator: PstDspSimulator) -> None:
     assert simulator.num_subbands == 2
 
     data = simulator._data_store.monitor_data
-    assert data.disk_capacity == 1_000_000_000_000
+    assert data.disk_capacity == shutil.disk_usage("/")[0]
 
     np.testing.assert_array_equal(simulator._subband_bytes_written, data.subband_bytes_written)
     np.testing.assert_array_equal(simulator._subband_write_rates, data.subband_write_rate)
