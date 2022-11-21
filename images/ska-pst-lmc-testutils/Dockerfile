@@ -21,6 +21,10 @@ COPY --from=recv_env /usr/lib/x86_64-linux-gnu/libnl-route-3.so.200         /usr
 COPY --from=recv_env /usr/lib/x86_64-linux-gnu/libnl-3.so.200               /usr/lib/x86_64-linux-gnu/libnl-3.so.200
 
 ENV LD_LIBRARY_PATH=/app/lib/
+
+# UDPGEN TEST
+RUN curl -L https://gitlab.com/ska-telescope/pst/ska-pst-recv/-/raw/main/src/ska/pst/recv/lmc/tests/data/config.txt -o /tmp/config.txt \
+    && ska_pst_recv_udpgen /tmp/config.txt
 WORKDIR /app
 
 # Copy ska-pst-lmc test scripts
