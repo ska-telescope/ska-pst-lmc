@@ -45,6 +45,7 @@ For a description of the fully-integrated PST, please see the ska-pst-integratio
   :caption: Deployment
   :maxdepth: 2
 
+  Overview<deployment/index>
   deployment/requirements
   deployment/standalone
   deployment/using-make
@@ -56,7 +57,7 @@ For a description of the fully-integrated PST, please see the ska-pst-integratio
   :caption: Operation
   :maxdepth: 2
 
-  operation/example
+  operation/itango
   operation/troubleshooting
 
 
@@ -76,5 +77,5 @@ For a description of the fully-integrated PST, please see the ska-pst-integratio
   :caption: API
   :maxdepth: 2
 
-  TANGO API<api/tango>
-  PST.LMC API<api/index>
+  PST.LMC (TANGO) API<api/tango>
+  Internal (Python) API<api/index>
