@@ -17,7 +17,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 from unittest.mock import MagicMock, call
 
 import pytest
-from ska_tango_base.control_model import AdminMode, CommunicationStatus, PowerState
+from ska_tango_base.control_model import AdminMode, CommunicationStatus, PowerState, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.beam.beam_component_manager import PstBeamComponentManager
@@ -600,3 +600,23 @@ def test_beam_component_manager_updates_scan_id_on_start_scan_stop_scan(
     component_manager.stop_scan(task_callback=task_callback)
 
     assert component_manager.scan_id == 0
+
+
+def test_beam_component_manager_set_simulation_mode_on_child_devices(
+    component_manager: PstBeamComponentManager,
+    smrb_device_proxy: PstDeviceProxy,
+    recv_device_proxy: PstDeviceProxy,
+    dsp_device_proxy: PstDeviceProxy,
+) -> None:
+    """Test component manager delegates setting simulation mode to sub-component devices."""
+    component_manager.simulation_mode = SimulationMode.FALSE
+
+    assert smrb_device_proxy.simulationMode == SimulationMode.FALSE
+    assert recv_device_proxy.simulationMode == SimulationMode.FALSE
+    assert dsp_device_proxy.simulationMode == SimulationMode.FALSE
+
+    component_manager.simulation_mode = SimulationMode.TRUE
+
+    assert smrb_device_proxy.simulationMode == SimulationMode.TRUE
+    assert recv_device_proxy.simulationMode == SimulationMode.TRUE
+    assert dsp_device_proxy.simulationMode == SimulationMode.TRUE
