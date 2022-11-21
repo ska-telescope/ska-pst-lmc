@@ -342,6 +342,17 @@ class PstBeamComponentManager(PstComponentManager):
         self._expected_data_rate = expected_data_rate
         self._property_callback("expected_data_rate", expected_data_rate)
 
+    def _simulation_mode_changed(self: PstBeamComponentManager) -> None:
+        """Set simulation mode state.
+
+        :param simulation_mode: the new simulation mode value.
+        :type simulation_mode: :py:class:`SimulationMode`
+        """
+        # ensure we set the subordinate devices into to the same simulation mode.
+        self._smrb_device.simulationMode = self.simulation_mode
+        self._recv_device.simulationMode = self.simulation_mode
+        self._dsp_device.simulationMode = self.simulation_mode
+
     def _handle_communication_state_change(
         self: PstBeamComponentManager, communication_state: CommunicationStatus
     ) -> None:
