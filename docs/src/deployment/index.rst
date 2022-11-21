@@ -1,6 +1,15 @@
-==========
-Deployment
-==========
+.. _deployment_outline:
+
+.. raw:: html
+
+    <style> .red {color:red} </style>
+
+.. role:: red
+
+Deployment Outline
+==================
+
+:red:`This currenlty outdated outline is kept as a reminder of Will's original intent`
 
 The deployment of PST.LMC has yet to be documented but this section will include
 the following items:
