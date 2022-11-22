@@ -60,22 +60,21 @@ For a description of the fully-integrated PST, please see the ska-pst-integratio
   operation/itango
   operation/troubleshooting
 
+.. API ====================================================================
+
+.. toctree::
+  :caption: TANGO API
+  :maxdepth: 2
+
+  api/tango
 
 .. Development ============================================================
+
+.. automodule:: ska_pst_lmc
 
 .. toctree::
   :caption: Development
   :maxdepth: 2
 
   Gitlab README<../../README>
-
-.. API ====================================================================
-
-.. automodule:: ska_pst_lmc
-
-.. toctree::
-  :caption: API
-  :maxdepth: 2
-
-  PST.LMC (TANGO) API<api/tango>
-  Internal (Python) API<api/index>
+  Internal API<api/index>
