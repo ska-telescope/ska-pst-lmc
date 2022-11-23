@@ -20,7 +20,7 @@ Command             Argument type Return type Action
 On                  None          None        Sets the device state to ON and the observing state to EMPTY.
 Off                 None          None        Sets the device state to OFF.
 Standby             None          None        Puts the device in STANDBY mode.
-ConfigureScan       String (JSON) None        :ref:`Configures scan type for the following scans <pst_configure>`.
+ConfigureScan       String (JSON) None        :ref:`Configures all following scans <pst_configure>`.
 GoToIdle            None          None        Return to IDLE mode.
 Scan                String (ID)   None        Begins a scan with the specified scan identifier.
 EndScan             None          None        Ends the scan.
@@ -41,11 +41,10 @@ The argument of the Configure command is a JSON string that specifies the type a
 Attributes
 ----------
 
-In addition to the attributes made visible in the TANGO interface by the SKA base classes
-
-- `SkaObsDevice <https://developer.skao.int/projects/lmc-base-classes/en/latest/SKAObsDevice.html>`_
-- `SKABaseDevice <https://developer.skao.int/projects/lmc-base-classes/en/latest/SKABaseDevice.html>`_
-
+In addition to the attributes made visible in the TANGO interface by  
+`SkaObsDevice <https://developer.skao.int/projects/lmc-base-classes/en/latest/SKAObsDevice.html>`_
+and
+`SKABaseDevice <https://developer.skao.int/projects/lmc-base-classes/en/latest/SKABaseDevice.html>`_,
 each PST.BEAM exposes the following read-only attributes for monitoring.
 
 ========================== ======= ===========
@@ -75,7 +74,7 @@ ringBufferUtilisation      Float   Current fractional utilisation of ring buffer
 ========================== ======= ===========
 
 As a `CSP Sub-element ObsDevice <https://developer.skao.int/projects/lmc-base-classes/en/latest/CspSubElementObsDevice.html>`_,
-each PST.BEAM also exposes the following read-only attributes
+each PST.BEAM also exposes the following read-only attributes.
 
 ========================== ======= ===========
 Attribute                  Type    Description
