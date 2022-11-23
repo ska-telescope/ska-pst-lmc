@@ -17,12 +17,6 @@ Details can be found in the :ref:`requirements <running_requirements>` section.
 In this page, we describe how you can install, test, interact with, and uninstall 
 PST.LMC using helm, kubectl, and the itango console.
 
-The ska-pst-lmc repository provides a Makefile, which simplifies
-some of these steps, including installing and uninstalling the PST.LMC,
-and running integration tests:
-
-  :ref:`using-make`
-
 Create the namespace for PST.LMC processing
 -------------------------------------------
 
