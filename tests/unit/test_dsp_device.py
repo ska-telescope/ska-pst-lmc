@@ -153,7 +153,9 @@ class TestPstDsp:
             assert bw > 0
 
         assert device_under_test.dataRecorded == np.sum(device_under_test.subbandBytesWritten)
-        np.testing.assert_almost_equal(device_under_test.dataRecordRate, np.sum(device_under_test.dataRecordRate))
+        np.testing.assert_almost_equal(device_under_test.dataRecordRate, 
+            np.sum(device_under_test.dataRecordRate)
+        )
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.EndScan(),
