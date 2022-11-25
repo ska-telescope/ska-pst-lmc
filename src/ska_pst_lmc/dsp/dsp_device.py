@@ -137,7 +137,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         display_unit="B",
         doc="Available space on the disk that DSP is writing to.",
     )
-    def diskAvailableBytes(self: PstDsp) -> int:
+    def availableDiskSpace(self: PstDsp) -> int:
         """Available space on the disk that DSP is writing to.
 
         :returns: available space on the disk that DSP is writing to, in bytes.
@@ -188,7 +188,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         display_unit="B/s",
         doc="Current rate of writing to the disk.",
     )
-    def writeRate(self: PstDsp) -> float:
+    def dataRecordRate(self: PstDsp) -> float:
         """Get current rate of writing to the disk.
 
         :returns: use space on the disk that DSP is writing to, in bytes.
@@ -202,7 +202,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         display_unit="B",
         doc="Number of bytes written during scan.",
     )
-    def bytesWritten(self: PstDsp) -> int:
+    def dataRecorded(self: PstDsp) -> int:
         """Get number of bytes written during scan.
 
         :returns: number of bytes written during scan.

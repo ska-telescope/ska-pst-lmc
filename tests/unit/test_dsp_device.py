@@ -132,19 +132,19 @@ class TestPstDsp:
         # still need to sleep. Wait for 2 polling periods
         time.sleep(0.2)
         assert device_under_test.diskCapacity > 0
-        assert device_under_test.diskAvailableBytes > 0
+        assert device_under_test.availableDiskSpace > 0
         assert device_under_test.diskUsedBytes > 0
         assert (
             device_under_test.diskCapacity
-            == device_under_test.diskAvailableBytes + device_under_test.diskUsedBytes
+            == device_under_test.availableDiskSpace + device_under_test.diskUsedBytes
         )
         assert device_under_test.diskUsedPercentage >= 0.0
         np.testing.assert_almost_equal(
             device_under_test.diskUsedPercentage,
             100.0 * device_under_test.diskUsedBytes / device_under_test.diskCapacity,
         )
-        assert device_under_test.writeRate >= 0.0
-        assert device_under_test.bytesWritten > 0
+        assert device_under_test.dataRecordRate >= 0.0
+        assert device_under_test.dataRecorded > 0
 
         for wr in device_under_test.subbandWriteRate:
             assert wr >= 0.0
@@ -152,8 +152,8 @@ class TestPstDsp:
         for bw in device_under_test.subbandBytesWritten:
             assert bw > 0
 
-        assert device_under_test.bytesWritten == np.sum(device_under_test.subbandBytesWritten)
-        np.testing.assert_almost_equal(device_under_test.writeRate, np.sum(device_under_test.writeRate))
+        assert device_under_test.dataRecorded == np.sum(device_under_test.subbandBytesWritten)
+        np.testing.assert_almost_equal(device_under_test.dataRecordRate, np.sum(device_under_test.dataRecordRate))
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.EndScan(),

@@ -33,13 +33,13 @@ from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker
 def additional_change_events_callbacks() -> List[str]:
     """Return additional change event callbacks."""
     return [
-        "receivedRate",
-        "receivedData",
-        "droppedRate",
-        "droppedData",
-        "writeRate",
-        "bytesWritten",
-        "diskAvailableBytes",
+        "dataReceiveRate",
+        "dataReceived",
+        "dataDropRate",
+        "dataDropped",
+        "dataRecordRate",
+        "dataRecorded",
+        "availableDiskSpace",
         "availableRecordingTime",
         "ringBufferUtilisation",
     ]
@@ -324,13 +324,13 @@ class TestPstBeam:
     @pytest.mark.parametrize(
         "monitor_attribute, source_device_fqdn, default_value",
         [
-            ("receivedRate", "test/recv/1", 0.0),
-            ("receivedData", "test/recv/1", 0),
-            ("droppedRate", "test/recv/1", 0.0),
-            ("droppedData", "test/recv/1", 0),
-            ("writeRate", "test/dsp/1", 0.0),
-            ("bytesWritten", "test/dsp/1", 0),
-            ("diskAvailableBytes", "test/dsp/1", sys.maxsize),
+            ("dataReceiveRate", "test/recv/1", 0.0),
+            ("dataReceived", "test/recv/1", 0),
+            ("dataDropRate", "test/recv/1", 0.0),
+            ("dataDropped", "test/recv/1", 0),
+            ("dataRecordRate", "test/dsp/1", 0.0),
+            ("dataRecorded", "test/dsp/1", 0),
+            ("availableDiskSpace", "test/dsp/1", sys.maxsize),
             ("availableRecordingTime", "test/dsp/1", DEFAULT_RECORDING_TIME),
             ("ringBufferUtilisation", "test/smrb/1", 0.0),
         ],
@@ -395,8 +395,8 @@ class TestPstBeam:
 
         initial_values = _get_values()
 
-        if monitor_attribute != "diskAvailableBytes":
-            # diskAvailableBytes actually changes from a default value a new value when the On command
+        if monitor_attribute != "availableDiskSpace":
+            # availableDiskSpace actually changes from a default value a new value when the On command
             # happens
             assert (
                 initial_values[0] == default_value
