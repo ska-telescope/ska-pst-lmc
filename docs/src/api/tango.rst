@@ -52,21 +52,21 @@ Attribute                  Type    Description
 ========================== ======= ===========
 channelBlockConfiguration  String  Current channel block configuration
 -------------------------- ------- -----------
-expectedDataRate           Float   Expected incoming data rate in bytes per second
+expectedDataRecordRate           Float   Expected incoming data rate in bytes per second
 -------------------------- ------- -----------
-receivedRate               Float   Current received data rate in bytes per second
+dataReceiveRate               Float   Current received data rate in bytes per second
 -------------------------- ------- -----------
-receivedData               Integer Current received data in bytes
+dataReceived               Integer Current received data in bytes
 -------------------------- ------- -----------
-droppedRate                Float   Current dropped data rate in bytes per second
+dataDropRate                Float   Current dropped data rate in bytes per second
 -------------------------- ------- -----------
-droppedData                Integer Current dropped data in bytes
+dataDropped                Integer Current dropped data in bytes
 -------------------------- ------- -----------
-writeRate                  Float   Current written data rate in bytes per second
+dataRecordRate                  Float   Current written data rate in bytes per second
 -------------------------- ------- -----------
-bytesWritten               Integer Current written data in bytes
+dataRecorded               Integer Current written data in bytes
 -------------------------- ------- -----------
-diskAvailableBytes         Integer Current available recording space in bytes
+availableDiskSpace         Integer Current available recording space in bytes
 -------------------------- ------- -----------
 availableRecordingTime     Float   Current available recording time in seconds
 -------------------------- ------- -----------
