@@ -33,13 +33,13 @@ from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker
 def additional_change_events_callbacks() -> List[str]:
     """Return additional change event callbacks."""
     return [
-        "receivedRate",
-        "receivedData",
-        "droppedRate",
-        "droppedData",
-        "writeRate",
-        "bytesWritten",
-        "diskAvailableBytes",
+        "dataReceiveRate",
+        "dataReceived",
+        "dataDropRate",
+        "dataDropped",
+        "dataRecordRate",
+        "dataRecorded",
+        "availableDiskSpace",
         "availableRecordingTime",
         "ringBufferUtilisation",
     ]
@@ -355,9 +355,11 @@ class TestPstBeam:
         source_device = DeviceProxyFactory.get_device(source_device_fqdn)
         time.sleep(0.2)
 
+        exposed_attribute = device_under_test._attribute_map(monitor_attribute)
+
         # can now subscribe to event
-        tango_change_event_helper.subscribe(monitor_attribute)
-        change_event_callbacks[monitor_attribute].assert_change_event(default_value)
+        tango_change_event_helper.subscribe(exposed_attribute)
+        change_event_callbacks[exposed_attribute].assert_change_event(default_value)
 
         def _attribute_value_callback(value: Any) -> None:
             attribute_value_queue.put(value)
@@ -391,7 +393,7 @@ class TestPstBeam:
 
         # assert default value on both devices
         def _get_values() -> Tuple[Any, Any]:
-            return getattr(device_under_test, monitor_attribute), getattr(source_device, monitor_attribute)
+            return getattr(device_under_test, exposed_attribute), getattr(source_device, monitor_attribute)
 
         initial_values = _get_values()
 
@@ -400,10 +402,10 @@ class TestPstBeam:
             # happens
             assert (
                 initial_values[0] == default_value
-            ), f"{monitor_attribute} on {device_under_test} not {default_value} but {initial_values[0]}"
+            ), f"{exposed_attribute} -> {monitor_attribute} on {device_under_test} not {default_value} but {initial_values[0]}"
             assert (
                 initial_values[1] == default_value
-            ), f"{monitor_attribute} on {source_device} not {default_value} but {initial_values[1]}"
+            ), f"{exposed_attribute} -> {monitor_attribute} on {source_device} not {default_value} but {initial_values[1]}"
 
         # need to set up scanning
         configuration = json.dumps(csp_configure_scan_request)
@@ -442,4 +444,4 @@ class TestPstBeam:
             if value is None:
                 break
 
-            change_event_callbacks[monitor_attribute].assert_change_event(value)
+            change_event_callbacks[exposed_attribute].assert_change_event(value)
