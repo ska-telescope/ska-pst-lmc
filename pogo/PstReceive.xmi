@@ -306,7 +306,7 @@
       <changeEvent fire="false" libCheckCriteria="false"/>
       <archiveEvent fire="false" libCheckCriteria="false"/>
       <status abstract="false" inherited="true" concrete="true"/>
-      <properties description="The output data rate (GB/s) on the link for each scan." label="outputDataRateToSdp" unit="GB/s" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <properties description="The output data rate (B/s) on the link for each scan." label="outputDataRateToSdp" unit="B/s" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
     <attributes name="lastScanConfiguration" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="true">
       <dataType xsi:type="pogoDsl:StringType"/>
@@ -392,15 +392,15 @@
       <status abstract="false" inherited="true" concrete="true"/>
       <properties description="Flag reporting  ReleaseResources command timeout expiration." label="ReleaseResourcesTimeoutExpiredFlag" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
-    <attributes name="received_rate" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="5000" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="data_receive_rate" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="5000" maxX="" maxY="" allocReadMember="true" isDynamic="false">
       <dataType xsi:type="pogoDsl:FloatType"/>
       <changeEvent fire="false" libCheckCriteria="false"/>
       <archiveEvent fire="false" libCheckCriteria="false"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-      <properties description="Current data receive rate from the CBF interface" label="" unit="Gigabits per second" standardUnit="Gigabits per second" displayUnit="Gb/s" format="" maxValue="200" minValue="0" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <properties description="Current data receive rate from the CBF interface" label="" unit="Bytes per second" standardUnit="Bytes per second" displayUnit="B/s" format="" maxValue="200" minValue="0" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
-    <attributes name="received_data" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="5000" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="data_received" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="5000" maxX="" maxY="" allocReadMember="true" isDynamic="false">
       <dataType xsi:type="pogoDsl:ULongType"/>
       <changeEvent fire="false" libCheckCriteria="false"/>
       <archiveEvent fire="false" libCheckCriteria="false"/>
@@ -408,13 +408,13 @@
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Total number of bytes received from the CBF in the current scan" label="" unit="Bytes" standardUnit="" displayUnit="B" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
-    <attributes name="dropped_rate" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="5000" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="data_drop_rate" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="5000" maxX="" maxY="" allocReadMember="true" isDynamic="false">
       <dataType xsi:type="pogoDsl:FloatType"/>
       <changeEvent fire="false" libCheckCriteria="false"/>
       <archiveEvent fire="false" libCheckCriteria="false"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-      <properties description="Current rate of CBF ingest data being dropped or lost by the receiving process" label="Drop Rate" unit="Megabits per second" standardUnit="Megabits per second" displayUnit="MB/s" format="" maxValue="200" minValue="-1" maxAlarm="10" minAlarm="-1" maxWarning="1" minWarning="-1" deltaTime="" deltaValue=""/>
+      <properties description="Current rate of CBF ingest data being dropped or lost by the receiving process" label="Drop Rate" unit="Bytes per second" standardUnit="Megabits per second" displayUnit="B/s" format="" maxValue="200" minValue="-1" maxAlarm="10" minAlarm="-1" maxWarning="1" minWarning="-1" deltaTime="" deltaValue=""/>
     </attributes>
     <attributes name="dropped" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="5000" maxX="" maxY="" allocReadMember="true" isDynamic="false">
       <dataType xsi:type="pogoDsl:ULongType"/>

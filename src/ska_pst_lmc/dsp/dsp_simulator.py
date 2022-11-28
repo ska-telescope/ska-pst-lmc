@@ -43,8 +43,8 @@ class PstDspSimulator:
         self: PstDspSimulator,
         num_subbands: Optional[int] = None,
         disk_capacity: Optional[int] = None,
-        disk_available_bytes: Optional[int] = None,
-        subband_write_rates: Optional[List[float]] = None,
+        available_disk_space: Optional[int] = None,
+        subband_data_record_rates: Optional[List[float]] = None,
     ) -> None:
         """Initialise the DSP simulator.
 
@@ -53,11 +53,11 @@ class PstDspSimulator:
         :param disk_capacity: the max size of the size to simulate, default is
             is determined from shutil
         :type disk_capacity: int
-        :param disk_available_bytes: initial available space on disk to simulate, default
+        :param available_disk_space: initial available space on disk to simulate, default
             is determined from shutil
-        :type disk_available_bytes: int
-        :param subband_write_rates: the write rates per subband. Default is a random array.
-        :type subband_write_rates: List[float]
+        :type available_disk_space: int
+        :param subband_data_record_rates: the write rates per subband. Default is a random array.
+        :type subband_data_record_rates: List[float]
         """
         configuration: Dict[str, Any] = {}
         if num_subbands is not None:
@@ -66,11 +66,11 @@ class PstDspSimulator:
         if disk_capacity is not None:
             configuration["disk_capacity"] = disk_capacity
 
-        if disk_available_bytes is not None:
-            configuration["disk_available_bytes"] = disk_available_bytes
+        if available_disk_space is not None:
+            configuration["available_disk_space"] = available_disk_space
 
-        if subband_write_rates is not None:
-            configuration["subband_write_rates"] = subband_write_rates
+        if subband_data_record_rates is not None:
+            configuration["subband_data_record_rates"] = subband_data_record_rates
 
         self.configure_scan(configuration=configuration)
         self._scan = False
@@ -89,17 +89,17 @@ class PstDspSimulator:
         self._disk_capacity = disk_capacity
 
     @property
-    def disk_available_bytes(self: PstDspSimulator) -> int:
+    def available_disk_space(self: PstDspSimulator) -> int:
         """Get simulated available bytes left of disk."""
-        return self._disk_available_bytes
+        return self._available_disk_space
 
-    @disk_available_bytes.setter
-    def disk_available_bytes(self: PstDspSimulator, disk_available_bytes: int) -> None:
+    @available_disk_space.setter
+    def available_disk_space(self: PstDspSimulator, available_disk_space: int) -> None:
         """Set simulated available bytes left of disk.
 
-        :param disk_available_bytes: the new about of bytes available on the disk.
+        :param available_disk_space: the new about of bytes available on the disk.
         """
-        self._disk_available_bytes = disk_available_bytes
+        self._available_disk_space = available_disk_space
 
     def configure_scan(self: PstDspSimulator, configuration: dict) -> None:
         """
@@ -117,34 +117,34 @@ class PstDspSimulator:
         else:
             self.num_subbands = randint(1, 4)
 
-        (default_disk_capacity, _, default_disk_available_bytes) = shutil.disk_usage("/")
+        (default_disk_capacity, _, default_available_disk_space) = shutil.disk_usage("/")
 
         self.disk_capacity = disk_capacity = configuration.get("disk_capacity", default_disk_capacity)
-        self.disk_available_bytes = disk_available_bytes = configuration.get(
-            "disk_available_bytes", default_disk_available_bytes
+        self.available_disk_space = available_disk_space = configuration.get(
+            "available_disk_space", default_available_disk_space
         )
 
-        self._subband_write_rates = configuration.get(
-            "subband_write_rates", self.num_subbands * [1e9 * (random() + 0.5)]
+        self._subband_data_record_rates = configuration.get(
+            "subband_data_record_rates", self.num_subbands * [1e9 * (random() + 0.5)]
         )
 
-        self._subband_bytes_written = configuration.get("subband_bytes_written", self.num_subbands * [0])
+        self._subband_data_recorded = configuration.get("subband_data_recorded", self.num_subbands * [0])
 
-        assert len(self._subband_write_rates) == self.num_subbands
-        assert len(self._subband_bytes_written) == self.num_subbands
+        assert len(self._subband_data_record_rates) == self.num_subbands
+        assert len(self._subband_data_recorded) == self.num_subbands
 
         self._data_store = DspDiskMonitorDataStore()
         self._data_store.update_disk_stats(
-            disk_capacity=disk_capacity, disk_available_bytes=disk_available_bytes
+            disk_capacity=disk_capacity, available_disk_space=available_disk_space
         )
         for idx in range(self.num_subbands):
             self._data_store.update_subband(
                 subband_id=(idx + 1),
                 subband_data=DspDiskSubbandMonitorData(
                     disk_capacity=self.disk_capacity,
-                    disk_available_bytes=self.disk_available_bytes,
-                    bytes_written=0,
-                    write_rate=self._subband_write_rates[idx],
+                    available_disk_space=self.available_disk_space,
+                    data_recorded=0,
+                    data_record_rate=self._subband_data_record_rates[idx],
                 ),
             )
 
@@ -171,25 +171,25 @@ class PstDspSimulator:
         """Simulate the update of DSP data."""
         for idx in range(self.num_subbands):
             # create initial write rate
-            write_rate = self._subband_write_rates[idx]
+            data_record_rate = self._subband_data_record_rates[idx]
 
             # determine actual bytes written, can't go more than disk available
-            bytes_written = int(write_rate)
-            bytes_written = min(bytes_written, self.disk_available_bytes)
+            data_recorded = int(data_record_rate)
+            data_recorded = min(data_recorded, self.available_disk_space)
 
             # update disk available
-            self.disk_available_bytes -= bytes_written
+            self.available_disk_space -= data_recorded
 
             # update subband values
-            self._subband_bytes_written[idx] += bytes_written
+            self._subband_data_recorded[idx] += data_recorded
 
             self._data_store.update_subband(
                 subband_id=(idx + 1),
                 subband_data=DspDiskSubbandMonitorData(
                     disk_capacity=self.disk_capacity,
-                    disk_available_bytes=self.disk_available_bytes,
-                    bytes_written=self._subband_bytes_written[idx],
-                    write_rate=self._subband_write_rates[idx],
+                    available_disk_space=self.available_disk_space,
+                    data_recorded=self._subband_data_recorded[idx],
+                    data_record_rate=self._subband_data_record_rates[idx],
                 ),
             )
 

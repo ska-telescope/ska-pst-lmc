@@ -55,10 +55,10 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         util.set_serial_model(tango.SerialModel.NO_SYNC)
         super().init_device()
 
-        self._received_rate = 0.0
-        self._received_data = 0
-        self._dropped_rate = 0.0
-        self._dropped_data = 0
+        self._data_receive_rate = 0.0
+        self._data_received = 0
+        self._data_drop_rate = 0.0
+        self._data_dropped = 0
         self._misordered_packets = 0
 
         self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
@@ -125,20 +125,20 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
 
     @attribute(
         dtype=float,
-        unit="Gigabits per second",
-        standard_unit="Gigabits per second",
-        display_unit="Gb/s",
-        max_value=200,
+        unit="Bytes per second",
+        standard_unit="Bytes per second",
+        display_unit="B/s",
+        max_value=2e11,
         min_value=0,
         doc="Current data receive rate from the CBF interface",
     )
     def dataReceiveRate(self: PstReceive) -> float:
         """Get the current data receive rate from the CBF interface.
 
-        :returns: current data receive rate from the CBF interface in Gb/s.
+        :returns: current data receive rate from the CBF interface in B/s.
         :rtype: float
         """
-        return self._received_rate
+        return self._data_receive_rate
 
     @attribute(
         dtype=int,
@@ -153,7 +153,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
         """
-        return self._received_data
+        return self._data_received
 
     @attribute(
         dtype=float,
@@ -175,7 +175,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :returns: current rate of CBF ingest data being dropped or lost in B/s.
         :rtype: float
         """
-        return self._dropped_rate
+        return self._data_drop_rate
 
     @attribute(
         dtype=int,
@@ -191,7 +191,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :returns: total number of bytes dropped in the current scan.
         :rtype: int
         """
-        return self._dropped_data
+        return self._data_dropped
 
     @attribute(
         dtype=int,

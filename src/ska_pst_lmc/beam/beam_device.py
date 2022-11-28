@@ -78,17 +78,17 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
         self._version_id = release.VERSION
 
-        self._received_rate = 0.0
-        self._received_data = 0
-        self._dropped_rate = 0.0
-        self._dropped_data = 0
-        self._write_rate = 0.0
-        self._bytes_written = 0
+        self._data_receive_rate = 0.0
+        self._data_received = 0
+        self._data_drop_rate = 0.0
+        self._data_dropped = 0
+        self._data_record_rate = 0.0
+        self._data_recorded = 0
         self._ingest_configuration = ""
-        self._disk_available_bytes = sys.maxsize
+        self._available_disk_space = sys.maxsize
         self._available_recording_time = DEFAULT_RECORDING_TIME
         self._ring_buffer_utilisation = 0.0
-        self._expected_data_rate = 0.0
+        self._expected_data_record_rate = 0.0
 
         for prop in [
             "dataReceiveRate",
@@ -189,7 +189,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         :returns: available space on the disk that PST.BEAM is writing to, in bytes.
         :rtype: int
         """
-        return self._disk_available_bytes
+        return self._available_disk_space
 
     @attribute(
         dtype=float,
@@ -210,9 +210,9 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
     # Scan monitoring values
     @attribute(
         dtype=float,
-        unit="Gigabits per second",
-        standard_unit="Gigabits per second",
-        display_unit="Gb/s",
+        unit="Bytes per second",
+        standard_unit="Bytes per second",
+        display_unit="B/s",
         max_value=200,
         min_value=0,
         doc="Current data receive rate from the CBF interface",
@@ -220,10 +220,10 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
     def dataReceiveRate(self: PstBeam) -> float:
         """Get the current data receive rate from the CBF interface.
 
-        :returns: current data receive rate from the CBF interface in Gb/s.
+        :returns: current data receive rate from the CBF interface in B/s.
         :rtype: float
         """
-        return self._received_rate
+        return self._data_receive_rate
 
     @attribute(
         dtype=int,
@@ -238,7 +238,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
         """
-        return self._received_data
+        return self._data_received
 
     @attribute(
         dtype=float,
@@ -260,7 +260,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         :returns: current rate of CBF ingest data being dropped or lost in Bytes/s.
         :rtype: float
         """
-        return self._dropped_rate
+        return self._data_drop_rate
 
     @attribute(
         dtype=int,
@@ -276,7 +276,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         :returns: total number of bytes dropped in the current scan.
         :rtype: int
         """
-        return self._dropped_data
+        return self._data_dropped
 
     @attribute(
         dtype=float,
@@ -290,7 +290,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         :returns: use space on the disk that PST.BEAM is writing to, in bytes.
         :rtype: float
         """
-        return self._write_rate
+        return self._data_record_rate
 
     @attribute(
         dtype=int,
@@ -304,7 +304,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         :returns: number of bytes written during scan.
         :rtype: int
         """
-        return self._bytes_written
+        return self._data_recorded
 
     @attribute(
         dtype=str,
@@ -344,8 +344,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
 
     @attribute(
         dtype=float,
-        unit="Gigabits per second",
-        display_unit="Gb/s",
+        unit="Bytes per second",
+        display_unit="B/s",
         doc="Expected rate of data to be received by PST Beam component.",
     )
     def expectedDataRecordRate(self: PstBeam) -> float:
@@ -354,7 +354,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         :returns: the expected rate of data to be received by PST Beam component.
         :rtype: float
         """
-        return self._expected_data_rate
+        return self._expected_data_record_rate
 
     # --------
     # Commands

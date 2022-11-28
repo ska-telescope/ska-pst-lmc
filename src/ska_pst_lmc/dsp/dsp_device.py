@@ -143,7 +143,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         :returns: available space on the disk that DSP is writing to, in bytes.
         :rtype: int
         """
-        return self.component_manager.disk_available_bytes
+        return self.component_manager.available_disk_space
 
     @attribute(
         dtype=int,
@@ -155,7 +155,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
     def diskUsedBytes(self: PstDsp) -> int:
         """Get sed space on the disk that DSP is writing to.
 
-        This is `disk_capacity` - `disk_available_bytes`.
+        This is `disk_capacity` - `available_disk_space`.
 
         :returns: use space on the disk that DSP is writing to, in bytes.
         :rtype: int
@@ -175,7 +175,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
     def diskUsedPercentage(self: PstDsp) -> float:
         """Get used space on the disk that DSP is writing to.
 
-        This is `disk_capacity` - `disk_available_bytes`.
+        This is `disk_capacity` - `available_disk_space`.
 
         :returns: use space on the disk that DSP is writing to, in bytes.
         :rtype: float
@@ -194,7 +194,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         :returns: use space on the disk that DSP is writing to, in bytes.
         :rtype: float
         """
-        return self.component_manager.write_rate
+        return self.component_manager.data_record_rate
 
     @attribute(
         dtype=int,
@@ -208,7 +208,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         :returns: number of bytes written during scan.
         :rtype: int
         """
-        return self.component_manager.bytes_written
+        return self.component_manager.data_recorded
 
     @attribute(
         dtype=float,
@@ -239,7 +239,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         :returns: the bytes per written for each subband.
         :rtype: List[int]
         """
-        return self.component_manager.subband_bytes_written
+        return self.component_manager.subband_data_recorded
 
     @attribute(
         dtype=(float,),
@@ -254,7 +254,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         :returns: the current rate of writing to disk for each subband.
         :rtype: List[float]
         """
-        return self.component_manager.subband_write_rate
+        return self.component_manager.subband_data_record_rate
 
     # --------
     # Commands

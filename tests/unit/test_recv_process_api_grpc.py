@@ -632,17 +632,16 @@ def test_recv_grpc_handle_monitor_response(
     """Test the handling of monitor data."""
     import numpy as np
 
-    receive_rate = float(
+    data_receive_rate = float(
         np.float32(random() / GIGABITS_PER_BYTE)
     )  # hack so we use f32 precision use in protobuf
-    receive_rate_gbs = receive_rate * GIGABITS_PER_BYTE  # python's default is f64
     data_received = randint(1, 100)
     data_drop_rate = random()
     data_dropped = randint(1, 100)
     misordered_packets = randint(1, 100)
 
     receive_monitor_data = ReceiveMonitorData(
-        receive_rate=receive_rate,
+        data_receive_rate=data_receive_rate,
         data_received=data_received,
         data_drop_rate=data_drop_rate,
         data_dropped=data_dropped,
@@ -657,10 +656,10 @@ def test_recv_grpc_handle_monitor_response(
         subband_id=1,
         subband_data=ReceiveData(
             # grab from the protobuf message given there can be rounding issues.
-            received_data=receive_monitor_data.data_received,
-            received_rate=receive_rate_gbs,
-            dropped_data=receive_monitor_data.data_dropped,
-            dropped_rate=receive_monitor_data.data_drop_rate,
+            data_received=receive_monitor_data.data_received,
+            data_receive_rate=receive_monitor_data.data_receive_rate,
+            data_dropped=receive_monitor_data.data_dropped,
+            data_drop_rate=receive_monitor_data.data_drop_rate,
             misordered_packets=receive_monitor_data.misordered_packets,
         ),
     )
@@ -676,17 +675,16 @@ def test_recv_grpc_simulated_monitor_calls_callback(
     """Test simulatued monitoring calls subband_monitor_data_callback."""
     import numpy as np
 
-    receive_rate = float(
+    data_receive_rate = float(
         np.float32(random() / GIGABITS_PER_BYTE)
     )  # hack so we use f32 precision use in protobuf
-    receive_rate_gbs = receive_rate * GIGABITS_PER_BYTE  # python's default is f64
     data_received = randint(1, 100)
     data_drop_rate = random()
     data_dropped = randint(1, 100)
     misordered_packets = randint(1, 100)
 
     monitior_data = ReceiveMonitorData(
-        receive_rate=receive_rate,
+        data_receive_rate=data_receive_rate,
         data_received=data_received,
         data_drop_rate=data_drop_rate,
         data_dropped=data_dropped,
@@ -723,10 +721,10 @@ def test_recv_grpc_simulated_monitor_calls_callback(
         call(
             subband_id=1,
             subband_data=ReceiveData(
-                received_data=monitior_data.data_received,
-                received_rate=receive_rate_gbs,  # we get B/s not Gb/s,
-                dropped_data=monitior_data.data_dropped,
-                dropped_rate=monitior_data.data_drop_rate,
+                data_received=monitior_data.data_received,
+                data_receive_rate=monitior_data.data_receive_rate,
+                data_dropped=monitior_data.data_dropped,
+                data_drop_rate=monitior_data.data_drop_rate,
                 misordered_packets=monitior_data.misordered_packets,
             ),
         )

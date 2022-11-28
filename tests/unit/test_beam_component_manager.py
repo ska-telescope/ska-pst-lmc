@@ -391,13 +391,13 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
 @pytest.mark.parametrize(
     "property_name, device_fqdn, device_attr_name, initial_value, update_value",
     [
-        ("received_rate", "test/recv/1", "dataReceiveRate", 0.0, 12.3),
-        ("received_data", "test/recv/1", "dataReceived", 0, 1138),
-        ("dropped_rate", "test/recv/1", "dataDropRate", 0.1, 0.3),
-        ("dropped_data", "test/recv/1", "dataDropped", 1, 11),
-        ("write_rate", "test/dsp/1", "dataRecordRate", 0.2, 52.3),
-        ("bytes_written", "test/dsp/1", "dataRecorded", 2, 42),
-        ("disk_available_bytes", "test/dsp/1", "availableDiskSpace", sys.maxsize, 1235),
+        ("data_receive_rate", "test/recv/1", "dataReceiveRate", 0.0, 12.3),
+        ("data_received", "test/recv/1", "dataReceived", 0, 1138),
+        ("data_drop_rate", "test/recv/1", "dataDropRate", 0.1, 0.3),
+        ("data_dropped", "test/recv/1", "dataDropped", 1, 11),
+        ("data_record_rate", "test/dsp/1", "dataRecordRate", 0.2, 52.3),
+        ("data_recorded", "test/dsp/1", "dataRecorded", 2, 42),
+        ("available_disk_space", "test/dsp/1", "availableDiskSpace", sys.maxsize, 1235),
         ("available_recording_time", "test/dsp/1", "availableRecordingTime", DEFAULT_RECORDING_TIME, 9876.0),
         ("ring_buffer_utilisation", "test/smrb/1", "ringBufferUtilisation", 0.0, 12.5),
     ],
@@ -562,7 +562,7 @@ def test_beam_component_manager_stores_config_id(
 
 
 @pytest.mark.parametrize("patch_submit_job", [True])
-def test_beam_component_manager_configure_scan_sets_expected_data_rate(
+def test_beam_component_manager_configure_scan_sets_expected_data_record_rate(
     component_manager: PstBeamComponentManager,
     csp_configure_scan_request: Dict[str, Any],
 ) -> None:
@@ -573,15 +573,15 @@ def test_beam_component_manager_configure_scan_sets_expected_data_rate(
 
     dsp_scan_request = generate_dsp_scan_request(csp_configure_scan_request["pst"]["scan"])
 
-    assert component_manager.expected_data_rate == 0.0
+    assert component_manager.expected_data_record_rate == 0.0
 
     component_manager.configure_scan(configuration=csp_configure_scan_request, task_callback=task_callback)
 
-    assert component_manager.expected_data_rate == dsp_scan_request["bytes_per_second"]
+    assert component_manager.expected_data_record_rate == dsp_scan_request["bytes_per_second"]
 
     component_manager.deconfigure_scan(task_callback=task_callback)
 
-    assert component_manager.expected_data_rate == 0.0
+    assert component_manager.expected_data_record_rate == 0.0
 
 
 @pytest.mark.parametrize("patch_submit_job", [True])

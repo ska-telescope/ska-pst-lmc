@@ -283,10 +283,10 @@ def test_dsp_simulator_api_get_env(
     """Test the get_env on simulator API."""
     import shutil
 
-    (disk_capacity, _, disk_available_bytes) = shutil.disk_usage("/")
+    (disk_capacity, _, available_disk_space) = shutil.disk_usage("/")
     expected = {
         "disk_capacity": disk_capacity,
-        "disk_available_bytes": disk_available_bytes,
+        "available_disk_space": available_disk_space,
     }
 
     actual = simulation_api.get_env()

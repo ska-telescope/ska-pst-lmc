@@ -125,10 +125,10 @@ def test_recv_start_communicating_calls_connect_on_api(
 @pytest.mark.parametrize(
     "property",
     [
-        ("received_rate"),
-        ("received_data"),
-        ("dropped_rate"),
-        ("dropped_data"),
+        ("data_receive_rate"),
+        ("data_received"),
+        ("data_drop_rate"),
+        ("data_dropped"),
         ("misordered_packets"),
     ],
 )

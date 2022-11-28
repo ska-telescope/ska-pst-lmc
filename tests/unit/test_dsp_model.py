@@ -22,25 +22,25 @@ def test_dsp_disk_monitor_data_store() -> None:
 
     monitor_data = data_store.monitor_data
 
-    assert monitor_data.disk_available_bytes == sys.maxsize
+    assert monitor_data.available_disk_space == sys.maxsize
     assert monitor_data.disk_capacity == sys.maxsize
 
-    (disk_capacity, _, disk_available_bytes) = shutil.disk_usage("/")
+    (disk_capacity, _, available_disk_space) = shutil.disk_usage("/")
 
-    data_store.update_disk_stats(disk_capacity=disk_capacity, disk_available_bytes=disk_available_bytes)
+    data_store.update_disk_stats(disk_capacity=disk_capacity, available_disk_space=available_disk_space)
     updated_monitor_data = data_store.monitor_data
 
     assert updated_monitor_data.disk_capacity == disk_capacity
-    assert updated_monitor_data.disk_available_bytes == disk_available_bytes
+    assert updated_monitor_data.available_disk_space == available_disk_space
 
     subband_data = DspDiskSubbandMonitorData(
-        disk_available_bytes=disk_available_bytes - 2,
+        available_disk_space=available_disk_space - 2,
         disk_capacity=disk_capacity,
-        bytes_written=2,
-        write_rate=0.1,
+        data_recorded=2,
+        data_record_rate=0.1,
     )
 
     data_store.update_subband(1, subband_data=subband_data)
 
-    assert data_store.monitor_data.disk_available_bytes == (disk_available_bytes - 2)
+    assert data_store.monitor_data.available_disk_space == (available_disk_space - 2)
     assert data_store.monitor_data.disk_capacity == disk_capacity
