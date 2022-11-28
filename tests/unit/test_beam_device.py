@@ -402,10 +402,10 @@ class TestPstBeam:
             # happens
             assert (
                 initial_values[0] == default_value
-            ), f"{exposed_attribute} -> {monitor_attribute} on {device_under_test} not {default_value} but {initial_values[0]}"
+            ), f"{monitor_attribute} on {device_under_test} not {default_value} but {initial_values[0]}"
             assert (
                 initial_values[1] == default_value
-            ), f"{exposed_attribute} -> {monitor_attribute} on {source_device} not {default_value} but {initial_values[1]}"
+            ), f"{monitor_attribute} on {source_device} not {default_value} but {initial_values[1]}"
 
         # need to set up scanning
         configuration = json.dumps(csp_configure_scan_request)
