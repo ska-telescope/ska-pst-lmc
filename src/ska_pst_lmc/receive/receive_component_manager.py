@@ -116,7 +116,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
     def received_rate(self: PstReceiveComponentManager) -> float:
         """Get the current data receive rate from the CBF interface.
 
-        :returns: current data receive rate from the CBF interface in Gb/s.
+        :returns: current data receive rate from the CBF interface in B/s.
         :rtype: float
         """
         return self._monitor_data.received_rate
@@ -134,7 +134,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
     def dropped_rate(self: PstReceiveComponentManager) -> float:
         """Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
 
-        :returns: current rate of CBF ingest data being dropped or lost in MB/s.
+        :returns: current rate of CBF ingest data being dropped or lost in B/s.
         :rtype: float
         """
         return self._monitor_data.dropped_rate

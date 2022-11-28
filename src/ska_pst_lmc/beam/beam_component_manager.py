@@ -234,12 +234,12 @@ class PstBeamComponentManager(PstComponentManager):
 
     @property
     def received_rate(self: PstBeamComponentManager) -> float:
-        """Get current received data rate in Gb/s."""
+        """Get current received data rate in bytes per second."""
         return self._received_rate
 
     @received_rate.setter
     def received_rate(self: PstBeamComponentManager, received_rate: float) -> None:
-        """Set current received data rate in Gb/s."""
+        """Set current received data rate in bytes per second."""
         self._received_rate = received_rate
         self._property_callback("received_rate", received_rate)
 

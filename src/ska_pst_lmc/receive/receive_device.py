@@ -125,9 +125,9 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
 
     @attribute(
         dtype=float,
-        unit="Gigabits per second",
-        standard_unit="Gigabits per second",
-        display_unit="Gb/s",
+        unit="Bytes per second",
+        standard_unit="Bytes per second",
+        display_unit="B/s",
         max_value=200,
         min_value=0,
         doc="Current data receive rate from the CBF interface",
@@ -135,7 +135,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
     def receivedRate(self: PstReceive) -> float:
         """Get the current data receive rate from the CBF interface.
 
-        :returns: current data receive rate from the CBF interface in Gb/s.
+        :returns: current data receive rate from the CBF interface in B/s.
         :rtype: float
         """
         return self._received_rate

@@ -20,7 +20,7 @@ class ReceiveData:
 
     :ivar received_data: amount of data received during current scan, in bytes.
     :vartype received_data: int
-    :ivar received_rate: the rate of data received during current scan, in Gb/s.
+    :ivar received_rate: the rate of data received during current scan, in Bytes/s.
     :vartype received_rate: float
     :ivar dropped_data: amount of data dropped during current scan, in bytes.
     :vartype dropped_data: int
