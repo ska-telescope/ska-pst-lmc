@@ -61,6 +61,23 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         dtype=str,
     )
 
+    # WvS 29 Nov 2022 - map from internal to exposed TANGO attribute names
+    _attribute_mapping = {
+        "receivedRate": "dataReceiveRate",
+        "receivedData": "dataReceived",
+        "droppedRate": "dataDropRate",
+        "droppedData": "dataDropped",
+        "writeRate": "dataRecordRate",
+        "bytesWritten": "dataRecorded",
+        "diskAvailableBytes": "availableDiskSpace",
+        "expectedDataRate": "expectedDataRecordRate",
+        "availableRecordingTime": "availableRecordingTime",
+        "ringBufferUtilisation": "ringBufferUtilisation",
+        "expectedDataRate": "expectedDataRecordRate",
+        "ingestConfiguration": "ingestConfiguration",
+        "channelBlockConfiguration": "channelBlockConfiguration",
+    }
+
     # ---------------
     # General methods
     # ---------------
@@ -89,23 +106,6 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         self._available_recording_time = DEFAULT_RECORDING_TIME
         self._ring_buffer_utilisation = 0.0
         self._expected_data_rate = 0.0
-
-        # WvS 29 Nov 2022 - map from internal to exposed TANGO attribute names
-        self._attribute_mapping = {
-            "receivedRate": "dataReceiveRate",
-            "receivedData": "dataReceived",
-            "droppedRate": "dataDropRate",
-            "droppedData": "dataDropped",
-            "writeRate": "dataRecordRate",
-            "bytesWritten": "dataRecorded",
-            "diskAvailableBytes": "availableDiskSpace",
-            "expectedDataRate": "expectedDataRecordRate",
-            "availableRecordingTime": "availableRecordingTime",
-            "ringBufferUtilisation": "ringBufferUtilisation",
-            "expectedDataRate": "expectedDataRecordRate",
-            "ingestConfiguration": "ingestConfiguration",
-            "channelBlockConfiguration": "channelBlockConfiguration",
-        }
 
         for prop in [
             "dataReceiveRate",
