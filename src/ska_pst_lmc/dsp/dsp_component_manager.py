@@ -17,17 +17,9 @@ from ska_tango_base.base import check_communicating
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
-from ska_pst_lmc.component import (
-    MonitorDataHandler,
-    PstApiComponentManager,
-    TaskResponse,
-)
+from ska_pst_lmc.component import MonitorDataHandler, PstApiComponentManager, TaskResponse
 from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData, DspDiskMonitorDataStore
-from ska_pst_lmc.dsp.dsp_process_api import (
-    PstDspProcessApi,
-    PstDspProcessApiGrpc,
-    PstDspProcessApiSimulator,
-)
+from ska_pst_lmc.dsp.dsp_process_api import PstDspProcessApi, PstDspProcessApiGrpc, PstDspProcessApiSimulator
 from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources
 from ska_pst_lmc.util.callback import Callback, callback_safely, wrap_callback
 
@@ -181,9 +173,7 @@ class PstDspComponentManager(PstApiComponentManager):
         # WvS - 28 Nov 2022 added this kludge (provided by WG - thanks!)
         # to work around 11th-hour changes to TANGO attribute names
         if "disk_available_bytes" in environment_values:
-            environment_values["available_disk_space"] = environment_values[
-                "disk_available_bytes"
-            ]
+            environment_values["available_disk_space"] = environment_values["disk_available_bytes"]
             del environment_values["disk_available_bytes"]
 
         self._monitor_data_store.update_disk_stats(**environment_values)
@@ -193,9 +183,7 @@ class PstDspComponentManager(PstApiComponentManager):
             self._property_callback(k, v)
 
     @check_communicating
-    def on(
-        self: PstDspComponentManager, task_callback: Callback = None
-    ) -> TaskResponse:
+    def on(self: PstDspComponentManager, task_callback: Callback = None) -> TaskResponse:
         """
         Turn the component on.
 
@@ -217,9 +205,7 @@ class PstDspComponentManager(PstApiComponentManager):
             # and get correct values.
             self.submit_task(self._get_disk_stats_from_api)
 
-            callback_safely(
-                task_callback, status=TaskStatus.COMPLETED, result="Completed"
-            )
+            callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
 
         return self.submit_task(_task, task_callback=task_callback)
 
@@ -233,17 +219,13 @@ class PstDspComponentManager(PstApiComponentManager):
 
         :param resources: resources to be assigned
         """
-        dsp_resources = calculate_dsp_subband_resources(
-            self.beam_id, request_params=resources
-        )
+        dsp_resources = calculate_dsp_subband_resources(self.beam_id, request_params=resources)
 
         # deal only with subband 1 for now.
         self.logger.debug(f"Submitting API with dsp_resources={dsp_resources[1]}")
 
         def _task(task_callback: Callback = None) -> None:
-            self._api.configure_beam(
-                resources=dsp_resources[1], task_callback=wrap_callback(task_callback)
-            )
+            self._api.configure_beam(resources=dsp_resources[1], task_callback=wrap_callback(task_callback))
             self._get_disk_stats_from_api()
             # callback_safely(task_callback)
 
@@ -266,9 +248,7 @@ class PstDspComponentManager(PstApiComponentManager):
 
         return self._submit_background_task(_task, task_callback=task_callback)
 
-    def stop_scan(
-        self: PstDspComponentManager, task_callback: Callback = None
-    ) -> TaskResponse:
+    def stop_scan(self: PstDspComponentManager, task_callback: Callback = None) -> TaskResponse:
         """Stop scanning."""
 
         def _task(task_callback: Callback = None) -> None:
