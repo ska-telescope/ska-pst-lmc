@@ -105,7 +105,6 @@ def calculate_smrb_subband_resources(beam_id: int, request_params: Dict[str, Any
     data_buffer_resolution = obsnchan * obsnpol * nbits // BITS_PER_BYTE * udp_nsamp
     # this should be efficitvely 2 * obsnchan as WEIGHTS_NBITS is 16
 
-
     weights_buffer_resolution = (
         obsnchan // packet_nchan * SIZE_OF_FLOAT32_IN_BYTES
     ) + obsnchan * WEIGHTS_NBITS // BITS_PER_BYTE * wt_nweight
