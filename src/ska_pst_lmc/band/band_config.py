@@ -25,7 +25,7 @@ LOW_BAND_CONFIG = {
 }
 
 COMMON_MID_CONFIG = {
-    "packet_nchan": 24,
+    "packet_nchan": 185,
     "packet_nsamp": 4,
 }
 
