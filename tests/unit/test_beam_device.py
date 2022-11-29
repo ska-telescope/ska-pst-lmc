@@ -355,7 +355,7 @@ class TestPstBeam:
         source_device = DeviceProxyFactory.get_device(source_device_fqdn)
         time.sleep(0.2)
 
-        exposed_attribute = device_under_test._attribute_map[monitor_attribute]
+        exposed_attribute = PstBeam.exposed_attributes[monitor_attribute]
 
         # can now subscribe to event
         tango_change_event_helper.subscribe(exposed_attribute)

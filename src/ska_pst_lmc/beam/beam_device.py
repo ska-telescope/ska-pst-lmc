@@ -62,7 +62,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
     )
 
     # WvS 29 Nov 2022 - map from internal to exposed TANGO attribute names
-    _attribute_mapping = {
+    exposed_attributes = {
         "receivedRate": "dataReceiveRate",
         "receivedData": "dataReceived",
         "droppedRate": "dataDropRate",
@@ -160,7 +160,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
             setattr(self, f"_{key}", value)
             attr_key = as_device_attribute_name(key)
 
-            attr_key = self._attribute_mapping[attr_key]
+            attr_key = PstBeam.exposed_attributes[attr_key]
 
             self.push_change_event(attr_key, value)
             self.push_archive_event(attr_key, value)
