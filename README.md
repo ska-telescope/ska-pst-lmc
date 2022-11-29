@@ -3,7 +3,7 @@ SKA PST LMC
 
 [![Documentation Status](https://readthedocs.org/projects/ska-telescope-ska-pst-lmc/badge/?version=latest)](https://readthedocs.org/projects/ska-telescope-ska-pst-lmc/badge/?version=latest)
 
-Release: 0.2.3
+Release: 0.2.4
 
 Check the [PST.LMC Documentation](https://developer.skao.int/projects/ska-pst-lmc) for the API and detailed documentation
 of this project.

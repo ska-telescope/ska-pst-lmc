@@ -22,17 +22,6 @@ MEGA_HERTZ = 1_000_000
 NUM_DIMENSIONS = 2
 """While PST can handle real and complex data, SKA is using only complex."""
 
-LOW_PST = "LowPST"
-
-MID_UDP_FORMATS = {
-    "1": "MidPSTBand1",
-    "2": "MidPSTBand2",
-    "3": "MidPSTBand3",
-    "4": "MidPSTBand4",
-    "5a": "MidPSTBand5",
-    "5b": "MidPSTBand5",
-}
-
 DEFAULT_COORD_MODE = "J2000"
 """Default coordinate mode.
 
@@ -51,10 +40,9 @@ Currently only TRACK is supported but other modes could be supported in the futu
 
 def get_udp_format(frequency_band: Optional[str] = None, **kwargs: Any) -> str:
     """Get UDP_FORMAT to be used in processing."""
-    if frequency_band in MID_UDP_FORMATS:
-        return MID_UDP_FORMATS[frequency_band]
+    from ska_pst_lmc.band.band_config import get_frequency_band_config
 
-    return LOW_PST
+    return get_frequency_band_config(frequency_band=frequency_band)["udp_format"]
 
 
 def generate_recv_scan_request(

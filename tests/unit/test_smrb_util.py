@@ -74,16 +74,16 @@ def test_generate_weights_key(beam_id: int, subband_id: int, expected_key: str) 
 
 
 @pytest.mark.parametrize(
-    "frequency_band, nchan, nbits, udp_nsamp, wt_nsamp",
+    "frequency_band, nchan, nbits, udp_nsamp, wt_nsamp, db_bufsz, wb_bufsz, num_of_buffers",
     [
-        (None, 432, 32, 32, 32),
-        ("0", 432, 32, 32, 32),
-        ("1", 1110, 32, 4, 4),
-        ("2", 3700, 32, 4, 4),
-        ("3", 6475, 24, 4, 4),
-        ("4", 11110, 16, 4, 4),
-        ("5a", 11655, 16, 4, 4),
-        ("5b", 11655, 16, 4, 4),
+        (None, 82944, 32, 32, 32, 339738624, 2875392, 64),
+        ("0", 82944, 32, 32, 32, 339738624, 2875392, 64),
+        ("1", 13021, 32, 4, 4, 426672128, 26953728, 128),
+        ("2", 15067, 32, 4, 4, 493715456, 31188992, 128),
+        ("3", 26042, 24, 4, 4, 320004096, 26953728, 256),
+        ("4", 44271, 16, 4, 4, 362668032, 45822976, 256),
+        ("5a", 46503, 16, 4, 4, 380952576, 48133120, 256),
+        ("5b", 46503, 16, 4, 4, 380952576, 48133120, 256),
     ],
 )
 def test_calculate_ringbuffer_sizes(
@@ -92,24 +92,13 @@ def test_calculate_ringbuffer_sizes(
     nbits: int,
     udp_nsamp: int,
     wt_nsamp: int,
+    db_bufsz: int,
+    wb_bufsz: int,
+    num_of_buffers: int,
     configure_scan_request: Dict[str, Any],
 ) -> None:
     """Test calculating of data and weight buffer sizes."""
-    npol = configure_scan_request["num_of_polarizations"]
-    wt_npol = 1
-    wt_nbits = 16  # always 16 bits
-
-    if frequency_band is None or frequency_band == "0":
-        # LowCBF
-        nchan_per_packet = 24
-    else:
-        # MidCBF
-        nchan_per_packet = 185
-
-    expected_db_bufsz = nchan * npol * nbits * udp_nsamp // 8
-    expected_wb_bufsz = (nchan // nchan_per_packet * 4) + (
-        nchan * wt_npol * wt_nbits * udp_nsamp
-    ) // wt_nsamp // 8
+    configure_scan_request["num_of_polarizations"]
 
     request_params = {
         **configure_scan_request,
@@ -122,5 +111,8 @@ def test_calculate_ringbuffer_sizes(
 
     output = calculate_smrb_subband_resources(beam_id=1, request_params=request_params)
 
-    assert output[1]["db_bufsz"] == expected_db_bufsz
-    assert output[1]["wb_bufsz"] == expected_wb_bufsz
+    assert output[1]["db_bufsz"] == db_bufsz
+    assert output[1]["db_nbufs"] == num_of_buffers
+
+    assert output[1]["wb_bufsz"] == wb_bufsz
+    assert output[1]["wb_nbufs"] == num_of_buffers

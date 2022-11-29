@@ -15,6 +15,8 @@ __all__ = [
 
 from typing import Any, Dict
 
+from ska_pst_lmc.band.band_config import get_frequency_band_config
+
 SIZE_OF_FLOAT32_IN_BYTES = 4
 BITS_PER_BYTE = 8
 
@@ -24,15 +26,7 @@ WEIGHTS_KEY_SUFFIX: int = 2
 HEADER_BUFFER_NBUFS: int = 8
 HEADER_BUFFER_BUFSZ: int = 16384
 
-DATA_BUFFER_NBUFS: int = 4
-DATA_BUFFER_BUFSZ_FACTOR: int = 1
-
 WEIGHTS_NBITS = 16
-WEIGHTS_BUFFER_NBUFS: int = 4
-WEIGHTS_BUFFER_BUFSZ_FACTOR: int = 1
-
-LOW_PACKET_NCHAN = 24
-MID_PACKET_NCHAN = 185
 
 
 def generate_data_key(beam_id: int, subband_id: int) -> str:
@@ -94,6 +88,11 @@ def calculate_smrb_subband_resources(beam_id: int, request_params: Dict[str, Any
             }
 
     """
+    frequency_band_config = get_frequency_band_config(**request_params)
+    packet_nchan = frequency_band_config["packet_nchan"]
+    packets_per_buffer = frequency_band_config["packets_per_buffer"]
+    num_of_buffers = frequency_band_config["num_of_buffers"]
+
     obsnchan = request_params["num_frequency_channels"]
     obsnpol = request_params["num_of_polarizations"]
     # this is 2 * num bits per dimension (real + complex)
@@ -106,15 +105,8 @@ def calculate_smrb_subband_resources(beam_id: int, request_params: Dict[str, Any
     data_buffer_resolution = obsnchan * obsnpol * nbits // BITS_PER_BYTE * udp_nsamp
     # this should be efficitvely 2 * obsnchan as WEIGHTS_NBITS is 16
 
-    if request_params.get("frequency_band", "0") in [None, "0"]:
-        # LowCBF
-        nchan_per_packet = LOW_PACKET_NCHAN
-    else:
-        # MidCBF
-        nchan_per_packet = MID_PACKET_NCHAN
-
     weights_buffer_resolution = (
-        obsnchan // nchan_per_packet * SIZE_OF_FLOAT32_IN_BYTES
+        obsnchan // packet_nchan * SIZE_OF_FLOAT32_IN_BYTES
     ) + obsnchan * WEIGHTS_NBITS // BITS_PER_BYTE * wt_nweight
 
     return {
@@ -123,9 +115,9 @@ def calculate_smrb_subband_resources(beam_id: int, request_params: Dict[str, Any
             "weights_key": generate_weights_key(beam_id=beam_id, subband_id=1),
             "hb_nbufs": HEADER_BUFFER_NBUFS,
             "hb_bufsz": HEADER_BUFFER_BUFSZ,
-            "db_nbufs": DATA_BUFFER_NBUFS,
-            "db_bufsz": DATA_BUFFER_BUFSZ_FACTOR * data_buffer_resolution,
-            "wb_nbufs": DATA_BUFFER_NBUFS,
-            "wb_bufsz": WEIGHTS_BUFFER_BUFSZ_FACTOR * weights_buffer_resolution,
+            "db_nbufs": num_of_buffers,
+            "db_bufsz": packets_per_buffer * data_buffer_resolution,
+            "wb_nbufs": num_of_buffers,
+            "wb_bufsz": packets_per_buffer * weights_buffer_resolution,
         }
     }
