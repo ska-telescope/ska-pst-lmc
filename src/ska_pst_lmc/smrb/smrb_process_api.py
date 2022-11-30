@@ -77,9 +77,9 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         """
         self._logger.info(f"Assigning resources for SMRB. {resources}")
         task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
+        time.sleep(0.01)
         task_callback(progress=50)
-        time.sleep(0.1)
+        time.sleep(0.01)
         self._component_state_callback(resourced=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
@@ -89,9 +89,9 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
+        time.sleep(0.01)
         task_callback(progress=45)
-        time.sleep(0.1)
+        time.sleep(0.01)
         self._component_state_callback(resourced=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
@@ -104,12 +104,12 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
+        time.sleep(0.01)
         task_callback(progress=42)
-        time.sleep(0.1)
+        time.sleep(0.01)
         task_callback(progress=58)
         self._simulator.configure_scan(configuration=configuration)
-        time.sleep(0.1)
+        time.sleep(0.01)
         self._component_state_callback(configured=True)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
@@ -119,13 +119,13 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
+        time.sleep(0.01)
         task_callback(progress=20)
-        time.sleep(0.05)
+        time.sleep(0.01)
         task_callback(progress=50)
-        time.sleep(0.05)
+        time.sleep(0.01)
         task_callback(progress=80)
-        time.sleep(0.1)
+        time.sleep(0.01)
         self._simulator.deconfigure_scan()
         self._component_state_callback(configured=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
@@ -137,9 +137,9 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
+        time.sleep(0.01)
         task_callback(progress=55)
-        time.sleep(0.1)
+        time.sleep(0.01)
         self._simulator.start_scan(args)
         self._component_state_callback(scanning=True)
         self._scanning = True
@@ -151,9 +151,9 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
+        time.sleep(0.01)
         task_callback(progress=37)
-        time.sleep(0.1)
+        time.sleep(0.01)
         task_callback(progress=63)
         self._simulator.stop_scan()
         self._component_state_callback(scanning=False)
@@ -167,7 +167,7 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
         self._simulator.abort()
-        time.sleep(0.1)
+        time.sleep(0.01)
         task_callback(progress=59)
         self._component_state_callback(scanning=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
@@ -178,9 +178,9 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
-        time.sleep(0.1)
+        time.sleep(0.01)
         task_callback(progress=37)
-        time.sleep(0.1)
+        time.sleep(0.01)
         task_callback(progress=63)
         self._component_state_callback(configured=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")

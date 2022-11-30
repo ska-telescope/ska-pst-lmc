@@ -28,12 +28,6 @@ from ska_pst_lmc.util.job import DEVICE_COMMAND_JOB_EXECUTOR, JobExecutor
 
 
 @pytest.fixture
-def logger() -> logging.Logger:
-    """Create logger fixture."""
-    return logging.getLogger("test")
-
-
-@pytest.fixture
 def smrb_fqdn() -> str:
     """Create SMRB FQDN fixture."""
     return "test/smrb/1"

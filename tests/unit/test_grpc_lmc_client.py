@@ -47,6 +47,7 @@ def grpc_client(
     pst_lmc_service: TestPstLmcService,
 ) -> PstGrpcLmcClient:
     """Fixture for getting instance of PstGrpcLmcClient."""
+    # ensure the servicer context is reset.
     return PstGrpcLmcClient(client_id=client_id, endpoint=grpc_endpoint, logger=logger)
 
 

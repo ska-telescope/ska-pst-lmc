@@ -272,6 +272,8 @@ def test_aggregate_task_should_run_to_completion(device_proxy: PstDeviceProxy) -
     assert result == TaskStatus.QUEUED
     assert details == "Queued"
 
+    time.sleep(0.1)
+
     assert aggregate_remote_task.status == TaskStatus.IN_PROGRESS
 
     time.sleep(0.1)

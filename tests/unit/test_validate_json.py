@@ -10,6 +10,7 @@
 from typing import Optional
 
 import pytest
+from ska_telmodel._common import split_interface_version
 from ska_telmodel.csp.examples import get_csp_config_example
 from ska_telmodel.csp.version import CSP_CONFIG_VER2_2, CSP_CONFIG_VERSIONS
 
@@ -33,7 +34,9 @@ def is_valid_combination(version: str, scan: Optional[str]) -> bool:
     ]:
         return False
 
-    return version.startswith(CSP_CONFIG_VER2_2)
+    (major, minor) = split_interface_version(version)
+
+    return (major, minor) >= (2, 2)
 
 
 @pytest.mark.parametrize(
