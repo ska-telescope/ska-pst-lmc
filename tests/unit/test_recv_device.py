@@ -10,59 +10,99 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
-from typing import Any, Dict, Generator
+from typing import Any, Dict, Type
 from unittest.mock import MagicMock
 
 import pytest
 import tango
-from ska_pst_lmc_proto import ConnectionRequest, ConnectionResponse
 from ska_tango_base.commands import ResultCode, TaskStatus
 from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
-from tango.test_context import DeviceTestContext
 
 from ska_pst_lmc import PstReceive
-from ska_pst_lmc.receive import generate_random_update
-from ska_pst_lmc.receive.receive_model import ReceiveData
-from ska_pst_lmc.test import TestPstLmcService
+from ska_pst_lmc.receive import PstReceiveComponentManager
 from tests.conftest import TangoDeviceCommandChecker
 
 
-@pytest.fixture()
-def receive_device() -> Generator[DeviceProxy, None, None]:
-    """Create text fixture that yields a DeviceProxy for RECV TANGO device."""
-    with DeviceTestContext(PstReceive) as proxy:
-        yield proxy
-
-
-@pytest.fixture()
-def receive_data() -> ReceiveData:
-    """Generate a receive data object.
-
-    This will generate random data for a ReceiveData that can be used
-    in testing to assert that the device updates its attributes in
-    a known way.
-    """
-    return generate_random_update()
+@pytest.fixture
+def monitor_polling_rate() -> int:
+    """Fixture to get monitoring polling rate for test."""
+    return 100
 
 
 @pytest.fixture
 def device_properties(
     grpc_endpoint: str,
+    monitor_polling_rate: int,
 ) -> dict:
     """Fixture that returns device_properties to be provided to the device under test."""
     return {
         "process_api_endpoint": grpc_endpoint,
-        "monitor_polling_rate": 100,
+        "monitor_polling_rate": monitor_polling_rate,
     }
 
 
+@pytest.fixture
+def component_manager(
+    device_name: str,
+    grpc_endpoint: str,
+    monitor_polling_rate: int,
+    logger: logging.Logger,
+    monkeypatch: pytest.MonkeyPatch,
+) -> PstReceiveComponentManager:
+    """Get fixture for a PstReceiveComponentManager."""
+    # monkey patch PstReceiveComponentManager._update_api to do nothing.
+    def _update_api(*args: Any, **kwargs: Any) -> None:
+        pass
+
+    monkeypatch.setattr(PstReceiveComponentManager, "_update_api", _update_api)
+
+    return PstReceiveComponentManager(
+        device_name=device_name,
+        process_api_endpoint=grpc_endpoint,
+        logger=logger,
+        # this is just a place holder to mock these values.
+        monitor_data_callback=MagicMock(),
+        communication_state_callback=MagicMock(),
+        component_state_callback=MagicMock(),
+        property_callback=MagicMock(),
+        monitor_polling_rate=monitor_polling_rate,
+    )
+
+
+@pytest.fixture
+def recv_device_class(component_manager: PstReceiveComponentManager) -> Type[PstReceive]:
+    """Get PstReceive fixture.
+
+    This creates a subclass of the PstReceive that overrides the create_component_manager method
+    to use the component_manager fixture.
+    """
+
+    class _PstReceive(PstReceive):
+        def create_component_manager(self: _PstReceive) -> PstReceiveComponentManager:
+            component_manager._communication_state_callback = self._communication_state_changed
+            component_manager._api._component_state_callback = self._component_state_changed
+            component_manager._component_state_callback = self._component_state_changed
+            component_manager._monitor_data_handler._monitor_data_callback = self._update_monitor_data
+            component_manager._property_callback = self._update_attribute_value
+
+            return component_manager
+
+    return _PstReceive
+
+
+@pytest.mark.forked
 class TestPstReceive:
     """Test class used for testing the PstReceive TANGO device."""
 
     @pytest.fixture
-    def device_test_config(self: TestPstReceive, device_properties: dict) -> dict:
+    def device_test_config(
+        self: TestPstReceive,
+        device_properties: dict,
+        recv_device_class: Type[PstReceive],
+    ) -> dict:
         """
         Specify device configuration, including properties and memorized attributes.
 
@@ -76,7 +116,7 @@ class TestPstReceive:
             configured
         """
         return {
-            "device": PstReceive,
+            "device": recv_device_class,
             "process": True,
             "properties": device_properties,
             "memorized": {"adminMode": str(AdminMode.ONLINE.value)},
@@ -107,7 +147,6 @@ class TestPstReceive:
         assert len(version_info) == 1
         assert re.match(version_pattern, version_info[0])
 
-    @pytest.mark.forked
     def test_recv_mgmt_configure_then_scan_then_stop(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
@@ -180,7 +219,6 @@ class TestPstReceive:
             ],
         )
 
-    @pytest.mark.forked
     def test_recv_mgmt_abort_when_scanning(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
@@ -272,12 +310,9 @@ class TestPstReceive:
             ],
         )
 
-    @pytest.mark.forked
     def test_recv_mgmt_simulation_mode(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
-        pst_lmc_service: TestPstLmcService,
-        mock_servicer_context: MagicMock,
     ) -> None:
         """Test state model of PstReceive."""
         device_under_test.loggingLevel = 5
@@ -285,36 +320,42 @@ class TestPstReceive:
         device_under_test.simulationMode = SimulationMode.TRUE
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
-        response = ConnectionResponse()
-        mock_servicer_context.connect = MagicMock(return_value=response)
+        # response = ConnectionResponse()
+        # mock_servicer_context.connect = MagicMock(return_value=response)
 
         device_under_test.simulationMode = SimulationMode.FALSE
-        mock_servicer_context.connect.assert_called_once_with(
-            ConnectionRequest(client_id=device_under_test.name())
-        )
+        # mock_servicer_context.connect.assert_called_once_with(
+        #     ConnectionRequest(client_id=device_under_test.name())
+        # )
         assert device_under_test.simulationMode == SimulationMode.FALSE
 
         device_under_test.simulationMode = SimulationMode.TRUE
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
-    @pytest.mark.forked
     def test_recv_mgmt_simulation_mode_when_not_in_empty_obs_state(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],
+        tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
         """Test state model of PstReceive."""
         device_under_test.simulationMode = SimulationMode.TRUE
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
         device_under_test.adminMode = AdminMode.ONLINE
-        device_under_test.On()
-        time.sleep(0.1)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+        )
         assert device_under_test.state() == DevState.ON
 
         resources = json.dumps(configure_beam_request)
-        device_under_test.ConfigureBeam(resources)
-        time.sleep(0.5)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.ConfigureBeam(resources),
+            expected_obs_state_events=[
+                ObsState.RESOURCING,
+                ObsState.IDLE,
+            ],
+        )
         assert device_under_test.obsState == ObsState.IDLE
 
         with pytest.raises(tango.DevFailed) as exc_info:
@@ -325,32 +366,27 @@ class TestPstReceive:
             0
         ].desc == "ValueError: Unable to change simulation mode unless in EMPTY observation state"
 
-    @pytest.mark.forked
     def test_recv_mgmt_simulation_mode_when_in_empty_obs_state(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
-        pst_lmc_service: TestPstLmcService,
-        mock_servicer_context: MagicMock,
+        tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
         """Test state model of PstReceive."""
-        response = ConnectionResponse()
-        mock_servicer_context.connect = MagicMock(return_value=response)
         assert device_under_test.obsState == ObsState.EMPTY
 
         device_under_test.simulationMode = SimulationMode.TRUE
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
         device_under_test.adminMode = AdminMode.ONLINE
-        device_under_test.On()
-        time.sleep(0.1)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+        )
         assert device_under_test.state() == DevState.ON
         assert device_under_test.obsState == ObsState.EMPTY
 
         device_under_test.simulationMode = SimulationMode.FALSE
-        time.sleep(0.1)
         assert device_under_test.simulationMode == SimulationMode.FALSE
 
-    @pytest.mark.forked
     def test_recv_mgmt_go_to_fault_when_beam_configured(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
@@ -389,7 +425,6 @@ class TestPstReceive:
             ],
         )
 
-    @pytest.mark.forked
     def test_recv_mgmt_go_to_fault_when_configured(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
@@ -430,7 +465,6 @@ class TestPstReceive:
             ],
         )
 
-    @pytest.mark.forked
     def test_recv_mgmt_go_to_fault_when_scanning(
         self: TestPstReceive,
         device_under_test: DeviceProxy,
@@ -471,8 +505,6 @@ class TestPstReceive:
                 ObsState.SCANNING,
             ],
         )
-
-        time.sleep(0.1)
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.GoToFault(),

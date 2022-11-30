@@ -41,7 +41,6 @@ class PstReceiveComponentManager(PstApiComponentManager):
         monitor_data_callback: Callable[[ReceiveData], None],
         communication_state_callback: Callable[[CommunicationStatus], None],
         component_state_callback: Callable[..., None],
-        subband_udp_ports: List[int],
         api: Optional[PstReceiveProcessApi] = None,
         monitor_polling_rate: int = 5000,
         *args: Any,

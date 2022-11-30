@@ -177,6 +177,7 @@ class _AttributeEventValidator:
             self.change_event_callbacks[self.attribute_name].assert_change_event(value)
 
 
+@pytest.mark.forked
 class TestPstBeam:
     """Test class used for testing the PstReceive TANGO device."""
 
@@ -208,7 +209,6 @@ class TestPstBeam:
         assert len(version_info) == 1
         assert re.match(version_pattern, version_info[0])
 
-    @pytest.mark.forked
     def test_beam_mgmt_configure_then_scan_then_stop(
         self: TestPstBeam,
         device_under_test: DeviceProxy,
@@ -305,7 +305,6 @@ class TestPstBeam:
         )
         assert_state(DevState.OFF)
 
-    @pytest.mark.forked
     def test_beam_mgmt_go_to_fault(
         self: TestPstBeam,
         device_under_test: DeviceProxy,

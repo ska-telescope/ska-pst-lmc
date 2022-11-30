@@ -15,7 +15,8 @@ PYTHON_TEST_FILE = tests
 PYTHON_LINT_TARGET = src tests  ## Paths containing python to be formatted and linted
 PYTHON_SWITCHES_FOR_PYLINT = --disable=W,C,R --ignored-modules="ska_pst_lmc_proto"
 DOCS_SOURCEDIR=./docs/src
-PYTHON_VARS_AFTER_PYTEST = --forked --cov-config=$(PWD)/.coveragerc
+#PYTHON_VARS_AFTER_PYTEST = --forked --cov-config=$(PWD)/.coveragerc
+PYTHON_VARS_AFTER_PYTEST = --cov-config=$(PWD)/.coveragerc
 
 K8S_CHART ?= test-parent
 K8S_CHARTS ?= $(K8S_CHART)
