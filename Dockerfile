@@ -1,7 +1,7 @@
-ARG BUILD_IMAGE="artefact.skao.int/ska-tango-images-pytango-builder:9.3.32"
-ARG BASE_IMAGE="artefact.skao.int/ska-tango-images-pytango-runtime:9.3.19"
-ARG PST_COMMON_BUILDER_IMAGE="registry.gitlab.com/ska-telescope/pst/ska-pst-common/ska-pst-common-builder:0.3.0"
-ARG PROTOBUF_IMAGE="registry.gitlab.com/ska-telescope/pst/ska-pst-common/ska-pst-common-proto:0.3.0"
+ARG BUILD_IMAGE=""
+ARG BASE_IMAGE=""
+ARG PST_COMMON_BUILDER_IMAGE=""
+ARG PROTOBUF_IMAGE=""
 
 FROM $PST_COMMON_BUILDER_IMAGE AS pstbuilder
 
