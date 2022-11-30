@@ -71,9 +71,11 @@ def grpc_api(
     component_state_callback: MagicMock,
     pst_lmc_service: TestPstLmcService,
     background_task_processor: BackgroundTaskProcessor,
+    mock_servicer_context: MagicMock,
 ) -> PstReceiveProcessApi:
     """Fixture to create instance of a gRPC API with client."""
     # ensure we reset the mock before the API is going to be called.
+    mock_servicer_context.reset_mock()
     return PstReceiveProcessApiGrpc(
         client_id=client_id,
         grpc_endpoint=grpc_endpoint,

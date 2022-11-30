@@ -116,7 +116,7 @@ class TestPstSmrb:
         """
         return {
             "device": smrb_device_class,
-            "process": True,
+            "process": False,
             "properties": device_properties,
             "memorized": {"adminMode": str(AdminMode.ONLINE.value)},
         }

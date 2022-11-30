@@ -10,10 +10,10 @@
 from __future__ import annotations
 
 import logging
-import time
+import threading
 from concurrent import futures
 from dataclasses import dataclass
-from typing import Any, Generator, Optional
+from typing import Any, Callable, Generator, Optional
 
 import grpc
 from grpc import ServicerContext
@@ -54,6 +54,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
 from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer
 
 from ska_pst_lmc.component.grpc_lmc_client import GRPC_STATUS_DETAILS_METADATA_KEY
+from ska_pst_lmc.util.callback import callback_safely
 
 __all__ = [
     "TestMockServicer",
@@ -319,17 +320,19 @@ class TestPstLmcService:
         self._logger = logger or logging.getLogger(__name__)
         self._server = grpc_server
         self._running = False
+        self._thread: Optional[threading.Thread] = None
 
     def __del__(self: TestPstLmcService) -> None:
         """Drop of the instance has been requested."""
         self.stop()
 
-    def serve(self: TestPstLmcService) -> None:
+    def _serve(self: TestPstLmcService, started_callback: Optional[Callable] = None) -> None:
         """Start the gRPC to serve."""
         self._logger.info("Starting server")
         try:
             self._server.start()
             self._running = True
+            callback_safely(started_callback)
             self._server.wait_for_termination()
             self._running = False
             self._logger.debug("Server has terminated")
@@ -340,10 +343,28 @@ class TestPstLmcService:
         except Exception:
             self._logger.error("Unknown exception has happened while serving.", exc_info=True)
 
+    def serve(self: TestPstLmcService, started_callback: Optional[Callable] = None) -> None:
+        """Start the gRPC server to serve requests.
+
+        This method should be called synchronously as this method will set up the gRPC in
+        a background thread itself.  If the client wants to be notified when the background
+        thread is serving then a started_callback should be passed.
+
+        :param started_callback: a callback that will be called when the background thread
+            is running, defaults to None.
+        :type started_callback: Optional[Callable], optional
+        """
+        t = threading.Thread(target=self._serve, args=(started_callback,))
+        t.start()
+        self._thread = t
+
     def stop(self: TestPstLmcService) -> None:
         """Stop the background serving of requests."""
         if self._running:
             self._logger.debug("Stopping test gRPC service.")
-            self._server.stop(grace=0.1)
-            time.sleep(0.2)
+            self._server.stop(grace=None)
             self._logger.debug("Service stopped.")
+
+        if self._thread is not None:
+            self._thread.join()
+            self._thread = None

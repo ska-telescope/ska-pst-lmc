@@ -117,7 +117,7 @@ class TestPstReceive:
         """
         return {
             "device": recv_device_class,
-            "process": True,
+            "process": False,
             "properties": device_properties,
             "memorized": {"adminMode": str(AdminMode.ONLINE.value)},
         }
