@@ -320,13 +320,7 @@ class TestPstReceive:
         device_under_test.simulationMode = SimulationMode.TRUE
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
-        # response = ConnectionResponse()
-        # mock_servicer_context.connect = MagicMock(return_value=response)
-
         device_under_test.simulationMode = SimulationMode.FALSE
-        # mock_servicer_context.connect.assert_called_once_with(
-        #     ConnectionRequest(client_id=device_under_test.name())
-        # )
         assert device_under_test.simulationMode == SimulationMode.FALSE
 
         device_under_test.simulationMode = SimulationMode.TRUE
