@@ -84,7 +84,6 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         self._dropped_data = 0
         self._write_rate = 0.0
         self._bytes_written = 0
-        self._ingest_configuration = ""
         self._disk_available_bytes = sys.maxsize
         self._available_recording_time = DEFAULT_RECORDING_TIME
         self._ring_buffer_utilisation = 0.0
@@ -101,7 +100,6 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
             "expectedDataRate",
             "availableRecordingTime",
             "ringBufferUtilisation",
-            "expectedDataRate",
         ]:
             self.set_change_event(prop, True, False)
             self.set_archive_event(prop, True, False)
@@ -150,31 +148,6 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
     # ----------
     # Attributes
     # ----------
-
-    @attribute(
-        dtype=str,
-        doc="The PST Ingest configuration as a JSON string",
-    )
-    def ingestConfiguration(self: PstBeam) -> str:
-        """Get the PST Ingest configuration as a JSON string.
-
-        This will return the JSON representation of the configuration
-        that this PST Beam has configured for ingesting data. This
-        configuration includes the following properties:
-
-            * Number of channel blocks, between 1 and 4
-            * For each channel block, the block of channel numbers
-              using a range in the form of inclusive of the lower
-              number and exclusive of the higher number (e.g [1, 21)
-              would be a range of 20 channels starting from 1 and ending
-              at channel block 20 (inclusive).
-            * Channel block IPv4 address to send data to.
-            * Channel block UDP port
-
-        :returns: the PST Ingest configuration as a JSON string.
-        :rtype: str
-        """
-        return self._ingest_configuration
 
     @attribute(
         dtype=int,
@@ -314,7 +287,37 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         """Get the channel block configuration.
 
         This is a JSON serialised string of the channel block configuration
-        that is calculated during the `ConfigureScan` command.
+        that is calculated during the `ConfigureScan` command. This
+        configuration includes the following properties:
+
+            * Number of channel blocks, between 1 and 4
+            * For each channel block, the block of channel numbers
+              using a range in the form of inclusive of the lower
+              number and exclusive of the higher number (e.g [1, 21)
+              would be a range of 20 channels starting from 1 and ending
+              at channel block 20 (inclusive).
+            * Channel block IPv4 address to send data to.
+            * Channel block UDP port
+
+        .. code-block:: python
+
+            {
+                "num_channel_blocks": 2,
+                "channel_blocks": [
+                    {
+                        "data_host": "10.10.0.1",
+                        "data_port": 20000,
+                        "start_channel": 0,
+                        "num_channels": 12,
+                    },
+                    {
+                        "data_host": "10.10.0.1",
+                        "data_port": 20001,
+                        "start_channel": 12,
+                        "num_channels": 10,
+                    },
+                ]
+            }
 
         :returns: the channel block configuration as a JSON string.
         :rtype: str
