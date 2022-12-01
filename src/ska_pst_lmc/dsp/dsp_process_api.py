@@ -223,7 +223,7 @@ class PstDspProcessApiGrpc(PstProcessApiGrpc, PstDspProcessApi):
             subband_data=DspDiskSubbandMonitorData(
                 disk_capacity=dsp_disk_data.disk_capacity,
                 disk_available_bytes=dsp_disk_data.disk_available_bytes,
-                bytes_written=dsp_disk_data.bytes_written,
+                data_recorded=dsp_disk_data.bytes_written,
                 data_record_rate=dsp_disk_data.write_rate,
             ),
         )

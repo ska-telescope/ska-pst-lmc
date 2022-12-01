@@ -123,10 +123,10 @@ def test_dsp_cm_start_communicating_calls_connect_on_api(
         ("disk_available_bytes"),
         ("disk_used_bytes"),
         ("disk_used_percentage"),
-        ("bytes_written"),
+        ("data_recorded"),
         ("data_record_rate"),
         ("available_recording_time"),
-        ("subband_bytes_written"),
+        ("subband_data_recorded"),
         ("subband_data_record_rate"),
     ],
 )

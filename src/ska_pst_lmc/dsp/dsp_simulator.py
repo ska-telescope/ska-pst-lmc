@@ -128,10 +128,10 @@ class PstDspSimulator:
             "subband_data_record_rates", self.num_subbands * [1e9 * (random() + 0.5)]
         )
 
-        self._subband_bytes_written = configuration.get("subband_bytes_written", self.num_subbands * [0])
+        self._subband_data_recorded = configuration.get("subband_data_recorded", self.num_subbands * [0])
 
         assert len(self._subband_data_record_rates) == self.num_subbands
-        assert len(self._subband_bytes_written) == self.num_subbands
+        assert len(self._subband_data_recorded) == self.num_subbands
 
         self._data_store = DspDiskMonitorDataStore()
         self._data_store.update_disk_stats(
@@ -143,7 +143,7 @@ class PstDspSimulator:
                 subband_data=DspDiskSubbandMonitorData(
                     disk_capacity=self.disk_capacity,
                     disk_available_bytes=self.disk_available_bytes,
-                    bytes_written=0,
+                    data_recorded=0,
                     data_record_rate=self._subband_data_record_rates[idx],
                 ),
             )
@@ -174,21 +174,21 @@ class PstDspSimulator:
             data_record_rate = self._subband_data_record_rates[idx]
 
             # determine actual bytes written, can't go more than disk available
-            bytes_written = int(data_record_rate)
-            bytes_written = min(bytes_written, self.disk_available_bytes)
+            data_recorded = int(data_record_rate)
+            data_recorded = min(data_recorded, self.disk_available_bytes)
 
             # update disk available
-            self.disk_available_bytes -= bytes_written
+            self.disk_available_bytes -= data_recorded
 
             # update subband values
-            self._subband_bytes_written[idx] += bytes_written
+            self._subband_data_recorded[idx] += data_recorded
 
             self._data_store.update_subband(
                 subband_id=(idx + 1),
                 subband_data=DspDiskSubbandMonitorData(
                     disk_capacity=self.disk_capacity,
                     disk_available_bytes=self.disk_available_bytes,
-                    bytes_written=self._subband_bytes_written[idx],
+                    data_recorded=self._subband_data_recorded[idx],
                     data_record_rate=self._subband_data_record_rates[idx],
                 ),
             )

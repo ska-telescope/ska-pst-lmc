@@ -202,13 +202,13 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         display_unit="B",
         doc="Number of bytes written during scan.",
     )
-    def bytesWritten(self: PstDsp) -> int:
+    def dataRecorded(self: PstDsp) -> int:
         """Get number of bytes written during scan.
 
         :returns: number of bytes written during scan.
         :rtype: int
         """
-        return self.component_manager.bytes_written
+        return self.component_manager.data_recorded
 
     @attribute(
         dtype=float,
@@ -233,13 +233,13 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         display_unit="B",
         doc="The bytes per written for each subband",
     )
-    def subbandBytesWritten(self: PstDsp) -> List[int]:
+    def subbandDataRecorded(self: PstDsp) -> List[int]:
         """Get the bytes per written for each subband.
 
         :returns: the bytes per written for each subband.
         :rtype: List[int]
         """
-        return self.component_manager.subband_bytes_written
+        return self.component_manager.subband_data_recorded
 
     @attribute(
         dtype=(float,),

@@ -134,9 +134,9 @@ class PstDspComponentManager(PstApiComponentManager):
         return self._monitor_data.disk_used_percentage
 
     @property
-    def bytes_written(self: PstDspComponentManager) -> int:
+    def data_recorded(self: PstDspComponentManager) -> int:
         """Get total amount of bytes written in current scan across all subbands."""
-        return self._monitor_data.bytes_written
+        return self._monitor_data.data_recorded
 
     @property
     def data_record_rate(self: PstDspComponentManager) -> float:
@@ -149,9 +149,9 @@ class PstDspComponentManager(PstApiComponentManager):
         return self._monitor_data.available_recording_time
 
     @property
-    def subband_bytes_written(self: PstDspComponentManager) -> List[int]:
+    def subband_data_recorded(self: PstDspComponentManager) -> List[int]:
         """Get a list of bytes written, one record per subband."""
-        return self._monitor_data.subband_bytes_written
+        return self._monitor_data.subband_data_recorded
 
     @property
     def subband_data_record_rate(self: PstDspComponentManager) -> List[float]:

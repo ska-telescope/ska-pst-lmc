@@ -42,8 +42,8 @@ def test_dsp_simulator_using_constructor() -> None:
     assert data.subband_data_record_rate[0] == 0.3
     assert data.subband_data_record_rate[1] == 0.1
 
-    assert data.subband_bytes_written[0] == 0
-    assert data.subband_bytes_written[1] == 0
+    assert data.subband_data_recorded[0] == 0
+    assert data.subband_data_recorded[1] == 0
 
 
 def test_dps_simulator_configure_scan(simulator: PstDspSimulator) -> None:
@@ -61,10 +61,10 @@ def test_dps_simulator_configure_scan(simulator: PstDspSimulator) -> None:
     data = simulator._data_store.monitor_data
     assert data.disk_capacity == shutil.disk_usage("/")[0]
 
-    np.testing.assert_array_equal(simulator._subband_bytes_written, data.subband_bytes_written)
+    np.testing.assert_array_equal(simulator._subband_data_recorded, data.subband_data_recorded)
     np.testing.assert_array_equal(simulator._subband_data_record_rates, data.subband_data_record_rate)
 
-    assert data.bytes_written == np.sum(simulator._subband_bytes_written)
+    assert data.data_recorded == np.sum(simulator._subband_data_recorded)
 
 
 def test_dsp_simulator_until_scan_get_data_returns_initial_data(

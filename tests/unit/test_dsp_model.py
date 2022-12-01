@@ -36,7 +36,7 @@ def test_dsp_disk_monitor_data_store() -> None:
     subband_data = DspDiskSubbandMonitorData(
         disk_available_bytes=disk_available_bytes - 2,
         disk_capacity=disk_capacity,
-        bytes_written=2,
+        data_recorded=2,
         data_record_rate=0.1,
     )
 

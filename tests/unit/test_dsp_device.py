@@ -204,15 +204,15 @@ class TestPstDsp:
             100.0 * device_under_test.diskUsedBytes / device_under_test.diskCapacity,
         )
         assert device_under_test.dataRecordRate >= 0.0
-        assert device_under_test.bytesWritten > 0
+        assert device_under_test.dataRecorded > 0
 
         for wr in device_under_test.subbandDataRecordRate:
             assert wr >= 0.0
 
-        for bw in device_under_test.subbandBytesWritten:
+        for bw in device_under_test.subbandDataRecorded:
             assert bw > 0
 
-        assert device_under_test.bytesWritten == np.sum(device_under_test.subbandBytesWritten)
+        assert device_under_test.dataRecorded == np.sum(device_under_test.subbandDataRecorded)
         np.testing.assert_almost_equal(
             device_under_test.dataRecordRate, np.sum(device_under_test.dataRecordRate)
         )

@@ -668,7 +668,7 @@ def test_dsp_grpc_simulated_monitor_calls_callback(
     """Test simulatued monitoring calls subband_monitor_data_callback."""
     disk_capacity = randint(50, 100)
     disk_available_bytes = randint(1, 50)
-    bytes_written = disk_capacity - disk_available_bytes
+    data_recorded = disk_capacity - disk_available_bytes
     data_record_rate = 100.0 * random()
 
     def response_generator() -> Generator[MonitorResponse, None, None]:
@@ -679,7 +679,8 @@ def test_dsp_grpc_simulated_monitor_calls_callback(
                     dsp_disk=DspDiskMonitorData(
                         disk_capacity=disk_capacity,
                         disk_available_bytes=disk_available_bytes,
-                        bytes_written=bytes_written,
+                        # Protobuf has bytes_written not data_recorded
+                        bytes_written=data_recorded,
                         # Protobuf has write_rate not data_record_rate
                         write_rate=data_record_rate,
                     )
@@ -713,7 +714,7 @@ def test_dsp_grpc_simulated_monitor_calls_callback(
             subband_data=DspDiskSubbandMonitorData(
                 disk_capacity=disk_capacity,
                 disk_available_bytes=disk_available_bytes,
-                bytes_written=bytes_written,
+                data_recorded=data_recorded,
                 data_record_rate=data_record_rate,
             ),
         )

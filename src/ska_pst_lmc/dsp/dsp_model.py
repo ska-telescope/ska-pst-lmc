@@ -34,15 +34,15 @@ class DspDiskSubbandMonitorData:
     :vartype disk_capacity: int
     :ivar disk_available_bytes: total currently available bytes of the disk used.
     :vartype disk_available_bytes: int
-    :ivar bytes_written: amount of bytes written by the subband in current scan.
-    :vartype bytes_written: int
+    :ivar data_recorded: amount of bytes written by the subband in current scan.
+    :vartype data_recorded: int
     :ivar data_record_rate: current rate of writing of data to disk for subband.
     :vartype data_record_rate: float
     """
 
     disk_capacity: int
     disk_available_bytes: int
-    bytes_written: int
+    data_recorded: int
     data_record_rate: float
 
 
@@ -59,17 +59,17 @@ class DspDiskMonitorData:
     :vartype disk_capacity: int
     :ivar disk_available_bytes: currently available bytes of the disk.
     :vartype disk_available_bytes: int
-    :ivar bytes_written: total amount of bytes written in current scan across
+    :ivar data_recorded: total amount of bytes written in current scan across
         all subbands of the beam.
-    :vartype bytes_written: int
+    :vartype data_recorded: int
     :ivar data_record_rate: total rate of writing to disk across all subbands, in
         bytes/second.
     :vartype data_record_rate: float
     :ivar available_recording_time: estimated available recording time left for
         current scan.
     :vartype available_recording_time: float
-    :ivar subband_bytes_written: a list of bytes written, one record per subband.
-    :vartype subband_bytes_written: List[int]
+    :ivar subband_data_recorded: a list of bytes written, one record per subband.
+    :vartype subband_data_recorded: List[int]
     :ivar subband_data_record_rate: a list of current rate of writing per subband,
         in bytes/seconds.
     :vartype subband_data_record_rate: List[float]
@@ -77,10 +77,10 @@ class DspDiskMonitorData:
 
     disk_capacity: int = field(default=sys.maxsize)
     disk_available_bytes: int = field(default=sys.maxsize)
-    bytes_written: int = field(default=0)
+    data_recorded: int = field(default=0)
     data_record_rate: float = field(default=0.0)
     available_recording_time: float = field(default=DEFAULT_RECORDING_TIME)
-    subband_bytes_written: List[int] = field(default_factory=list)
+    subband_data_recorded: List[int] = field(default_factory=list)
     subband_data_record_rate: List[float] = field(default_factory=list)
 
     @property
@@ -139,10 +139,10 @@ class DspDiskMonitorDataStore(MonitorDataStore[DspDiskSubbandMonitorData, DspDis
         # use max long as initial value, we will want min value
         disk_capacity: int = sys.maxsize
         disk_available_bytes: int = sys.maxsize
-        bytes_written: int = 0
+        data_recorded: int = 0
         data_record_rate: float = 0.0
 
-        subband_bytes_written: List[int] = number_subbands * [0]
+        subband_data_recorded: List[int] = number_subbands * [0]
         subband_data_record_rate: List[float] = number_subbands * [0.0]
 
         for subband_id, subband_data in self._subband_data.items():
@@ -151,8 +151,8 @@ class DspDiskMonitorDataStore(MonitorDataStore[DspDiskSubbandMonitorData, DspDis
 
             idx = subband_id - 1
 
-            bytes_written += subband_data.bytes_written
-            subband_bytes_written[idx] = subband_data.bytes_written
+            data_recorded += subband_data.data_recorded
+            subband_data_recorded[idx] = subband_data.data_recorded
 
             data_record_rate += subband_data.data_record_rate
             subband_data_record_rate[idx] = subband_data.data_record_rate
@@ -166,9 +166,9 @@ class DspDiskMonitorDataStore(MonitorDataStore[DspDiskSubbandMonitorData, DspDis
         return DspDiskMonitorData(
             disk_capacity=disk_capacity,
             disk_available_bytes=disk_available_bytes,
-            bytes_written=bytes_written,
+            data_recorded=data_recorded,
             data_record_rate=data_record_rate,
             available_recording_time=available_recording_time,
-            subband_bytes_written=subband_bytes_written,
+            subband_data_recorded=subband_data_recorded,
             subband_data_record_rate=subband_data_record_rate,
         )

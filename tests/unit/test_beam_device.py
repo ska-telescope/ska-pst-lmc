@@ -38,7 +38,7 @@ def additional_change_events_callbacks() -> List[str]:
         "dataDropRate",
         "dataDropped",
         "dataRecordRate",
-        "bytesWritten",
+        "dataRecorded",
         "diskAvailableBytes",
         "availableRecordingTime",
         "ringBufferUtilisation",
@@ -399,7 +399,7 @@ class TestPstBeam:
             },
             "test/dsp/1": {
                 "dataRecordRate": 0.0,
-                "bytesWritten": 0,
+                "dataRecorded": 0,
                 "diskAvailableBytes": sys.maxsize,
                 "availableRecordingTime": DEFAULT_RECORDING_TIME,
             },

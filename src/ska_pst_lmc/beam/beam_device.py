@@ -83,7 +83,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         self._data_drop_rate = 0.0
         self._data_dropped = 0
         self._data_record_rate = 0.0
-        self._bytes_written = 0
+        self._data_recorded = 0
         self._disk_available_bytes = sys.maxsize
         self._available_recording_time = DEFAULT_RECORDING_TIME
         self._ring_buffer_utilisation = 0.0
@@ -95,7 +95,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
             "dataDropRate",
             "dataDropped",
             "dataRecordRate",
-            "bytesWritten",
+            "dataRecorded",
             "diskAvailableBytes",
             "expectedDataRate",
             "availableRecordingTime",
@@ -271,13 +271,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         display_unit="B",
         doc="Number of bytes written during scan.",
     )
-    def bytesWritten(self: PstBeam) -> int:
+    def dataRecorded(self: PstBeam) -> int:
         """Get number of bytes written during scan.
 
         :returns: number of bytes written during scan.
         :rtype: int
         """
-        return self._bytes_written
+        return self._data_recorded
 
     @attribute(
         dtype=str,

@@ -390,7 +390,7 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
         ("data_drop_rate", "test/recv/1", "dataDropRate", 0.1, 0.3),
         ("data_dropped", "test/recv/1", "dataDropped", 1, 11),
         ("data_record_rate", "test/dsp/1", "dataRecordRate", 0.2, 52.3),
-        ("bytes_written", "test/dsp/1", "bytesWritten", 2, 42),
+        ("data_recorded", "test/dsp/1", "dataRecorded", 2, 42),
         ("disk_available_bytes", "test/dsp/1", "diskAvailableBytes", sys.maxsize, 1235),
         ("available_recording_time", "test/dsp/1", "availableRecordingTime", DEFAULT_RECORDING_TIME, 9876.0),
         ("ring_buffer_utilisation", "test/smrb/1", "ringBufferUtilisation", 0.0, 12.5),
