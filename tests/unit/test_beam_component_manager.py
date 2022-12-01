@@ -556,7 +556,7 @@ def test_beam_component_manager_stores_config_id(
 
 
 @pytest.mark.parametrize("patch_submit_job", [True])
-def test_beam_component_manager_configure_scan_sets_expected_data_rate(
+def test_beam_component_manager_configure_scan_sets_expected_data_record_rate(
     component_manager: PstBeamComponentManager,
     csp_configure_scan_request: Dict[str, Any],
 ) -> None:
@@ -567,15 +567,15 @@ def test_beam_component_manager_configure_scan_sets_expected_data_rate(
 
     dsp_scan_request = generate_dsp_scan_request(csp_configure_scan_request["pst"]["scan"])
 
-    assert component_manager.expected_data_rate == 0.0
+    assert component_manager.expected_data_record_rate == 0.0
 
     component_manager.configure_scan(configuration=csp_configure_scan_request, task_callback=task_callback)
 
-    assert component_manager.expected_data_rate == dsp_scan_request["bytes_per_second"]
+    assert component_manager.expected_data_record_rate == dsp_scan_request["bytes_per_second"]
 
     component_manager.deconfigure_scan(task_callback=task_callback)
 
-    assert component_manager.expected_data_rate == 0.0
+    assert component_manager.expected_data_record_rate == 0.0
 
 
 @pytest.mark.parametrize("patch_submit_job", [True])

@@ -87,7 +87,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         self._available_disk_space = sys.maxsize
         self._available_recording_time = DEFAULT_RECORDING_TIME
         self._ring_buffer_utilisation = 0.0
-        self._expected_data_rate = 0.0
+        self._expected_data_record_rate = 0.0
 
         for prop in [
             "dataReceiveRate",
@@ -97,7 +97,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
             "dataRecordRate",
             "dataRecorded",
             "availableDiskSpace",
-            "expectedDataRate",
+            "expectedDataRecordRate",
             "availableRecordingTime",
             "ringBufferUtilisation",
         ]:
@@ -351,13 +351,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         display_unit="Gb/s",
         doc="Expected rate of data to be received by PST Beam component.",
     )
-    def expectedDataRate(self: PstBeam) -> float:
+    def expectedDataRecordRate(self: PstBeam) -> float:
         """Get the expected rate of data to be received by PST Beam component.
 
         :returns: the expected rate of data to be received by PST Beam component.
         :rtype: float
         """
-        return self._expected_data_rate
+        return self._expected_data_record_rate
 
     # --------
     # Commands

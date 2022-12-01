@@ -168,7 +168,7 @@ class PstBeamComponentManager(PstComponentManager):
         self.data_recorded = 0
         self.available_recording_time = DEFAULT_RECORDING_TIME
         self.ring_buffer_utilisation = 0.0
-        self.expected_data_rate = 0.0
+        self.expected_data_record_rate = 0.0
         self.channel_block_configuration = {}
         self.config_id = ""
         self.scan_id = 0
@@ -332,15 +332,15 @@ class PstBeamComponentManager(PstComponentManager):
         self._property_callback("ring_buffer_utilisation", ring_buffer_utilisation)
 
     @property
-    def expected_data_rate(self: PstBeamComponentManager) -> float:
+    def expected_data_record_rate(self: PstBeamComponentManager) -> float:
         """Get the expected data rate for DSP output for current scan configuration."""
-        return self._expected_data_rate
+        return self._expected_data_record_rate
 
-    @expected_data_rate.setter
-    def expected_data_rate(self: PstBeamComponentManager, expected_data_rate: float) -> None:
+    @expected_data_record_rate.setter
+    def expected_data_record_rate(self: PstBeamComponentManager, expected_data_record_rate: float) -> None:
         """Set the expected data rate for DSP output for current scan configuration."""
-        self._expected_data_rate = expected_data_rate
-        self._property_callback("expected_data_rate", expected_data_rate)
+        self._expected_data_record_rate = expected_data_record_rate
+        self._property_callback("expected_data_record_rate", expected_data_record_rate)
 
     def _simulation_mode_changed(self: PstBeamComponentManager) -> None:
         """Set simulation mode state.
@@ -571,7 +571,7 @@ class PstBeamComponentManager(PstComponentManager):
             # Update monitored properties
             self.config_id = configuration["common"]["config_id"]
             dsp_scan_request = generate_dsp_scan_request(pst_configuration)
-            self.expected_data_rate = dsp_scan_request["bytes_per_second"]
+            self.expected_data_record_rate = dsp_scan_request["bytes_per_second"]
 
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
