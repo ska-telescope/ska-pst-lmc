@@ -139,13 +139,13 @@ class PstReceiveComponentManager(PstApiComponentManager):
         return self._monitor_data.data_drop_rate
 
     @property
-    def dropped_data(self: PstReceiveComponentManager) -> int:
+    def data_dropped(self: PstReceiveComponentManager) -> int:
         """Get the total number of bytes dropped in the current scan.
 
         :returns: total number of bytes dropped in the current scan in Bytes.
         :rtype: int
         """
-        return self._monitor_data.dropped_data
+        return self._monitor_data.data_dropped
 
     @property
     def misordered_packets(self: PstReceiveComponentManager) -> int:

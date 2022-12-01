@@ -58,7 +58,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         self._data_receive_rate = 0.0
         self._data_received = 0
         self._data_drop_rate = 0.0
-        self._dropped_data = 0
+        self._data_dropped = 0
         self._misordered_packets = 0
 
         self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
@@ -185,13 +185,13 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         display_unit="B",
         doc="Total number of bytes dropped in the current scan",
     )
-    def droppedData(self: PstReceive) -> int:
+    def dataDropped(self: PstReceive) -> int:
         """Get the total number of bytes dropped in the current scan.
 
         :returns: total number of bytes dropped in the current scan.
         :rtype: int
         """
-        return self._dropped_data
+        return self._data_dropped
 
     @attribute(
         dtype=int,

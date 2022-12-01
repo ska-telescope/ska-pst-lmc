@@ -36,7 +36,7 @@ def additional_change_events_callbacks() -> List[str]:
         "dataReceiveRate",
         "dataReceived",
         "dataDropRate",
-        "droppedData",
+        "dataDropped",
         "writeRate",
         "bytesWritten",
         "diskAvailableBytes",
@@ -395,7 +395,7 @@ class TestPstBeam:
                 "dataReceiveRate": 0.0,
                 "dataReceived": 0,
                 "dataDropRate": 0.0,
-                "droppedData": 0,
+                "dataDropped": 0,
             },
             "test/dsp/1": {
                 "writeRate": 0.0,

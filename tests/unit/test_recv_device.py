@@ -194,7 +194,7 @@ class TestPstReceive:
         assert device_under_test.dataReceiveRate > 0.0
         assert device_under_test.dataReceived > 0
         assert device_under_test.dataDropRate > 0.0
-        assert device_under_test.droppedData > 0
+        assert device_under_test.dataDropped > 0
         assert device_under_test.misorderedPackets >= 0
 
         tango_device_command_checker.assert_command(

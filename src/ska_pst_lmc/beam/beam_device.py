@@ -81,7 +81,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         self._data_receive_rate = 0.0
         self._data_received = 0
         self._data_drop_rate = 0.0
-        self._dropped_data = 0
+        self._data_dropped = 0
         self._write_rate = 0.0
         self._bytes_written = 0
         self._disk_available_bytes = sys.maxsize
@@ -93,7 +93,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
             "dataReceiveRate",
             "dataReceived",
             "dataDropRate",
-            "droppedData",
+            "dataDropped",
             "writeRate",
             "bytesWritten",
             "diskAvailableBytes",
@@ -243,13 +243,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         display_unit="B",
         doc="Total number of bytes dropped in the current scan",
     )
-    def droppedData(self: PstBeam) -> int:
+    def dataDropped(self: PstBeam) -> int:
         """Get the total number of bytes dropped in the current scan.
 
         :returns: total number of bytes dropped in the current scan.
         :rtype: int
         """
-        return self._dropped_data
+        return self._data_dropped
 
     @attribute(
         dtype=float,
