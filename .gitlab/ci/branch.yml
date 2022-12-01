@@ -1,7 +1,3 @@
-python-gemnasium-scan:
-  when: manual
-
-
 # https://gitlab.com/ska-telescope/ska-tmc/ska-tmc-integration/-/blob/main/.gitlab-ci.yml#L50
 k8s-test:
   when: manual

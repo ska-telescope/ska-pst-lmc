@@ -5,6 +5,8 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.3.0 (2022-12-01)
+------------------
 - AT3-319 rename expectedDataRate to expectedDataRecordRate. [Will Gauvin]
 - AT3-319 rename diskAvailableBytes to availableDiskSpace. [Will Gauvin]
 - AT3-319 rename bytesWritten to dataRecorded. [Will Gauvin]
