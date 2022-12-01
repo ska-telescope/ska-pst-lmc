@@ -79,7 +79,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         self._version_id = release.VERSION
 
         self._data_receive_rate = 0.0
-        self._received_data = 0
+        self._data_received = 0
         self._dropped_rate = 0.0
         self._dropped_data = 0
         self._write_rate = 0.0
@@ -91,7 +91,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
 
         for prop in [
             "dataReceiveRate",
-            "receivedData",
+            "dataReceived",
             "droppedRate",
             "droppedData",
             "writeRate",
@@ -205,13 +205,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         display_unit="B",
         doc="Total number of bytes received from the CBF in the current scan",
     )
-    def receivedData(self: PstBeam) -> int:
+    def dataReceived(self: PstBeam) -> int:
         """Get the total amount of data received from CBF interface for current scan.
 
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
         """
-        return self._received_data
+        return self._data_received
 
     @attribute(
         dtype=float,

@@ -121,13 +121,13 @@ class PstReceiveComponentManager(PstApiComponentManager):
         return self._monitor_data.data_receive_rate
 
     @property
-    def received_data(self: PstReceiveComponentManager) -> int:
+    def data_received(self: PstReceiveComponentManager) -> int:
         """Get the total amount of data received from CBF interface for current scan.
 
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
         """
-        return self._monitor_data.received_data
+        return self._monitor_data.data_received
 
     @property
     def dropped_rate(self: PstReceiveComponentManager) -> float:

@@ -161,7 +161,7 @@ class PstBeamComponentManager(PstComponentManager):
         from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
 
         self.data_receive_rate = 0.0
-        self.received_data = 0
+        self.data_received = 0
         self.dropped_data = 0
         self.dropped_rate = 0.0
         self.write_rate = 0.0
@@ -244,15 +244,15 @@ class PstBeamComponentManager(PstComponentManager):
         self._property_callback("data_receive_rate", data_receive_rate)
 
     @property
-    def received_data(self: PstBeamComponentManager) -> int:
+    def data_received(self: PstBeamComponentManager) -> int:
         """Get current received data in bytes."""
-        return self._received_data
+        return self._data_received
 
-    @received_data.setter
-    def received_data(self: PstBeamComponentManager, received_data: int) -> None:
+    @data_received.setter
+    def data_received(self: PstBeamComponentManager, data_received: int) -> None:
         """Set current received data in bytes."""
-        self._received_data = received_data
-        self._property_callback("received_data", received_data)
+        self._data_received = data_received
+        self._property_callback("data_received", data_received)
 
     @property
     def dropped_rate(self: PstBeamComponentManager) -> float:
@@ -395,7 +395,7 @@ class PstBeamComponentManager(PstComponentManager):
         subscriptions_config = {
             self._recv_device: [
                 "data_receive_rate",
-                "received_data",
+                "data_received",
                 "dropped_data",
                 "dropped_rate",
                 "subband_beam_configuration",

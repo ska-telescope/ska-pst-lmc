@@ -56,7 +56,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         super().init_device()
 
         self._data_receive_rate = 0.0
-        self._received_data = 0
+        self._data_received = 0
         self._dropped_rate = 0.0
         self._dropped_data = 0
         self._misordered_packets = 0
@@ -147,13 +147,13 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         display_unit="B",
         doc="Total number of bytes received from the CBF in the current scan",
     )
-    def receivedData(self: PstReceive) -> int:
+    def dataReceived(self: PstReceive) -> int:
         """Get the total amount of data received from CBF interface for current scan.
 
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
         """
-        return self._received_data
+        return self._data_received
 
     @attribute(
         dtype=float,

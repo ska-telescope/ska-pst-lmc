@@ -34,7 +34,7 @@ def additional_change_events_callbacks() -> List[str]:
     """Return additional change event callbacks."""
     return [
         "dataReceiveRate",
-        "receivedData",
+        "dataReceived",
         "droppedRate",
         "droppedData",
         "writeRate",
@@ -393,7 +393,7 @@ class TestPstBeam:
         device_propertry_config = {
             "test/recv/1": {
                 "dataReceiveRate": 0.0,
-                "receivedData": 0,
+                "dataReceived": 0,
                 "droppedRate": 0.0,
                 "droppedData": 0,
             },

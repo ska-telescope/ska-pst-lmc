@@ -252,7 +252,7 @@ class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
         monitor_data_callback(
             subband_id=1,
             subband_data=ReceiveData(
-                received_data=receive_monitor_data.data_received,
+                data_received=receive_monitor_data.data_received,
                 data_receive_rate=receive_monitor_data.receive_rate * GIGABITS_PER_BYTE,
                 dropped_data=receive_monitor_data.data_dropped,
                 dropped_rate=receive_monitor_data.data_drop_rate,

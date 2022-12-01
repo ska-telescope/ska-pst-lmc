@@ -386,7 +386,7 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
     "property_name, device_fqdn, device_attr_name, initial_value, update_value",
     [
         ("data_receive_rate", "test/recv/1", "dataReceiveRate", 0.0, 12.3),
-        ("received_data", "test/recv/1", "receivedData", 0, 1138),
+        ("data_received", "test/recv/1", "dataReceived", 0, 1138),
         ("dropped_rate", "test/recv/1", "droppedRate", 0.1, 0.3),
         ("dropped_data", "test/recv/1", "droppedData", 1, 11),
         ("write_rate", "test/dsp/1", "writeRate", 0.2, 52.3),
