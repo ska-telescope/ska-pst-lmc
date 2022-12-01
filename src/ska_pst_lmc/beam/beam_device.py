@@ -80,7 +80,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
 
         self._data_receive_rate = 0.0
         self._data_received = 0
-        self._dropped_rate = 0.0
+        self._data_drop_rate = 0.0
         self._dropped_data = 0
         self._write_rate = 0.0
         self._bytes_written = 0
@@ -92,7 +92,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         for prop in [
             "dataReceiveRate",
             "dataReceived",
-            "droppedRate",
+            "dataDropRate",
             "droppedData",
             "writeRate",
             "bytesWritten",
@@ -227,13 +227,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         min_warning=-1,
         doc="Current rate of CBF ingest data being dropped or lost by the receiving process",
     )
-    def droppedRate(self: PstBeam) -> float:
+    def dataDropRate(self: PstBeam) -> float:
         """Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
 
         :returns: current rate of CBF ingest data being dropped or lost in Bytes/s.
         :rtype: float
         """
-        return self._dropped_rate
+        return self._data_drop_rate
 
     @attribute(
         dtype=int,

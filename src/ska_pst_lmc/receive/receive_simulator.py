@@ -19,15 +19,15 @@ def generate_random_update() -> ReceiveData:
     """Generate a random update of ReceivedData."""
     data_receive_rate: float = 1.0 * randint(0, 90)
     data_received: int = int(data_receive_rate * 1e9 / 8)
-    dropped_rate: float = data_receive_rate / 1000.0 * random()
-    dropped_data: int = int(dropped_rate * 1e9 / 8)
+    data_drop_rate: float = data_receive_rate / 1000.0 * random()
+    dropped_data: int = int(data_drop_rate * 1e9 / 8)
     misordered_packets: int = randint(0, 3)
 
     return ReceiveData(
         data_received=data_received,
         data_receive_rate=data_receive_rate,
         dropped_data=dropped_data,
-        dropped_rate=dropped_rate,
+        data_drop_rate=data_drop_rate,
         misordered_packets=misordered_packets,
     )
 
@@ -98,7 +98,7 @@ class PstReceiveSimulator:
 
             subband_data.data_receive_rate = update.data_receive_rate
             subband_data.data_received += update.data_received
-            subband_data.dropped_rate = update.dropped_rate
+            subband_data.data_drop_rate = update.data_drop_rate
             subband_data.dropped_data += update.dropped_data
             subband_data.misordered_packets += update.misordered_packets
 
@@ -117,7 +117,7 @@ class PstReceiveSimulator:
         data = ReceiveData()
         for subband_data in self._subband_data.values():
             data.dropped_data += subband_data.dropped_data
-            data.dropped_rate += subband_data.dropped_rate
+            data.data_drop_rate += subband_data.data_drop_rate
             data.misordered_packets += subband_data.misordered_packets
             data.data_received += data.data_received
             data.data_receive_rate += data.data_receive_rate

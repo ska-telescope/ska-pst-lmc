@@ -127,7 +127,7 @@ def test_recv_start_communicating_calls_connect_on_api(
     [
         ("data_receive_rate"),
         ("data_received"),
-        ("dropped_rate"),
+        ("data_drop_rate"),
         ("dropped_data"),
         ("misordered_packets"),
     ],

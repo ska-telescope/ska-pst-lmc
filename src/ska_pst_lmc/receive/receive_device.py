@@ -57,7 +57,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
 
         self._data_receive_rate = 0.0
         self._data_received = 0
-        self._dropped_rate = 0.0
+        self._data_drop_rate = 0.0
         self._dropped_data = 0
         self._misordered_packets = 0
 
@@ -169,13 +169,13 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         min_warning=-1,
         doc="Current rate of CBF ingest data being dropped or lost by the receiving process",
     )
-    def droppedRate(self: PstReceive) -> float:
+    def dataDropRate(self: PstReceive) -> float:
         """Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
 
         :returns: current rate of CBF ingest data being dropped or lost in B/s.
         :rtype: float
         """
-        return self._dropped_rate
+        return self._data_drop_rate
 
     @attribute(
         dtype=int,

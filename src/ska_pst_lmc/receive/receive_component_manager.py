@@ -130,13 +130,13 @@ class PstReceiveComponentManager(PstApiComponentManager):
         return self._monitor_data.data_received
 
     @property
-    def dropped_rate(self: PstReceiveComponentManager) -> float:
+    def data_drop_rate(self: PstReceiveComponentManager) -> float:
         """Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
 
         :returns: current rate of CBF ingest data being dropped or lost in MB/s.
         :rtype: float
         """
-        return self._monitor_data.dropped_rate
+        return self._monitor_data.data_drop_rate
 
     @property
     def dropped_data(self: PstReceiveComponentManager) -> int:

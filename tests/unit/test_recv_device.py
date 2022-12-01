@@ -193,7 +193,7 @@ class TestPstReceive:
         time.sleep(0.2)
         assert device_under_test.dataReceiveRate > 0.0
         assert device_under_test.dataReceived > 0
-        assert device_under_test.droppedRate > 0.0
+        assert device_under_test.dataDropRate > 0.0
         assert device_under_test.droppedData > 0
         assert device_under_test.misorderedPackets >= 0
 

@@ -255,7 +255,7 @@ class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
                 data_received=receive_monitor_data.data_received,
                 data_receive_rate=receive_monitor_data.receive_rate * GIGABITS_PER_BYTE,
                 dropped_data=receive_monitor_data.data_dropped,
-                dropped_rate=receive_monitor_data.data_drop_rate,
+                data_drop_rate=receive_monitor_data.data_drop_rate,
                 misordered_packets=receive_monitor_data.misordered_packets,
             ),
         )

@@ -163,7 +163,7 @@ class PstBeamComponentManager(PstComponentManager):
         self.data_receive_rate = 0.0
         self.data_received = 0
         self.dropped_data = 0
-        self.dropped_rate = 0.0
+        self.data_drop_rate = 0.0
         self.write_rate = 0.0
         self.bytes_written = 0
         self.available_recording_time = DEFAULT_RECORDING_TIME
@@ -255,15 +255,15 @@ class PstBeamComponentManager(PstComponentManager):
         self._property_callback("data_received", data_received)
 
     @property
-    def dropped_rate(self: PstBeamComponentManager) -> float:
+    def data_drop_rate(self: PstBeamComponentManager) -> float:
         """Get current dropped data rate in bytes per second."""
-        return self._dropped_rate
+        return self._data_drop_rate
 
-    @dropped_rate.setter
-    def dropped_rate(self: PstBeamComponentManager, dropped_rate: float) -> None:
+    @data_drop_rate.setter
+    def data_drop_rate(self: PstBeamComponentManager, data_drop_rate: float) -> None:
         """Set current dropped data rate in bytes per second."""
-        self._dropped_rate = dropped_rate
-        self._property_callback("dropped_rate", dropped_rate)
+        self._data_drop_rate = data_drop_rate
+        self._property_callback("data_drop_rate", data_drop_rate)
 
     @property
     def dropped_data(self: PstBeamComponentManager) -> int:
@@ -397,7 +397,7 @@ class PstBeamComponentManager(PstComponentManager):
                 "data_receive_rate",
                 "data_received",
                 "dropped_data",
-                "dropped_rate",
+                "data_drop_rate",
                 "subband_beam_configuration",
             ],
             self._dsp_device: [
