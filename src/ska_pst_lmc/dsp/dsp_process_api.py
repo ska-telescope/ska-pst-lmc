@@ -224,7 +224,7 @@ class PstDspProcessApiGrpc(PstProcessApiGrpc, PstDspProcessApi):
                 disk_capacity=dsp_disk_data.disk_capacity,
                 disk_available_bytes=dsp_disk_data.disk_available_bytes,
                 bytes_written=dsp_disk_data.bytes_written,
-                write_rate=dsp_disk_data.write_rate,
+                data_record_rate=dsp_disk_data.write_rate,
             ),
         )
 

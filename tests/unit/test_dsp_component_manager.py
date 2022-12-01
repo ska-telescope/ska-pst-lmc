@@ -124,10 +124,10 @@ def test_dsp_cm_start_communicating_calls_connect_on_api(
         ("disk_used_bytes"),
         ("disk_used_percentage"),
         ("bytes_written"),
-        ("write_rate"),
+        ("data_record_rate"),
         ("available_recording_time"),
         ("subband_bytes_written"),
-        ("subband_write_rate"),
+        ("subband_data_record_rate"),
     ],
 )
 def test_dsp_cm_properties_come_from_simulator_api_monitor_data(

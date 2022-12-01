@@ -139,9 +139,9 @@ class PstDspComponentManager(PstApiComponentManager):
         return self._monitor_data.bytes_written
 
     @property
-    def write_rate(self: PstDspComponentManager) -> float:
+    def data_record_rate(self: PstDspComponentManager) -> float:
         """Get total rate of writing to disk across all subbands, in bytes/second."""
-        return self._monitor_data.write_rate
+        return self._monitor_data.data_record_rate
 
     @property
     def available_recording_time(self: PstDspComponentManager) -> float:
@@ -154,9 +154,9 @@ class PstDspComponentManager(PstApiComponentManager):
         return self._monitor_data.subband_bytes_written
 
     @property
-    def subband_write_rate(self: PstDspComponentManager) -> List[float]:
+    def subband_data_record_rate(self: PstDspComponentManager) -> List[float]:
         """Get a list of current rate of writing per subband, in bytes/seconds."""
-        return self._monitor_data.subband_write_rate
+        return self._monitor_data.subband_data_record_rate
 
     def _get_disk_stats_from_api(self: PstDspComponentManager) -> None:
         """Update the disk usage details calling API.

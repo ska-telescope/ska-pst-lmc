@@ -188,13 +188,13 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         display_unit="B/s",
         doc="Current rate of writing to the disk.",
     )
-    def writeRate(self: PstDsp) -> float:
+    def dataRecordRate(self: PstDsp) -> float:
         """Get current rate of writing to the disk.
 
         :returns: use space on the disk that DSP is writing to, in bytes.
         :rtype: float
         """
-        return self.component_manager.write_rate
+        return self.component_manager.data_record_rate
 
     @attribute(
         dtype=int,
@@ -248,13 +248,13 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         display_unit="B/s",
         doc="The current rate of writing to disk for each subband",
     )
-    def subbandWriteRate(self: PstDsp) -> List[float]:
+    def subbandDataRecordRate(self: PstDsp) -> List[float]:
         """Get the current rate of writing to disk for each subband.
 
         :returns: the current rate of writing to disk for each subband.
         :rtype: List[float]
         """
-        return self.component_manager.subband_write_rate
+        return self.component_manager.subband_data_record_rate
 
     # --------
     # Commands

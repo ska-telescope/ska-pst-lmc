@@ -164,7 +164,7 @@ class PstBeamComponentManager(PstComponentManager):
         self.data_received = 0
         self.data_dropped = 0
         self.data_drop_rate = 0.0
-        self.write_rate = 0.0
+        self.data_record_rate = 0.0
         self.bytes_written = 0
         self.available_recording_time = DEFAULT_RECORDING_TIME
         self.ring_buffer_utilisation = 0.0
@@ -277,15 +277,15 @@ class PstBeamComponentManager(PstComponentManager):
         self._property_callback("data_dropped", data_dropped)
 
     @property
-    def write_rate(self: PstBeamComponentManager) -> float:
+    def data_record_rate(self: PstBeamComponentManager) -> float:
         """Get current data write rate in bytes per second."""
-        return self._write_rate
+        return self._data_record_rate
 
-    @write_rate.setter
-    def write_rate(self: PstBeamComponentManager, write_rate: int) -> None:
+    @data_record_rate.setter
+    def data_record_rate(self: PstBeamComponentManager, data_record_rate: int) -> None:
         """Set current data write rate in bytes per second."""
-        self._write_rate = write_rate
-        self._property_callback("write_rate", write_rate)
+        self._data_record_rate = data_record_rate
+        self._property_callback("data_record_rate", data_record_rate)
 
     @property
     def bytes_written(self: PstBeamComponentManager) -> int:
@@ -401,7 +401,7 @@ class PstBeamComponentManager(PstComponentManager):
                 "subband_beam_configuration",
             ],
             self._dsp_device: [
-                "write_rate",
+                "data_record_rate",
                 "bytes_written",
                 "disk_available_bytes",
                 "available_recording_time",

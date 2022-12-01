@@ -669,7 +669,7 @@ def test_dsp_grpc_simulated_monitor_calls_callback(
     disk_capacity = randint(50, 100)
     disk_available_bytes = randint(1, 50)
     bytes_written = disk_capacity - disk_available_bytes
-    write_rate = 100.0 * random()
+    data_record_rate = 100.0 * random()
 
     def response_generator() -> Generator[MonitorResponse, None, None]:
         while True:
@@ -680,7 +680,8 @@ def test_dsp_grpc_simulated_monitor_calls_callback(
                         disk_capacity=disk_capacity,
                         disk_available_bytes=disk_available_bytes,
                         bytes_written=bytes_written,
-                        write_rate=write_rate,
+                        # Protobuf has write_rate not data_record_rate
+                        write_rate=data_record_rate,
                     )
                 )
             )
@@ -713,7 +714,7 @@ def test_dsp_grpc_simulated_monitor_calls_callback(
                 disk_capacity=disk_capacity,
                 disk_available_bytes=disk_available_bytes,
                 bytes_written=bytes_written,
-                write_rate=write_rate,
+                data_record_rate=data_record_rate,
             ),
         )
     ]

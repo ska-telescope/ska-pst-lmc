@@ -28,7 +28,7 @@ def test_dsp_simulator_using_constructor() -> None:
         num_subbands=2,
         disk_capacity=1000,
         disk_available_bytes=800,
-        subband_write_rates=[0.3, 0.1],
+        subband_data_record_rates=[0.3, 0.1],
     )
     assert simulator.num_subbands == 2
     data = simulator.get_data()
@@ -36,11 +36,11 @@ def test_dsp_simulator_using_constructor() -> None:
     assert data.disk_available_bytes == 800
     assert data.disk_used_bytes == 200
     np.testing.assert_almost_equal(data.disk_used_percentage, 20.0)
-    assert data.write_rate == 0.4
+    assert data.data_record_rate == 0.4
     np.testing.assert_almost_equal(data.available_recording_time, 2000.0, decimal=3)
 
-    assert data.subband_write_rate[0] == 0.3
-    assert data.subband_write_rate[1] == 0.1
+    assert data.subband_data_record_rate[0] == 0.3
+    assert data.subband_data_record_rate[1] == 0.1
 
     assert data.subband_bytes_written[0] == 0
     assert data.subband_bytes_written[1] == 0
@@ -62,7 +62,7 @@ def test_dps_simulator_configure_scan(simulator: PstDspSimulator) -> None:
     assert data.disk_capacity == shutil.disk_usage("/")[0]
 
     np.testing.assert_array_equal(simulator._subband_bytes_written, data.subband_bytes_written)
-    np.testing.assert_array_equal(simulator._subband_write_rates, data.subband_write_rate)
+    np.testing.assert_array_equal(simulator._subband_data_record_rates, data.subband_data_record_rate)
 
     assert data.bytes_written == np.sum(simulator._subband_bytes_written)
 

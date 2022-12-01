@@ -82,7 +82,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         self._data_received = 0
         self._data_drop_rate = 0.0
         self._data_dropped = 0
-        self._write_rate = 0.0
+        self._data_record_rate = 0.0
         self._bytes_written = 0
         self._disk_available_bytes = sys.maxsize
         self._available_recording_time = DEFAULT_RECORDING_TIME
@@ -94,7 +94,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
             "dataReceived",
             "dataDropRate",
             "dataDropped",
-            "writeRate",
+            "dataRecordRate",
             "bytesWritten",
             "diskAvailableBytes",
             "expectedDataRate",
@@ -257,13 +257,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         display_unit="B/s",
         doc="Current rate of writing to the disk.",
     )
-    def writeRate(self: PstBeam) -> float:
+    def dataRecordRate(self: PstBeam) -> float:
         """Get current rate of writing to the disk.
 
         :returns: use space on the disk that PST.BEAM is writing to, in bytes.
         :rtype: float
         """
-        return self._write_rate
+        return self._data_record_rate
 
     @attribute(
         dtype=int,
