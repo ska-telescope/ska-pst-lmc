@@ -18,22 +18,22 @@ from ska_pst_lmc.component.monitor_data_handler import MonitorDataStore
 class ReceiveData:
     """A data class to transfer current RECV data between the process and the component manager.
 
-    :ivar received_data: amount of data received during current scan, in bytes.
-    :vartype received_data: int
-    :ivar received_rate: the rate of data received during current scan, in Gb/s.
-    :vartype received_rate: float
-    :ivar dropped_data: amount of data dropped during current scan, in bytes.
-    :vartype dropped_data: int
-    :ivar dropped_rate: the rate of data dropped during current scan, in Bytes/s.
-    :vartype dropped_rate: float
+    :ivar data_received: amount of data received during current scan, in bytes.
+    :vartype data_received: int
+    :ivar data_receive_rate: the rate of data received during current scan, in Gb/s.
+    :vartype data_receive_rate: float
+    :ivar data_dropped: amount of data dropped during current scan, in bytes.
+    :vartype data_dropped: int
+    :ivar data_drop_rate: the rate of data dropped during current scan, in Bytes/s.
+    :vartype data_drop_rate: float
     :ivar misordered_packets: the number of misordered packets received during current scan.
     :vartype misordered_packets: int
     """
 
-    received_data: int = 0
-    received_rate: float = 0.0
-    dropped_data: int = 0
-    dropped_rate: float = 0.0
+    data_received: int = 0
+    data_receive_rate: float = 0.0
+    data_dropped: int = 0
+    data_drop_rate: float = 0.0
     misordered_packets: int = 0
 
 
@@ -54,10 +54,10 @@ class ReceiveDataStore(MonitorDataStore[ReceiveData, ReceiveData]):
         """
         monitor_data = ReceiveData()
         for subband_monitor_data in self._subband_data.values():
-            monitor_data.dropped_data += subband_monitor_data.dropped_data
-            monitor_data.dropped_rate += subband_monitor_data.dropped_rate
-            monitor_data.received_data += subband_monitor_data.received_data
-            monitor_data.received_rate += subband_monitor_data.received_rate
+            monitor_data.data_dropped += subband_monitor_data.data_dropped
+            monitor_data.data_drop_rate += subband_monitor_data.data_drop_rate
+            monitor_data.data_received += subband_monitor_data.data_received
+            monitor_data.data_receive_rate += subband_monitor_data.data_receive_rate
             monitor_data.misordered_packets += subband_monitor_data.misordered_packets
 
         return monitor_data

@@ -137,13 +137,13 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         display_unit="B",
         doc="Available space on the disk that DSP is writing to.",
     )
-    def diskAvailableBytes(self: PstDsp) -> int:
+    def availableDiskSpace(self: PstDsp) -> int:
         """Available space on the disk that DSP is writing to.
 
         :returns: available space on the disk that DSP is writing to, in bytes.
         :rtype: int
         """
-        return self.component_manager.disk_available_bytes
+        return self.component_manager.available_disk_space
 
     @attribute(
         dtype=int,
@@ -155,7 +155,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
     def diskUsedBytes(self: PstDsp) -> int:
         """Get sed space on the disk that DSP is writing to.
 
-        This is `disk_capacity` - `disk_available_bytes`.
+        This is `diskCapacity - availableDiskSpace`.
 
         :returns: use space on the disk that DSP is writing to, in bytes.
         :rtype: int
@@ -175,7 +175,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
     def diskUsedPercentage(self: PstDsp) -> float:
         """Get used space on the disk that DSP is writing to.
 
-        This is `disk_capacity` - `disk_available_bytes`.
+        This is `100.0 * (diskCapacity - availableDiskSpace)/availableDiskSpace`.
 
         :returns: use space on the disk that DSP is writing to, in bytes.
         :rtype: float
@@ -188,13 +188,13 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         display_unit="B/s",
         doc="Current rate of writing to the disk.",
     )
-    def writeRate(self: PstDsp) -> float:
+    def dataRecordRate(self: PstDsp) -> float:
         """Get current rate of writing to the disk.
 
         :returns: use space on the disk that DSP is writing to, in bytes.
         :rtype: float
         """
-        return self.component_manager.write_rate
+        return self.component_manager.data_record_rate
 
     @attribute(
         dtype=int,
@@ -202,13 +202,13 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         display_unit="B",
         doc="Number of bytes written during scan.",
     )
-    def bytesWritten(self: PstDsp) -> int:
+    def dataRecorded(self: PstDsp) -> int:
         """Get number of bytes written during scan.
 
         :returns: number of bytes written during scan.
         :rtype: int
         """
-        return self.component_manager.bytes_written
+        return self.component_manager.data_recorded
 
     @attribute(
         dtype=float,
@@ -233,13 +233,13 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         display_unit="B",
         doc="The bytes per written for each subband",
     )
-    def subbandBytesWritten(self: PstDsp) -> List[int]:
+    def subbandDataRecorded(self: PstDsp) -> List[int]:
         """Get the bytes per written for each subband.
 
         :returns: the bytes per written for each subband.
         :rtype: List[int]
         """
-        return self.component_manager.subband_bytes_written
+        return self.component_manager.subband_data_recorded
 
     @attribute(
         dtype=(float,),
@@ -248,13 +248,13 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         display_unit="B/s",
         doc="The current rate of writing to disk for each subband",
     )
-    def subbandWriteRate(self: PstDsp) -> List[float]:
+    def subbandDataRecordRate(self: PstDsp) -> List[float]:
         """Get the current rate of writing to disk for each subband.
 
         :returns: the current rate of writing to disk for each subband.
         :rtype: List[float]
         """
-        return self.component_manager.subband_write_rate
+        return self.component_manager.subband_data_record_rate
 
     # --------
     # Commands

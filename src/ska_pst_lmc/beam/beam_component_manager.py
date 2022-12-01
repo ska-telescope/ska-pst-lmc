@@ -143,12 +143,12 @@ class PstBeamComponentManager(PstComponentManager):
 
         This method will set all the properties to there default values. This
         calls the `_reset_monitoring_properties` method. Most properties can
-        be reset, but the `disk_available_bytes` property is not reset once
+        be reset, but the `available_disk_space` property is not reset once
         it has been updated by the system.
         """
         import sys
 
-        self.disk_available_bytes = sys.maxsize
+        self.available_disk_space = sys.maxsize
         self._reset_monitoring_properties()
 
     def _reset_monitoring_properties(self: PstBeamComponentManager) -> None:
@@ -160,15 +160,15 @@ class PstBeamComponentManager(PstComponentManager):
         """
         from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
 
-        self.received_rate = 0.0
-        self.received_data = 0
-        self.dropped_data = 0
-        self.dropped_rate = 0.0
-        self.write_rate = 0.0
-        self.bytes_written = 0
+        self.data_receive_rate = 0.0
+        self.data_received = 0
+        self.data_dropped = 0
+        self.data_drop_rate = 0.0
+        self.data_record_rate = 0.0
+        self.data_recorded = 0
         self.available_recording_time = DEFAULT_RECORDING_TIME
         self.ring_buffer_utilisation = 0.0
-        self.expected_data_rate = 0.0
+        self.expected_data_record_rate = 0.0
         self.channel_block_configuration = {}
         self.config_id = ""
         self.scan_id = 0
@@ -233,81 +233,81 @@ class PstBeamComponentManager(PstComponentManager):
             self.channel_block_configuration = {}
 
     @property
-    def received_rate(self: PstBeamComponentManager) -> float:
+    def data_receive_rate(self: PstBeamComponentManager) -> float:
         """Get current received data rate in Gb/s."""
-        return self._received_rate
+        return self._data_receive_rate
 
-    @received_rate.setter
-    def received_rate(self: PstBeamComponentManager, received_rate: float) -> None:
+    @data_receive_rate.setter
+    def data_receive_rate(self: PstBeamComponentManager, data_receive_rate: float) -> None:
         """Set current received data rate in Gb/s."""
-        self._received_rate = received_rate
-        self._property_callback("received_rate", received_rate)
+        self._data_receive_rate = data_receive_rate
+        self._property_callback("data_receive_rate", data_receive_rate)
 
     @property
-    def received_data(self: PstBeamComponentManager) -> int:
+    def data_received(self: PstBeamComponentManager) -> int:
         """Get current received data in bytes."""
-        return self._received_data
+        return self._data_received
 
-    @received_data.setter
-    def received_data(self: PstBeamComponentManager, received_data: int) -> None:
+    @data_received.setter
+    def data_received(self: PstBeamComponentManager, data_received: int) -> None:
         """Set current received data in bytes."""
-        self._received_data = received_data
-        self._property_callback("received_data", received_data)
+        self._data_received = data_received
+        self._property_callback("data_received", data_received)
 
     @property
-    def dropped_rate(self: PstBeamComponentManager) -> float:
+    def data_drop_rate(self: PstBeamComponentManager) -> float:
         """Get current dropped data rate in bytes per second."""
-        return self._dropped_rate
+        return self._data_drop_rate
 
-    @dropped_rate.setter
-    def dropped_rate(self: PstBeamComponentManager, dropped_rate: float) -> None:
+    @data_drop_rate.setter
+    def data_drop_rate(self: PstBeamComponentManager, data_drop_rate: float) -> None:
         """Set current dropped data rate in bytes per second."""
-        self._dropped_rate = dropped_rate
-        self._property_callback("dropped_rate", dropped_rate)
+        self._data_drop_rate = data_drop_rate
+        self._property_callback("data_drop_rate", data_drop_rate)
 
     @property
-    def dropped_data(self: PstBeamComponentManager) -> int:
+    def data_dropped(self: PstBeamComponentManager) -> int:
         """Get current dropped data in bytes."""
-        return self._dropped_data
+        return self._data_dropped
 
-    @dropped_data.setter
-    def dropped_data(self: PstBeamComponentManager, dropped_data: int) -> None:
+    @data_dropped.setter
+    def data_dropped(self: PstBeamComponentManager, data_dropped: int) -> None:
         """Set current dropped data in bytes."""
-        self._dropped_data = dropped_data
-        self._property_callback("dropped_data", dropped_data)
+        self._data_dropped = data_dropped
+        self._property_callback("data_dropped", data_dropped)
 
     @property
-    def write_rate(self: PstBeamComponentManager) -> float:
+    def data_record_rate(self: PstBeamComponentManager) -> float:
         """Get current data write rate in bytes per second."""
-        return self._write_rate
+        return self._data_record_rate
 
-    @write_rate.setter
-    def write_rate(self: PstBeamComponentManager, write_rate: int) -> None:
+    @data_record_rate.setter
+    def data_record_rate(self: PstBeamComponentManager, data_record_rate: int) -> None:
         """Set current data write rate in bytes per second."""
-        self._write_rate = write_rate
-        self._property_callback("write_rate", write_rate)
+        self._data_record_rate = data_record_rate
+        self._property_callback("data_record_rate", data_record_rate)
 
     @property
-    def bytes_written(self: PstBeamComponentManager) -> int:
+    def data_recorded(self: PstBeamComponentManager) -> int:
         """Get current amount of bytes written to file."""
-        return self._bytes_written
+        return self._data_recorded
 
-    @bytes_written.setter
-    def bytes_written(self: PstBeamComponentManager, bytes_written: int) -> None:
+    @data_recorded.setter
+    def data_recorded(self: PstBeamComponentManager, data_recorded: int) -> None:
         """Set current amount of bytes written to file."""
-        self._bytes_written = bytes_written
-        self._property_callback("bytes_written", bytes_written)
+        self._data_recorded = data_recorded
+        self._property_callback("data_recorded", data_recorded)
 
     @property
-    def disk_available_bytes(self: PstBeamComponentManager) -> int:
+    def available_disk_space(self: PstBeamComponentManager) -> int:
         """Get available bytes for disk to be written to during scan."""
-        return self._disk_available_bytes
+        return self._available_disk_space
 
-    @disk_available_bytes.setter
-    def disk_available_bytes(self: PstBeamComponentManager, disk_available_bytes: int) -> None:
+    @available_disk_space.setter
+    def available_disk_space(self: PstBeamComponentManager, available_disk_space: int) -> None:
         """Set available bytes for disk to be written to during scan."""
-        self._disk_available_bytes = disk_available_bytes
-        self._property_callback("disk_available_bytes", disk_available_bytes)
+        self._available_disk_space = available_disk_space
+        self._property_callback("available_disk_space", available_disk_space)
 
     @property
     def available_recording_time(self: PstBeamComponentManager) -> float:
@@ -332,15 +332,15 @@ class PstBeamComponentManager(PstComponentManager):
         self._property_callback("ring_buffer_utilisation", ring_buffer_utilisation)
 
     @property
-    def expected_data_rate(self: PstBeamComponentManager) -> float:
+    def expected_data_record_rate(self: PstBeamComponentManager) -> float:
         """Get the expected data rate for DSP output for current scan configuration."""
-        return self._expected_data_rate
+        return self._expected_data_record_rate
 
-    @expected_data_rate.setter
-    def expected_data_rate(self: PstBeamComponentManager, expected_data_rate: float) -> None:
+    @expected_data_record_rate.setter
+    def expected_data_record_rate(self: PstBeamComponentManager, expected_data_record_rate: float) -> None:
         """Set the expected data rate for DSP output for current scan configuration."""
-        self._expected_data_rate = expected_data_rate
-        self._property_callback("expected_data_rate", expected_data_rate)
+        self._expected_data_record_rate = expected_data_record_rate
+        self._property_callback("expected_data_record_rate", expected_data_record_rate)
 
     def _simulation_mode_changed(self: PstBeamComponentManager) -> None:
         """Set simulation mode state.
@@ -394,16 +394,16 @@ class PstBeamComponentManager(PstComponentManager):
         self.logger.debug(f"{self._device_name} subscribing to monitoring events")
         subscriptions_config = {
             self._recv_device: [
-                "received_rate",
-                "received_data",
-                "dropped_data",
-                "dropped_rate",
+                "data_receive_rate",
+                "data_received",
+                "data_dropped",
+                "data_drop_rate",
                 "subband_beam_configuration",
             ],
             self._dsp_device: [
-                "write_rate",
-                "bytes_written",
-                "disk_available_bytes",
+                "data_record_rate",
+                "data_recorded",
+                "available_disk_space",
                 "available_recording_time",
             ],
             self._smrb_device: ["ring_buffer_utilisation"],
@@ -571,7 +571,7 @@ class PstBeamComponentManager(PstComponentManager):
             # Update monitored properties
             self.config_id = configuration["common"]["config_id"]
             dsp_scan_request = generate_dsp_scan_request(pst_configuration)
-            self.expected_data_rate = dsp_scan_request["bytes_per_second"]
+            self.expected_data_record_rate = dsp_scan_request["bytes_per_second"]
 
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 

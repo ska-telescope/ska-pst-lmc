@@ -94,8 +94,8 @@ def test_pst_device_proxy_sends_requests_to_device() -> None:
     proxy.Scan()
     device.Scan.assert_called()
 
-    device.received_rate = 3
-    assert proxy.received_rate == 3
+    device.data_receive_rate = 3
+    assert proxy.data_receive_rate == 3
 
     proxy.adminMode = AdminMode.ONLINE
     assert device.adminMode == AdminMode.ONLINE

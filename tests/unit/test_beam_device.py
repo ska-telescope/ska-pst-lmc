@@ -33,13 +33,13 @@ from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker
 def additional_change_events_callbacks() -> List[str]:
     """Return additional change event callbacks."""
     return [
-        "receivedRate",
-        "receivedData",
-        "droppedRate",
-        "droppedData",
-        "writeRate",
-        "bytesWritten",
-        "diskAvailableBytes",
+        "dataReceiveRate",
+        "dataReceived",
+        "dataDropRate",
+        "dataDropped",
+        "dataRecordRate",
+        "dataRecorded",
+        "availableDiskSpace",
         "availableRecordingTime",
         "ringBufferUtilisation",
     ]
@@ -156,8 +156,8 @@ class _AttributeEventValidator:
 
         initial_values = _get_values()
 
-        if self.attribute_name != "diskAvailableBytes":
-            # diskAvailableBytes actually changes from a default value a new value when the On command
+        if self.attribute_name != "availableDiskSpace":
+            # availableDiskSpace actually changes from a default value a new value when the On command
             # happens
             assert (
                 initial_values[0] == self.default_value
@@ -376,6 +376,7 @@ class TestPstBeam:
         )
         assert_state(DevState.OFF)
 
+    @pytest.mark.forked
     def test_beam_mgmt_scan_monitoring_values(
         self: TestPstBeam,
         device_under_test: DeviceProxy,
@@ -391,15 +392,15 @@ class TestPstBeam:
 
         device_propertry_config = {
             "test/recv/1": {
-                "receivedRate": 0.0,
-                "receivedData": 0,
-                "droppedRate": 0.0,
-                "droppedData": 0,
+                "dataReceiveRate": 0.0,
+                "dataReceived": 0,
+                "dataDropRate": 0.0,
+                "dataDropped": 0,
             },
             "test/dsp/1": {
-                "writeRate": 0.0,
-                "bytesWritten": 0,
-                "diskAvailableBytes": sys.maxsize,
+                "dataRecordRate": 0.0,
+                "dataRecorded": 0,
+                "availableDiskSpace": sys.maxsize,
                 "availableRecordingTime": DEFAULT_RECORDING_TIME,
             },
             "test/smrb/1": {

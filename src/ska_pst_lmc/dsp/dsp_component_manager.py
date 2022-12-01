@@ -119,9 +119,9 @@ class PstDspComponentManager(PstApiComponentManager):
         return self._monitor_data.disk_capacity
 
     @property
-    def disk_available_bytes(self: PstDspComponentManager) -> int:
+    def available_disk_space(self: PstDspComponentManager) -> int:
         """Get currently available bytes of the disk."""
-        return self._monitor_data.disk_available_bytes
+        return self._monitor_data.available_disk_space
 
     @property
     def disk_used_bytes(self: PstDspComponentManager) -> int:
@@ -134,14 +134,14 @@ class PstDspComponentManager(PstApiComponentManager):
         return self._monitor_data.disk_used_percentage
 
     @property
-    def bytes_written(self: PstDspComponentManager) -> int:
+    def data_recorded(self: PstDspComponentManager) -> int:
         """Get total amount of bytes written in current scan across all subbands."""
-        return self._monitor_data.bytes_written
+        return self._monitor_data.data_recorded
 
     @property
-    def write_rate(self: PstDspComponentManager) -> float:
+    def data_record_rate(self: PstDspComponentManager) -> float:
         """Get total rate of writing to disk across all subbands, in bytes/second."""
-        return self._monitor_data.write_rate
+        return self._monitor_data.data_record_rate
 
     @property
     def available_recording_time(self: PstDspComponentManager) -> float:
@@ -149,19 +149,19 @@ class PstDspComponentManager(PstApiComponentManager):
         return self._monitor_data.available_recording_time
 
     @property
-    def subband_bytes_written(self: PstDspComponentManager) -> List[int]:
+    def subband_data_recorded(self: PstDspComponentManager) -> List[int]:
         """Get a list of bytes written, one record per subband."""
-        return self._monitor_data.subband_bytes_written
+        return self._monitor_data.subband_data_recorded
 
     @property
-    def subband_write_rate(self: PstDspComponentManager) -> List[float]:
+    def subband_data_record_rate(self: PstDspComponentManager) -> List[float]:
         """Get a list of current rate of writing per subband, in bytes/seconds."""
-        return self._monitor_data.subband_write_rate
+        return self._monitor_data.subband_data_record_rate
 
     def _get_disk_stats_from_api(self: PstDspComponentManager) -> None:
         """Update the disk usage details calling API.
 
-        This gets the `disk_capacity` and `disk_available_bytes` from the API via
+        This gets the `disk_capacity` and `available_disk_space` from the API via
         calling the :py:meth:`ProcessApi.get_env` method.
 
         This is used to get the value of the disk capacity and the  available disk

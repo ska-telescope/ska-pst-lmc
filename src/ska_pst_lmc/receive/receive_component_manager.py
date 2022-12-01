@@ -112,40 +112,40 @@ class PstReceiveComponentManager(PstApiComponentManager):
             )
 
     @property
-    def received_rate(self: PstReceiveComponentManager) -> float:
+    def data_receive_rate(self: PstReceiveComponentManager) -> float:
         """Get the current data receive rate from the CBF interface.
 
         :returns: current data receive rate from the CBF interface in Gb/s.
         :rtype: float
         """
-        return self._monitor_data.received_rate
+        return self._monitor_data.data_receive_rate
 
     @property
-    def received_data(self: PstReceiveComponentManager) -> int:
+    def data_received(self: PstReceiveComponentManager) -> int:
         """Get the total amount of data received from CBF interface for current scan.
 
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
         """
-        return self._monitor_data.received_data
+        return self._monitor_data.data_received
 
     @property
-    def dropped_rate(self: PstReceiveComponentManager) -> float:
+    def data_drop_rate(self: PstReceiveComponentManager) -> float:
         """Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
 
         :returns: current rate of CBF ingest data being dropped or lost in MB/s.
         :rtype: float
         """
-        return self._monitor_data.dropped_rate
+        return self._monitor_data.data_drop_rate
 
     @property
-    def dropped_data(self: PstReceiveComponentManager) -> int:
+    def data_dropped(self: PstReceiveComponentManager) -> int:
         """Get the total number of bytes dropped in the current scan.
 
         :returns: total number of bytes dropped in the current scan in Bytes.
         :rtype: int
         """
-        return self._monitor_data.dropped_data
+        return self._monitor_data.data_dropped
 
     @property
     def misordered_packets(self: PstReceiveComponentManager) -> int:

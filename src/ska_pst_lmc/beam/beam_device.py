@@ -78,30 +78,28 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
         self._version_id = release.VERSION
 
-        self._received_rate = 0.0
-        self._received_data = 0
-        self._dropped_rate = 0.0
-        self._dropped_data = 0
-        self._write_rate = 0.0
-        self._bytes_written = 0
-        self._ingest_configuration = ""
-        self._disk_available_bytes = sys.maxsize
+        self._data_receive_rate = 0.0
+        self._data_received = 0
+        self._data_drop_rate = 0.0
+        self._data_dropped = 0
+        self._data_record_rate = 0.0
+        self._data_recorded = 0
+        self._available_disk_space = sys.maxsize
         self._available_recording_time = DEFAULT_RECORDING_TIME
         self._ring_buffer_utilisation = 0.0
-        self._expected_data_rate = 0.0
+        self._expected_data_record_rate = 0.0
 
         for prop in [
-            "receivedRate",
-            "receivedData",
-            "droppedRate",
-            "droppedData",
-            "writeRate",
-            "bytesWritten",
-            "diskAvailableBytes",
-            "expectedDataRate",
+            "dataReceiveRate",
+            "dataReceived",
+            "dataDropRate",
+            "dataDropped",
+            "dataRecordRate",
+            "dataRecorded",
+            "availableDiskSpace",
+            "expectedDataRecordRate",
             "availableRecordingTime",
             "ringBufferUtilisation",
-            "expectedDataRate",
         ]:
             self.set_change_event(prop, True, False)
             self.set_archive_event(prop, True, False)
@@ -152,44 +150,19 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
     # ----------
 
     @attribute(
-        dtype=str,
-        doc="The PST Ingest configuration as a JSON string",
-    )
-    def ingestConfiguration(self: PstBeam) -> str:
-        """Get the PST Ingest configuration as a JSON string.
-
-        This will return the JSON representation of the configuration
-        that this PST Beam has configured for ingesting data. This
-        configuration includes the following properties:
-
-            * Number of channel blocks, between 1 and 4
-            * For each channel block, the block of channel numbers
-              using a range in the form of inclusive of the lower
-              number and exclusive of the higher number (e.g [1, 21)
-              would be a range of 20 channels starting from 1 and ending
-              at channel block 20 (inclusive).
-            * Channel block IPv4 address to send data to.
-            * Channel block UDP port
-
-        :returns: the PST Ingest configuration as a JSON string.
-        :rtype: str
-        """
-        return self._ingest_configuration
-
-    @attribute(
         dtype=int,
         unit="Bytes",
         standard_unit="Bytes",
         display_unit="B",
         doc="Available space on the disk that DSP is writing to.",
     )
-    def diskAvailableBytes(self: PstBeam) -> int:
+    def availableDiskSpace(self: PstBeam) -> int:
         """Available space on the disk that the PST.BEAM is writing to.
 
         :returns: available space on the disk that PST.BEAM is writing to, in bytes.
         :rtype: int
         """
-        return self._disk_available_bytes
+        return self._available_disk_space
 
     @attribute(
         dtype=float,
@@ -217,13 +190,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         min_value=0,
         doc="Current data receive rate from the CBF interface",
     )
-    def receivedRate(self: PstBeam) -> float:
+    def dataReceiveRate(self: PstBeam) -> float:
         """Get the current data receive rate from the CBF interface.
 
         :returns: current data receive rate from the CBF interface in Gb/s.
         :rtype: float
         """
-        return self._received_rate
+        return self._data_receive_rate
 
     @attribute(
         dtype=int,
@@ -232,13 +205,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         display_unit="B",
         doc="Total number of bytes received from the CBF in the current scan",
     )
-    def receivedData(self: PstBeam) -> int:
+    def dataReceived(self: PstBeam) -> int:
         """Get the total amount of data received from CBF interface for current scan.
 
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
         """
-        return self._received_data
+        return self._data_received
 
     @attribute(
         dtype=float,
@@ -254,13 +227,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         min_warning=-1,
         doc="Current rate of CBF ingest data being dropped or lost by the receiving process",
     )
-    def droppedRate(self: PstBeam) -> float:
+    def dataDropRate(self: PstBeam) -> float:
         """Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
 
         :returns: current rate of CBF ingest data being dropped or lost in Bytes/s.
         :rtype: float
         """
-        return self._dropped_rate
+        return self._data_drop_rate
 
     @attribute(
         dtype=int,
@@ -270,13 +243,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         display_unit="B",
         doc="Total number of bytes dropped in the current scan",
     )
-    def droppedData(self: PstBeam) -> int:
+    def dataDropped(self: PstBeam) -> int:
         """Get the total number of bytes dropped in the current scan.
 
         :returns: total number of bytes dropped in the current scan.
         :rtype: int
         """
-        return self._dropped_data
+        return self._data_dropped
 
     @attribute(
         dtype=float,
@@ -284,13 +257,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         display_unit="B/s",
         doc="Current rate of writing to the disk.",
     )
-    def writeRate(self: PstBeam) -> float:
+    def dataRecordRate(self: PstBeam) -> float:
         """Get current rate of writing to the disk.
 
         :returns: use space on the disk that PST.BEAM is writing to, in bytes.
         :rtype: float
         """
-        return self._write_rate
+        return self._data_record_rate
 
     @attribute(
         dtype=int,
@@ -298,13 +271,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         display_unit="B",
         doc="Number of bytes written during scan.",
     )
-    def bytesWritten(self: PstBeam) -> int:
+    def dataRecorded(self: PstBeam) -> int:
         """Get number of bytes written during scan.
 
         :returns: number of bytes written during scan.
         :rtype: int
         """
-        return self._bytes_written
+        return self._data_recorded
 
     @attribute(
         dtype=str,
@@ -314,7 +287,37 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         """Get the channel block configuration.
 
         This is a JSON serialised string of the channel block configuration
-        that is calculated during the `ConfigureScan` command.
+        that is calculated during the `ConfigureScan` command. This
+        configuration includes the following properties:
+
+            * Number of channel blocks, between 1 and 4
+            * For each channel block, the block of channel numbers
+              using a range in the form of inclusive of the lower
+              number and exclusive of the higher number (e.g [1, 21)
+              would be a range of 20 channels starting from 1 and ending
+              at channel block 20 (inclusive).
+            * Channel block IPv4 address to send data to.
+            * Channel block UDP port
+
+        .. code-block:: python
+
+            {
+                "num_channel_blocks": 2,
+                "channel_blocks": [
+                    {
+                        "data_host": "10.10.0.1",
+                        "data_port": 20000,
+                        "start_channel": 0,
+                        "num_channels": 12,
+                    },
+                    {
+                        "data_host": "10.10.0.1",
+                        "data_port": 20001,
+                        "start_channel": 12,
+                        "num_channels": 10,
+                    },
+                ]
+            }
 
         :returns: the channel block configuration as a JSON string.
         :rtype: str
@@ -348,13 +351,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         display_unit="Gb/s",
         doc="Expected rate of data to be received by PST Beam component.",
     )
-    def expectedDataRate(self: PstBeam) -> float:
+    def expectedDataRecordRate(self: PstBeam) -> float:
         """Get the expected rate of data to be received by PST Beam component.
 
         :returns: the expected rate of data to be received by PST Beam component.
         :rtype: float
         """
-        return self._expected_data_rate
+        return self._expected_data_record_rate
 
     # --------
     # Commands
