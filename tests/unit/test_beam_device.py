@@ -39,7 +39,7 @@ def additional_change_events_callbacks() -> List[str]:
         "dataDropped",
         "dataRecordRate",
         "dataRecorded",
-        "diskAvailableBytes",
+        "availableDiskSpace",
         "availableRecordingTime",
         "ringBufferUtilisation",
     ]
@@ -156,8 +156,8 @@ class _AttributeEventValidator:
 
         initial_values = _get_values()
 
-        if self.attribute_name != "diskAvailableBytes":
-            # diskAvailableBytes actually changes from a default value a new value when the On command
+        if self.attribute_name != "availableDiskSpace":
+            # availableDiskSpace actually changes from a default value a new value when the On command
             # happens
             assert (
                 initial_values[0] == self.default_value
@@ -400,7 +400,7 @@ class TestPstBeam:
             "test/dsp/1": {
                 "dataRecordRate": 0.0,
                 "dataRecorded": 0,
-                "diskAvailableBytes": sys.maxsize,
+                "availableDiskSpace": sys.maxsize,
                 "availableRecordingTime": DEFAULT_RECORDING_TIME,
             },
             "test/smrb/1": {

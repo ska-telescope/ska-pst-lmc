@@ -137,13 +137,13 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         display_unit="B",
         doc="Available space on the disk that DSP is writing to.",
     )
-    def diskAvailableBytes(self: PstDsp) -> int:
+    def availableDiskSpace(self: PstDsp) -> int:
         """Available space on the disk that DSP is writing to.
 
         :returns: available space on the disk that DSP is writing to, in bytes.
         :rtype: int
         """
-        return self.component_manager.disk_available_bytes
+        return self.component_manager.available_disk_space
 
     @attribute(
         dtype=int,
@@ -155,7 +155,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
     def diskUsedBytes(self: PstDsp) -> int:
         """Get sed space on the disk that DSP is writing to.
 
-        This is `disk_capacity` - `disk_available_bytes`.
+        This is `diskCapacity - availableDiskSpace`.
 
         :returns: use space on the disk that DSP is writing to, in bytes.
         :rtype: int
@@ -175,7 +175,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
     def diskUsedPercentage(self: PstDsp) -> float:
         """Get used space on the disk that DSP is writing to.
 
-        This is `disk_capacity` - `disk_available_bytes`.
+        This is `100.0 * (diskCapacity - availableDiskSpace)/availableDiskSpace`.
 
         :returns: use space on the disk that DSP is writing to, in bytes.
         :rtype: float

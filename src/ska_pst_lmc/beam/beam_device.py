@@ -84,7 +84,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         self._data_dropped = 0
         self._data_record_rate = 0.0
         self._data_recorded = 0
-        self._disk_available_bytes = sys.maxsize
+        self._available_disk_space = sys.maxsize
         self._available_recording_time = DEFAULT_RECORDING_TIME
         self._ring_buffer_utilisation = 0.0
         self._expected_data_rate = 0.0
@@ -96,7 +96,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
             "dataDropped",
             "dataRecordRate",
             "dataRecorded",
-            "diskAvailableBytes",
+            "availableDiskSpace",
             "expectedDataRate",
             "availableRecordingTime",
             "ringBufferUtilisation",
@@ -156,13 +156,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         display_unit="B",
         doc="Available space on the disk that DSP is writing to.",
     )
-    def diskAvailableBytes(self: PstBeam) -> int:
+    def availableDiskSpace(self: PstBeam) -> int:
         """Available space on the disk that the PST.BEAM is writing to.
 
         :returns: available space on the disk that PST.BEAM is writing to, in bytes.
         :rtype: int
         """
-        return self._disk_available_bytes
+        return self._available_disk_space
 
     @attribute(
         dtype=float,

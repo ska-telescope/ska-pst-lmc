@@ -192,11 +192,11 @@ class TestPstDsp:
         # still need to sleep. Wait for 2 polling periods
         time.sleep(0.2)
         assert device_under_test.diskCapacity > 0
-        assert device_under_test.diskAvailableBytes > 0
+        assert device_under_test.availableDiskSpace > 0
         assert device_under_test.diskUsedBytes > 0
         assert (
             device_under_test.diskCapacity
-            == device_under_test.diskAvailableBytes + device_under_test.diskUsedBytes
+            == device_under_test.availableDiskSpace + device_under_test.diskUsedBytes
         )
         assert device_under_test.diskUsedPercentage >= 0.0
         np.testing.assert_almost_equal(

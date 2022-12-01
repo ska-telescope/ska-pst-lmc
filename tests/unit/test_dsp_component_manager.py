@@ -120,7 +120,7 @@ def test_dsp_cm_start_communicating_calls_connect_on_api(
     "property",
     [
         ("disk_capacity"),
-        ("disk_available_bytes"),
+        ("available_disk_space"),
         ("disk_used_bytes"),
         ("disk_used_percentage"),
         ("data_recorded"),

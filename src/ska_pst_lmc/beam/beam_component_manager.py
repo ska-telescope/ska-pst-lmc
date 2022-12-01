@@ -143,12 +143,12 @@ class PstBeamComponentManager(PstComponentManager):
 
         This method will set all the properties to there default values. This
         calls the `_reset_monitoring_properties` method. Most properties can
-        be reset, but the `disk_available_bytes` property is not reset once
+        be reset, but the `available_disk_space` property is not reset once
         it has been updated by the system.
         """
         import sys
 
-        self.disk_available_bytes = sys.maxsize
+        self.available_disk_space = sys.maxsize
         self._reset_monitoring_properties()
 
     def _reset_monitoring_properties(self: PstBeamComponentManager) -> None:
@@ -299,15 +299,15 @@ class PstBeamComponentManager(PstComponentManager):
         self._property_callback("data_recorded", data_recorded)
 
     @property
-    def disk_available_bytes(self: PstBeamComponentManager) -> int:
+    def available_disk_space(self: PstBeamComponentManager) -> int:
         """Get available bytes for disk to be written to during scan."""
-        return self._disk_available_bytes
+        return self._available_disk_space
 
-    @disk_available_bytes.setter
-    def disk_available_bytes(self: PstBeamComponentManager, disk_available_bytes: int) -> None:
+    @available_disk_space.setter
+    def available_disk_space(self: PstBeamComponentManager, available_disk_space: int) -> None:
         """Set available bytes for disk to be written to during scan."""
-        self._disk_available_bytes = disk_available_bytes
-        self._property_callback("disk_available_bytes", disk_available_bytes)
+        self._available_disk_space = available_disk_space
+        self._property_callback("available_disk_space", available_disk_space)
 
     @property
     def available_recording_time(self: PstBeamComponentManager) -> float:
@@ -403,7 +403,7 @@ class PstBeamComponentManager(PstComponentManager):
             self._dsp_device: [
                 "data_record_rate",
                 "data_recorded",
-                "disk_available_bytes",
+                "available_disk_space",
                 "available_recording_time",
             ],
             self._smrb_device: ["ring_buffer_utilisation"],

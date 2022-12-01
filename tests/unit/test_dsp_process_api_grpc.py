@@ -667,8 +667,8 @@ def test_dsp_grpc_simulated_monitor_calls_callback(
 ) -> None:
     """Test simulatued monitoring calls subband_monitor_data_callback."""
     disk_capacity = randint(50, 100)
-    disk_available_bytes = randint(1, 50)
-    data_recorded = disk_capacity - disk_available_bytes
+    available_disk_space = randint(1, 50)
+    data_recorded = disk_capacity - available_disk_space
     data_record_rate = 100.0 * random()
 
     def response_generator() -> Generator[MonitorResponse, None, None]:
@@ -678,7 +678,8 @@ def test_dsp_grpc_simulated_monitor_calls_callback(
                 monitor_data=MonitorData(
                     dsp_disk=DspDiskMonitorData(
                         disk_capacity=disk_capacity,
-                        disk_available_bytes=disk_available_bytes,
+                        # Protobuf has disk_available_bytes not available_disk_space
+                        disk_available_bytes=available_disk_space,
                         # Protobuf has bytes_written not data_recorded
                         bytes_written=data_recorded,
                         # Protobuf has write_rate not data_record_rate
@@ -713,7 +714,7 @@ def test_dsp_grpc_simulated_monitor_calls_callback(
             subband_id=1,
             subband_data=DspDiskSubbandMonitorData(
                 disk_capacity=disk_capacity,
-                disk_available_bytes=disk_available_bytes,
+                available_disk_space=available_disk_space,
                 data_recorded=data_recorded,
                 data_record_rate=data_record_rate,
             ),
@@ -741,16 +742,16 @@ def test_dsp_grpc_api_get_env(
     mock_servicer_context: MagicMock,
 ) -> None:
     """Test the get_env on gRPC API."""
-    disk_available_bytes = randint(1, 30)
+    available_disk_space = randint(1, 30)
     disk_capacity = randint(30, 60)
 
     response = GetEnvironmentResponse()
-    response.values["disk_available_bytes"].unsigned_int_value = disk_available_bytes
+    response.values["available_disk_space"].unsigned_int_value = available_disk_space
     response.values["disk_capacity"].unsigned_int_value = disk_capacity
     mock_servicer_context.get_env = MagicMock(return_value=response)
 
     actual = grpc_api.get_env()
 
-    expected = {"disk_available_bytes": disk_available_bytes, "disk_capacity": disk_capacity}
+    expected = {"available_disk_space": available_disk_space, "disk_capacity": disk_capacity}
 
     assert expected == actual

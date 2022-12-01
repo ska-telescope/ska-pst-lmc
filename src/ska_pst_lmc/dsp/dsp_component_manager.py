@@ -119,9 +119,9 @@ class PstDspComponentManager(PstApiComponentManager):
         return self._monitor_data.disk_capacity
 
     @property
-    def disk_available_bytes(self: PstDspComponentManager) -> int:
+    def available_disk_space(self: PstDspComponentManager) -> int:
         """Get currently available bytes of the disk."""
-        return self._monitor_data.disk_available_bytes
+        return self._monitor_data.available_disk_space
 
     @property
     def disk_used_bytes(self: PstDspComponentManager) -> int:
@@ -161,7 +161,7 @@ class PstDspComponentManager(PstApiComponentManager):
     def _get_disk_stats_from_api(self: PstDspComponentManager) -> None:
         """Update the disk usage details calling API.
 
-        This gets the `disk_capacity` and `disk_available_bytes` from the API via
+        This gets the `disk_capacity` and `available_disk_space` from the API via
         calling the :py:meth:`ProcessApi.get_env` method.
 
         This is used to get the value of the disk capacity and the  available disk

@@ -195,10 +195,10 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         """Get simulated environment values for DSP.DISK."""
         import shutil
 
-        (disk_capacity, _, disk_available_bytes) = shutil.disk_usage("/")
+        (disk_capacity, _, available_disk_space) = shutil.disk_usage("/")
         return {
             "disk_capacity": disk_capacity,
-            "disk_available_bytes": disk_available_bytes,
+            "available_disk_space": available_disk_space,
         }
 
 
@@ -222,7 +222,7 @@ class PstDspProcessApiGrpc(PstProcessApiGrpc, PstDspProcessApi):
             subband_id=1,
             subband_data=DspDiskSubbandMonitorData(
                 disk_capacity=dsp_disk_data.disk_capacity,
-                disk_available_bytes=dsp_disk_data.disk_available_bytes,
+                available_disk_space=dsp_disk_data.disk_available_bytes,
                 data_recorded=dsp_disk_data.bytes_written,
                 data_record_rate=dsp_disk_data.write_rate,
             ),

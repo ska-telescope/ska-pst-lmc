@@ -27,13 +27,13 @@ def test_dsp_simulator_using_constructor() -> None:
     simulator = PstDspSimulator(
         num_subbands=2,
         disk_capacity=1000,
-        disk_available_bytes=800,
+        available_disk_space=800,
         subband_data_record_rates=[0.3, 0.1],
     )
     assert simulator.num_subbands == 2
     data = simulator.get_data()
     assert data.disk_capacity == 1000
-    assert data.disk_available_bytes == 800
+    assert data.available_disk_space == 800
     assert data.disk_used_bytes == 200
     np.testing.assert_almost_equal(data.disk_used_percentage, 20.0)
     assert data.data_record_rate == 0.4
