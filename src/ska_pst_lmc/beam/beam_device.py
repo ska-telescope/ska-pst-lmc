@@ -78,7 +78,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
         self._version_id = release.VERSION
 
-        self._received_rate = 0.0
+        self._data_receive_rate = 0.0
         self._received_data = 0
         self._dropped_rate = 0.0
         self._dropped_data = 0
@@ -90,7 +90,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         self._expected_data_rate = 0.0
 
         for prop in [
-            "receivedRate",
+            "dataReceiveRate",
             "receivedData",
             "droppedRate",
             "droppedData",
@@ -190,13 +190,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         min_value=0,
         doc="Current data receive rate from the CBF interface",
     )
-    def receivedRate(self: PstBeam) -> float:
+    def dataReceiveRate(self: PstBeam) -> float:
         """Get the current data receive rate from the CBF interface.
 
         :returns: current data receive rate from the CBF interface in Gb/s.
         :rtype: float
         """
-        return self._received_rate
+        return self._data_receive_rate
 
     @attribute(
         dtype=int,

@@ -55,7 +55,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         util.set_serial_model(tango.SerialModel.NO_SYNC)
         super().init_device()
 
-        self._received_rate = 0.0
+        self._data_receive_rate = 0.0
         self._received_data = 0
         self._dropped_rate = 0.0
         self._dropped_data = 0
@@ -132,13 +132,13 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         min_value=0,
         doc="Current data receive rate from the CBF interface",
     )
-    def receivedRate(self: PstReceive) -> float:
+    def dataReceiveRate(self: PstReceive) -> float:
         """Get the current data receive rate from the CBF interface.
 
         :returns: current data receive rate from the CBF interface in Gb/s.
         :rtype: float
         """
-        return self._received_rate
+        return self._data_receive_rate
 
     @attribute(
         dtype=int,

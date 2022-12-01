@@ -191,7 +191,7 @@ class TestPstReceive:
 
         # shoud now be able to get some properties
         time.sleep(0.2)
-        assert device_under_test.receivedRate > 0.0
+        assert device_under_test.dataReceiveRate > 0.0
         assert device_under_test.receivedData > 0
         assert device_under_test.droppedRate > 0.0
         assert device_under_test.droppedData > 0

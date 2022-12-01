@@ -160,7 +160,7 @@ class PstBeamComponentManager(PstComponentManager):
         """
         from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
 
-        self.received_rate = 0.0
+        self.data_receive_rate = 0.0
         self.received_data = 0
         self.dropped_data = 0
         self.dropped_rate = 0.0
@@ -233,15 +233,15 @@ class PstBeamComponentManager(PstComponentManager):
             self.channel_block_configuration = {}
 
     @property
-    def received_rate(self: PstBeamComponentManager) -> float:
+    def data_receive_rate(self: PstBeamComponentManager) -> float:
         """Get current received data rate in Gb/s."""
-        return self._received_rate
+        return self._data_receive_rate
 
-    @received_rate.setter
-    def received_rate(self: PstBeamComponentManager, received_rate: float) -> None:
+    @data_receive_rate.setter
+    def data_receive_rate(self: PstBeamComponentManager, data_receive_rate: float) -> None:
         """Set current received data rate in Gb/s."""
-        self._received_rate = received_rate
-        self._property_callback("received_rate", received_rate)
+        self._data_receive_rate = data_receive_rate
+        self._property_callback("data_receive_rate", data_receive_rate)
 
     @property
     def received_data(self: PstBeamComponentManager) -> int:
@@ -394,7 +394,7 @@ class PstBeamComponentManager(PstComponentManager):
         self.logger.debug(f"{self._device_name} subscribing to monitoring events")
         subscriptions_config = {
             self._recv_device: [
-                "received_rate",
+                "data_receive_rate",
                 "received_data",
                 "dropped_data",
                 "dropped_rate",

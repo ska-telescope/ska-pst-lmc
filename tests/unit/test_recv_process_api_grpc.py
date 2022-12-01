@@ -661,7 +661,7 @@ def test_recv_grpc_handle_monitor_response(
         subband_data=ReceiveData(
             # grab from the protobuf message given there can be rounding issues.
             received_data=receive_monitor_data.data_received,
-            received_rate=receive_rate_gbs,
+            data_receive_rate=receive_rate_gbs,
             dropped_data=receive_monitor_data.data_dropped,
             dropped_rate=receive_monitor_data.data_drop_rate,
             misordered_packets=receive_monitor_data.misordered_packets,
@@ -727,7 +727,7 @@ def test_recv_grpc_simulated_monitor_calls_callback(
             subband_id=1,
             subband_data=ReceiveData(
                 received_data=monitior_data.data_received,
-                received_rate=receive_rate_gbs,  # we get B/s not Gb/s,
+                data_receive_rate=receive_rate_gbs,  # we get B/s not Gb/s,
                 dropped_data=monitior_data.data_dropped,
                 dropped_rate=monitior_data.data_drop_rate,
                 misordered_packets=monitior_data.misordered_packets,

@@ -112,13 +112,13 @@ class PstReceiveComponentManager(PstApiComponentManager):
             )
 
     @property
-    def received_rate(self: PstReceiveComponentManager) -> float:
+    def data_receive_rate(self: PstReceiveComponentManager) -> float:
         """Get the current data receive rate from the CBF interface.
 
         :returns: current data receive rate from the CBF interface in Gb/s.
         :rtype: float
         """
-        return self._monitor_data.received_rate
+        return self._monitor_data.data_receive_rate
 
     @property
     def received_data(self: PstReceiveComponentManager) -> int:

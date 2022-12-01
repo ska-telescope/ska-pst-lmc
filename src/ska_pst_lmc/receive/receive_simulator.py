@@ -17,15 +17,15 @@ from ska_pst_lmc.receive.receive_model import ReceiveData
 
 def generate_random_update() -> ReceiveData:
     """Generate a random update of ReceivedData."""
-    received_rate: float = 1.0 * randint(0, 90)
-    received_data: int = int(received_rate * 1e9 / 8)
-    dropped_rate: float = received_rate / 1000.0 * random()
+    data_receive_rate: float = 1.0 * randint(0, 90)
+    received_data: int = int(data_receive_rate * 1e9 / 8)
+    dropped_rate: float = data_receive_rate / 1000.0 * random()
     dropped_data: int = int(dropped_rate * 1e9 / 8)
     misordered_packets: int = randint(0, 3)
 
     return ReceiveData(
         received_data=received_data,
-        received_rate=received_rate,
+        data_receive_rate=data_receive_rate,
         dropped_data=dropped_data,
         dropped_rate=dropped_rate,
         misordered_packets=misordered_packets,
@@ -96,7 +96,7 @@ class PstReceiveSimulator:
         for subband_data in self._subband_data.values():
             update: ReceiveData = generate_random_update()
 
-            subband_data.received_rate = update.received_rate
+            subband_data.data_receive_rate = update.data_receive_rate
             subband_data.received_data += update.received_data
             subband_data.dropped_rate = update.dropped_rate
             subband_data.dropped_data += update.dropped_data
@@ -120,7 +120,7 @@ class PstReceiveSimulator:
             data.dropped_rate += subband_data.dropped_rate
             data.misordered_packets += subband_data.misordered_packets
             data.received_data += data.received_data
-            data.received_rate += data.received_rate
+            data.data_receive_rate += data.data_receive_rate
 
         return data
 
