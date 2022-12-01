@@ -71,8 +71,11 @@ def grpc_api(
     component_state_callback: MagicMock,
     pst_lmc_service: TestPstLmcService,
     background_task_processor: BackgroundTaskProcessor,
+    mock_servicer_context: MagicMock,
 ) -> PstReceiveProcessApi:
     """Fixture to create instance of a gRPC API with client."""
+    # ensure we reset the mock before the API is going to be called.
+    mock_servicer_context.reset_mock()
     return PstReceiveProcessApiGrpc(
         client_id=client_id,
         grpc_endpoint=grpc_endpoint,
@@ -697,14 +700,14 @@ def test_recv_grpc_simulated_monitor_calls_callback(
         while True:
             logger.debug("Yielding monitor data")
             yield MonitorResponse(monitor_data=MonitorData(receive=monitior_data))
-            time.sleep(0.5)
+            time.sleep(0.05)
 
     mock_servicer_context.monitor = MagicMock()
     mock_servicer_context.monitor.return_value = response_generator()
 
     def _abort_monitor() -> None:
         logger.debug("Test sleeping 1s")
-        time.sleep(1)
+        time.sleep(0.1)
         logger.debug("Aborting monitoring.")
         abort_event.set()
 
@@ -713,7 +716,7 @@ def test_recv_grpc_simulated_monitor_calls_callback(
 
     grpc_api.monitor(
         subband_monitor_data_callback=subband_monitor_data_callback,
-        polling_rate=500,
+        polling_rate=10,
         monitor_abort_event=abort_event,
     )
     abort_thread.join()

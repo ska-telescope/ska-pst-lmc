@@ -218,7 +218,7 @@ def _generate_port() -> int:
         return s.getsockname()[1]
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def grpc_port() -> int:
     """Fixture to generate port for gRPC."""
     return _generate_port()
@@ -242,13 +242,13 @@ def device_name(client_id: str) -> str:
     return f"test/{client_id}/{random.randint(0,16)}"
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def grpc_endpoint(grpc_port: int) -> str:
     """Return the endpoint of the gRPC server."""
     return f"127.0.0.1:{grpc_port}"
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def grpc_servicer(mock_servicer_context: MagicMock, logger: logging.Logger) -> TestMockServicer:
     """Create a test mock servicer given mock context."""
     return TestMockServicer(
@@ -257,7 +257,7 @@ def grpc_servicer(mock_servicer_context: MagicMock, logger: logging.Logger) -> T
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def grpc_service(
     grpc_port: int,
     grpc_servicer: PstLmcServiceServicer,
@@ -271,7 +271,7 @@ def grpc_service(
     return server
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def pst_lmc_service(
     grpc_service: grpc.Server,
     logger: logging.Logger,
@@ -281,14 +281,14 @@ def pst_lmc_service(
         grpc_server=grpc_service,
         logger=logger,
     )
-    t = threading.Thread(target=service.serve, daemon=True)
-    t.start()
-    time.sleep(0.5)
+    evt = threading.Event()
+    service.serve(started_callback=evt.set)
+    evt.wait()
     yield service
     service.stop()
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def mock_servicer_context() -> MagicMock:
     """Generate a mock gRPC servicer context to use with testing of gRPC calls."""
     return MagicMock()

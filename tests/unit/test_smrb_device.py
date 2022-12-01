@@ -10,38 +10,98 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Type
 from unittest.mock import MagicMock
 
 import pytest
 import tango
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionResponse
 from ska_tango_base.commands import ResultCode, TaskStatus
 from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
 
+from ska_pst_lmc.smrb import PstSmrbComponentManager
 from ska_pst_lmc.smrb.smrb_device import PstSmrb
-from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
 from tests.conftest import TangoDeviceCommandChecker
+
+
+@pytest.fixture
+def monitor_polling_rate() -> int:
+    """Fixture to get monitoring polling rate for test."""
+    return 100
 
 
 @pytest.fixture
 def device_properties(
     grpc_endpoint: str,
+    monitor_polling_rate: int,
 ) -> dict:
     """Fixture that returns device_properties to be provided to the device under test."""
     return {
         "process_api_endpoint": grpc_endpoint,
-        "monitor_polling_rate": 100,
+        "monitor_polling_rate": monitor_polling_rate,
     }
 
 
+@pytest.fixture
+def component_manager(
+    device_name: str,
+    grpc_endpoint: str,
+    monitor_polling_rate: int,
+    logger: logging.Logger,
+    monkeypatch: pytest.MonkeyPatch,
+) -> PstSmrbComponentManager:
+    """Get fixture for a PstSmrbComponentManager."""
+    # monkey patch PstSmrbComponentManager._update_api to do nothing.
+    def _update_api(*args: Any, **kwargs: Any) -> None:
+        pass
+
+    monkeypatch.setattr(PstSmrbComponentManager, "_update_api", _update_api)
+
+    return PstSmrbComponentManager(
+        device_name=device_name,
+        process_api_endpoint=grpc_endpoint,
+        logger=logger,
+        # this is just a place holder to mock these values.
+        monitor_data_callback=MagicMock(),
+        communication_state_callback=MagicMock(),
+        component_state_callback=MagicMock(),
+        property_callback=MagicMock(),
+        monitor_polling_rate=monitor_polling_rate,
+    )
+
+
+@pytest.fixture
+def smrb_device_class(component_manager: PstSmrbComponentManager) -> Type[PstSmrb]:
+    """Get PstSmrb fixture.
+
+    This creates a subclass of the PstSmrb that overrides the create_component_manager method
+    to use the component_manager fixture.
+    """
+
+    class _PstSmrb(PstSmrb):
+        def create_component_manager(self: _PstSmrb) -> PstSmrbComponentManager:
+            component_manager._communication_state_callback = self._communication_state_changed
+            component_manager._api._component_state_callback = self._component_state_changed
+            component_manager._component_state_callback = self._component_state_changed
+            component_manager._monitor_data_handler._monitor_data_callback = self._update_monitor_data
+
+            return component_manager
+
+    return _PstSmrb
+
+
+@pytest.mark.forked
 class TestPstSmrb:
-    """Test class used for testing the PstReceive TANGO device."""
+    """Test class used for testing the PstSmrb TANGO device."""
 
     @pytest.fixture
-    def device_test_config(self: TestPstSmrb, device_properties: dict) -> dict:
+    def device_test_config(
+        self: TestPstSmrb,
+        device_properties: dict,
+        smrb_device_class: Type[PstSmrb],
+    ) -> dict:
         """
         Specify device configuration, including properties and memorized attributes.
 
@@ -55,8 +115,8 @@ class TestPstSmrb:
             configured
         """
         return {
-            "device": PstSmrb,
-            "process": True,
+            "device": smrb_device_class,
+            "process": False,
             "properties": device_properties,
             "memorized": {"adminMode": str(AdminMode.ONLINE.value)},
         }
@@ -86,7 +146,6 @@ class TestPstSmrb:
         assert len(version_info) == 1
         assert re.match(version_pattern, version_info[0])
 
-    @pytest.mark.forked
     def test_smrb_mgmt_configure_then_scan_then_stop(
         self: TestPstSmrb,
         device_under_test: DeviceProxy,
@@ -164,7 +223,6 @@ class TestPstSmrb:
             ],
         )
 
-    @pytest.mark.forked
     def test_smrb_mgmt_abort_when_scanning(
         self: TestPstSmrb,
         device_under_test: DeviceProxy,
@@ -256,12 +314,9 @@ class TestPstSmrb:
             ],
         )
 
-    @pytest.mark.forked
     def test_smrb_mgmt_simulation_mode(
         self: TestPstSmrb,
         device_under_test: DeviceProxy,
-        pst_lmc_service: TestPstLmcService,
-        mock_servicer_context: MagicMock,
     ) -> None:
         """Test state model of PstSmrb."""
         device_under_test.loggingLevel = 5
@@ -269,36 +324,36 @@ class TestPstSmrb:
         device_under_test.simulationMode = SimulationMode.TRUE
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
-        response = ConnectionResponse()
-        mock_servicer_context.connect = MagicMock(return_value=response)
-
         device_under_test.simulationMode = SimulationMode.FALSE
-        mock_servicer_context.connect.assert_called_once_with(
-            ConnectionRequest(client_id=device_under_test.name())
-        )
         assert device_under_test.simulationMode == SimulationMode.FALSE
 
         device_under_test.simulationMode = SimulationMode.TRUE
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
-    @pytest.mark.forked
     def test_smrb_mgmt_simulation_mode_when_not_in_empty_obs_state(
         self: TestPstSmrb,
         device_under_test: DeviceProxy,
         configure_beam_request: Dict[str, Any],
+        tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
         """Test state model of PstSmrb."""
         device_under_test.simulationMode = SimulationMode.TRUE
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
         device_under_test.adminMode = AdminMode.ONLINE
-        device_under_test.On()
-        time.sleep(0.1)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+        )
         assert device_under_test.state() == DevState.ON
 
         resources = json.dumps(configure_beam_request)
-        device_under_test.ConfigureBeam(resources)
-        time.sleep(0.5)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.ConfigureBeam(resources),
+            expected_obs_state_events=[
+                ObsState.RESOURCING,
+                ObsState.IDLE,
+            ],
+        )
         assert device_under_test.obsState == ObsState.IDLE
 
         with pytest.raises(tango.DevFailed) as exc_info:
@@ -309,32 +364,27 @@ class TestPstSmrb:
             0
         ].desc == "ValueError: Unable to change simulation mode unless in EMPTY observation state"
 
-    @pytest.mark.forked
     def test_smrb_mgmt_simulation_mode_when_in_empty_obs_state(
         self: TestPstSmrb,
         device_under_test: DeviceProxy,
-        pst_lmc_service: TestPstLmcService,
-        mock_servicer_context: MagicMock,
+        tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
         """Test state model of PstSmrb."""
-        response = ConnectionResponse()
-        mock_servicer_context.connect = MagicMock(return_value=response)
         assert device_under_test.obsState == ObsState.EMPTY
 
         device_under_test.simulationMode = SimulationMode.TRUE
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
         device_under_test.adminMode = AdminMode.ONLINE
-        device_under_test.On()
-        time.sleep(0.1)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+        )
         assert device_under_test.state() == DevState.ON
         assert device_under_test.obsState == ObsState.EMPTY
 
         device_under_test.simulationMode = SimulationMode.FALSE
-        time.sleep(0.1)
         assert device_under_test.simulationMode == SimulationMode.FALSE
 
-    @pytest.mark.forked
     def test_smrb_mgmt_go_to_fault_when_beam_configured(
         self: TestPstSmrb,
         device_under_test: DeviceProxy,
@@ -373,7 +423,6 @@ class TestPstSmrb:
             ],
         )
 
-    @pytest.mark.forked
     def test_smrb_mgmt_go_to_fault_when_configured(
         self: TestPstSmrb,
         device_under_test: DeviceProxy,
@@ -414,7 +463,6 @@ class TestPstSmrb:
             ],
         )
 
-    @pytest.mark.forked
     def test_smrb_mgmt_go_to_fault_when_scanning(
         self: TestPstSmrb,
         device_under_test: DeviceProxy,

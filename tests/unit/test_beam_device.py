@@ -120,6 +120,64 @@ def devices_info() -> List[dict]:
     ]
 
 
+class _AttributeEventValidator:
+    """Class to validate attribute events between BEAM and subordinate devices."""
+
+    def __init__(
+        self: _AttributeEventValidator,
+        device_under_test: DeviceProxy,
+        source_device_fqdn: str,
+        attribute_name: str,
+        default_value: Any,
+        tango_change_event_helper: TangoChangeEventHelper,
+        change_event_callbacks: MockTangoEventCallbackGroup,
+    ) -> None:
+        """Initialise validator."""
+        self.device_under_test = device_under_test
+        self.source_device = DeviceProxyFactory.get_device(source_device_fqdn)
+        self.attribute_name = attribute_name
+        self.default_value = default_value
+
+        self.attribute_value_queue: queue.Queue[Any] = queue.Queue()
+        self.change_event_callbacks = change_event_callbacks
+
+        tango_change_event_helper.subscribe(attribute_name)
+        change_event_callbacks[attribute_name].assert_change_event(default_value)
+
+        self.source_device.subscribe_change_event(attribute_name, self.attribute_value_queue.put)
+
+    def assert_initial_values(self: _AttributeEventValidator) -> None:
+        """Assert initial values of BEAM and subordinate device as the same."""
+
+        def _get_values() -> Tuple[Any, Any]:
+            return getattr(self.device_under_test, self.attribute_name), getattr(
+                self.source_device, self.attribute_name
+            )
+
+        initial_values = _get_values()
+
+        if self.attribute_name != "diskAvailableBytes":
+            # diskAvailableBytes actually changes from a default value a new value when the On command
+            # happens
+            assert (
+                initial_values[0] == self.default_value
+            ), f"{self.attribute_name} on {self.device_under_test} not {self.default_value} but {initial_values[0]}"  # noqa: E501
+            assert (
+                initial_values[1] == self.default_value
+            ), f"{self.attribute_name} on {self.device_under_test} not {self.default_value} but {initial_values[1]}"  # noqa: E501
+
+    def assert_values(self: _AttributeEventValidator) -> None:
+        """Assert that the events on BEAM as those from subordinate device."""
+        # use None as a sentinal value to break out of assertion loop
+        self.attribute_value_queue.put(None)
+        for idx, value in enumerate(self.attribute_value_queue.queue):
+            if value is None:
+                break
+
+            self.change_event_callbacks[self.attribute_name].assert_change_event(value)
+
+
+@pytest.mark.forked
 class TestPstBeam:
     """Test class used for testing the PstReceive TANGO device."""
 
@@ -151,7 +209,6 @@ class TestPstBeam:
         assert len(version_info) == 1
         assert re.match(version_pattern, version_info[0])
 
-    @pytest.mark.forked
     def test_beam_mgmt_configure_then_scan_then_stop(
         self: TestPstBeam,
         device_under_test: DeviceProxy,
@@ -248,7 +305,6 @@ class TestPstBeam:
         )
         assert_state(DevState.OFF)
 
-    @pytest.mark.forked
     def test_beam_mgmt_go_to_fault(
         self: TestPstBeam,
         device_under_test: DeviceProxy,
@@ -320,90 +376,57 @@ class TestPstBeam:
         )
         assert_state(DevState.OFF)
 
-    @pytest.mark.forked
-    @pytest.mark.parametrize(
-        "monitor_attribute, source_device_fqdn, default_value",
-        [
-            ("receivedRate", "test/recv/1", 0.0),
-            ("receivedData", "test/recv/1", 0),
-            ("droppedRate", "test/recv/1", 0.0),
-            ("droppedData", "test/recv/1", 0),
-            ("writeRate", "test/dsp/1", 0.0),
-            ("bytesWritten", "test/dsp/1", 0),
-            ("diskAvailableBytes", "test/dsp/1", sys.maxsize),
-            ("availableRecordingTime", "test/dsp/1", DEFAULT_RECORDING_TIME),
-            ("ringBufferUtilisation", "test/smrb/1", 0.0),
-        ],
-    )
     def test_beam_mgmt_scan_monitoring_values(
         self: TestPstBeam,
         device_under_test: DeviceProxy,
-        monitor_attribute: str,
-        source_device_fqdn: str,
         csp_configure_scan_request: Dict[str, Any],
         scan_id: int,
-        default_value: Any,
         tango_change_event_helper: TangoChangeEventHelper,
         tango_device_command_checker: TangoDeviceCommandChecker,
         change_event_callbacks: MockTangoEventCallbackGroup,
-        logger: logging.Logger,
     ) -> None:
         """Test that monitoring values are updated."""
-        # use a queue to assert changes
-        attribute_value_queue: queue.Queue[Any] = queue.Queue()
-
-        source_device = DeviceProxyFactory.get_device(source_device_fqdn)
-        time.sleep(0.2)
-
-        # can now subscribe to event
-        tango_change_event_helper.subscribe(monitor_attribute)
-        change_event_callbacks[monitor_attribute].assert_change_event(default_value)
-
-        def _attribute_value_callback(value: Any) -> None:
-            attribute_value_queue.put(value)
-
-        source_device.subscribe_change_event(monitor_attribute, _attribute_value_callback)
-
         device_under_test.adminMode = AdminMode.ONLINE
         time.sleep(0.2)
-        assert source_device.adminMode == AdminMode.ONLINE
 
-        def assert_state(state: DevState) -> None:
-            assert device_under_test.state() == state
-            assert source_device.state() == state
+        device_propertry_config = {
+            "test/recv/1": {
+                "receivedRate": 0.0,
+                "receivedData": 0,
+                "droppedRate": 0.0,
+                "droppedData": 0,
+            },
+            "test/dsp/1": {
+                "writeRate": 0.0,
+                "bytesWritten": 0,
+                "diskAvailableBytes": sys.maxsize,
+                "availableRecordingTime": DEFAULT_RECORDING_TIME,
+            },
+            "test/smrb/1": {
+                "ringBufferUtilisation": 0.0,
+            },
+        }
 
-        @backoff.on_exception(
-            backoff.expo,
-            AssertionError,
-            factor=1,
-            max_time=5.0,
-        )
-        def assert_obstate(obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
-            assert device_under_test.obsState == obsState
-            assert source_device.obsState == subObsState or obsState
+        attribute_event_validators = [
+            _AttributeEventValidator(
+                device_under_test=device_under_test,
+                source_device_fqdn=fqdn,
+                attribute_name=attribute_name,
+                default_value=default_value,
+                tango_change_event_helper=tango_change_event_helper,
+                change_event_callbacks=change_event_callbacks,
+            )
+            for fqdn, props in device_propertry_config.items()
+            for attribute_name, default_value in props.items()
+        ]
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
         )
-        assert_state(DevState.ON)
 
-        assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
-
-        # assert default value on both devices
-        def _get_values() -> Tuple[Any, Any]:
-            return getattr(device_under_test, monitor_attribute), getattr(source_device, monitor_attribute)
-
-        initial_values = _get_values()
-
-        if monitor_attribute != "diskAvailableBytes":
-            # diskAvailableBytes actually changes from a default value a new value when the On command
-            # happens
-            assert (
-                initial_values[0] == default_value
-            ), f"{monitor_attribute} on {device_under_test} not {default_value} but {initial_values[0]}"
-            assert (
-                initial_values[1] == default_value
-            ), f"{monitor_attribute} on {source_device} not {default_value} but {initial_values[1]}"
+        # assert initial values.
+        for v in attribute_event_validators:
+            v.assert_initial_values()
 
         # need to set up scanning
         configuration = json.dumps(csp_configure_scan_request)
@@ -414,7 +437,6 @@ class TestPstBeam:
                 ObsState.READY,
             ],
         )
-        assert_obstate(ObsState.READY)
 
         scan = str(scan_id)
         tango_device_command_checker.assert_command(
@@ -423,7 +445,6 @@ class TestPstBeam:
                 ObsState.SCANNING,
             ],
         )
-        assert_obstate(ObsState.SCANNING)
 
         # wait for a monitoring period?
         time.sleep(0.25)
@@ -434,12 +455,7 @@ class TestPstBeam:
                 ObsState.READY,
             ],
         )
-        assert_obstate(ObsState.READY)
 
-        # use None as a sentinal value to break out of assertion loop
-        attribute_value_queue.put(None)
-        for idx, value in enumerate(attribute_value_queue.queue):
-            if value is None:
-                break
-
-            change_event_callbacks[monitor_attribute].assert_change_event(value)
+        # Assert attribute values
+        for v in attribute_event_validators:
+            v.assert_values()
