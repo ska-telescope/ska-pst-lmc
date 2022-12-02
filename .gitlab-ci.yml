@@ -1,7 +1,7 @@
 variables:
   # Needed if you want automatic submodule checkout
   # For details see https://docs.gitlab.com/ee/ci/yaml/README.html#git-submodule-strategy
-  GIT_SUBMODULE_STRATEGY: recursive  
+  GIT_SUBMODULE_STRATEGY: recursive
   OCI_IMAGE_BUILD_CONTEXT: $(PWD)
   K8S_TEST_CLUSTER_TAG: k8srunner # k8srunner-psi-low
   SKA_GEMNASIUM_IMAGE: artefact.skao.int/ska-cicd-gemnasium-scanning-alpine:0.8.2
@@ -17,13 +17,15 @@ variables:
   SKA_PST_PYTHON_RUNTIME_IMAGE: $SKA_TANGO_PYTANGO_RUNTIME_REGISTRY/$SKA_TANGO_PYTANGO_RUNTIME_IMAGE:$SKA_TANGO_PYTANGO_RUNTIME_TAG
   PST_OCI_COMMON_BUILDER_REGISTRY: $PST_DEV_REGISTRY/ska-pst-common
   PST_OCI_COMMON_BUILDER_IMAGE: ska-pst-common-builder
-  PST_OCI_COMMON_BUILDER_TAG: 0.3.0
+  PST_OCI_COMMON_BUILDER_TAG: 0.4.0
   SKA_PST_COMMON_BUILDER_IMAGE: $PST_OCI_COMMON_BUILDER_REGISTRY/$PST_OCI_COMMON_BUILDER_IMAGE:$PST_OCI_COMMON_BUILDER_TAG
+  SKA_PST_COMMON_BUILDER_RELEASE_IMAGE: $SKA_RELEASE_REGISTRY/$PST_OCI_COMMON_BUILDER:$PST_OCI_COMMON_BUILDER_TAG
   PST_COMMON_PROTO_REGISTRY: $PST_DEV_REGISTRY/ska-pst-common
   PST_COMMON_PROTO_IMAGE: ska-pst-common-proto
-  PST_COMMON_PROTO_TAG: 0.3.0
+  PST_COMMON_PROTO_TAG: 0.4.0
   SKA_PST_COMMON_PROTOBUF_IMAGE: $PST_COMMON_PROTO_REGISTRY/$PST_COMMON_PROTO_IMAGE:$PST_COMMON_PROTO_TAG
-  
+  SKA_PST_COMMON_PROTOBUF_RELEASE_IMAGE: $SKA_RELEASE_REGISTRY/$PST_COMMON_PROTO_IMAGE:$PST_COMMON_PROTO_TAG
+
 
 # GitLab CI in conjunction with GitLab Runner can use Docker Engine to test and build any application.
 # Docker, when used with GitLab CI, runs each job in a separate and isolated container using the predefined image that is set up in .gitlab-ci.yml.
@@ -237,3 +239,9 @@ include:
   - local: '.gitlab/ci/branch.yml'
     rules:
       - if: $CI_COMMIT_BRANCH =~ /at3.*/
+
+  # Release builds
+  - local: '.gitlab/ci/release.gitlab-ci.yml'
+    rules:
+      - if: ($CI_COMMIT_BRANCH =~ /rel.*|main/) && ($CI_PIPELINE_SOURCE != "pipeline")
+      - if: $CI_COMMIT_TAG
