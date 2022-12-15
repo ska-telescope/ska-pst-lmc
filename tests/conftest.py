@@ -24,15 +24,10 @@ from tango import DeviceProxy
 from tango.test_context import DeviceTestContext, MultiDeviceTestContext, get_host_ip
 
 from ska_pst_lmc.device_proxy import DeviceProxyFactory
+from ska_pst_lmc.job import DEVICE_COMMAND_JOB_EXECUTOR, JOB_EXECUTOR, DeviceCommandJobExecutor, JobExecutor
 from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 from ska_pst_lmc.util.callback import Callback
-from ska_pst_lmc.util.job import (
-    DEVICE_COMMAND_JOB_EXECUTOR,
-    JOB_EXECUTOR,
-    DeviceCommandJobExecutor,
-    JobExecutor,
-)
 
 
 @pytest.fixture(scope="module")
@@ -75,7 +70,9 @@ def device_command_job_executor() -> Generator[DeviceCommandJobExecutor, None, N
 
 
 @pytest.fixture
-def job_executor(device_command_job_executor: DeviceCommandJobExecutor) -> Generator[JobExecutor, None, None]:
+def job_executor(
+    device_command_job_executor: DeviceCommandJobExecutor,
+) -> Generator[JobExecutor, None, None]:
     """Return a generator for job executor."""
     JOB_EXECUTOR.start()
     yield JOB_EXECUTOR

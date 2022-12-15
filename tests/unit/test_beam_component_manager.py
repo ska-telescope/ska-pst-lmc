@@ -23,8 +23,8 @@ from ska_tango_base.executor import TaskStatus
 from ska_pst_lmc.beam.beam_component_manager import PstBeamComponentManager
 from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
+from ska_pst_lmc.job import DEVICE_COMMAND_JOB_EXECUTOR, JobExecutor
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
-from ska_pst_lmc.util.job import DEVICE_COMMAND_JOB_EXECUTOR, JobExecutor
 
 
 @pytest.fixture

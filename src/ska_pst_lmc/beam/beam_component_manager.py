@@ -22,7 +22,7 @@ from ska_tango_base.executor import TaskStatus
 from ska_pst_lmc.component import as_device_attribute_name
 from ska_pst_lmc.component.component_manager import PstComponentManager
 from ska_pst_lmc.device_proxy import ChangeEventSubscription, DeviceProxyFactory, PstDeviceProxy
-from ska_pst_lmc.util import DeviceCommandJob, Job, SequentialJob, submit_job
+from ska_pst_lmc.job import DeviceCommandJob, Job, SequentialJob, submit_job
 from ska_pst_lmc.util.callback import Callback, callback_safely
 
 TaskResponse = Tuple[TaskStatus, str]
