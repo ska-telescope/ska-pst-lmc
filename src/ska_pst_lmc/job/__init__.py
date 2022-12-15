@@ -8,36 +8,37 @@
 """This is used for handling complex jobs used by the PST.BEAM."""
 
 __all__ = [
-    "DeviceCommandJob",
-    "DeviceCommandJobExecutor",
-    "DeviceCommandJobContext",
-    "Job",
-    "JobContext",
-    "JobExecutor",
-    "SequentialJob",
-    "ParallelJob",
-    "ParallelJobContext",
-    "ParallelJobTaskContext",
-    "JOB_QUEUE",
+    "TASK_QUEUE",
     "DEVICE_COMMAND_JOB_QUEUE",
-    "JOB_EXECUTOR",
-    "DEVICE_COMMAND_JOB_EXECUTOR",
+    "DeviceAction",
+    "DEVICE_COMMAND_TASK_EXECUTOR",
+    "DeviceCommandTaskExecutor",
+    "TASK_EXECUTOR",
     "submit_job",
+    "TaskExecutor",
+    "Task",
+    "TaskContext",
+    "JobContext",
+    "ParallelTaskContext",
+    "DeviceCommandTaskContext",
+    "SequentialTask",
+    "ParallelTask",
+    "DeviceCommandTask",
 ]
 
-from .common import JOB_QUEUE, DEVICE_COMMAND_JOB_QUEUE
+from .common import TASK_QUEUE, DEVICE_COMMAND_JOB_QUEUE, DeviceAction
 from .device_task_executor import (
-    DEVICE_COMMAND_JOB_EXECUTOR,
-    DeviceCommandJobExecutor,
-    DeviceCommandJobContext,
+    DEVICE_COMMAND_TASK_EXECUTOR,
+    DeviceCommandTaskExecutor,
 )
-from .job_executor import JOB_EXECUTOR, submit_job, JobExecutor
+from .task_executor import TASK_EXECUTOR, submit_job, TaskExecutor
 from .context import (
-    DeviceCommandJob,
-    Job,
+    Task,
+    TaskContext,
     JobContext,
-    SequentialJob,
-    ParallelJob,
-    ParallelJobContext,
-    ParallelJobTaskContext,
+    ParallelTaskContext,
+    DeviceCommandTaskContext,
+    SequentialTask,
+    ParallelTask,
+    DeviceCommandTask,
 )

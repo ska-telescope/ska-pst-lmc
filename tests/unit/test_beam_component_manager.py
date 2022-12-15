@@ -23,7 +23,7 @@ from ska_tango_base.executor import TaskStatus
 from ska_pst_lmc.beam.beam_component_manager import PstBeamComponentManager
 from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
-from ska_pst_lmc.job import DEVICE_COMMAND_JOB_EXECUTOR, JobExecutor
+from ska_pst_lmc.job import DEVICE_COMMAND_TASK_EXECUTOR, TaskExecutor
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
 
@@ -283,8 +283,10 @@ def _complete_job_side_effect(job_id: str) -> Callable[..., Tuple[List[TaskStatu
     """
 
     def _complete_job() -> None:
+        import json
+
         time.sleep(0.05)
-        DEVICE_COMMAND_JOB_EXECUTOR._handle_subscription_event((job_id, ""))
+        DEVICE_COMMAND_TASK_EXECUTOR._handle_subscription_event((job_id, json.dumps("Complete")))
 
     def _side_effect(*arg: Any, **kwds: Any) -> Tuple[List[TaskStatus], List[Optional[str]]]:
         threading.Thread(target=_complete_job).start()
@@ -325,7 +327,7 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
         Callable[[PstDeviceProxy], Callable], List[Callable[[PstDeviceProxy], Callable]]
     ],
     component_state_callback_params: Optional[dict],
-    job_executor: JobExecutor,
+    job_executor: TaskExecutor,
 ) -> None:
     """Assert that actions that need to be delegated to remote devices."""
     task_callback = MagicMock()

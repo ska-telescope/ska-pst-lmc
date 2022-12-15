@@ -22,7 +22,7 @@ from ska_tango_base.executor import TaskStatus
 from ska_pst_lmc.component import as_device_attribute_name
 from ska_pst_lmc.component.component_manager import PstComponentManager
 from ska_pst_lmc.device_proxy import ChangeEventSubscription, DeviceProxyFactory, PstDeviceProxy
-from ska_pst_lmc.job import DeviceCommandJob, Job, SequentialJob, submit_job
+from ska_pst_lmc.job import DeviceCommandTask, SequentialTask, Task, submit_job
 from ska_pst_lmc.util.callback import Callback, callback_safely
 
 TaskResponse = Tuple[TaskStatus, str]
@@ -39,7 +39,7 @@ RemoteDeviceAction = Callable[[PstDeviceProxy], ActionResponse]
 class _RemoteJob:
     def __init__(
         self: _RemoteJob,
-        job: Job,
+        job: Task,
         completion_callback: Callback,
         logger: logging.Logger,
     ):
@@ -378,7 +378,7 @@ class PstBeamComponentManager(PstComponentManager):
 
     def _submit_remote_job(
         self: PstBeamComponentManager,
-        job: Job,
+        job: Task,
         task_callback: Callback,
         completion_callback: Callback,
     ) -> TaskResponse:
@@ -463,7 +463,7 @@ class PstBeamComponentManager(PstComponentManager):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            job=DeviceCommandJob(
+            job=DeviceCommandTask(
                 devices=self._remote_devices,
                 action=lambda d: d.On(),
                 command_name="On",
@@ -490,7 +490,7 @@ class PstBeamComponentManager(PstComponentManager):
         self._unsubscribe_change_events()
 
         return self._submit_remote_job(
-            job=DeviceCommandJob(
+            job=DeviceCommandTask(
                 devices=self._remote_devices,
                 action=lambda d: d.Off(),
                 command_name="Off",
@@ -514,7 +514,7 @@ class PstBeamComponentManager(PstComponentManager):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            job=DeviceCommandJob(
+            job=DeviceCommandTask(
                 devices=self._remote_devices,
                 action=lambda d: d.Standby(),
                 command_name="Standby",
@@ -538,7 +538,7 @@ class PstBeamComponentManager(PstComponentManager):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            job=DeviceCommandJob(
+            job=DeviceCommandTask(
                 devices=self._remote_devices,
                 action=lambda d: d.Reset(),
                 command_name="Reset",
@@ -582,28 +582,28 @@ class PstBeamComponentManager(PstComponentManager):
         request_str = json.dumps(request)
 
         return self._submit_remote_job(
-            job=SequentialJob(
-                tasks=[
+            job=SequentialTask(
+                subtasks=[
                     # first do configre_beam on SMRB
-                    DeviceCommandJob(
+                    DeviceCommandTask(
                         devices=[self._smrb_device],
                         action=lambda d: d.ConfigureBeam(request_str),
                         command_name="ConfigureBeam",
                     ),
                     # now do configure_beam on DSP and RECV, this can be done in parallel
-                    DeviceCommandJob(
+                    DeviceCommandTask(
                         devices=[self._dsp_device, self._recv_device],
                         action=lambda d: d.ConfigureBeam(request_str),
                         command_name="ConfigureBeam",
                     ),
                     # now configure scan on SMRB and RECV (smrb is no-op) in parallel
-                    DeviceCommandJob(
+                    DeviceCommandTask(
                         devices=[self._smrb_device, self._recv_device],
                         action=lambda d: d.ConfigureScan(request_str),
                         command_name="ConfigureScan",
                     ),
                     # now configure scan on the DSP device.
-                    DeviceCommandJob(
+                    DeviceCommandTask(
                         devices=[self._dsp_device],
                         action=lambda d: d.ConfigureScan(request_str),
                         command_name="ConfigureScan",
@@ -624,21 +624,21 @@ class PstBeamComponentManager(PstComponentManager):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            job=SequentialJob(
-                tasks=[
+            job=SequentialTask(
+                subtasks=[
                     # need to deconfigure scan of all processes, this can be done in parallel.
-                    DeviceCommandJob(
+                    DeviceCommandTask(
                         devices=self._remote_devices,
                         action=lambda d: d.DeconfigureScan(),
                         command_name="DeconfigureScan",
                     ),
                     # need to release the ring buffer clients before deconfiguring SMRB
-                    DeviceCommandJob(
+                    DeviceCommandTask(
                         devices=[self._dsp_device, self._recv_device],
                         action=lambda d: d.DeconfigureBeam(),
                         command_name="DeconfigureBeam",
                     ),
-                    DeviceCommandJob(
+                    DeviceCommandTask(
                         devices=[self._smrb_device],
                         action=lambda d: d.DeconfigureBeam(),
                         command_name="DeconfigureBeam",
@@ -662,7 +662,7 @@ class PstBeamComponentManager(PstComponentManager):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            job=DeviceCommandJob(
+            job=DeviceCommandTask(
                 devices=self._remote_devices,
                 action=lambda d: d.Scan(str(scan_id)),
                 command_name="Scan",
@@ -681,7 +681,7 @@ class PstBeamComponentManager(PstComponentManager):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            job=DeviceCommandJob(
+            job=DeviceCommandTask(
                 devices=self._remote_devices,
                 action=lambda d: d.EndScan(),
                 command_name="EndScan",
@@ -707,21 +707,21 @@ class PstBeamComponentManager(PstComponentManager):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            job=SequentialJob(
-                tasks=[
+            job=SequentialTask(
+                subtasks=[
                     # This will put the subordinate classes into IDLE state
-                    DeviceCommandJob(
+                    DeviceCommandTask(
                         devices=self._remote_devices,
                         action=lambda d: d.ObsReset(),
                         command_name="ObsReset",
                     ),
                     # need to release the ring buffer clients before deconfiguring SMRB
-                    DeviceCommandJob(
+                    DeviceCommandTask(
                         devices=[self._dsp_device, self._recv_device],
                         action=lambda d: d.DeconfigureBeam(),
                         command_name="DeconfigureBeam",
                     ),
-                    DeviceCommandJob(
+                    DeviceCommandTask(
                         devices=[self._smrb_device],
                         action=lambda d: d.DeconfigureBeam(),
                         command_name="DeconfigureBeam",
@@ -741,7 +741,7 @@ class PstBeamComponentManager(PstComponentManager):
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            job=DeviceCommandJob(
+            job=DeviceCommandTask(
                 devices=self._remote_devices,
                 action=lambda d: d.GoToFault(),
                 command_name="GoToFault",

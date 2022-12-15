@@ -19,12 +19,12 @@ from typing import Dict, Tuple, cast
 from ska_pst_lmc.device_proxy import ChangeEventSubscription, PstDeviceProxy
 
 from .common import DEVICE_COMMAND_JOB_QUEUE
-from .context import DeviceCommandJobContext
+from .context import DeviceCommandTaskContext
 
 _logger = logging.getLogger(__name__)
 
 
-class DeviceCommandJobExecutor:
+class DeviceCommandTaskExecutor:
     """Class to handle executing and tracking commands on device proxies.
 
     This class uses a queue to receive job commands, while a background
@@ -37,7 +37,7 @@ class DeviceCommandJobExecutor:
     to worry about all the necessary subscription and event handling.
 
     Clients should submit `DeviceCommandJob` jobs to the `JobExecutor` rather
-    than building up a `DeviceCommandJobContext` and sending it to the
+    than building up a `DeviceCommandTaskContext` and sending it to the
     job queue.
 
     Instances of class and the `JobExecutor` class work together by sharing
@@ -46,19 +46,19 @@ class DeviceCommandJobExecutor:
     """
 
     def __init__(
-        self: DeviceCommandJobExecutor,
-        job_queue: queue.Queue = DEVICE_COMMAND_JOB_QUEUE,
+        self: DeviceCommandTaskExecutor,
+        task_queue: queue.Queue = DEVICE_COMMAND_JOB_QUEUE,
     ) -> None:
         """Initialise the executor.
 
-        :param job_queue: the queue used to submit jobs to,
+        :param task_queue: the queue used to submit jobs to,
             defaults to DEVICE_COMMAND_JOB_QUEUE. This should be
             shared by the `JobExecutor` which is the producer of the messages
             this class consumes.
-        :type job_queue: queue.Queue, optional
+        :type task_queue: queue.Queue, optional
         """
-        self._job_queue = job_queue
-        self._job_context_map: Dict[str, DeviceCommandJobContext] = {}
+        self._task_queue = task_queue
+        self._task_context_map: Dict[str, DeviceCommandTaskContext] = {}
         self._lock = threading.Lock()
         self._stop = threading.Event()
 
@@ -66,20 +66,20 @@ class DeviceCommandJobExecutor:
 
         self._running = False
 
-    def __del__(self: DeviceCommandJobExecutor) -> None:
+    def __del__(self: DeviceCommandTaskExecutor) -> None:
         """Tear down class being destroyed."""
         self.stop()
 
-    def __enter__(self: DeviceCommandJobExecutor) -> DeviceCommandJobExecutor:
+    def __enter__(self: DeviceCommandTaskExecutor) -> DeviceCommandTaskExecutor:
         """Context manager start."""
         self.start()
         return self
 
-    def __exit__(self: DeviceCommandJobExecutor, exc_type: None, exc_val: None, exc_tb: None) -> None:
+    def __exit__(self: DeviceCommandTaskExecutor, exc_type: None, exc_val: None, exc_tb: None) -> None:
         """Context manager exit."""
         self.stop()
 
-    def stop(self: DeviceCommandJobExecutor) -> None:
+    def stop(self: DeviceCommandTaskExecutor) -> None:
         """Stop the executor."""
         if self._running:
             self._running = False
@@ -88,7 +88,7 @@ class DeviceCommandJobExecutor:
             for subscription in self._result_subscriptions.values():
                 subscription.unsubscribe()
 
-    def start(self: DeviceCommandJobExecutor) -> None:
+    def start(self: DeviceCommandTaskExecutor) -> None:
         """Start the executor."""
         self._running = True
         # need to reset this each time we start.
@@ -98,7 +98,7 @@ class DeviceCommandJobExecutor:
         )
         self._tpe.submit(self._process_queue)
 
-    def _ensure_subscription(self: DeviceCommandJobExecutor, device: PstDeviceProxy) -> None:
+    def _ensure_subscription(self: DeviceCommandTaskExecutor, device: PstDeviceProxy) -> None:
         """Ensure there is a change event subscription for `longRunningCommandResult` for device.
 
         :param device: the device to make sure that there is a subscription against.
@@ -109,7 +109,7 @@ class DeviceCommandJobExecutor:
                 "longrunningcommandresult", self._handle_subscription_event
             )
 
-    def _process_queue(self: DeviceCommandJobExecutor) -> None:
+    def _process_queue(self: DeviceCommandTaskExecutor) -> None:
         """Process messages off job queue.
 
         This method uses an infinite loop to read messages off the
@@ -119,36 +119,40 @@ class DeviceCommandJobExecutor:
         The loop is only stopped when instances of this class are
         destroyed.
         """
-        try:
-            while not self._stop.is_set():
-                try:
-                    job_context = cast(DeviceCommandJobContext, self._job_queue.get(timeout=0.1))
-                    _logger.debug(f"DeviceCommandJobExecutor received a device job: {job_context}")
-                    self._handle_job(job_context)
-                except queue.Empty:
-                    continue
-        except Exception:
-            _logger.exception("Error processing device command queue", exc_info=True)
+        while not self._stop.is_set():
+            try:
+                task_context = cast(DeviceCommandTaskContext, self._task_queue.get(timeout=0.1))
+                _logger.debug(f"DeviceCommandTaskExecutor received a device job: {task_context}")
+                self._handle_task(task_context)
+            except queue.Empty:
+                continue
 
-    def _handle_job(self: DeviceCommandJobExecutor, job_context: DeviceCommandJobContext) -> None:
-        """Handle job request that has been received.
+    def _handle_task(self: DeviceCommandTaskExecutor, task_context: DeviceCommandTaskContext) -> None:
+        """Handle task request that has been received.
 
         This will ensure that the device has a subscription to the `longRunningCommandResult`
         property on the device. After that it will execute the action and recording the `command_id`
         in an internal map that can be then used to later signal that a job has completed.
         """
         # ensure subscription
-        device = job_context.device
-        action = job_context.action
+        device = task_context.device
+        action = task_context.action
 
         self._ensure_subscription(device)
 
         with self._lock:
-            (_, [command_id]) = action(device)
-            if command_id:
-                self._job_context_map[command_id] = job_context
+            try:
+                # TODO - handle result code is not QUEUED
+                (_, [command_id]) = action(device)
+                if command_id:
+                    self._task_context_map[command_id] = task_context
+            except Exception as e:
+                _logger.exception(
+                    f"Error while excuting command '{device}.{task_context.command_name}()'", exc_info=True
+                )
+                task_context.signal_failed(e)
 
-    def _handle_subscription_event(self: DeviceCommandJobExecutor, event: Tuple[str, str]) -> None:
+    def _handle_subscription_event(self: DeviceCommandTaskExecutor, event: Tuple[str, str]) -> None:
         """Handle a subscription event.
 
         For the `longRunningCommandResult` this returns a tuple of `(command_id, msg)`. The `command_id`
@@ -157,20 +161,28 @@ class DeviceCommandJobExecutor:
         :param event: the event details, which is a tuple of `(command_id, msg)`
         :type event: Tuple[str, str]
         """
+        import json
+
         # this will come from the subscription
-        (command_id, _) = event
-        _logger.debug(f"Received a subscription event for command {command_id}")
+        (command_id, result) = event
+        _logger.debug(f"Received a subscription event for command {command_id} with msg: '{result}'")
         with self._lock:
-            if command_id in self._job_context_map:
-                self._job_context_map[command_id].signal.set()
-                del self._job_context_map[command_id]
+            if command_id in self._task_context_map:
+                task_context = self._task_context_map[command_id]
+
+                try:
+                    task_context.signal_complete(result=json.loads(result))
+                except json.JSONDecodeError:
+                    task_context.signal_failed_from_str(msg=result)
+
+                del self._task_context_map[command_id]
 
 
-DEVICE_COMMAND_JOB_EXECUTOR: DeviceCommandJobExecutor = DeviceCommandJobExecutor()
-"""Global :py:class:`DeviceCommandJobExecutor`.
+DEVICE_COMMAND_TASK_EXECUTOR: DeviceCommandTaskExecutor = DeviceCommandTaskExecutor()
+"""Global :py:class:`DeviceCommandTaskExecutor`.
 
 Using this means alongside the global `JobExecutor` means that the two executors
 are using the shared queue.
 """
 
-atexit.register(DEVICE_COMMAND_JOB_EXECUTOR.stop)
+atexit.register(DEVICE_COMMAND_TASK_EXECUTOR.stop)
