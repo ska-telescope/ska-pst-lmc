@@ -14,12 +14,12 @@ import concurrent.futures
 import logging
 import queue
 import threading
-from typing import Dict, cast
+from typing import cast
 
-from ska_pst_lmc.util.callback import Callback
+from ska_pst_lmc.util.callback import Callback, callback_safely
 
-from .common import DEVICE_COMMAND_JOB_QUEUE, TASK_QUEUE
-from .context import (
+from .common import DEVICE_COMMAND_TASK_QUEUE, JOB_QUEUE
+from .task import (
     DeviceCommandTask,
     DeviceCommandTaskContext,
     JobContext,
@@ -34,43 +34,43 @@ _logger = logging.getLogger(__name__)
 
 
 class TaskExecutor:
-    """An executor class that handles requests for jobs.
+    """An executor class that handles requests for tasks.
 
     Jobs are submited to instances of this class via the :py:meth:`submit_job`
-    method or to the global instance of this job executor `GLOBAL_JOB_EXECUTOR`
+    method or to the global instance of this task executor `GLOBAL_JOB_EXECUTOR`
     via the global method `submit_job`.
 
     Instances of this class are linked with `DeviceCommandTaskExecutor` that will
     handle the Tango logic of subscriptions and dealing with long running commands.
-    But the both need to share a :py:class:`queue.Queue` for which this class will
-    send messages to while the `DeviceCommandTaskExecutor` will read from.
+    Both need to share an instance of a :py:class:`queue.Queue` for which this class
+    will send messages to while the `DeviceCommandTaskExecutor` will read from. The
+    default shared queue is what is stored in `DEVICE_COMMAND_TASK_QUEUE`.
     """
 
     def __init__(
         self: TaskExecutor,
-        task_queue: queue.Queue[TaskContext] = TASK_QUEUE,
-        device_command_task_queue: queue.Queue[DeviceCommandTaskContext] = DEVICE_COMMAND_JOB_QUEUE,
+        job_queue: queue.Queue[TaskContext] = JOB_QUEUE,
+        device_command_task_queue: queue.Queue[DeviceCommandTaskContext] = DEVICE_COMMAND_TASK_QUEUE,
         max_parallel_workers: int = 4,
     ) -> None:
-        """Initialise job executor.
+        """Initialise task executor.
 
-        :param task_queue: queue used for main processing, defaults to JOB_QUEUE
-        :type task_queue: queue.Queue, optional
+        :param job_queue: queue used for main processing of jobs, defaults to TASK_QUEUE
+        :type job_queue: queue.Queue, optional
         :param device_command_task_queue: queue used for sending request to a
-            `DeviceCommandTaskExecutor`, defaults to DEVICE_COMMAND_JOB_QUEUE
+            `DeviceCommandTaskExecutor`, defaults to DEVICE_COMMAND_TASK_QUEUE
         :type device_command_task_queue: queue.Queue, optional
-        :param max_parallel_workers: maximum number of workers used for parallel job
+        :param max_parallel_workers: maximum number of workers used for parallel task
             processing.
         :type max_parallel_workers: int
         """
-        self._main_task_queue = task_queue
+        self._main_task_queue = job_queue
         self._device_command_task_queue = device_command_task_queue
 
         self._sequential_task_queue: queue.Queue[TaskContext] = queue.Queue(maxsize=1)
 
         self._parallel_lock = threading.Lock()
-        self._parallel_task_queue: queue.Queue[ParallelTaskTaskContext] = queue.Queue()
-        self._parallel_task_context_map: Dict[str, ParallelTaskContext] = {}
+        self._parallel_task_queue: queue.Queue[TaskContext] = queue.Queue()
 
         self._max_parallel_workers = max_parallel_workers
         self._stop = threading.Event()
@@ -82,31 +82,22 @@ class TaskExecutor:
         """Tear down class being destroyed."""
         self.stop()
 
-    def __enter__(self: TaskExecutor) -> TaskExecutor:
-        """Context manager start."""
-        self.start()
-        return self
-
-    def __exit__(self: TaskExecutor, exc_type: None, exc_val: None, exc_tb: None) -> None:
-        """Context manager exit."""
-        self.stop()
-
     def start(self: TaskExecutor) -> None:
-        """Start the job executor."""
+        """Start the task executor."""
         self._running = True
         # need to reset this each time we start.
         self._stop = threading.Event()
 
-        self._main_tpe = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="MainJob")
+        self._main_tpe = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="JobThread")
         self._main_tpe.submit(self._process_main_queue)
 
         self._sequential_tpe = concurrent.futures.ThreadPoolExecutor(
-            max_workers=1, thread_name_prefix="SequentialTask"
+            max_workers=1, thread_name_prefix="SequentialTaskThread"
         )
         self._sequential_tpe.submit(self._process_sequential_queue)
 
         self._parallel_tpe = concurrent.futures.ThreadPoolExecutor(
-            max_workers=self._max_parallel_workers, thread_name_prefix="ParallelTask"
+            max_workers=self._max_parallel_workers, thread_name_prefix="ParallelTaskThread"
         )
         for _ in range(self._max_parallel_workers):
             self._parallel_tpe.submit(self._process_parallel_queue)
@@ -128,8 +119,8 @@ class TaskExecutor:
         queue which can then be processed.
 
         :param job: the job to be submitted, it can be a simple `DeviceCommandTask`
-            or a composite job like a `SequentialTask` or `ParallelTask`.
-        :type job: Job
+            or a composite task like a `SequentialTask` or `ParallelTask`.
+        :type job: Task
         :param callback: the callback to notify the job is complete, defaults to None
         :type callback: Callback, optional
         """
@@ -139,10 +130,18 @@ class TaskExecutor:
         """Submit a root task context to the main execution queue.
 
         :param task_context: the job context object to submit.
-        :type task_context: TaskContext
+        :type task_context: JobContext
         """
         _logger.debug(f"Submitting job with context={task_context}")
         self._main_task_queue.put(task_context)
+
+        # want to wait until job has completed
+        task_context.evt.wait()
+
+        if task_context.failed:
+            raise task_context.exception  # type: ignore
+        else:
+            callback_safely(task_context.success_callback, result=task_context.result)
 
     def _process_main_queue(self: TaskExecutor) -> None:
         """Process messages on the main queue.
@@ -155,7 +154,7 @@ class TaskExecutor:
                 try:
                     task_context = cast(JobContext, self._main_task_queue.get(timeout=0.1))
                     _logger.debug(f"Main process loop receieved job with context={task_context}")
-                    self._handle_task(task_context)
+                    self._route_task(task_context)
                 except queue.Empty:
                     continue
         except Exception:
@@ -171,10 +170,8 @@ class TaskExecutor:
             while not self._stop.is_set():
                 try:
                     task_context = cast(TaskContext, self._sequential_task_queue.get(timeout=0.1))
-                    # evt = threading.Event()
-                    # sequential_task_context = TaskContext(job=task_context.job, callback=evt.set)
-                    _logger.debug(f"Sequential process loop receieved job with context={task_context}")
-                    self._handle_task(task_context)
+                    _logger.debug(f"Sequential process loop receieved task with context={task_context}")
+                    self._route_task(task_context)
                     task_context.evt.wait()
 
                     self._sequential_task_queue.task_done()
@@ -184,7 +181,7 @@ class TaskExecutor:
             _logger.exception("Error processing sequential queue", exc_info=True)
 
     def _process_parallel_queue(self: TaskExecutor) -> None:
-        """Process messages on the parallel job queue.
+        """Process messages on the parallel task queue.
 
         This method is perfomed in the background by a thread. It will run in
         and infinite loop until the instance of this class is destroyed.
@@ -203,18 +200,21 @@ class TaskExecutor:
             _logger.exception("Error during processing parallel queue", exc_info=True)
 
     def _handle_sequential_task(self: TaskExecutor, task_context: TaskContext) -> None:
-        """Handle a `SequentialTask` request.
+        """Handle a sequential task request.
 
-        This method will process a `SequentialTask` by submitting each of the individual subtasks
-        as a task onto the sequential task queue to be processed, as there is only one thread processing
-        that queue they are guaranteed to run sequentially.
+        The `task_context` passed to this method has a `task` of type `SequentialTask`. This
+        will process the sequential task by submitting each of the individual subtasks
+        as a task onto the sequential task queue to be processed, as there is only one thread
+        processing that queue they are guaranteed to run sequentially.
 
         Only when the last task is complete will the callback be called.
 
-        :param job: the job which subtasks need to be done sequentially.
-        :type job: SequentialTask
-        :param callback: callback to call once all subtasks are complete, defaults to None
-        :type callback: Callback, optional
+        If any subtask fails then the remaining subtasks will not be executed and the
+        `task_context` passed in will be marked as failed with the exception that occured
+        in the subtask that failed.
+
+        :param task_context: the task_context which subtasks need to be done sequentially.
+        :type task_context: TaskContext
         """
         task = cast(SequentialTask, task_context.task)
         subtasks = [TaskContext(task=t, parent_task_context=task_context) for t in task.subtasks]
@@ -222,11 +222,13 @@ class TaskExecutor:
         for t in subtasks:
             # wait for each subtask by using an event as the callback
             self._sequential_task_queue.put(t)
+
+            # wait for subtask to complete or fail
             t.evt.wait()
 
             if t.failed:
-                # stop processing
-                task_context.signal_failed(exception=t.exception)
+                # signal overall task is failed and stop processing
+                task_context.signal_failed(exception=t.exception)  # type: ignore
                 break
 
         if not task_context.failed:
@@ -236,19 +238,16 @@ class TaskExecutor:
         """Handle a parallel task.
 
         This method will process a `ParallelTask` by submitting each indivial subtasks on to
-        the internal parallel job queue. A parallel job context is used to track the overall
-        progress of the job by assigning a random UUID to the whole process. Each subtask is
-        also given a random UUID as well as a `threading.Event`.
+        the internal parallel task queue. The overall task is not considered complete until all
+        the subtasks are complete.  If any of the subtasks fail no new subtasks of the overall
+        task will be processed but the subtasks already running may run to completion.
 
-        :param job: the job which subtasks can be done concurrently.
-        :type job: ParallelTask
-        :param callback: callback to call once all subtasks are complete, defaults to None
-        :type callback: Callback, optional
+        If any subtask fails then the overall task will be marked as failed with the exception
+        that happened in the first subtask that failed.
+
+        :param task_context: the task context which its subtasks can be done concurrently.
+        :type task_context: TaskContext
         """
-        # task_contexts = [
-        #     ParallelTaskTaskContext(job_id=job_id, task_id=str(uuid.uuid4()), signal=threading.Event(), job=t)
-        #     for t in job.tasks
-        # ]
         task = cast(ParallelTask, task_context.task)
         parallel_task_context = ParallelTaskContext(
             task=task,
@@ -267,14 +266,14 @@ class TaskExecutor:
         parallel_task_context.evt.wait()
 
         if parallel_task_context.failed:
-            task_context.signal_failed(parallel_task_context.exception)
+            task_context.signal_failed(parallel_task_context.exception)  # type: ignore
         else:
             task_context.signal_complete()
 
     def _handle_parallel_subtask(self: TaskExecutor, task_context: TaskContext) -> None:
         """Handle a parallel subtask.
 
-        This converts the `task_context` into a `TaskContext` and calls the :py:meth:`_handle_job`
+        This converts the `task_context` into a `TaskContext` and calls the :py:meth:`_handle_task`
         method to be processed, this doesn't happen on the main thread so it won't block.
 
         :param task_context: the subtask context
@@ -285,14 +284,16 @@ class TaskExecutor:
             # Parent has already been marked as failed.  Avoid processing any further
             return
 
-        self._handle_task(task_context)
+        self._route_task(task_context)
 
         # wait unilt subtask completes
         task_context.evt.wait()
 
+        # need this parallel lock to avoid a race condition and not updating parent task
+        # as complete or failed.
         with self._parallel_lock:
             if task_context.failed and not parent_task_context.failed:
-                parent_task_context.signal_failed(exception=task_context.exception)
+                parent_task_context.signal_failed(exception=task_context.exception)  # type: ignore
 
             if parent_task_context.failed:
                 return
@@ -310,10 +311,9 @@ class TaskExecutor:
         converted into a `ParallelTask` with separate `DeviceCommandTask` tasks to be handled,
         which ultimately come back to this method but will then be sent to the `DeviceCommandTaskExecutor`.
 
-        :param job: the remove device command to run.
-        :type job: DeviceCommandTask
-        :param callback: callback to call once all device commands are complete, defaults to None
-        :type callback: Callback, optional
+        :param task_context: the task context for submitting the `DeviceCommandTask` to
+            the `DeviceCommandTaskExecutor`.
+        :type task_context: TaskContext
         """
         task = cast(DeviceCommandTask, task_context.task)
         if len(task.devices) > 1:
@@ -324,29 +324,35 @@ class TaskExecutor:
                     for d in task.devices
                 ]
             )
-            child_task_context = parallel_task_context = TaskContext(
+            child_task_context = TaskContext(
                 task=parallel_task,
                 parent_task_context=task_context,
             )
-            self._handle_parallel_task(parallel_task_context)
+            self._handle_parallel_task(child_task_context)
         else:
-            child_task_context = device_task_context = DeviceCommandTaskContext(
-                task=task, device=task.devices[0], action=task.action, command_name=task.command_name
+            # this is a single device so send it to the device command task executor
+            child_task_context = DeviceCommandTaskContext(
+                task=task,
+                device=task.devices[0],
+                action=task.action,
+                command_name=task.command_name,
+                parent_task_context=task_context,
             )
-            _logger.debug(f"Submitting {device_task_context} to device command job queue.")
-            self._device_command_task_queue.put(device_task_context)
+            self._device_command_task_queue.put(child_task_context)
 
+        # wait until child has completed
         child_task_context.evt.wait()
+
         if child_task_context.failed:
-            task_context.signal_failed(exception=child_task_context.exception)
+            task_context.signal_failed(exception=child_task_context.exception)  # type: ignore
         else:
             task_context.signal_complete(result=child_task_context.result)
 
-    def _handle_task(self: TaskExecutor, task_context: TaskContext) -> None:
-        """Handle a task.
+    def _route_task(self: TaskExecutor, task_context: TaskContext) -> None:
+        """Route a task to correct handler method.
 
         This is an internal method that is used by the background threads to
-        route the tasks to the correct handler.
+        route the tasks to the correct handler method.
 
         :param task_context: the context of the task to run.
         :type task_context: TaskContext
@@ -364,17 +370,17 @@ class TaskExecutor:
 
 
 TASK_EXECUTOR: TaskExecutor = TaskExecutor()
-"""Global :py:class:`JobExecutor`.
+"""Global :py:class:`TaskExecutor`.
 
 This should be used alongside the global `DeviceCommandTaskExecutor`.
 """
 
 
 def submit_job(job: Task, callback: Callback = None) -> None:
-    """Submit a job to the global `JobExecutor`.
+    """Submit a job to the global `TaskExecutor`.
 
     :param job: the job to submit.
-    :type job: Job
+    :type job: Task
     :param callback: callback to use when job completes, defaults to None
     :type callback: Callback, optional
     """

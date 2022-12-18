@@ -54,7 +54,7 @@ class _RemoteJob:
         task_abort_event: Optional[Event] = None,
         **kwargs: Any,
     ) -> None:
-        def _completion_callback() -> None:
+        def _completion_callback(*arg: Any, **kwargs: Any) -> None:
             self._completion_callback(task_callback)  # type: ignore
 
         callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)

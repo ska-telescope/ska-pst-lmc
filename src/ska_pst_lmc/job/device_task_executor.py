@@ -5,7 +5,7 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
 
-"""Module for handling long running jobs."""
+"""Module for handling long running device proxy tasks."""
 
 from __future__ import annotations
 
@@ -18,8 +18,8 @@ from typing import Dict, Tuple, cast
 
 from ska_pst_lmc.device_proxy import ChangeEventSubscription, PstDeviceProxy
 
-from .common import DEVICE_COMMAND_JOB_QUEUE
-from .context import DeviceCommandTaskContext
+from .common import DEVICE_COMMAND_TASK_QUEUE
+from .task import DeviceCommandTaskContext
 
 _logger = logging.getLogger(__name__)
 
@@ -27,33 +27,33 @@ _logger = logging.getLogger(__name__)
 class DeviceCommandTaskExecutor:
     """Class to handle executing and tracking commands on device proxies.
 
-    This class uses a queue to receive job commands, while a background
+    This class uses a queue to receive task commands, while a background
     thread receives these messages and then executes the commands.
 
     Since the remote commands also run in the background on the device, this
     class needs to subscribe to the `longRunningCommandResult` property
     and listen to events of when this changes for a given command.
-    This class was created to allow the normal `JobExecutor` not having
+    This class was created to allow the normal `TaskExecutor` not having
     to worry about all the necessary subscription and event handling.
 
-    Clients should submit `DeviceCommandJob` jobs to the `JobExecutor` rather
+    Clients should submit `DeviceCommandTask` tasks to the `TaskExecutor` rather
     than building up a `DeviceCommandTaskContext` and sending it to the
-    job queue.
+    task queue.
 
-    Instances of class and the `JobExecutor` class work together by sharing
-    a queue, the default is `DEVICE_COMMAND_JOB_QUEUE`. If creating separate
+    Instances of class and the `TaskExecutor` class work together by sharing
+    a queue, the default is `DEVICE_COMMAND_TASK_QUEUE`. If creating separate
     instances of both classes, make sure that queue between them is the same.
     """
 
     def __init__(
         self: DeviceCommandTaskExecutor,
-        task_queue: queue.Queue = DEVICE_COMMAND_JOB_QUEUE,
+        task_queue: queue.Queue = DEVICE_COMMAND_TASK_QUEUE,
     ) -> None:
         """Initialise the executor.
 
-        :param task_queue: the queue used to submit jobs to,
-            defaults to DEVICE_COMMAND_JOB_QUEUE. This should be
-            shared by the `JobExecutor` which is the producer of the messages
+        :param task_queue: the queue used to submit tasks to,
+            defaults to `DEVICE_COMMAND_TASK_QUEUE`. This should be
+            shared by the `TaskExecutor` which is the producer of the messages
             this class consumes.
         :type task_queue: queue.Queue, optional
         """
@@ -68,15 +68,6 @@ class DeviceCommandTaskExecutor:
 
     def __del__(self: DeviceCommandTaskExecutor) -> None:
         """Tear down class being destroyed."""
-        self.stop()
-
-    def __enter__(self: DeviceCommandTaskExecutor) -> DeviceCommandTaskExecutor:
-        """Context manager start."""
-        self.start()
-        return self
-
-    def __exit__(self: DeviceCommandTaskExecutor, exc_type: None, exc_val: None, exc_tb: None) -> None:
-        """Context manager exit."""
         self.stop()
 
     def stop(self: DeviceCommandTaskExecutor) -> None:
@@ -94,7 +85,7 @@ class DeviceCommandTaskExecutor:
         # need to reset this each time we start.
         self._stop = threading.Event()
         self._tpe = concurrent.futures.ThreadPoolExecutor(
-            max_workers=4, thread_name_prefix="DeviceCommanJobThread"
+            max_workers=4, thread_name_prefix="DeviceCommandTaskThread"
         )
         self._tpe.submit(self._process_queue)
 
@@ -110,11 +101,11 @@ class DeviceCommandTaskExecutor:
             )
 
     def _process_queue(self: DeviceCommandTaskExecutor) -> None:
-        """Process messages off job queue.
+        """Process messages off task queue.
 
         This method uses an infinite loop to read messages off the
-        job queue. Once a message is received it will call the
-        `_handle_job` method.
+        task queue. Once a message is received it will call the
+        `_handle_task` method.
 
         The loop is only stopped when instances of this class are
         destroyed.
@@ -122,7 +113,7 @@ class DeviceCommandTaskExecutor:
         while not self._stop.is_set():
             try:
                 task_context = cast(DeviceCommandTaskContext, self._task_queue.get(timeout=0.1))
-                _logger.debug(f"DeviceCommandTaskExecutor received a device job: {task_context}")
+                _logger.debug(f"DeviceCommandTaskExecutor received a device task: {task_context}")
                 self._handle_task(task_context)
             except queue.Empty:
                 continue
@@ -132,7 +123,7 @@ class DeviceCommandTaskExecutor:
 
         This will ensure that the device has a subscription to the `longRunningCommandResult`
         property on the device. After that it will execute the action and recording the `command_id`
-        in an internal map that can be then used to later signal that a job has completed.
+        in an internal map that can be then used to later signal that a task has completed.
         """
         # ensure subscription
         device = task_context.device
@@ -142,7 +133,6 @@ class DeviceCommandTaskExecutor:
 
         with self._lock:
             try:
-                # TODO - handle result code is not QUEUED
                 (_, [command_id]) = action(device)
                 if command_id:
                     self._task_context_map[command_id] = task_context
@@ -156,7 +146,7 @@ class DeviceCommandTaskExecutor:
         """Handle a subscription event.
 
         For the `longRunningCommandResult` this returns a tuple of `(command_id, msg)`. The `command_id`
-        is used by this method to see if there is a job that needs to be notified that it has completed.
+        is used by this method to see if there is a task that needs to be notified that it has completed.
 
         :param event: the event details, which is a tuple of `(command_id, msg)`
         :type event: Tuple[str, str]
@@ -164,16 +154,19 @@ class DeviceCommandTaskExecutor:
         import json
 
         # this will come from the subscription
-        (command_id, result) = event
-        _logger.debug(f"Received a subscription event for command {command_id} with msg: '{result}'")
+        (command_id, msg) = event
+        _logger.debug(f"Received a subscription event for command {command_id} with msg: '{msg}'")
         with self._lock:
             if command_id in self._task_context_map:
                 task_context = self._task_context_map[command_id]
 
                 try:
-                    task_context.signal_complete(result=json.loads(result))
+                    result = json.loads(msg)
+                    _logger.debug(f"Setting task as complete with result: {result}")
+                    task_context.signal_complete(result=result)
                 except json.JSONDecodeError:
-                    task_context.signal_failed_from_str(msg=result)
+                    _logger.debug(f"Setting task as failed with msg: '{msg}'")
+                    task_context.signal_failed_from_str(msg=msg)
 
                 del self._task_context_map[command_id]
 
@@ -181,7 +174,7 @@ class DeviceCommandTaskExecutor:
 DEVICE_COMMAND_TASK_EXECUTOR: DeviceCommandTaskExecutor = DeviceCommandTaskExecutor()
 """Global :py:class:`DeviceCommandTaskExecutor`.
 
-Using this means alongside the global `JobExecutor` means that the two executors
+Using this means alongside the global `TaskExecutor` means that the two executors
 are using the shared queue.
 """
 

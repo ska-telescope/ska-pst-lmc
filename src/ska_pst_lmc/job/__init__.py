@@ -8,8 +8,8 @@
 """This is used for handling complex jobs used by the PST.BEAM."""
 
 __all__ = [
-    "TASK_QUEUE",
-    "DEVICE_COMMAND_JOB_QUEUE",
+    "JOB_QUEUE",
+    "DEVICE_COMMAND_TASK_QUEUE",
     "DeviceAction",
     "DEVICE_COMMAND_TASK_EXECUTOR",
     "DeviceCommandTaskExecutor",
@@ -26,13 +26,13 @@ __all__ = [
     "DeviceCommandTask",
 ]
 
-from .common import TASK_QUEUE, DEVICE_COMMAND_JOB_QUEUE, DeviceAction
+from .common import JOB_QUEUE, DEVICE_COMMAND_TASK_QUEUE, DeviceAction
 from .device_task_executor import (
     DEVICE_COMMAND_TASK_EXECUTOR,
     DeviceCommandTaskExecutor,
 )
 from .task_executor import TASK_EXECUTOR, submit_job, TaskExecutor
-from .context import (
+from .task import (
     Task,
     TaskContext,
     JobContext,

@@ -67,7 +67,7 @@ def configure_beam_request() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def device_command_job_executor() -> Generator[DeviceCommandTaskExecutor, None, None]:
+def device_command_task_executor() -> Generator[DeviceCommandTaskExecutor, None, None]:
     """Return a generator for a device command job executor."""
     DEVICE_COMMAND_TASK_EXECUTOR.start()
     yield DEVICE_COMMAND_TASK_EXECUTOR
@@ -75,8 +75,8 @@ def device_command_job_executor() -> Generator[DeviceCommandTaskExecutor, None, 
 
 
 @pytest.fixture
-def job_executor(
-    device_command_job_executor: DeviceCommandTaskExecutor,
+def task_executor(
+    device_command_task_executor: DeviceCommandTaskExecutor,
 ) -> Generator[TaskExecutor, None, None]:
     """Return a generator for job executor."""
     TASK_EXECUTOR.start()
