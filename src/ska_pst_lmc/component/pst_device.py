@@ -17,7 +17,7 @@ import tango
 from ska_tango_base.base import BaseComponentManager
 from ska_tango_base.base.base_device import DevVarLongStringArrayType
 from ska_tango_base.commands import ResultCode, SubmittedSlowCommand
-from ska_tango_base.control_model import ObsState, SimulationMode
+from ska_tango_base.control_model import CommunicationStatus, ObsState, SimulationMode
 from ska_tango_base.csp import CspSubElementObsDevice
 from ska_tango_base.faults import StateModelError
 from ska_tango_base.obs import ObsStateModel
@@ -25,6 +25,8 @@ from tango import DebugIt
 from tango.server import attribute, command
 
 from ska_pst_lmc.component.component_manager import PstComponentManager
+
+from .pst_device_interface import PstDeviceInterface
 
 __all__ = [
     "PstBaseDevice",
@@ -61,7 +63,7 @@ def as_device_attribute_name(attr_name: str) -> str:
     return head + "".join(x.title() for x in tail)
 
 
-class PstBaseDevice(Generic[T], CspSubElementObsDevice):
+class PstBaseDevice(Generic[T], CspSubElementObsDevice, PstDeviceInterface):
     """Base class for all the TANGO devices in PST.LMC.
 
     This extends from :py:class:`CspSubElementObsDevice` but is also
@@ -126,6 +128,40 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice):
             "PstBaseDevice is abstract; implement 'create_component_manager` method in " "a subclass.`"
         )
 
+    def handle_component_state_change(self: PstBaseDevice, *args: Any, **kwargs: Any) -> None:
+        """Handle change in this device's state.
+
+        This overrides the :py:class:`PstDeviceInterface` and calls `_component_state_changed` on
+        this class.
+        """
+        self._component_state_changed(*args, **kwargs)
+
+    def handle_communication_state_change(
+        self: PstBaseDevice, communication_state: CommunicationStatus
+    ) -> None:
+        """Handle a change in device's communication state.
+
+        This just calls the `SKABaseDevice._communication_state_changed` method
+        """
+        self._communication_state_changed(communication_state=communication_state)
+
+    def handle_attribute_value_update(self: PstBaseDevice, attribute_name: str, value: Any) -> None:
+        """Handle update of a device attribute value.
+
+        :param attribute_name: the name of the attribute to update.
+        :type attribute_name: str
+        :param value: the new value of the attribute to update to.
+        :type value: Any
+        """
+        try:
+            attr_key = as_device_attribute_name(attribute_name)
+            self.push_change_event(attr_key, value)
+            self.push_archive_event(attr_key, value)
+        except Exception:
+            self.logger.warning(
+                f"Error in attempting to set device attribute {attribute_name}.", exc_info=True
+            )
+
     def _component_state_changed(  # type: ignore[override]
         self: PstBaseDevice,
         obsfault: Optional[bool] = None,
@@ -159,6 +195,20 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice):
     @component_manager.setter
     def component_manager(self: PstBaseDevice, component_manager: BaseComponentManager) -> None:
         self._component_manager = component_manager
+
+    @property
+    def beam_id(self: PstBaseDevice) -> int:
+        """Get the ID of the beam this device belongs to."""
+        return self.DeviceID
+
+    @property
+    def device_name(self: PstBaseDevice) -> str:
+        """Get the name of the device.
+
+        This is the relative device name (e.g. low_psi/beam/01) and
+        not the FQDN which can include the Tango DB in a URL.
+        """
+        return self.get_name()
 
     # -----------
     # Commands

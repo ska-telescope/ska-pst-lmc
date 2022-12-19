@@ -55,12 +55,6 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         util.set_serial_model(tango.SerialModel.NO_SYNC)
         super().init_device()
 
-        self._data_receive_rate = 0.0
-        self._data_received = 0
-        self._data_drop_rate = 0.0
-        self._data_dropped = 0
-        self._misordered_packets = 0
-
         self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
         self._version_id = release.VERSION
 
@@ -81,17 +75,10 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :return: a component manager for this device.
         """
         return PstReceiveComponentManager(
-            device_name=self.get_name(),
-            process_api_endpoint=self.process_api_endpoint,
+            device_interface=self,
             simulation_mode=SimulationMode.TRUE,
             logger=self.logger,
-            communication_state_callback=self._communication_state_changed,
-            component_state_callback=self._component_state_changed,
             subband_udp_ports=self.subband_udp_ports,
-            monitor_polling_rate=self.monitor_polling_rate,
-            monitor_data_callback=self._update_monitor_data,
-            beam_id=self.DeviceID,
-            property_callback=self._update_attribute_value,
         )
 
     def always_executed_hook(self: PstReceive) -> None:
@@ -105,19 +92,14 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         destructor and by the device Init command.
         """
 
-    def _update_monitor_data(self: PstReceive, data: ReceiveData) -> None:
-        for (key, value) in dataclasses.asdict(data).items():
-            self._update_attribute_value(key, value)
+    def handle_monitor_data_update(self: PstReceive, monitor_data: ReceiveData) -> None:
+        """Handle monitoring data.
 
-    def _update_attribute_value(self: PstReceive, key: str, value: Any) -> None:
-        try:
-            setattr(self, f"_{key}", value)
-
-            attr_key = as_device_attribute_name(key)
-            self.push_change_event(attr_key, value)
-            self.push_archive_event(attr_key, value)
-        except Exception:
-            self.logger.warning(f"Error in attempting to set device attribute {key}.", exc_info=True)
+        :param monitor_data: the latest monitoring data that has been reported.
+        :type monitor_data: ReceiveData
+        """
+        for (key, value) in dataclasses.asdict(monitor_data).items():
+            self.handle_attribute_value_update(key, value)
 
     # ----------
     # Attributes
@@ -138,7 +120,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :returns: current data receive rate from the CBF interface in Gb/s.
         :rtype: float
         """
-        return self._data_receive_rate
+        return self.component_manager.data_receive_rate
 
     @attribute(
         dtype=int,
@@ -153,7 +135,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
         """
-        return self._data_received
+        return self.component_manager.data_received
 
     @attribute(
         dtype=float,
@@ -175,7 +157,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :returns: current rate of CBF ingest data being dropped or lost in B/s.
         :rtype: float
         """
-        return self._data_drop_rate
+        return self.component_manager.data_drop_rate
 
     @attribute(
         dtype=int,
@@ -191,7 +173,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :returns: total number of bytes dropped in the current scan.
         :rtype: int
         """
-        return self._data_dropped
+        return self.component_manager.data_dropped
 
     @attribute(
         dtype=int,
@@ -204,7 +186,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :returns: total number of packets received out of order in the current scan.
         :rtype: int
         """
-        return self._misordered_packets
+        return self.component_manager.misordered_packets
 
     @attribute(
         dtype=str,

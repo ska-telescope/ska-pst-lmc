@@ -22,10 +22,12 @@ from ska_pst_lmc.component import as_device_attribute_name
 from ska_pst_lmc.component.pst_device import PstBaseDevice
 from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
 
+from .beam_device_interface import PstBeamDeviceInterface
+
 __all__ = ["PstBeam", "main"]
 
 
-class PstBeam(PstBaseDevice[PstBeamComponentManager]):
+class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
     """A logical TANGO device representing a Beam Capability for PST.LMC.
 
     **Properties:**
@@ -113,16 +115,9 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         :return: a component manager for this device.
         """
         return PstBeamComponentManager(
-            device_name=self.get_name(),
-            smrb_fqdn=self.SmrbFQDN,
-            recv_fqdn=self.RecvFQDN,
-            dsp_fqdn=self.DspFQDN,
+            device_interface=self,
             simulation_mode=SimulationMode.TRUE,
             logger=self.logger,
-            communication_state_callback=self._communication_state_changed,
-            component_state_callback=self._component_state_changed,
-            beam_id=self.DeviceID,
-            property_callback=self._update_attribute_value,
         )
 
     def always_executed_hook(self: PstBeam) -> None:
@@ -136,14 +131,38 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager]):
         destructor and by the device Init command.
         """
 
-    def _update_attribute_value(self: PstBeam, key: str, value: Any) -> None:
+    def handle_attribute_value_update(self: PstBeam, attribute_name: str, value: Any) -> None:
+        """Handle update of a device attribute value.
+
+        :param attribute_name: the name of the attribute to update.
+        :type attribute_name: str
+        :param value: the new value of the attribute to update to.
+        :type value: Any
+        """
         try:
-            setattr(self, f"_{key}", value)
-            attr_key = as_device_attribute_name(key)
+            setattr(self, f"_{attribute_name}", value)
+            attr_key = as_device_attribute_name(attribute_name)
             self.push_change_event(attr_key, value)
             self.push_archive_event(attr_key, value)
         except Exception:
-            self.logger.warning(f"Error in attempting to set device attribute {key}.", exc_info=True)
+            self.logger.warning(
+                f"Error in attempting to set device attribute {attribute_name}.", exc_info=True
+            )
+
+    @property
+    def smrb_fqdn(self: PstBeam) -> str:
+        """Get the fully qualified device name (FQDN) for the SMRB.MGMT device of this beam."""
+        return self.SmrbFQDN
+
+    @property
+    def recv_fqdn(self: PstBeam) -> str:
+        """Get the fully qualified device name (FQDN) for the RECV.MGMT device of this beam."""
+        return self.RecvFQDN
+
+    @property
+    def dsp_fqdn(self: PstBeam) -> str:
+        """Get the fully qualified device name (FQDN) for the DSP.MGMT device of this beam."""
+        return self.DspFQDN
 
     # ----------
     # Attributes

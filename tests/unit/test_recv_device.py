@@ -13,7 +13,6 @@ import json
 import logging
 import time
 from typing import Any, Dict, Type
-from unittest.mock import MagicMock
 
 import pytest
 import tango
@@ -45,50 +44,21 @@ def device_properties(
 
 
 @pytest.fixture
-def component_manager(
-    device_name: str,
-    grpc_endpoint: str,
-    monitor_polling_rate: int,
-    logger: logging.Logger,
-    monkeypatch: pytest.MonkeyPatch,
-) -> PstReceiveComponentManager:
-    """Get fixture for a PstReceiveComponentManager."""
-    # monkey patch PstReceiveComponentManager._update_api to do nothing.
-    def _update_api(*args: Any, **kwargs: Any) -> None:
-        pass
-
-    monkeypatch.setattr(PstReceiveComponentManager, "_update_api", _update_api)
-
-    return PstReceiveComponentManager(
-        device_name=device_name,
-        process_api_endpoint=grpc_endpoint,
-        logger=logger,
-        # this is just a place holder to mock these values.
-        monitor_data_callback=MagicMock(),
-        communication_state_callback=MagicMock(),
-        component_state_callback=MagicMock(),
-        property_callback=MagicMock(),
-        monitor_polling_rate=monitor_polling_rate,
-    )
-
-
-@pytest.fixture
-def recv_device_class(component_manager: PstReceiveComponentManager) -> Type[PstReceive]:
+def recv_device_class(logger: logging.Logger, monkeypatch: pytest.MonkeyPatch) -> Type[PstReceive]:
     """Get PstReceive fixture.
 
     This creates a subclass of the PstReceive that overrides the create_component_manager method
     to use the component_manager fixture.
     """
 
+    def _update_api(*args: Any, **kwargs: Any) -> None:
+        pass
+
+    monkeypatch.setattr(PstReceiveComponentManager, "_update_api", _update_api)
+
     class _PstReceive(PstReceive):
         def create_component_manager(self: _PstReceive) -> PstReceiveComponentManager:
-            component_manager._communication_state_callback = self._communication_state_changed
-            component_manager._api._component_state_callback = self._component_state_changed
-            component_manager._component_state_callback = self._component_state_changed
-            component_manager._monitor_data_handler._monitor_data_callback = self._update_monitor_data
-            component_manager._property_callback = self._update_attribute_value
-
-            return component_manager
+            return PstReceiveComponentManager(device_interface=self, logger=logger)
 
     return _PstReceive
 

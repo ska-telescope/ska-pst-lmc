@@ -25,6 +25,8 @@ from ska_pst_lmc.device_proxy import ChangeEventSubscription, DeviceProxyFactory
 from ska_pst_lmc.job import DeviceCommandTask, SequentialTask, Task, submit_job
 from ska_pst_lmc.util.callback import Callback, callback_safely
 
+from .beam_device_interface import PstBeamDeviceInterface
+
 TaskResponse = Tuple[TaskStatus, str]
 RemoteTaskResponse = Tuple[List[TaskStatus], List[str]]
 
@@ -90,15 +92,8 @@ class PstBeamComponentManager(PstComponentManager):
 
     def __init__(
         self: PstBeamComponentManager,
-        device_name: str,
-        smrb_fqdn: str,
-        recv_fqdn: str,
-        dsp_fqdn: str,
-        logger: logging.Logger,
-        communication_state_callback: Callable[[CommunicationStatus], None],
-        component_state_callback: Callable,
-        *args: Any,
-        property_callback: Callable[[str, Any], None],
+        *,
+        device_interface: PstBeamDeviceInterface,
         **kwargs: Any,
     ) -> None:
         """Initialise component manager.
@@ -116,19 +111,14 @@ class PstBeamComponentManager(PstComponentManager):
         :param component_fault_callback: callback to be called when the
             component faults (or stops faulting)
         """
-        self._smrb_device = DeviceProxyFactory.get_device(smrb_fqdn)
-        self._recv_device = DeviceProxyFactory.get_device(recv_fqdn)
-        self._dsp_device = DeviceProxyFactory.get_device(dsp_fqdn)
+        self._smrb_device = DeviceProxyFactory.get_device(device_interface.smrb_fqdn)
+        self._recv_device = DeviceProxyFactory.get_device(device_interface.recv_fqdn)
+        self._dsp_device = DeviceProxyFactory.get_device(device_interface.dsp_fqdn)
         self._remote_devices = [self._smrb_device, self._recv_device, self._dsp_device]
         self._subscribed = False
-        self._property_callback = property_callback
 
         super().__init__(
-            device_name,
-            logger,
-            communication_state_callback,
-            component_state_callback,
-            *args,
+            device_interface=device_interface,
             power=PowerState.UNKNOWN,
             fault=None,
             **kwargs,
@@ -391,7 +381,7 @@ class PstBeamComponentManager(PstComponentManager):
 
     def _subscribe_change_events(self: PstBeamComponentManager) -> None:
         """Subscribe to monitoring attributes of remote devices."""
-        self.logger.debug(f"{self._device_name} subscribing to monitoring events")
+        self.logger.debug(f"{self.device_name} subscribing to monitoring events")
         subscriptions_config = {
             self._recv_device: [
                 "data_receive_rate",

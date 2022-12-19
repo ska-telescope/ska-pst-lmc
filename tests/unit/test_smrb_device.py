@@ -13,7 +13,6 @@ import json
 import logging
 import time
 from typing import Any, Dict, Type
-from unittest.mock import MagicMock
 
 import pytest
 import tango
@@ -45,49 +44,24 @@ def device_properties(
 
 
 @pytest.fixture
-def component_manager(
-    device_name: str,
-    grpc_endpoint: str,
-    monitor_polling_rate: int,
-    logger: logging.Logger,
-    monkeypatch: pytest.MonkeyPatch,
-) -> PstSmrbComponentManager:
-    """Get fixture for a PstSmrbComponentManager."""
-    # monkey patch PstSmrbComponentManager._update_api to do nothing.
-    def _update_api(*args: Any, **kwargs: Any) -> None:
-        pass
-
-    monkeypatch.setattr(PstSmrbComponentManager, "_update_api", _update_api)
-
-    return PstSmrbComponentManager(
-        device_name=device_name,
-        process_api_endpoint=grpc_endpoint,
-        logger=logger,
-        # this is just a place holder to mock these values.
-        monitor_data_callback=MagicMock(),
-        communication_state_callback=MagicMock(),
-        component_state_callback=MagicMock(),
-        property_callback=MagicMock(),
-        monitor_polling_rate=monitor_polling_rate,
-    )
-
-
-@pytest.fixture
-def smrb_device_class(component_manager: PstSmrbComponentManager) -> Type[PstSmrb]:
+def smrb_device_class(logger: logging.Logger, monkeypatch: pytest.MonkeyPatch) -> Type[PstSmrb]:
     """Get PstSmrb fixture.
 
     This creates a subclass of the PstSmrb that overrides the create_component_manager method
     to use the component_manager fixture.
     """
 
+    def _update_api(*args: Any, **kwargs: Any) -> None:
+        pass
+
+    monkeypatch.setattr(PstSmrbComponentManager, "_update_api", _update_api)
+
     class _PstSmrb(PstSmrb):
         def create_component_manager(self: _PstSmrb) -> PstSmrbComponentManager:
-            component_manager._communication_state_callback = self._communication_state_changed
-            component_manager._api._component_state_callback = self._component_state_changed
-            component_manager._component_state_callback = self._component_state_changed
-            component_manager._monitor_data_handler._monitor_data_callback = self._update_monitor_data
-
-            return component_manager
+            return PstSmrbComponentManager(
+                device_interface=self,
+                logger=logger,
+            )
 
     return _PstSmrb
 

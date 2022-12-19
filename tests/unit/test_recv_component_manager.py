@@ -17,7 +17,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionRespo
 from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
-from ska_pst_lmc.component import MonitorDataHandler
+from ska_pst_lmc.component import MonitorDataHandler, PstApiDeviceInterface
 from ska_pst_lmc.receive.receive_component_manager import PstReceiveComponentManager
 from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_process_api import (
@@ -31,31 +31,21 @@ from ska_pst_lmc.test import TestPstLmcService
 
 @pytest.fixture
 def component_manager(
-    device_name: str,
-    grpc_endpoint: str,
+    device_interface: MagicMock,
     simulation_mode: SimulationMode,
     logger: logging.Logger,
     api: PstReceiveProcessApi,
-    communication_state_callback: Callable[[CommunicationStatus], None],
-    component_state_callback: Callable,
     recv_data_host: str,
     subband_udp_ports: List[int],
-    monitor_data_callback: Callable,
-    property_callback: Callable,
 ) -> PstReceiveComponentManager:
     """Create instance of a component manager."""
     return PstReceiveComponentManager(
-        device_name=device_name,
-        process_api_endpoint=grpc_endpoint,
+        device_interface=cast(PstApiDeviceInterface[ReceiveData], device_interface),
         simulation_mode=simulation_mode,
         logger=logger,
-        communication_state_callback=communication_state_callback,
-        component_state_callback=component_state_callback,
         api=api,
         network_interface=recv_data_host,
         subband_udp_ports=subband_udp_ports,
-        monitor_data_callback=monitor_data_callback,
-        property_callback=property_callback,
     )
 
 

@@ -11,11 +11,11 @@ from __future__ import annotations
 
 import logging
 from functools import cache
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
+from ska_tango_base.control_model import PowerState, SimulationMode
 
-from ska_pst_lmc.component import PstApiComponentManager
+from ska_pst_lmc.component import PstApiComponentManager, PstApiDeviceInterface
 from ska_pst_lmc.component.component_manager import TaskResponse
 from ska_pst_lmc.component.monitor_data_handler import MonitorDataHandler
 from ska_pst_lmc.receive.receive_model import ReceiveData, ReceiveDataStore
@@ -28,23 +28,15 @@ from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources
 from ska_pst_lmc.util.callback import Callback, wrap_callback
 
 
-class PstReceiveComponentManager(PstApiComponentManager):
+class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveProcessApi]):
     """Component manager for the RECV component for the PST.LMC subsystem."""
-
-    _api: PstReceiveProcessApi
 
     def __init__(
         self: PstReceiveComponentManager,
-        device_name: str,
-        process_api_endpoint: str,
+        *,
+        device_interface: PstApiDeviceInterface[ReceiveData],
         logger: logging.Logger,
-        monitor_data_callback: Callable[[ReceiveData], None],
-        communication_state_callback: Callable[[CommunicationStatus], None],
-        component_state_callback: Callable[..., None],
         api: Optional[PstReceiveProcessApi] = None,
-        monitor_polling_rate: int = 5000,
-        *args: Any,
-        property_callback: Callable[[str, Any], None],
         **kwargs: Any,
     ):
         """Initialise instance of the component manager.
@@ -63,32 +55,26 @@ class PstReceiveComponentManager(PstApiComponentManager):
         :param api: optional API instance, used to override during testing.
         """
         logger.debug(
-            f"Setting up RECV component manager with device_name='{device_name}'"
-            + "and api_endpoint='{process_api_endpoint}'"
+            f"Setting up RECV component manager with device_name='{device_interface.device_name}'"
+            + f"and api_endpoint='{device_interface.process_api_endpoint}'"
         )
-        self.api_endpoint = process_api_endpoint
         api = api or PstReceiveProcessApiSimulator(
             logger=logger,
-            component_state_callback=component_state_callback,
+            component_state_callback=device_interface.handle_component_state_change,
         )
         self._subband_udp_ports: List[int] = []
 
         # Set up handling of monitor data.
         self._monitor_data_handler = MonitorDataHandler(
             data_store=ReceiveDataStore(),
-            monitor_data_callback=monitor_data_callback,
+            monitor_data_callback=device_interface.handle_monitor_data_update,
         )
-        self._monitor_polling_rate = monitor_polling_rate
         self._data_host: Optional[str] = None
-        self._property_callback = property_callback
 
         super().__init__(
-            device_name,
-            api,
-            logger,
-            communication_state_callback,
-            component_state_callback,
-            *args,
+            device_interface=device_interface,
+            api=api,
+            logger=logger,
             power=PowerState.UNKNOWN,
             fault=None,
             **kwargs,
@@ -105,7 +91,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
             )
         else:
             self._api = PstReceiveProcessApiGrpc(
-                client_id=self._device_name,
+                client_id=self.device_name,
                 grpc_endpoint=self.api_endpoint,
                 logger=self.logger,
                 component_state_callback=self._push_component_state_update,

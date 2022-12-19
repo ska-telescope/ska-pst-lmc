@@ -17,7 +17,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionRespo
 from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
-from ska_pst_lmc.component import MonitorDataHandler
+from ska_pst_lmc.component import MonitorDataHandler, PstApiDeviceInterface
 from ska_pst_lmc.dsp.dsp_component_manager import PstDspComponentManager
 from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData
 from ska_pst_lmc.dsp.dsp_process_api import PstDspProcessApi, PstDspProcessApiGrpc, PstDspProcessApiSimulator
@@ -28,27 +28,17 @@ from ska_pst_lmc.util.callback import Callback
 
 @pytest.fixture
 def component_manager(
-    device_name: str,
-    grpc_endpoint: str,
+    device_interface: MagicMock,
     simulation_mode: SimulationMode,
     logger: logging.Logger,
     api: PstDspProcessApi,
-    communication_state_callback: Callable[[CommunicationStatus], None],
-    component_state_callback: Callable,
-    monitor_data_callback: Callable,
-    property_callback: Callable,
 ) -> PstDspComponentManager:
     """Create instance of a component manager."""
     return PstDspComponentManager(
-        device_name=device_name,
-        process_api_endpoint=grpc_endpoint,
+        device_interface=cast(PstApiDeviceInterface[DspDiskMonitorData], device_interface),
         simulation_mode=simulation_mode,
         logger=logger,
-        communication_state_callback=communication_state_callback,
-        component_state_callback=component_state_callback,
         api=api,
-        monitor_data_callback=monitor_data_callback,
-        property_callback=property_callback,
     )
 
 

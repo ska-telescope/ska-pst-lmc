@@ -17,7 +17,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionRespo
 from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
-from ska_pst_lmc.component import MonitorDataHandler
+from ska_pst_lmc.component import MonitorDataHandler, PstApiDeviceInterface
 from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
 from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData
 from ska_pst_lmc.smrb.smrb_process_api import (
@@ -31,25 +31,17 @@ from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
 
 @pytest.fixture
 def component_manager(
-    device_name: str,
-    grpc_endpoint: str,
+    device_interface: MagicMock,
     simulation_mode: SimulationMode,
     logger: logging.Logger,
     api: PstSmrbProcessApi,
-    communication_state_callback: Callable[[CommunicationStatus], None],
-    component_state_callback: Callable,
-    monitor_data_callback: Callable,
 ) -> PstSmrbComponentManager:
     """Create instance of a component manager."""
     return PstSmrbComponentManager(
-        device_name=device_name,
-        process_api_endpoint=grpc_endpoint,
+        device_interface=cast(PstApiDeviceInterface[SmrbMonitorData], device_interface),
         simulation_mode=simulation_mode,
         logger=logger,
-        communication_state_callback=communication_state_callback,
-        component_state_callback=component_state_callback,
         api=api,
-        monitor_data_callback=monitor_data_callback,
     )
 
 
