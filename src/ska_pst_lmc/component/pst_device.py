@@ -210,6 +210,13 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice, PstDeviceInterface):
         """
         return self.get_name()
 
+    def handle_fault(self: PstBaseDevice, fault_msg: str) -> None:
+        """Handle putting the device into a fault state."""
+        self.logger.info(f"{self.device_name} received a fault with error message: '{fault_msg}'")
+        self._health_failure_msg = fault_msg
+        self.logger.info(f"{self.device_name} setting component state to obsault=True")
+        self._component_state_changed(obsfault=True)
+
     # -----------
     # Commands
     # -----------
@@ -286,11 +293,13 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice, PstDeviceInterface):
             raise ValueError("Unable to change simulation mode unless in EMPTY observation state")
 
     @command(
+        dtype_in="DevString",
+        doc_in="The reason for why the device needs to go to a FAULT state.",
         dtype_out="DevVarLongStringArray",
         doc_out="([Command ResultCode], [Unique ID of the command])",
     )
     @DebugIt()
-    def GoToFault(self: PstBaseDevice) -> Any:
+    def GoToFault(self: PstBaseDevice, argin: str) -> Any:
         """Put the device and sub-devices and services into a FAULT state.
 
         This is implemented as a long running command as a service may take some
@@ -300,7 +309,7 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice, PstDeviceInterface):
         :rtype: ([ResultCode], [str])
         """
         handler = self.get_command_object("GoToFault")
-        (result_code, message) = handler()
+        (result_code, message) = handler(argin)
         return [[result_code], [message]]
 
 

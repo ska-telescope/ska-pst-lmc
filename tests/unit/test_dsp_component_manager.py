@@ -250,7 +250,7 @@ def test_dsp_cm_not_communicating_switching_simulation_mode_not_try_to_establish
     update_communication_state.assert_not_called()
 
 
-def test_dsp_cm_dsp_configure_beam(
+def test_dsp_cm_configure_beam(
     component_manager: PstDspComponentManager,
     configure_beam_request: Dict[str, Any],
     task_callback: Callable,
@@ -274,7 +274,7 @@ def test_dsp_cm_dsp_configure_beam(
     )
 
 
-def test_dsp_cm_dsp_deconfigure_beam(
+def test_dsp_cm_deconfigure_beam(
     component_manager: PstDspComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -328,7 +328,7 @@ def test_dsp_cm_deconfigure_scan(
     )
 
 
-def test_dsp_cm_dsp_scan(
+def test_dsp_cm_scan(
     component_manager: PstDspComponentManager,
     scan_request: Dict[str, Any],
     task_callback: Callable,
@@ -352,7 +352,7 @@ def test_dsp_cm_dsp_scan(
     )
 
 
-def test_dsp_cm_dsp_stop_scan(
+def test_dsp_cm_stop_scan(
     component_manager: PstDspComponentManager,
     task_callback: Callable,
     monitor_data_callback: MagicMock,
@@ -373,7 +373,7 @@ def test_dsp_cm_dsp_stop_scan(
     monitor_data_callback.assert_called_once_with(DspDiskMonitorData())
 
 
-def test_dsp_cm_dsp_abort(
+def test_dsp_cm_abort(
     component_manager: PstDspComponentManager,
     task_callback: Callback,
 ) -> None:
@@ -391,7 +391,7 @@ def test_dsp_cm_dsp_abort(
     )
 
 
-def test_dsp_cm_dsp_obsreset(
+def test_dsp_cm_obsreset(
     component_manager: PstDspComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -409,8 +409,9 @@ def test_dsp_cm_dsp_obsreset(
     )
 
 
-def test_dsp_cm_recv_go_to_fault(
+def test_dsp_cm_go_to_fault(
     component_manager: PstDspComponentManager,
+    device_interface: MagicMock,
     task_callback: Callable,
 ) -> None:
     """Test that the component manager calls the API start a scan."""
@@ -420,8 +421,9 @@ def test_dsp_cm_recv_go_to_fault(
         task_callback=task_callback,
     )
 
-    component_manager.go_to_fault(task_callback=task_callback)
+    component_manager.go_to_fault(task_callback=task_callback, fault_msg="putting DSP into fault")
 
     api.go_to_fault.assert_called_once()
     calls = [call(status=TaskStatus.IN_PROGRESS), call(status=TaskStatus.COMPLETED, result="Completed")]
     cast(MagicMock, task_callback).assert_has_calls(calls)
+    device_interface.handle_fault.assert_called_once_with(fault_msg="putting DSP into fault")

@@ -13,10 +13,10 @@ import sys
 import threading
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
-from unittest.mock import MagicMock, call
+from unittest.mock import ANY, MagicMock, call
 
 import pytest
-from ska_tango_base.control_model import AdminMode, CommunicationStatus, PowerState, SimulationMode
+from ska_tango_base.control_model import AdminMode, CommunicationStatus, ObsState, PowerState, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.beam import PstBeamComponentManager, PstBeamDeviceInterface
@@ -290,6 +290,8 @@ def request_params(
         return csp_configure_scan_request
     elif method_name == "scan":
         return int(scan_request["scan_id"])
+    elif method_name == "go_to_fault":
+        return "putting BEAM into fault"
     else:
         return None
 
@@ -339,6 +341,7 @@ def _complete_job_side_effect() -> Callable[..., Tuple[List[TaskStatus], List[Op
 )
 def test_remote_actions(  # noqa: C901 - override checking of complexity for this test
     component_manager: PstBeamComponentManager,
+    device_interface: MagicMock,
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
@@ -378,6 +381,8 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
     if request_params is not None:
         if method_name == "scan":
             params_str = str(request_params)
+        if method_name == "go_to_fault":
+            params_str = str(request_params)
         elif method_name == "configure_scan":
             # ensure we use a the common and pst scan configuration
             scan_configuration = {**request_params["common"], **request_params["pst"]["scan"]}
@@ -404,6 +409,8 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
 
     calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
     task_callback.assert_has_calls(calls)
+    if method_name == "go_to_fault":
+        device_interface.handle_fault.assert_called_once_with(fault_msg="putting BEAM into fault")
 
 
 @pytest.mark.parametrize(
@@ -638,3 +645,75 @@ def test_beam_cm_set_simulation_mode_on_child_devices(
     assert smrb_device_proxy.simulationMode == SimulationMode.TRUE
     assert recv_device_proxy.simulationMode == SimulationMode.TRUE
     assert dsp_device_proxy.simulationMode == SimulationMode.TRUE
+
+
+@pytest.mark.parametrize("device_fqdn", ["test/smrb/1", "test/recv/1", "test/dsp/1"])
+def test_beam_cm_faults_when_a_subordinated_device_faults(
+    component_manager: PstBeamComponentManager,
+    device_fqdn: str,
+    device_proxy: PstDeviceProxy,
+    device_interface: PstBeamDeviceInterface,
+) -> None:
+    """Test when a subordinate device faults that PstBeam is notified."""
+    component_manager._subscribe_change_events()
+
+    # assert that we subscribe to obsState
+    subscription_callbacks = [
+        cal.kwargs["callback"]
+        for cal in cast(MagicMock, device_proxy.subscribe_change_event).call_args_list
+        if cal.kwargs["attribute_name"] == "obsState"
+    ]
+
+    assert len(subscription_callbacks) == 1
+
+    # get the callback
+    subscription_callbacks[0]
+    callback: Callable = subscription_callbacks[0]
+
+    # if obsState is FAULT - get current fault message from subordinate
+    for obs_state in ObsState:
+        # want to ignore FAULT so we can assert there has been not update
+        # on the device itself when a fault happens.
+        if obs_state == ObsState.FAULT:
+            continue
+
+        callback(obs_state)
+
+    cast(MagicMock, device_interface).handle_subdevice_fault.assert_not_called()
+
+    callback(ObsState.FAULT)
+    cast(MagicMock, device_interface).handle_subdevice_fault.assert_called_once_with(
+        device_fqdn=device_fqdn, fault_msg=ANY
+    )
+
+
+@pytest.mark.parametrize("device_fqdn", ["test/smrb/1", "test/recv/1", "test/dsp/1"])
+def test_beam_cm_propagates_subordinate_device_error_messages_on_faults(
+    component_manager: PstBeamComponentManager,
+    device_proxy: PstDeviceProxy,
+    device_interface: PstBeamDeviceInterface,
+) -> None:
+    """Test last fault message propagates."""
+    component_manager._subscribe_change_events()
+
+    cast(MagicMock, device_proxy).healthFailureMessage = "test error message"
+
+    # assert that we subscribe to obsState
+    subscription_callbacks = [
+        cal.kwargs["callback"]
+        for cal in cast(MagicMock, device_proxy.subscribe_change_event).call_args_list
+        if cal.kwargs["attribute_name"] == "obsState"
+    ]
+
+    assert len(subscription_callbacks) == 1
+
+    # get the callback
+    subscription_callbacks[0]
+    callback: Callable = subscription_callbacks[0]
+
+    # if obsState is FAULT - get current fault message from subordinate
+    # assert that BEAM gets notified of the fault state
+    callback(ObsState.FAULT)
+    cast(MagicMock, device_interface).handle_subdevice_fault.assert_called_once_with(
+        device_fqdn=ANY, fault_msg="test error message"
+    )

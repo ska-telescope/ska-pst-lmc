@@ -16,7 +16,7 @@ from threading import Event
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ska_tango_base.base import check_communicating
-from ska_tango_base.control_model import AdminMode, CommunicationStatus, PowerState
+from ska_tango_base.control_model import AdminMode, CommunicationStatus, ObsState, PowerState
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component import as_device_attribute_name
@@ -69,7 +69,7 @@ class _RemoteJob:
                 task_callback(status=TaskStatus.FAILED, result=str(e), exception=e)
 
 
-class PstBeamComponentManager(PstComponentManager):
+class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
     """Component manager for the BEAM component in PST.LMC.
 
     Since the BEAM component is a logical device, this component
@@ -332,6 +332,26 @@ class PstBeamComponentManager(PstComponentManager):
         self._expected_data_record_rate = expected_data_record_rate
         self._property_callback("expected_data_record_rate", expected_data_record_rate)
 
+    def _handle_subdevice_obs_state_event(
+        self: PstBeamComponentManager, device: PstDeviceProxy, obs_state: ObsState
+    ) -> None:
+        """Handle a change in the a subdevice's obsState.
+
+        Currently this just handles that a subdevice goes into a FAULT state. However,
+        this could be used for knowning when the device has moved out of FAULT or
+        when it has stopped scanning.
+
+        :param device: the device proxy for the subordinate device.
+        :type device: PstDeviceProxy
+        :param obs_state: the new obsState of a subordinated device.
+        :type obs_state: ObsState
+        """
+        self.logger.debug(f"Recevied an update to {device._fqdn}.obsState. New value is {obs_state}")
+        if obs_state == ObsState.FAULT:
+            fault_msg: str = device.healthFailureMessage
+            self.logger.warning(f"Recevied a FAULT for {device.fqdn}. Fault msg = '{fault_msg}'")
+            self._device_interface.handle_subdevice_fault(device_fqdn=device.fqdn, fault_msg=fault_msg)
+
     def _simulation_mode_changed(self: PstBeamComponentManager) -> None:
         """Set simulation mode state.
 
@@ -389,14 +409,19 @@ class PstBeamComponentManager(PstComponentManager):
                 "data_dropped",
                 "data_drop_rate",
                 "subband_beam_configuration",
+                "obs_state",
             ],
             self._dsp_device: [
                 "data_record_rate",
                 "data_recorded",
                 "available_disk_space",
                 "available_recording_time",
+                "obs_state",
             ],
-            self._smrb_device: ["ring_buffer_utilisation"],
+            self._smrb_device: [
+                "ring_buffer_utilisation",
+                "obs_state",
+            ],
         }
 
         def _set_attr(attribute: str, value: Any) -> None:
@@ -411,6 +436,8 @@ class PstBeamComponentManager(PstComponentManager):
 
                 if attribute == "subband_beam_configuration":
                     callback = self._update_channel_block_configuration
+                elif attribute == "obs_state":
+                    callback = functools.partial(self._handle_subdevice_obs_state_event, device)
                 else:
                     callback = functools.partial(_set_attr, attribute)
 
@@ -722,18 +749,21 @@ class PstBeamComponentManager(PstComponentManager):
             completion_callback=_completion_callback,
         )
 
-    def go_to_fault(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
+    def go_to_fault(
+        self: PstBeamComponentManager, fault_msg: str, task_callback: Callback = None
+    ) -> TaskResponse:
         """Put all the sub-devices into a FAULT state."""
 
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'GoToFault' commands have completed.")
             self._push_component_state_update(obsfault=True)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
+            self._device_interface.handle_fault(fault_msg=fault_msg)
 
         return self._submit_remote_job(
             job=DeviceCommandTask(
                 devices=self._remote_devices,
-                action=lambda d: d.GoToFault(),
+                action=lambda d: d.GoToFault(fault_msg),
                 command_name="GoToFault",
             ),
             task_callback=task_callback,

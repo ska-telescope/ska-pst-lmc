@@ -34,3 +34,7 @@ class PstBeamDeviceInterface(PstDeviceInterface):
     def dsp_fqdn(self: PstBeamDeviceInterface) -> str:
         """Get the fully qualified device name (FQDN) for the DSP.MGMT device of this beam."""
         raise NotImplementedError("PstBeamDeviceInterface is abstract")
+
+    def handle_subdevice_fault(self: PstBeamDeviceInterface, device_fqdn: str, fault_msg: str) -> None:
+        """Handle a subdevice has faulted."""
+        raise NotImplementedError("PstBeamDeviceInterface is abstract")

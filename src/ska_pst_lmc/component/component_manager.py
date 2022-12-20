@@ -34,8 +34,10 @@ __all__ = [
 
 TaskResponse = Tuple[TaskStatus, str]
 
+DeviceInterface = TypeVar("DeviceInterface", bound=PstDeviceInterface)
 
-class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
+
+class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager, CspObsComponentManager):
     """
     Base Component Manager for the PST.LMC. subsystem.
 
@@ -58,7 +60,7 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
     def __init__(
         self: PstComponentManager,
         *,
-        device_interface: PstDeviceInterface,
+        device_interface: DeviceInterface,
         logger: logging.Logger,
         simulation_mode: SimulationMode = SimulationMode.TRUE,
         **kwargs: Any,
@@ -398,7 +400,9 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
 
         return self.submit_task(_task, task_callback=task_callback)
 
-    def go_to_fault(self: PstComponentManager, task_callback: Callback = None) -> TaskResponse:
+    def go_to_fault(
+        self: PstComponentManager, fault_msg: str, task_callback: Callback = None
+    ) -> TaskResponse:
         """Set the component into a FAULT state.
 
         For BEAM this will make the sub-devices be put into a FAULT state. For
@@ -412,7 +416,7 @@ T = TypeVar("T")
 Api = TypeVar("Api", bound=PstProcessApi)
 
 
-class PstApiComponentManager(Generic[T, Api], PstComponentManager):
+class PstApiComponentManager(Generic[T, Api], PstComponentManager[PstApiDeviceInterface[T]]):
     """
     A base component Manager for the PST.LMC. that uses an API.
 
@@ -599,7 +603,9 @@ class PstApiComponentManager(Generic[T, Api], PstComponentManager):
         """
         return self._submit_background_task(self._api.reset, task_callback=task_callback)
 
-    def go_to_fault(self: PstApiComponentManager, task_callback: Callback = None) -> TaskResponse:
+    def go_to_fault(
+        self: PstApiComponentManager, fault_msg: str, task_callback: Callback = None
+    ) -> TaskResponse:
         """Put the service into a FAULT state."""
 
         def _task(
@@ -609,6 +615,7 @@ class PstApiComponentManager(Generic[T, Api], PstComponentManager):
             wrapped_callback = wrap_callback(task_callback)
             wrapped_callback(status=TaskStatus.IN_PROGRESS)
             self._api.go_to_fault()
+            self._device_interface.handle_fault(fault_msg=fault_msg)
             wrapped_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_background_task(_task, task_callback=task_callback)

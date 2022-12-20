@@ -395,11 +395,12 @@ class TestPstDsp:
         )
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToFault(),
+            lambda: device_under_test.GoToFault("putting DSP.MGMT into FAULT"),
             expected_obs_state_events=[
                 ObsState.FAULT,
             ],
         )
+        assert device_under_test.healthFailureMessage == "putting DSP.MGMT into FAULT"
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.ObsReset(),
@@ -443,11 +444,12 @@ class TestPstDsp:
         )
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToFault(),
+            lambda: device_under_test.GoToFault("putting DSP.MGMT into FAULT"),
             expected_obs_state_events=[
                 ObsState.FAULT,
             ],
         )
+        assert device_under_test.healthFailureMessage == "putting DSP.MGMT into FAULT"
 
     def test_dsp_mgmt_go_to_fault_when_scanning(
         self: TestPstDsp,
@@ -491,8 +493,9 @@ class TestPstDsp:
         )
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToFault(),
+            lambda: device_under_test.GoToFault("putting DSP.MGMT into FAULT"),
             expected_obs_state_events=[
                 ObsState.FAULT,
             ],
         )
+        assert device_under_test.healthFailureMessage == "putting DSP.MGMT into FAULT"

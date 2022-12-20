@@ -383,11 +383,12 @@ class TestPstSmrb:
         )
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToFault(),
+            lambda: device_under_test.GoToFault("putting SMRB.MGMT into FAULT"),
             expected_obs_state_events=[
                 ObsState.FAULT,
             ],
         )
+        assert device_under_test.healthFailureMessage == "putting SMRB.MGMT into FAULT"
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.ObsReset(),
@@ -431,11 +432,12 @@ class TestPstSmrb:
         )
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToFault(),
+            lambda: device_under_test.GoToFault("putting SMRB.MGMT into FAULT"),
             expected_obs_state_events=[
                 ObsState.FAULT,
             ],
         )
+        assert device_under_test.healthFailureMessage == "putting SMRB.MGMT into FAULT"
 
     def test_smrb_mgmt_go_to_fault_when_scanning(
         self: TestPstSmrb,
@@ -479,8 +481,9 @@ class TestPstSmrb:
         )
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToFault(),
+            lambda: device_under_test.GoToFault("putting SMRB.MGMT into FAULT"),
             expected_obs_state_events=[
                 ObsState.FAULT,
             ],
         )
+        assert device_under_test.healthFailureMessage == "putting SMRB.MGMT into FAULT"

@@ -57,6 +57,10 @@ class PstDeviceInterface:
         """Get the name of the device."""
         raise NotImplementedError("PstDeviceInteface is abstract")
 
+    def handle_fault(self: PstDeviceInterface, fault_msg: str) -> None:
+        """Handle device going into a fault state."""
+        raise NotImplementedError("PstDeviceInteface is abstract")
+
 
 T = TypeVar("T")
 

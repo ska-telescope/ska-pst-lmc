@@ -375,11 +375,12 @@ class TestPstReceive:
         )
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToFault(),
+            lambda: device_under_test.GoToFault("putting RECV.MGMT into FAULT"),
             expected_obs_state_events=[
                 ObsState.FAULT,
             ],
         )
+        assert device_under_test.healthFailureMessage == "putting RECV.MGMT into FAULT"
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.ObsReset(),
@@ -423,11 +424,12 @@ class TestPstReceive:
         )
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToFault(),
+            lambda: device_under_test.GoToFault("putting RECV.MGMT into FAULT"),
             expected_obs_state_events=[
                 ObsState.FAULT,
             ],
         )
+        assert device_under_test.healthFailureMessage == "putting RECV.MGMT into FAULT"
 
     def test_recv_mgmt_go_to_fault_when_scanning(
         self: TestPstReceive,
@@ -471,8 +473,9 @@ class TestPstReceive:
         )
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToFault(),
+            lambda: device_under_test.GoToFault("putting RECV.MGMT into FAULT"),
             expected_obs_state_events=[
                 ObsState.FAULT,
             ],
         )
+        assert device_under_test.healthFailureMessage == "putting RECV.MGMT into FAULT"
