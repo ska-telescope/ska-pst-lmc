@@ -4,7 +4,6 @@ from __future__ import annotations
 import collections
 import logging
 import threading
-import time
 from concurrent import futures
 from random import randint
 from typing import Any, Callable, Dict, Generator, List
@@ -324,7 +323,6 @@ def multidevice_test_context(
     logger.debug(f"Creating multidevice_test_context {server_configuration}")
     with MultiDeviceTestContext(**server_configuration) as context:
         logger.debug("Created multidevice_test_context")
-        time.sleep(0.5)
         yield context
 
 
@@ -340,9 +338,6 @@ def device_under_test(tango_context: DeviceTestContext) -> DeviceProxy:
     :return: a proxy to the device under test
     :rtype: :py:class:`tango.DeviceProxy`
     """
-    # Give the PushChanges polled command time to run once.
-    time.sleep(0.2)
-
     return tango_context.device
 
 
