@@ -36,7 +36,7 @@ _logger = logging.getLogger(__name__)
 class TaskExecutor:
     """An executor class that handles requests for tasks.
 
-    Jobs are submited to instances of this class via the :py:meth:`submit_job`
+    Jobs are submitted to instances of this class via the :py:meth:`submit_job`
     method or to the global instance of this task executor `GLOBAL_JOB_EXECUTOR`
     via the global method `submit_job`.
 
@@ -237,7 +237,7 @@ class TaskExecutor:
     def _handle_parallel_task(self: TaskExecutor, task_context: TaskContext) -> None:
         """Handle a parallel task.
 
-        This method will process a `ParallelTask` by submitting each indivial subtasks on to
+        This method will process a `ParallelTask` by submitting each individual subtasks on to
         the internal parallel task queue. The overall task is not considered complete until all
         the subtasks are complete.  If any of the subtasks fail no new subtasks of the overall
         task will be processed but the subtasks already running may run to completion.

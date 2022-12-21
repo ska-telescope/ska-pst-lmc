@@ -278,7 +278,7 @@ def request_params(
 def _complete_job_side_effect() -> Callable[..., Tuple[List[TaskStatus], List[Optional[str]]]]:
     """Create a complete job side effect.
 
-    This is used to stub out completion of remote jobs.
+    This is used to stub out completing of remote jobs.
     """
 
     def _side_effect(*arg: Any, **kwds: Any) -> Tuple[List[TaskStatus], List[Optional[str]]]:

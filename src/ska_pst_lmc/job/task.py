@@ -194,7 +194,7 @@ class ParallelTaskContext(TaskContext):
     This extends from :py:class:`TaskContext` to allow storing of
     task contexts of the subtasks.
 
-    This task is only considered completedly successfully once on the
+    This task is only considered completed successfully once on the
     subtasks have completed successfully.  If one of the subtasks fails
     then this task contexted is to be considered failed.
 
@@ -229,7 +229,7 @@ class DeviceCommandTaskContext(TaskContext):
 class JobContext(TaskContext):
     """A task context class that is used to track the whole submitted job.
 
-    This is used by the job executor to track the overral job. The task
+    This is used by the job executor to track the overall job. The task
     executor will either throw the exception stored in parent class or
     will call the `success_callback` once the job has been marked as complete.
 
