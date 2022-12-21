@@ -24,15 +24,15 @@ from tango import DeviceProxy
 from tango.test_context import DeviceTestContext, MultiDeviceTestContext, get_host_ip
 
 from ska_pst_lmc.device_proxy import DeviceProxyFactory
+from ska_pst_lmc.job import (
+    DEVICE_COMMAND_TASK_EXECUTOR,
+    TASK_EXECUTOR,
+    DeviceCommandTaskExecutor,
+    TaskExecutor,
+)
 from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 from ska_pst_lmc.util.callback import Callback
-from ska_pst_lmc.util.job import (
-    DEVICE_COMMAND_JOB_EXECUTOR,
-    JOB_EXECUTOR,
-    DeviceCommandJobExecutor,
-    JobExecutor,
-)
 
 
 @pytest.fixture(scope="module")
@@ -67,19 +67,21 @@ def configure_beam_request() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def device_command_job_executor() -> Generator[DeviceCommandJobExecutor, None, None]:
+def device_command_task_executor() -> Generator[DeviceCommandTaskExecutor, None, None]:
     """Return a generator for a device command job executor."""
-    DEVICE_COMMAND_JOB_EXECUTOR.start()
-    yield DEVICE_COMMAND_JOB_EXECUTOR
-    DEVICE_COMMAND_JOB_EXECUTOR.stop()
+    DEVICE_COMMAND_TASK_EXECUTOR.start()
+    yield DEVICE_COMMAND_TASK_EXECUTOR
+    DEVICE_COMMAND_TASK_EXECUTOR.stop()
 
 
 @pytest.fixture
-def job_executor(device_command_job_executor: DeviceCommandJobExecutor) -> Generator[JobExecutor, None, None]:
+def task_executor(
+    device_command_task_executor: DeviceCommandTaskExecutor,
+) -> Generator[TaskExecutor, None, None]:
     """Return a generator for job executor."""
-    JOB_EXECUTOR.start()
-    yield JOB_EXECUTOR
-    JOB_EXECUTOR.stop()
+    TASK_EXECUTOR.start()
+    yield TASK_EXECUTOR
+    TASK_EXECUTOR.stop()
 
 
 @pytest.fixture

@@ -239,6 +239,7 @@ class PstReceiveComponentManager(PstApiComponentManager):
                 self.subband_beam_configuration = recv_resources
             except Exception:
                 self.logger.exception("Error in configuring scan for RECV", exc_info=True)
+                raise
 
         return self._submit_background_task(
             _task,

@@ -12,7 +12,6 @@ import logging
 import sys
 import threading
 import time
-import uuid
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 from unittest.mock import MagicMock, call
 
@@ -23,8 +22,8 @@ from ska_tango_base.executor import TaskStatus
 from ska_pst_lmc.beam.beam_component_manager import PstBeamComponentManager
 from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
+from ska_pst_lmc.job import DEVICE_COMMAND_TASK_EXECUTOR, TaskExecutor
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
-from ska_pst_lmc.util.job import DEVICE_COMMAND_JOB_EXECUTOR, JobExecutor
 
 
 @pytest.fixture
@@ -276,17 +275,23 @@ def request_params(
         return None
 
 
-def _complete_job_side_effect(job_id: str) -> Callable[..., Tuple[List[TaskStatus], List[Optional[str]]]]:
+def _complete_job_side_effect() -> Callable[..., Tuple[List[TaskStatus], List[Optional[str]]]]:
     """Create a complete job side effect.
 
-    This is used to stub out completion of remote jobs.
+    This is used to stub out completing of remote jobs.
     """
 
-    def _complete_job() -> None:
-        time.sleep(0.05)
-        DEVICE_COMMAND_JOB_EXECUTOR._handle_subscription_event((job_id, ""))
-
     def _side_effect(*arg: Any, **kwds: Any) -> Tuple[List[TaskStatus], List[Optional[str]]]:
+        import uuid
+
+        job_id = str(uuid.uuid4())
+
+        def _complete_job() -> None:
+            import json
+
+            time.sleep(0.05)
+            DEVICE_COMMAND_TASK_EXECUTOR._handle_subscription_event((job_id, json.dumps("Complete")))
+
         threading.Thread(target=_complete_job).start()
 
         return ([TaskStatus.QUEUED], [job_id])
@@ -325,7 +330,7 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
         Callable[[PstDeviceProxy], Callable], List[Callable[[PstDeviceProxy], Callable]]
     ],
     component_state_callback_params: Optional[dict],
-    job_executor: JobExecutor,
+    task_executor: TaskExecutor,
 ) -> None:
     """Assert that actions that need to be delegated to remote devices."""
     task_callback = MagicMock()
@@ -336,9 +341,9 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
         remote_action_supplier = [remote_action_supplier]  # type: ignore
 
     for (idx, supplier) in enumerate(remote_action_supplier):
-        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect(str(uuid.uuid4()))  # type: ignore
-        supplier(recv_device_proxy).side_effect = _complete_job_side_effect(str(uuid.uuid4()))  # type: ignore
-        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect(str(uuid.uuid4()))  # type: ignore
+        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
+        supplier(recv_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
+        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
 
     func = getattr(component_manager, method_name)
     if request_params is not None:

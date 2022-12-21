@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+#
+# This file is part of the SKA PST LMC project
+#
+# Distributed under the terms of the BSD 3-clause new license.
+# See LICENSE for more info.
 
 """This module covers common utility classes and functions of PST.LMC.
 
@@ -22,22 +27,6 @@ __all__ = [
     "AggregateRemoteTask",
     "TimeoutIterator",
     "Callback",
-    "DeviceAction",
-    "DeviceCommandJob",
-    "DeviceCommandJobExecutor",
-    "DeviceCommandJobContext",
-    "Job",
-    "JobContext",
-    "JobExecutor",
-    "SequentialJob",
-    "ParallelJob",
-    "ParallelJobContext",
-    "ParallelJobTaskContext",
-    "JOB_QUEUE",
-    "DEVICE_COMMAND_JOB_QUEUE",
-    "JOB_EXECUTOR",
-    "DEVICE_COMMAND_JOB_EXECUTOR",
-    "submit_job",
 ]
 
 from .configuration import Configuration
@@ -46,21 +35,3 @@ from .background_task import BackgroundTaskProcessor, BackgroundTask, RunState, 
 from .remote_task import RemoteTask, AggregateRemoteTask
 from .timeout_iterator import TimeoutIterator
 from .callback import Callback
-from .job import (
-    DeviceAction,
-    DeviceCommandJob,
-    DeviceCommandJobExecutor,
-    DeviceCommandJobContext,
-    Job,
-    JobContext,
-    JobExecutor,
-    SequentialJob,
-    ParallelJob,
-    ParallelJobContext,
-    ParallelJobTaskContext,
-    JOB_QUEUE,
-    DEVICE_COMMAND_JOB_QUEUE,
-    JOB_EXECUTOR,
-    DEVICE_COMMAND_JOB_EXECUTOR,
-    submit_job,
-)
