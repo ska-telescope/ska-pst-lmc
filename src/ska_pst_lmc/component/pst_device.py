@@ -212,9 +212,8 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice, PstDeviceInterface):
 
     def handle_fault(self: PstBaseDevice, fault_msg: str) -> None:
         """Handle putting the device into a fault state."""
-        self.logger.info(f"{self.device_name} received a fault with error message: '{fault_msg}'")
+        self.logger.warning(f"{self.device_name} received a fault with error message: '{fault_msg}'")
         self._health_failure_msg = fault_msg
-        self.logger.info(f"{self.device_name} setting component state to obsault=True")
         self._component_state_changed(obsfault=True)
 
     # -----------

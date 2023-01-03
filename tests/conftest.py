@@ -661,7 +661,7 @@ def device_interface(
     monitor_data_callback: Callable,
     property_callback: Callable,
 ) -> MagicMock:
-    """Create device interface fixture to mock the DSP.MGMT tango device."""
+    """Create device interface fixture to mock a Tango device."""
     device_interface = MagicMock()
     device_interface.device_name = device_name
     device_interface.process_api_endpoint = grpc_endpoint

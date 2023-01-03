@@ -36,5 +36,11 @@ class PstBeamDeviceInterface(PstDeviceInterface):
         raise NotImplementedError("PstBeamDeviceInterface is abstract")
 
     def handle_subdevice_fault(self: PstBeamDeviceInterface, device_fqdn: str, fault_msg: str) -> None:
-        """Handle a subdevice has faulted."""
+        """Handle a fault raised from a subordinate device.
+
+        :param device_fqdn: the fully-qualified domain name of the subordinate device.
+        :type device_fqdn: str
+        :param fault_msg: the fault message from the subordinate device.
+        :type fault_msg: str
+        """
         raise NotImplementedError("PstBeamDeviceInterface is abstract")

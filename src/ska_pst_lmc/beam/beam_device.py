@@ -165,11 +165,11 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         return self.DspFQDN
 
     def handle_subdevice_fault(self: PstBeam, device_fqdn: str, fault_msg: str) -> None:
-        """Handle a subdevice going into a fault state.
+        """Handle a fault raised from a subordinate device.
 
-        :param device_fqdn: the FQDN of subordinate device that faulted
+        :param device_fqdn: the fully-qualified domain name of the subordinate device.
         :type device_fqdn: str
-        :param fault_msg: fault message received from subordinate device
+        :param fault_msg: the fault message from the subordinate device.
         :type fault_msg: str
         """
         self._health_failure_msg = fault_msg

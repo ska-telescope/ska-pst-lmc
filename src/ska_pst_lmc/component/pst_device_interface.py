@@ -18,7 +18,7 @@ class PstDeviceInterface:
     """A purely abstract class to be implemented by Tango device classes.
 
     This class is used to abstract away any Tango functionality that
-    component managers need to callback to the TANGO device and in
+    component managers need to callback to the Tango device and in
     turn allow passing of the Tango device itself to the component manager
     but is abstracted. This class itself can be extended for a particular
     device/component_manager combination where there is a need for more
@@ -69,7 +69,7 @@ class PstApiDeviceInterface(Generic[T], PstDeviceInterface):
     """A generic `PstDeviceInterface` used by API based device components.
 
     This interface is used by devices like SMRB.MGMT, RECV.MGMT, etc that
-    wrap APIs to processes like SRMB.CORE. These devices all get and process
+    wrap APIs to processes like SMRB.CORE. These devices all get and process
     monitoring data from the remote system.
 
     This is a generic class over the class of the data model for the API monitoring.
