@@ -476,7 +476,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             self._push_component_state_update(power=PowerState.ON)
 
             self._subscribe_change_events()
-            self._device_interface.update_health_state(state=HealthState.OK)
+            self._device_interface.update_health_state(health_state=HealthState.OK)
 
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
@@ -502,6 +502,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'Off' commands have completed.")
             self._push_component_state_update(power=PowerState.OFF)
+            self._device_interface.update_health_state(health_state=HealthState.UNKNOWN)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         # need to unsubscribe from monitoring events.

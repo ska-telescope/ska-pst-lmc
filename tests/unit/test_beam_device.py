@@ -226,7 +226,6 @@ class TestPstBeam:
         csp_configure_scan_request: Dict[str, Any],
         scan_id: int,
         tango_device_command_checker: TangoDeviceCommandChecker,
-        logger: logging.Logger,
     ) -> None:
         """Test state model of PstReceive."""
         # need to go through state mode
@@ -242,11 +241,11 @@ class TestPstBeam:
             assert smrb_proxy.state() == state
             assert dsp_proxy.state() == state
 
-        def assert_health_state(state: HealthState) -> None:
-            assert device_under_test.healthState == state
-            assert recv_proxy.healthState == state
-            assert smrb_proxy.healthState == state
-            assert dsp_proxy.healthState == state
+        def assert_health_state(health_state: HealthState) -> None:
+            assert device_under_test.healthState == health_state
+            assert recv_proxy.healthState == health_state
+            assert smrb_proxy.healthState == health_state
+            assert dsp_proxy.healthState == health_state
 
         @backoff.on_exception(
             backoff.expo,
@@ -324,6 +323,7 @@ class TestPstBeam:
             lambda: device_under_test.Off(),
         )
         assert_state(DevState.OFF)
+        assert_health_state(HealthState.UNKNOWN)
 
     def test_beam_mgmt_go_to_fault(
         self: TestPstBeam,

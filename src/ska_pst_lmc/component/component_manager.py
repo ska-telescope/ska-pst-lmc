@@ -217,6 +217,9 @@ class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager
         ) -> None:
             callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(power=PowerState.OFF)
+            cast(PstDeviceInterface, self._device_interface).update_health_state(
+                health_state=HealthState.UNKNOWN
+            )
             callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
 
         return self.submit_task(_task, task_callback=task_callback)
@@ -259,7 +262,7 @@ class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager
         ) -> None:
             callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(power=PowerState.ON)
-            cast(PstDeviceInterface, self._device_interface).update_health_state(state=HealthState.OK)
+            cast(PstDeviceInterface, self._device_interface).update_health_state(health_state=HealthState.OK)
             callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
 
         return self.submit_task(_task, task_callback=task_callback)

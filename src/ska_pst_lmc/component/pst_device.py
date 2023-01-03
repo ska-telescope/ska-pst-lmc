@@ -233,12 +233,12 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice, PstDeviceInterface):
         self._health_failure_msg = fault_msg
         self._component_state_changed(obsfault=True)
 
-    def update_health_state(self: PstBaseDevice, state: HealthState) -> None:
+    def update_health_state(self: PstBaseDevice, health_state: HealthState) -> None:
         """Update the health state of the device.
 
         This delegates to the base class `_update_health_state`
         """
-        self._update_health_state(state)
+        self._update_health_state(health_state)
 
     # -----------
     # Commands

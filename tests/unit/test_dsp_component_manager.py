@@ -410,7 +410,7 @@ def test_dsp_cm_on(
     device_interface: MagicMock,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Test that the component manager handles the call to on."""
+    """Test that the component manager handles the call to 'on'."""
     task_callback = MagicMock()
 
     # stub _get_disk_stats_from_api
@@ -425,13 +425,40 @@ def test_dsp_cm_on(
     task_callback.assert_has_calls(calls)
 
     device_interface.handle_component_state_change.assert_called_once_with(power=PowerState.ON)
-    device_interface.update_health_state.assert_called_once_with(state=HealthState.OK)
+    device_interface.update_health_state.assert_called_once_with(health_state=HealthState.OK)
     _get_disk_stats_from_api.assert_called_once()
 
 
 def test_dsp_cm_on_fails_if_not_communicating(
     component_manager: PstDspComponentManager,
 ) -> None:
-    """Test that the component manager rejects a call to on if not communicating."""
+    """Test that the component manager rejects a call to 'on' if not communicating."""
     with pytest.raises(ConnectionError):
         component_manager.on()
+
+
+def test_dsp_cm_off(
+    component_manager: PstDspComponentManager,
+    device_interface: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that the component manager handles the call to 'off'."""
+    task_callback = MagicMock()
+
+    # enforce the communication state to be establised.
+    component_manager._communication_state = CommunicationStatus.ESTABLISHED
+
+    component_manager.off(task_callback=task_callback)
+    calls = [call(status=TaskStatus.IN_PROGRESS), call(status=TaskStatus.COMPLETED, result="Completed")]
+    task_callback.assert_has_calls(calls)
+
+    device_interface.handle_component_state_change.assert_called_once_with(power=PowerState.OFF)
+    device_interface.update_health_state.assert_called_once_with(health_state=HealthState.UNKNOWN)
+
+
+def test_dsp_cm_off_fails_if_not_communicating(
+    component_manager: PstDspComponentManager,
+) -> None:
+    """Test that the component manager rejects a call to 'off' if not communicating."""
+    with pytest.raises(ConnectionError):
+        component_manager.off()

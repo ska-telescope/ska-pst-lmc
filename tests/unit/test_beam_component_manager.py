@@ -332,7 +332,7 @@ def _complete_job_side_effect() -> Callable[..., Tuple[List[TaskStatus], List[Op
     "method_name, remote_action_supplier, component_state_callback_params, health_state",
     [
         ("on", lambda d: d.On, {"power": PowerState.ON}, HealthState.OK),
-        ("off", lambda d: d.Off, {"power": PowerState.OFF}, None),
+        ("off", lambda d: d.Off, {"power": PowerState.OFF}, HealthState.UNKNOWN),
         ("reset", lambda d: d.Reset, {"power": PowerState.OFF}, None),
         ("standby", lambda d: d.Standby, {"power": PowerState.STANDBY}, None),
         (
@@ -434,7 +434,7 @@ def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity
         device_interface.handle_fault.assert_called_once_with(fault_msg="putting BEAM into fault")
 
     if health_state is not None:
-        device_interface.update_health_state.assert_called_once_with(state=health_state)
+        device_interface.update_health_state.assert_called_once_with(health_state=health_state)
 
 
 @pytest.mark.parametrize(

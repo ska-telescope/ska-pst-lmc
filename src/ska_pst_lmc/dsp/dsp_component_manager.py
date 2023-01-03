@@ -192,7 +192,7 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
             callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(power=PowerState.ON)
 
-            self._device_interface.update_health_state(state=HealthState.OK)
+            self._device_interface.update_health_state(health_state=HealthState.OK)
 
             callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
             # need to submit this as a background task, so clients of On know

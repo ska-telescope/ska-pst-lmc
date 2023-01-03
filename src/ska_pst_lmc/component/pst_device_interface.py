@@ -68,11 +68,11 @@ class PstDeviceInterface:
         """Get the facility that this device is being used for."""
         raise NotImplementedError("PstDeviceInteface is abstract")
 
-    def update_health_state(self: PstDeviceInterface, state: HealthState) -> None:
+    def update_health_state(self: PstDeviceInterface, health_state: HealthState) -> None:
         """Update the health state of device.
 
-        :param state: the new health state of the Tango device.
-        :type state: HealthState
+        :param health_state: the new health state of the Tango device.
+        :type health_state: HealthState
         """
         raise NotImplementedError("PstDeviceInteface is abstract")
 

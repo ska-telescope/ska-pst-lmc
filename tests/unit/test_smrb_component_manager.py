@@ -449,7 +449,7 @@ def test_smrb_cm_on(
     task_callback.assert_has_calls(calls)
 
     device_interface.handle_component_state_change.assert_called_once_with(power=PowerState.ON)
-    device_interface.update_health_state.assert_called_once_with(state=HealthState.OK)
+    device_interface.update_health_state.assert_called_once_with(health_state=HealthState.OK)
 
 
 def test_smrb_cm_on_fails_if_not_communicating(
@@ -458,3 +458,30 @@ def test_smrb_cm_on_fails_if_not_communicating(
     """Test that the component manager rejects a call to on if not communicating."""
     with pytest.raises(ConnectionError):
         component_manager.on()
+
+
+def test_smrb_cm_off(
+    component_manager: PstSmrbComponentManager,
+    device_interface: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that the component manager handles the call to 'off'."""
+    task_callback = MagicMock()
+
+    # enforce the communication state to be establised.
+    component_manager._communication_state = CommunicationStatus.ESTABLISHED
+
+    component_manager.off(task_callback=task_callback)
+    calls = [call(status=TaskStatus.IN_PROGRESS), call(status=TaskStatus.COMPLETED, result="Completed")]
+    task_callback.assert_has_calls(calls)
+
+    device_interface.handle_component_state_change.assert_called_once_with(power=PowerState.OFF)
+    device_interface.update_health_state.assert_called_once_with(health_state=HealthState.UNKNOWN)
+
+
+def test_smrb_cm_off_fails_if_not_communicating(
+    component_manager: PstSmrbComponentManager,
+) -> None:
+    """Test that the component manager rejects a call to 'off' if not communicating."""
+    with pytest.raises(ConnectionError):
+        component_manager.off()
