@@ -16,7 +16,7 @@ from threading import Event
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ska_tango_base.base import check_communicating
-from ska_tango_base.control_model import AdminMode, CommunicationStatus, ObsState, PowerState
+from ska_tango_base.control_model import AdminMode, CommunicationStatus, HealthState, ObsState, PowerState
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.beam.beam_device_interface import PstBeamDeviceInterface
@@ -476,6 +476,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             self._push_component_state_update(power=PowerState.ON)
 
             self._subscribe_change_events()
+            self._device_interface.update_health_state(state=HealthState.OK)
 
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 

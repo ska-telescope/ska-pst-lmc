@@ -14,7 +14,7 @@ import threading
 from typing import Any, Dict, List, Optional
 
 from ska_tango_base.base import check_communicating
-from ska_tango_base.control_model import PowerState, SimulationMode
+from ska_tango_base.control_model import HealthState, PowerState, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component import (
@@ -151,7 +151,7 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
         """Get a list of current rate of writing per subband, in bytes/seconds."""
         return self._monitor_data.subband_data_record_rate
 
-    def _get_disk_stats_from_api(self: PstDspComponentManager) -> None:
+    def _get_disk_stats_from_api(self: PstDspComponentManager, *args: Any, **kwargs: Any) -> None:
         """Update the disk usage details calling API.
 
         This gets the `disk_capacity` and `available_disk_space` from the API via
@@ -192,12 +192,13 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
             callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(power=PowerState.ON)
 
+            self._device_interface.update_health_state(state=HealthState.OK)
+
+            callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
             # need to submit this as a background task, so clients of On know
             # that we're in the right state so they can subscribe to events
             # and get correct values.
             self.submit_task(self._get_disk_stats_from_api)
-
-            callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
 
         return self.submit_task(_task, task_callback=task_callback)
 

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Generic, TypeVar
 
-from ska_tango_base.control_model import CommunicationStatus
+from ska_tango_base.control_model import CommunicationStatus, HealthState
 
 from ska_pst_lmc.util import TelescopeFacilityEnum
 
@@ -66,6 +66,14 @@ class PstDeviceInterface:
     @property
     def facility(self: PstDeviceInterface) -> TelescopeFacilityEnum:
         """Get the facility that this device is being used for."""
+        raise NotImplementedError("PstDeviceInteface is abstract")
+
+    def update_health_state(self: PstDeviceInterface, state: HealthState) -> None:
+        """Update the health state of device.
+
+        :param state: the new health state of the Tango device.
+        :type state: HealthState
+        """
         raise NotImplementedError("PstDeviceInteface is abstract")
 
 

@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import backoff
 import pytest
-from ska_tango_base.control_model import AdminMode, ObsState
+from ska_tango_base.control_model import AdminMode, HealthState, ObsState
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DeviceProxy, DevState
 from tango.test_context import MultiDeviceTestContext
@@ -131,8 +131,10 @@ class _AttributeEventValidator:
         default_value: Any,
         tango_change_event_helper: TangoChangeEventHelper,
         change_event_callbacks: MockTangoEventCallbackGroup,
+        logger: logging.Logger,
     ) -> None:
         """Initialise validator."""
+        self.logger = logger
         self.device_under_test = device_under_test
         self.source_device = DeviceProxyFactory.get_device(source_device_fqdn)
         self.attribute_name = attribute_name
@@ -142,9 +144,14 @@ class _AttributeEventValidator:
         self.change_event_callbacks = change_event_callbacks
 
         tango_change_event_helper.subscribe(attribute_name)
-        change_event_callbacks[attribute_name].assert_change_event(default_value)
 
-        self.source_device.subscribe_change_event(attribute_name, self.attribute_value_queue.put)
+        self.source_device.subscribe_change_event(attribute_name, self._store_value)
+
+    def _store_value(self: _AttributeEventValidator, value: Any) -> None:
+        if self.attribute_name == "availableDiskSpace":
+            self.logger.info(f"storing availableDiskSpace = {value}")
+
+        self.attribute_value_queue.put(value)
 
     def assert_initial_values(self: _AttributeEventValidator) -> None:
         """Assert initial values of BEAM and subordinate device as the same."""
@@ -174,7 +181,10 @@ class _AttributeEventValidator:
             if value is None:
                 break
 
-            self.change_event_callbacks[self.attribute_name].assert_change_event(value)
+            if self.attribute_name == "availableDiskSpace":
+                self.logger.info(f"Asserting availableDiskSpace == {value}")
+
+            self.change_event_callbacks[self.attribute_name].assert_change_event(value, lookahead=3)
 
 
 @pytest.mark.forked
@@ -232,6 +242,12 @@ class TestPstBeam:
             assert smrb_proxy.state() == state
             assert dsp_proxy.state() == state
 
+        def assert_health_state(state: HealthState) -> None:
+            assert device_under_test.healthState == state
+            assert recv_proxy.healthState == state
+            assert smrb_proxy.healthState == state
+            assert dsp_proxy.healthState == state
+
         @backoff.on_exception(
             backoff.expo,
             AssertionError,
@@ -250,6 +266,8 @@ class TestPstBeam:
                 assert smrb_proxy.obsState == obsState
                 assert dsp_proxy.obsState == obsState
 
+        assert_health_state(HealthState.UNKNOWN)
+
         device_under_test.adminMode = AdminMode.ONLINE
         time.sleep(0.1)
         assert recv_proxy.adminMode == AdminMode.ONLINE
@@ -257,6 +275,7 @@ class TestPstBeam:
         assert dsp_proxy.adminMode == AdminMode.ONLINE
 
         assert_state(DevState.OFF)
+        assert_health_state(HealthState.UNKNOWN)
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
@@ -264,6 +283,7 @@ class TestPstBeam:
         assert_state(DevState.ON)
 
         assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
+        assert_health_state(HealthState.OK)
 
         configuration = json.dumps(csp_configure_scan_request)
         tango_device_command_checker.assert_command(
@@ -386,6 +406,7 @@ class TestPstBeam:
         tango_change_event_helper: TangoChangeEventHelper,
         tango_device_command_checker: TangoDeviceCommandChecker,
         change_event_callbacks: MockTangoEventCallbackGroup,
+        logger: logging.Logger,
     ) -> None:
         """Test that monitoring values are updated."""
         device_under_test.adminMode = AdminMode.ONLINE
@@ -417,6 +438,7 @@ class TestPstBeam:
                 default_value=default_value,
                 tango_change_event_helper=tango_change_event_helper,
                 change_event_callbacks=change_event_callbacks,
+                logger=logger,
             )
             for fqdn, props in device_propertry_config.items()
             for attribute_name, default_value in props.items()

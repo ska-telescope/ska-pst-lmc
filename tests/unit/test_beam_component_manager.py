@@ -11,12 +11,18 @@ import json
 import logging
 import sys
 import threading
-import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 from unittest.mock import ANY, MagicMock, call
 
 import pytest
-from ska_tango_base.control_model import AdminMode, CommunicationStatus, ObsState, PowerState, SimulationMode
+from ska_tango_base.control_model import (
+    AdminMode,
+    CommunicationStatus,
+    HealthState,
+    ObsState,
+    PowerState,
+    SimulationMode,
+)
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.beam import PstBeamComponentManager, PstBeamDeviceInterface
@@ -313,7 +319,6 @@ def _complete_job_side_effect() -> Callable[..., Tuple[List[TaskStatus], List[Op
         def _complete_job() -> None:
             import json
 
-            time.sleep(0.05)
             DEVICE_COMMAND_TASK_EXECUTOR._handle_subscription_event((job_id, json.dumps("Complete")))
 
         threading.Thread(target=_complete_job).start()
@@ -324,25 +329,31 @@ def _complete_job_side_effect() -> Callable[..., Tuple[List[TaskStatus], List[Op
 
 
 @pytest.mark.parametrize(
-    "method_name, remote_action_supplier, component_state_callback_params",
+    "method_name, remote_action_supplier, component_state_callback_params, health_state",
     [
-        ("on", lambda d: d.On, {"power": PowerState.ON}),
-        ("off", lambda d: d.Off, {"power": PowerState.OFF}),
-        ("reset", lambda d: d.Reset, {"power": PowerState.OFF}),
-        ("standby", lambda d: d.Standby, {"power": PowerState.STANDBY}),
-        ("configure_scan", [lambda d: d.ConfigureBeam, lambda d: d.ConfigureScan], {"configured": True}),
+        ("on", lambda d: d.On, {"power": PowerState.ON}, HealthState.OK),
+        ("off", lambda d: d.Off, {"power": PowerState.OFF}, None),
+        ("reset", lambda d: d.Reset, {"power": PowerState.OFF}, None),
+        ("standby", lambda d: d.Standby, {"power": PowerState.STANDBY}, None),
+        (
+            "configure_scan",
+            [lambda d: d.ConfigureBeam, lambda d: d.ConfigureScan],
+            {"configured": True},
+            None,
+        ),
         (
             "deconfigure_scan",
             [lambda d: d.DeconfigureBeam, lambda d: d.DeconfigureScan],
             {"configured": False},
+            None,
         ),
-        ("scan", lambda d: d.Scan, {"scanning": True}),
-        ("end_scan", lambda d: d.EndScan, {"scanning": False}),
-        ("obsreset", [lambda d: d.ObsReset, lambda d: d.DeconfigureBeam], {"configured": False}),
-        ("go_to_fault", lambda d: d.GoToFault, {"obsfault": True}),
+        ("scan", lambda d: d.Scan, {"scanning": True}, None),
+        ("end_scan", lambda d: d.EndScan, {"scanning": False}, None),
+        ("obsreset", [lambda d: d.ObsReset, lambda d: d.DeconfigureBeam], {"configured": False}, None),
+        ("go_to_fault", lambda d: d.GoToFault, {"obsfault": True}, None),
     ],
 )
-def test_remote_actions(  # noqa: C901 - override checking of complexity for this test
+def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity for this test
     component_manager: PstBeamComponentManager,
     device_interface: MagicMock,
     smrb_device_proxy: PstDeviceProxy,
@@ -355,6 +366,7 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
         Callable[[PstDeviceProxy], Callable], List[Callable[[PstDeviceProxy], Callable]]
     ],
     component_state_callback_params: Optional[dict],
+    health_state: Optional[HealthState],
     task_executor: TaskExecutor,
 ) -> None:
     """Assert that actions that need to be delegated to remote devices."""
@@ -420,6 +432,9 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
     mock_task_callback.assert_has_calls(calls)
     if method_name == "go_to_fault":
         device_interface.handle_fault.assert_called_once_with(fault_msg="putting BEAM into fault")
+
+    if health_state is not None:
+        device_interface.update_health_state.assert_called_once_with(state=health_state)
 
 
 @pytest.mark.parametrize(

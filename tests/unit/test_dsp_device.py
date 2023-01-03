@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 import tango
 from ska_tango_base.commands import ResultCode, TaskStatus
-from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
+from ska_tango_base.control_model import AdminMode, HealthState, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
 
 from ska_pst_lmc.dsp.dsp_component_manager import PstDspComponentManager
@@ -128,11 +128,13 @@ class TestPstDsp:
     ) -> None:
         """Test state model of PstDsp."""
         assert device_under_test.state() == DevState.OFF
+        assert device_under_test.healthState == HealthState.UNKNOWN
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
         )
         assert device_under_test.state() == DevState.ON
+        assert device_under_test.healthState == HealthState.OK
 
         resources = json.dumps(configure_beam_request)
         tango_device_command_checker.assert_command(

@@ -15,7 +15,7 @@ from threading import Event
 from typing import Any, Callable, Dict, Generic, Optional, Tuple, TypeVar, cast
 
 from ska_tango_base.base import check_communicating
-from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
+from ska_tango_base.control_model import CommunicationStatus, HealthState, PowerState, SimulationMode
 from ska_tango_base.csp.obs import CspObsComponentManager
 from ska_tango_base.executor import TaskExecutorComponentManager, TaskStatus
 
@@ -259,6 +259,7 @@ class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager
         ) -> None:
             callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(power=PowerState.ON)
+            cast(PstDeviceInterface, self._device_interface).update_health_state(state=HealthState.OK)
             callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
 
         return self.submit_task(_task, task_callback=task_callback)

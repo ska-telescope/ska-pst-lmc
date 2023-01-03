@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import threading
-import time
 from typing import Any, Callable, List, Optional, Tuple, cast
 from unittest.mock import MagicMock, call
 
@@ -73,7 +72,6 @@ def _complete_job_side_effect(
         job_id = str(uuid.uuid4())
 
         def _complete_job() -> None:
-            time.sleep(0.05)
             device_command_task_executor._handle_subscription_event((job_id, json.dumps(result)))
 
         threading.Thread(target=_complete_job).start()
@@ -98,7 +96,6 @@ def _fail_job_side_effect(
         job_id = str(uuid.uuid4())
 
         def _fail_job() -> None:
-            time.sleep(0.05)
             device_command_task_executor._handle_subscription_event((job_id, failure_message))
 
         threading.Thread(target=_fail_job).start()

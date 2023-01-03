@@ -8,13 +8,12 @@
 """This module contains tests for the DSP component managers class."""
 
 import logging
-import time
-from typing import Any, Callable, Dict, cast
+from typing import Any, Callable, Dict, Optional, cast
 from unittest.mock import MagicMock, call
 
 import pytest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionResponse
-from ska_tango_base.control_model import CommunicationStatus, SimulationMode
+from ska_tango_base.control_model import CommunicationStatus, HealthState, PowerState, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component import MonitorDataHandler, PstApiDeviceInterface
@@ -32,8 +31,21 @@ def component_manager(
     simulation_mode: SimulationMode,
     logger: logging.Logger,
     api: PstDspProcessApi,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> PstDspComponentManager:
     """Create instance of a component manager."""
+    # override the background processing.
+    def submit_task(
+        self: PstDspComponentManager,
+        task: Callable,
+        *args: Any,
+        task_callback: Optional[Callable] = None,
+        **kwargs: Any
+    ) -> None:
+        task(*args, task_callback=task_callback, **kwargs)
+
+    monkeypatch.setattr(PstDspComponentManager, "submit_task", submit_task)
+
     return PstDspComponentManager(
         device_interface=cast(PstApiDeviceInterface[DspDiskMonitorData], device_interface),
         simulation_mode=simulation_mode,
@@ -90,19 +102,16 @@ def calculated_dsp_subband_resources(beam_id: int, configure_beam_request: Dict[
 
 def test_dsp_cm_start_communicating_calls_connect_on_api(
     component_manager: PstDspComponentManager,
-    api: PstDspProcessApi,
 ) -> None:
     """Assert start/stop communicating calls API."""
-    api = MagicMock(wraps=api)
+    api = MagicMock()
     component_manager._api = api
 
     component_manager.start_communicating()
-    time.sleep(0.1)
     api.connect.assert_called_once()
     api.disconnect.assert_not_called()
 
     component_manager.stop_communicating()
-    time.sleep(0.1)
     api.disconnect.assert_called_once()
 
 
@@ -173,7 +182,6 @@ def test_dsp_cm_no_change_in_simulation_mode_value_wont_change_communication_sta
     assert component_manager.simulation_mode == simulation_mode
 
     component_manager.start_communicating()
-    time.sleep(0.1)
     assert component_manager.communication_state == CommunicationStatus.ESTABLISHED
     if simulation_mode == SimulationMode.FALSE:
         mock_servicer_context.connect.assert_called_once_with(ConnectionRequest(client_id=device_name))
@@ -204,7 +212,6 @@ def test_dsp_cm_if_communicating_switching_simulation_mode_must_stop_then_restar
     assert component_manager.simulation_mode == SimulationMode.TRUE
 
     component_manager.start_communicating()
-    time.sleep(0.1)
     assert component_manager.communication_state == CommunicationStatus.ESTABLISHED
 
     calls = [call(CommunicationStatus.NOT_ESTABLISHED), call(CommunicationStatus.ESTABLISHED)]
@@ -212,7 +219,6 @@ def test_dsp_cm_if_communicating_switching_simulation_mode_must_stop_then_restar
     update_communication_state.reset_mock()
 
     component_manager.simulation_mode = SimulationMode.FALSE
-    time.sleep(0.1)
     mock_servicer_context.connect.assert_called_once_with(ConnectionRequest(client_id=device_name))
 
     calls = [
@@ -224,7 +230,6 @@ def test_dsp_cm_if_communicating_switching_simulation_mode_must_stop_then_restar
     update_communication_state.reset_mock()
 
     component_manager.simulation_mode = SimulationMode.TRUE
-    time.sleep(0.1)
     update_communication_state.assert_has_calls(calls)
     update_communication_state.reset_mock()
 
@@ -262,11 +267,6 @@ def test_dsp_cm_configure_beam(
     configure_beam = MagicMock()
     monkeypatch.setattr(api, "configure_beam", configure_beam)
 
-    # override the background processing.
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback
-    )
-
     component_manager.configure_beam(resources=configure_beam_request, task_callback=task_callback)
 
     configure_beam.assert_called_once_with(
@@ -281,9 +281,6 @@ def test_dsp_cm_deconfigure_beam(
     """Test that configure beam calls the API correctly."""
     api = MagicMock()
     component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback
-    )
 
     component_manager.deconfigure_beam(task_callback=task_callback)
 
@@ -298,9 +295,6 @@ def test_dsp_cm_configure_scan(
     """Test that the component manager calls the API for configure."""
     api = MagicMock()
     component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback,
-    )
 
     component_manager.configure_scan(configuration=configure_scan_request, task_callback=task_callback)
 
@@ -317,9 +311,6 @@ def test_dsp_cm_deconfigure_scan(
     """Test that the component manager calls the API for configure."""
     api = MagicMock()
     component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback,
-    )
 
     component_manager.deconfigure_scan(task_callback=task_callback)
 
@@ -336,9 +327,6 @@ def test_dsp_cm_scan(
     """Test that the component manager calls the API start a scan."""
     api = MagicMock()
     component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback,
-    )
 
     component_manager.start_scan(scan_request, task_callback=task_callback)
 
@@ -360,9 +348,6 @@ def test_dsp_cm_stop_scan(
     """Test that the component manager calls the API to end scan."""
     api = MagicMock()
     component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback,
-    )
 
     component_manager.stop_scan(task_callback=task_callback)
 
@@ -380,9 +365,6 @@ def test_dsp_cm_abort(
     """Test that the component manager calls the API to abort on service."""
     api = MagicMock()
     component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback,
-    )
 
     component_manager.abort(task_callback=task_callback)
 
@@ -398,9 +380,6 @@ def test_dsp_cm_obsreset(
     """Test that the component manager calls the API to reset service in ABORTED or FAULT state."""
     api = MagicMock()
     component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback,
-    )
 
     component_manager.obsreset(task_callback=task_callback)
 
@@ -417,9 +396,6 @@ def test_dsp_cm_go_to_fault(
     """Test that the component manager calls the API start a scan."""
     api = MagicMock()
     component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback,
-    )
 
     component_manager.go_to_fault(task_callback=task_callback, fault_msg="putting DSP into fault")
 
@@ -427,3 +403,35 @@ def test_dsp_cm_go_to_fault(
     calls = [call(status=TaskStatus.IN_PROGRESS), call(status=TaskStatus.COMPLETED, result="Completed")]
     cast(MagicMock, task_callback).assert_has_calls(calls)
     device_interface.handle_fault.assert_called_once_with(fault_msg="putting DSP into fault")
+
+
+def test_dsp_cm_on(
+    component_manager: PstDspComponentManager,
+    device_interface: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that the component manager handles the call to on."""
+    task_callback = MagicMock()
+
+    # stub _get_disk_stats_from_api
+    _get_disk_stats_from_api = MagicMock()
+    monkeypatch.setattr(component_manager, "_get_disk_stats_from_api", _get_disk_stats_from_api)
+
+    # enforce the communication state to be establised.
+    component_manager._communication_state = CommunicationStatus.ESTABLISHED
+
+    component_manager.on(task_callback=task_callback)
+    calls = [call(status=TaskStatus.IN_PROGRESS), call(status=TaskStatus.COMPLETED, result="Completed")]
+    task_callback.assert_has_calls(calls)
+
+    device_interface.handle_component_state_change.assert_called_once_with(power=PowerState.ON)
+    device_interface.update_health_state.assert_called_once_with(state=HealthState.OK)
+    _get_disk_stats_from_api.assert_called_once()
+
+
+def test_dsp_cm_on_fails_if_not_communicating(
+    component_manager: PstDspComponentManager,
+) -> None:
+    """Test that the component manager rejects a call to on if not communicating."""
+    with pytest.raises(ConnectionError):
+        component_manager.on()
