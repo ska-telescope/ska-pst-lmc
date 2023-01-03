@@ -403,6 +403,7 @@ class TestPstDsp:
             ],
         )
         assert device_under_test.healthFailureMessage == "putting DSP.MGMT into FAULT"
+        assert device_under_test.healthState == HealthState.FAILED
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.ObsReset(),
@@ -452,6 +453,7 @@ class TestPstDsp:
             ],
         )
         assert device_under_test.healthFailureMessage == "putting DSP.MGMT into FAULT"
+        assert device_under_test.healthState == HealthState.FAILED
 
     def test_dsp_mgmt_go_to_fault_when_scanning(
         self: TestPstDsp,
@@ -501,3 +503,4 @@ class TestPstDsp:
             ],
         )
         assert device_under_test.healthFailureMessage == "putting DSP.MGMT into FAULT"
+        assert device_under_test.healthState == HealthState.FAILED

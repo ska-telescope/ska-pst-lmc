@@ -382,6 +382,7 @@ class TestPstBeam:
         )
         assert_obstate(ObsState.FAULT)
         assert device_under_test.healthFailureMessage == "this is a fault message"
+        assert device_under_test.healthState == HealthState.FAILED
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.ObsReset(),
@@ -491,7 +492,6 @@ class TestPstBeam:
         multidevice_test_context: MultiDeviceTestContext,
         tango_device_command_checker: TangoDeviceCommandChecker,
         change_event_callbacks: MockTangoEventCallbackGroup,
-        logger: logging.Logger,
     ) -> None:
         """Test state model of PstReceive."""
         import random
@@ -529,11 +529,13 @@ class TestPstBeam:
         assert dsp_proxy.adminMode == AdminMode.ONLINE
 
         assert_state(DevState.OFF)
+        change_event_callbacks["healthState"].assert_change_event(HealthState.UNKNOWN)
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
         )
         assert_state(DevState.ON)
+        change_event_callbacks["healthState"].assert_change_event(HealthState.OK)
 
         rand_device_id = random.randint(0, 2)
         if rand_device_id == 0:
@@ -548,5 +550,7 @@ class TestPstBeam:
 
         # expect - beam.obsState ends up as fault
         change_event_callbacks["obsState"].assert_change_event(ObsState.FAULT)
+        change_event_callbacks["healthState"].assert_change_event(HealthState.FAILED)
 
         assert device_under_test.healthFailureMessage == fault_msg
+        assert device_under_test.healthState == HealthState.FAILED

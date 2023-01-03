@@ -382,6 +382,7 @@ def change_event_callbacks(additional_change_events_callbacks: List[str]) -> Moc
         "longRunningCommandStatus",
         "longRunningCommandResult",
         "obsState",
+        "healthState",
         *additional_change_events_callbacks,
         timeout=5.0,
     )
@@ -475,6 +476,7 @@ class TangoDeviceCommandChecker:
         change_event_callbacks["longRunningCommandStatus"].assert_change_event(None)
 
         tango_change_event_helper.subscribe("obsState")
+        tango_change_event_helper.subscribe("healthState")
 
         self.change_event_callbacks = change_event_callbacks
         self._logger = logger

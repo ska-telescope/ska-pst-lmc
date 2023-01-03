@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import tango
 from ska_tango_base.commands import ResultCode
-from ska_tango_base.control_model import AdminMode, SimulationMode
+from ska_tango_base.control_model import AdminMode, HealthState, SimulationMode
 from tango import DebugIt
 from tango.server import attribute, command, device_property, run
 
@@ -175,6 +175,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         """
         self._health_failure_msg = fault_msg
         self._component_state_changed(obsfault=True)
+        self.update_health_state(health_state=HealthState.FAILED)
 
     # ----------
     # Commands

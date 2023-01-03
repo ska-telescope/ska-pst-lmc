@@ -232,6 +232,7 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice, PstDeviceInterface):
         self.logger.warning(f"{self.device_name} received a fault with error message: '{fault_msg}'")
         self._health_failure_msg = fault_msg
         self._component_state_changed(obsfault=True)
+        self.update_health_state(health_state=HealthState.FAILED)
 
     def update_health_state(self: PstBaseDevice, health_state: HealthState) -> None:
         """Update the health state of the device.

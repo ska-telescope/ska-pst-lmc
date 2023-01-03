@@ -383,6 +383,7 @@ class TestPstReceive:
             ],
         )
         assert device_under_test.healthFailureMessage == "putting RECV.MGMT into FAULT"
+        assert device_under_test.healthState == HealthState.FAILED
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.ObsReset(),
@@ -432,6 +433,7 @@ class TestPstReceive:
             ],
         )
         assert device_under_test.healthFailureMessage == "putting RECV.MGMT into FAULT"
+        assert device_under_test.healthState == HealthState.FAILED
 
     def test_recv_mgmt_go_to_fault_when_scanning(
         self: TestPstReceive,
@@ -481,3 +483,4 @@ class TestPstReceive:
             ],
         )
         assert device_under_test.healthFailureMessage == "putting RECV.MGMT into FAULT"
+        assert device_under_test.healthState == HealthState.FAILED
