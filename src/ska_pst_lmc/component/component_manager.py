@@ -604,7 +604,15 @@ class PstApiComponentManager(Generic[T, Api], PstComponentManager[PstApiDeviceIn
         This will deconfigure a scan if already configured but will keep the assigned
         resources.
         """
-        return self._submit_background_task(self._api.reset, task_callback=task_callback)
+
+        def _task_callback(*args: Any, **kwargs: Any) -> None:
+            status: Optional[TaskStatus] = kwargs.get("status", None)
+            if status == TaskStatus.COMPLETED:
+                self._device_interface.update_health_state(health_state=HealthState.OK)
+
+            callback_safely(task_callback, *args, **kwargs)
+
+        return self._submit_background_task(self._api.reset, task_callback=_task_callback)
 
     def go_to_fault(
         self: PstApiComponentManager, fault_msg: str, task_callback: Callback = None

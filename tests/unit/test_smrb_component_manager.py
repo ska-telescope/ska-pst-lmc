@@ -10,7 +10,7 @@
 import logging
 import time
 from typing import Any, Callable, Dict, cast
-from unittest.mock import MagicMock, call
+from unittest.mock import ANY, MagicMock, call
 
 import pytest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionResponse
@@ -398,20 +398,25 @@ def test_smrb_cm_abort(
 
 def test_smrb_cm_obsreset(
     component_manager: PstSmrbComponentManager,
+    device_interface: MagicMock,
     task_callback: Callable,
 ) -> None:
     """Test that the component manager calls the API to reset service in ABORTED or FAULT state."""
+
+    def _side_effect(*args: Any, task_callback: Callable, **kwargs: Any) -> None:
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
     api = MagicMock()
+    api.reset.side_effect = _side_effect
     component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback,
-    )
 
     component_manager.obsreset(task_callback=task_callback)
 
     api.reset.assert_called_once_with(
-        task_callback=task_callback,
+        task_callback=ANY,
     )
+    cast(MagicMock, task_callback).assert_called_once_with(status=TaskStatus.COMPLETED, result="Completed")
+    device_interface.update_health_state.assert_called_once_with(health_state=HealthState.OK)
 
 
 def test_smrb_cm_go_to_fault(

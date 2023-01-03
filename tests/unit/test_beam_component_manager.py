@@ -349,7 +349,12 @@ def _complete_job_side_effect() -> Callable[..., Tuple[List[TaskStatus], List[Op
         ),
         ("scan", lambda d: d.Scan, {"scanning": True}, None),
         ("end_scan", lambda d: d.EndScan, {"scanning": False}, None),
-        ("obsreset", [lambda d: d.ObsReset, lambda d: d.DeconfigureBeam], {"configured": False}, None),
+        (
+            "obsreset",
+            [lambda d: d.ObsReset, lambda d: d.DeconfigureBeam],
+            {"configured": False},
+            HealthState.OK,
+        ),
         ("go_to_fault", lambda d: d.GoToFault, {"obsfault": True}, None),
     ],
 )

@@ -727,6 +727,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'ObsReset' commands have completed.")
             self._push_component_state_update(configured=False)
+            self._device_interface.update_health_state(health_state=HealthState.OK)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
