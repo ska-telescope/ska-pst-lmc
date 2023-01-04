@@ -32,9 +32,8 @@ from ska_tango_base.commands import TaskStatus
 from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc, PstProcessApiSimulator
 from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_simulator import PstReceiveSimulator
+from ska_pst_lmc.receive.receive_util import generate_recv_scan_request
 from ska_pst_lmc.util.background_task import BackgroundTask, BackgroundTaskProcessor, background_task
-
-from .receive_util import generate_recv_scan_request
 
 __all__ = [
     "PstReceiveProcessApi",

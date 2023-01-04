@@ -19,13 +19,12 @@ from ska_tango_base.base import check_communicating
 from ska_tango_base.control_model import AdminMode, CommunicationStatus, ObsState, PowerState
 from ska_tango_base.executor import TaskStatus
 
+from ska_pst_lmc.beam.beam_device_interface import PstBeamDeviceInterface
 from ska_pst_lmc.component import as_device_attribute_name
 from ska_pst_lmc.component.component_manager import PstComponentManager
 from ska_pst_lmc.device_proxy import ChangeEventSubscription, DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.job import DeviceCommandTask, SequentialTask, Task, submit_job
 from ska_pst_lmc.util.callback import Callback, callback_safely
-
-from .beam_device_interface import PstBeamDeviceInterface
 
 TaskResponse = Tuple[TaskStatus, str]
 RemoteTaskResponse = Tuple[List[TaskStatus], List[str]]

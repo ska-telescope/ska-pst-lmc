@@ -25,8 +25,7 @@ from tango import DebugIt
 from tango.server import attribute, command
 
 from ska_pst_lmc.component.component_manager import PstComponentManager
-
-from .pst_device_interface import PstDeviceInterface
+from ska_pst_lmc.component.pst_device_interface import PstDeviceInterface
 
 __all__ = [
     "PstBaseDevice",

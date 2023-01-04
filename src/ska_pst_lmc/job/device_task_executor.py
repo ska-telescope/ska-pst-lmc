@@ -17,9 +17,8 @@ import threading
 from typing import Dict, Tuple, cast
 
 from ska_pst_lmc.device_proxy import ChangeEventSubscription, PstDeviceProxy
-
-from .common import DEVICE_COMMAND_TASK_QUEUE
-from .task import DeviceCommandTaskContext
+from ska_pst_lmc.job.common import DEVICE_COMMAND_TASK_QUEUE
+from ska_pst_lmc.job.task import DeviceCommandTaskContext
 
 _logger = logging.getLogger(__name__)
 

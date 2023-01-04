@@ -16,10 +16,8 @@ import queue
 import threading
 from typing import cast
 
-from ska_pst_lmc.util.callback import Callback, callback_safely
-
-from .common import DEVICE_COMMAND_TASK_QUEUE, JOB_QUEUE
-from .task import (
+from ska_pst_lmc.job.common import DEVICE_COMMAND_TASK_QUEUE, JOB_QUEUE
+from ska_pst_lmc.job.task import (
     DeviceCommandTask,
     DeviceCommandTaskContext,
     JobContext,
@@ -29,6 +27,7 @@ from .task import (
     Task,
     TaskContext,
 )
+from ska_pst_lmc.util.callback import Callback, callback_safely
 
 _logger = logging.getLogger(__name__)
 
@@ -384,7 +383,7 @@ def submit_job(job: Task, callback: Callback = None) -> None:
     :param callback: callback to use when job completes, defaults to None
     :type callback: Callback, optional
     """
-    from .device_task_executor import DEVICE_COMMAND_TASK_EXECUTOR
+    from ska_pst_lmc.job.device_task_executor import DEVICE_COMMAND_TASK_EXECUTOR
 
     # ensure the executors are running, there is an atexit
     # to ensure they are stopped.

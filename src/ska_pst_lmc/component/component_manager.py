@@ -20,10 +20,9 @@ from ska_tango_base.csp.obs import CspObsComponentManager
 from ska_tango_base.executor import TaskExecutorComponentManager, TaskStatus
 
 from ska_pst_lmc.component.process_api import PstProcessApi
+from ska_pst_lmc.component.pst_device_interface import PstApiDeviceInterface, PstDeviceInterface
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 from ska_pst_lmc.util.callback import Callback, callback_safely, wrap_callback
-
-from .pst_device_interface import PstApiDeviceInterface, PstDeviceInterface
 
 __all__ = [
     "PstApiComponentManager",

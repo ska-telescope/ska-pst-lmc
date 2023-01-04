@@ -43,7 +43,7 @@ class Configuration(UserDict[str, Any]):
         """
         import json
 
-        from .validation import validate
+        from ska_pst_lmc.util.validation import validate
 
         obj = json.loads(json_str)
 

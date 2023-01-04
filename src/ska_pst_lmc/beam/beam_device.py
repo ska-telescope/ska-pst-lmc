@@ -19,12 +19,11 @@ from tango.server import attribute, command, device_property, run
 
 import ska_pst_lmc.release as release
 from ska_pst_lmc.beam.beam_component_manager import PstBeamComponentManager
+from ska_pst_lmc.beam.beam_device_interface import PstBeamDeviceInterface
 from ska_pst_lmc.component import as_device_attribute_name
 from ska_pst_lmc.component.pst_device import PstBaseDevice
 from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
 from ska_pst_lmc.util import Configuration
-
-from .beam_device_interface import PstBeamDeviceInterface
 
 __all__ = ["PstBeam", "main"]
 
