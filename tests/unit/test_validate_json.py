@@ -31,6 +31,7 @@ def is_valid_combination(version: str, scan: Optional[str]) -> bool:
         "pst_scan_pt",
         "pst_scan_ds",
         "pst_scan_ft",
+        "pst_scan_vr",
     ]:
         return False
 
@@ -52,6 +53,7 @@ def is_valid_combination(version: str, scan: Optional[str]) -> bool:
             "pst_scan_pt",
             "pst_scan_ds",
             "pst_scan_ft",
+            "pst_scan_vr",
         ]
     ],
 )
