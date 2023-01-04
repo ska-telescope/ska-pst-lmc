@@ -1,2 +1,13 @@
 [run]
 omit = src/ska_pst_lmc_proto/*
+
+[report]
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Don't complain if tests don't hit defensive assertion code:
+    raise NotImplementedError
+
+    # Ignore unreachable code
+    assert False, "Unreachable"

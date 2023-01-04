@@ -8,9 +8,11 @@
 """This subpackage implements BEAM component for PST.LMC."""
 
 __all__ = [
+    "PstBeamDeviceInterface",
     "PstBeam",
     "PstBeamComponentManager",
 ]
 
+from .beam_device_interface import PstBeamDeviceInterface
 from .beam_device import PstBeam
 from .beam_component_manager import PstBeamComponentManager

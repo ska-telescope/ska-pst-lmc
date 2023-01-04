@@ -11,11 +11,16 @@ from __future__ import annotations
 
 import functools
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
+from ska_tango_base.control_model import PowerState, SimulationMode
 
-from ska_pst_lmc.component import MonitorDataHandler, PstApiComponentManager, TaskResponse
+from ska_pst_lmc.component import (
+    MonitorDataHandler,
+    PstApiComponentManager,
+    PstApiDeviceInterface,
+    TaskResponse,
+)
 from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData, SmrbMonitorDataStore
 from ska_pst_lmc.smrb.smrb_process_api import (
     PstSmrbProcessApi,
@@ -28,22 +33,15 @@ from ska_pst_lmc.util.callback import Callback, wrap_callback
 __all__ = ["PstSmrbComponentManager"]
 
 
-class PstSmrbComponentManager(PstApiComponentManager):
+class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbProcessApi]):
     """Component manager for the SMRB component for the PST.LMC subsystem."""
-
-    _api: PstSmrbProcessApi
 
     def __init__(
         self: PstSmrbComponentManager,
-        device_name: str,
-        process_api_endpoint: str,
+        *,
+        device_interface: PstApiDeviceInterface[SmrbMonitorData],
         logger: logging.Logger,
-        monitor_data_callback: Callable[[SmrbMonitorData], None],
-        communication_state_callback: Callable[[CommunicationStatus], None],
-        component_state_callback: Callable[..., None],
         api: Optional[PstSmrbProcessApi] = None,
-        monitor_polling_rate: int = 5000,
-        *args: Any,
         **kwargs: Any,
     ):
         """Initialise instance of the component manager.
@@ -64,29 +62,24 @@ class PstSmrbComponentManager(PstApiComponentManager):
             component state changes.
         """
         logger.debug(
-            f"Setting up SMRB component manager with device_name='{device_name}'"
-            + "and api_endpoint='{process_api_endpoint}'"
+            f"Setting up SMRB component manager with device_name='{device_interface.device_name}'"
+            + f"and api_endpoint='{device_interface.process_api_endpoint}'"
         )
-        self.api_endpoint = process_api_endpoint
         api = api or PstSmrbProcessApiSimulator(
             logger=logger,
-            component_state_callback=component_state_callback,
+            component_state_callback=device_interface.handle_component_state_change,
         )
 
         # Set up handling of monitor data.
         self._monitor_data_handler = MonitorDataHandler(
             data_store=SmrbMonitorDataStore(),
-            monitor_data_callback=monitor_data_callback,
+            monitor_data_callback=device_interface.handle_monitor_data_update,
         )
-        self._monitor_polling_rate = monitor_polling_rate
 
         super().__init__(
-            device_name,
-            api,
-            logger,
-            communication_state_callback,
-            component_state_callback,
-            *args,
+            device_interface=device_interface,
+            api=api,
+            logger=logger,
             power=PowerState.UNKNOWN,
             fault=None,
             **kwargs,
@@ -187,7 +180,7 @@ class PstSmrbComponentManager(PstApiComponentManager):
             )
         else:
             self._api = PstSmrbProcessApiGrpc(
-                client_id=self._device_name,
+                client_id=self.device_name,
                 grpc_endpoint=self.api_endpoint,
                 logger=self.logger,
                 component_state_callback=self._push_component_state_update,

@@ -18,7 +18,7 @@ from tango import DebugIt
 from tango.server import attribute, command, device_property, run
 
 import ska_pst_lmc.release as release
-from ska_pst_lmc.component import as_device_attribute_name
+from ska_pst_lmc.component import PstApiDeviceInterface, as_device_attribute_name
 from ska_pst_lmc.component.pst_device import PstBaseProcessDevice
 from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
 from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData
@@ -26,7 +26,7 @@ from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData
 __all__ = ["PstSmrb", "main"]
 
 
-class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
+class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager], PstApiDeviceInterface[SmrbMonitorData]):
     """A software TANGO device for managing the SMRB component of the PST.LMC subsystem.
 
     This TANGO device is used to manage the Shared Memory Ring Buffer (SMRB) for the
@@ -70,15 +70,9 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
         :return: a component manager for this device.
         """
         return PstSmrbComponentManager(
-            device_name=self.get_name(),
-            monitor_data_callback=self._update_monitor_data,
-            process_api_endpoint=self.process_api_endpoint,
+            device_interface=self,
             simulation_mode=SimulationMode.TRUE,
             logger=self.logger,
-            communication_state_callback=self._communication_state_changed,
-            component_state_callback=self._component_state_changed,
-            monitor_polling_rate=self.monitor_polling_rate,
-            beam_id=self.DeviceID,
         )
 
     def always_executed_hook(self: PstSmrb) -> None:
@@ -92,10 +86,14 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager]):
         destructor and by the device Init command.
         """
 
-    def _update_monitor_data(self: PstSmrb, data: SmrbMonitorData) -> None:
-        for (key, value) in dataclasses.asdict(data).items():
-            self.push_change_event(as_device_attribute_name(key), value)
-            self.push_archive_event(as_device_attribute_name(key), value)
+    def handle_monitor_data_update(self: PstSmrb, monitor_data: SmrbMonitorData) -> None:
+        """Handle monitoring data.
+
+        :param monitor_data: the latest monitoring data that has been reported.
+        :type monitor_data: SmrbMonitorData
+        """
+        for (key, value) in dataclasses.asdict(monitor_data).items():
+            self.handle_attribute_value_update(key, value)
 
     # ------------------
     # Attributes

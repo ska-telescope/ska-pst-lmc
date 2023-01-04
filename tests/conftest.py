@@ -4,7 +4,6 @@ from __future__ import annotations
 import collections
 import logging
 import threading
-import time
 from concurrent import futures
 from random import randint
 from typing import Any, Callable, Dict, Generator, List
@@ -16,7 +15,7 @@ import tango
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import StartScanRequest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer, add_PstLmcServiceServicer_to_server
 from ska_tango_base.commands import ResultCode
-from ska_tango_base.control_model import ObsState, SimulationMode
+from ska_tango_base.control_model import CommunicationStatus, ObsState, SimulationMode
 from ska_tango_base.executor import TaskStatus
 from ska_tango_testing.mock import MockCallable
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
@@ -324,7 +323,6 @@ def multidevice_test_context(
     logger.debug(f"Creating multidevice_test_context {server_configuration}")
     with MultiDeviceTestContext(**server_configuration) as context:
         logger.debug("Created multidevice_test_context")
-        time.sleep(0.5)
         yield context
 
 
@@ -340,9 +338,6 @@ def device_under_test(tango_context: DeviceTestContext) -> DeviceProxy:
     :return: a proxy to the device under test
     :rtype: :py:class:`tango.DeviceProxy`
     """
-    # Give the PushChanges polled command time to run once.
-    time.sleep(0.2)
-
     return tango_context.device
 
 
@@ -654,3 +649,26 @@ def monitor_data_callback() -> MagicMock:
 def property_callback() -> MagicMock:
     """Create fixture for testing property callbacks."""
     return MagicMock()
+
+
+@pytest.fixture
+def device_interface(
+    device_name: str,
+    beam_id: int,
+    grpc_endpoint: str,
+    communication_state_callback: Callable[[CommunicationStatus], None],
+    component_state_callback: Callable,
+    monitor_data_callback: Callable,
+    property_callback: Callable,
+) -> MagicMock:
+    """Create device interface fixture to mock a Tango device."""
+    device_interface = MagicMock()
+    device_interface.device_name = device_name
+    device_interface.process_api_endpoint = grpc_endpoint
+    device_interface.handle_communication_state_change = communication_state_callback
+    device_interface.handle_component_state_change = component_state_callback
+    device_interface.handle_monitor_data_update = monitor_data_callback
+    device_interface.handle_attribute_value_update = property_callback
+    device_interface.beam_id = beam_id
+
+    return device_interface

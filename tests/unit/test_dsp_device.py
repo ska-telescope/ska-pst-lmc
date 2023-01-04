@@ -13,7 +13,6 @@ import json
 import logging
 import time
 from typing import Any, Dict, Type
-from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -46,50 +45,21 @@ def device_properties(
 
 
 @pytest.fixture
-def component_manager(
-    device_name: str,
-    grpc_endpoint: str,
-    monitor_polling_rate: int,
-    logger: logging.Logger,
-    monkeypatch: pytest.MonkeyPatch,
-) -> PstDspComponentManager:
-    """Get fixture for a PstDspComponentManager."""
-    # monkey patch PstDspComponentManager._update_api to do nothing.
-    def _update_api(*args: Any, **kwargs: Any) -> None:
-        pass
-
-    monkeypatch.setattr(PstDspComponentManager, "_update_api", _update_api)
-
-    return PstDspComponentManager(
-        device_name=device_name,
-        process_api_endpoint=grpc_endpoint,
-        logger=logger,
-        # this is just a place holder to mock these values.
-        monitor_data_callback=MagicMock(),
-        communication_state_callback=MagicMock(),
-        component_state_callback=MagicMock(),
-        property_callback=MagicMock(),
-        monitor_polling_rate=monitor_polling_rate,
-    )
-
-
-@pytest.fixture
-def dsp_device_class(component_manager: PstDspComponentManager) -> Type[PstDsp]:
+def dsp_device_class(logger: logging.Logger, monkeypatch: pytest.MonkeyPatch) -> Type[PstDsp]:
     """Get PstDsp fixture.
 
     This creates a subclass of the PstDsp that overrides the create_component_manager method
     to use the component_manager fixture.
     """
 
+    def _update_api(*args: Any, **kwargs: Any) -> None:
+        pass
+
+    monkeypatch.setattr(PstDspComponentManager, "_update_api", _update_api)
+
     class _PstDsp(PstDsp):
         def create_component_manager(self: _PstDsp) -> PstDspComponentManager:
-            component_manager._communication_state_callback = self._communication_state_changed
-            component_manager._api._component_state_callback = self._component_state_changed
-            component_manager._component_state_callback = self._component_state_changed
-            component_manager._monitor_data_handler._monitor_data_callback = self._update_monitor_data
-            component_manager._property_callback = self._update_attribute_value
-
-            return component_manager
+            return PstDspComponentManager(device_interface=self, logger=logger)
 
     return _PstDsp
 
@@ -425,11 +395,12 @@ class TestPstDsp:
         )
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToFault(),
+            lambda: device_under_test.GoToFault("putting DSP.MGMT into FAULT"),
             expected_obs_state_events=[
                 ObsState.FAULT,
             ],
         )
+        assert device_under_test.healthFailureMessage == "putting DSP.MGMT into FAULT"
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.ObsReset(),
@@ -473,11 +444,12 @@ class TestPstDsp:
         )
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToFault(),
+            lambda: device_under_test.GoToFault("putting DSP.MGMT into FAULT"),
             expected_obs_state_events=[
                 ObsState.FAULT,
             ],
         )
+        assert device_under_test.healthFailureMessage == "putting DSP.MGMT into FAULT"
 
     def test_dsp_mgmt_go_to_fault_when_scanning(
         self: TestPstDsp,
@@ -521,8 +493,9 @@ class TestPstDsp:
         )
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToFault(),
+            lambda: device_under_test.GoToFault("putting DSP.MGMT into FAULT"),
             expected_obs_state_events=[
                 ObsState.FAULT,
             ],
         )
+        assert device_under_test.healthFailureMessage == "putting DSP.MGMT into FAULT"

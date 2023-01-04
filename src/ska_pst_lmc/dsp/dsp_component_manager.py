@@ -11,13 +11,18 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from ska_tango_base.base import check_communicating
-from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
+from ska_tango_base.control_model import PowerState, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
-from ska_pst_lmc.component import MonitorDataHandler, PstApiComponentManager, TaskResponse
+from ska_pst_lmc.component import (
+    MonitorDataHandler,
+    PstApiComponentManager,
+    PstApiDeviceInterface,
+    TaskResponse,
+)
 from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData, DspDiskMonitorDataStore
 from ska_pst_lmc.dsp.dsp_process_api import PstDspProcessApi, PstDspProcessApiGrpc, PstDspProcessApiSimulator
 from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources
@@ -26,23 +31,17 @@ from ska_pst_lmc.util.callback import Callback, callback_safely, wrap_callback
 __all__ = ["PstDspComponentManager"]
 
 
-class PstDspComponentManager(PstApiComponentManager):
+class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspProcessApi]):
     """Component manager for the DSP component for the PST.LMC subsystem."""
 
     _api: PstDspProcessApi
 
     def __init__(
         self: PstDspComponentManager,
-        device_name: str,
-        process_api_endpoint: str,
+        *,
+        device_interface: PstApiDeviceInterface[DspDiskMonitorData],
         logger: logging.Logger,
-        monitor_data_callback: Callable[[DspDiskMonitorData], None],
-        communication_state_callback: Callable[[CommunicationStatus], None],
-        component_state_callback: Callable[..., None],
         api: Optional[PstDspProcessApi] = None,
-        monitor_polling_rate: int = 5000,
-        *args: Any,
-        property_callback: Callable[[str, Any], None],
         **kwargs: Any,
     ):
         """Initialise instance of the component manager.
@@ -63,31 +62,25 @@ class PstDspComponentManager(PstApiComponentManager):
             component state changes.
         """
         logger.debug(
-            f"Setting up DSP component manager with device_name='{device_name}'"
-            + "and api_endpoint='{process_api_endpoint}'"
+            f"Setting up DSP component manager with device_name='{device_interface.device_name}'"
+            + f"and api_endpoint='{device_interface.process_api_endpoint}'"
         )
-        self.api_endpoint = process_api_endpoint
         api = api or PstDspProcessApiSimulator(
             logger=logger,
-            component_state_callback=component_state_callback,
+            component_state_callback=device_interface.handle_component_state_change,
         )
 
         # need a lock for updating component data
         self._monitor_data_store = DspDiskMonitorDataStore()
         self._monitor_data_handler = MonitorDataHandler(
             data_store=self._monitor_data_store,
-            monitor_data_callback=monitor_data_callback,
+            monitor_data_callback=device_interface.handle_monitor_data_update,
         )
-        self._monitor_polling_rate = monitor_polling_rate
-        self._property_callback = property_callback
 
         super().__init__(
-            device_name,
-            api,
-            logger,
-            communication_state_callback,
-            component_state_callback,
-            *args,
+            device_interface=device_interface,
+            api=api,
+            logger=logger,
             power=PowerState.UNKNOWN,
             fault=None,
             **kwargs,
@@ -102,7 +95,7 @@ class PstDspComponentManager(PstApiComponentManager):
             )
         else:
             self._api = PstDspProcessApiGrpc(
-                client_id=self._device_name,
+                client_id=self.device_name,
                 grpc_endpoint=self.api_endpoint,
                 logger=self.logger,
                 component_state_callback=self._push_component_state_update,

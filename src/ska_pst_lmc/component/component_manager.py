@@ -12,7 +12,7 @@ from __future__ import annotations
 import functools
 import logging
 from threading import Event
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Generic, Optional, Tuple, TypeVar, cast
 
 from ska_tango_base.base import check_communicating
 from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
@@ -23,6 +23,8 @@ from ska_pst_lmc.component.process_api import PstProcessApi
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 from ska_pst_lmc.util.callback import Callback, callback_safely, wrap_callback
 
+from .pst_device_interface import PstApiDeviceInterface, PstDeviceInterface
+
 __all__ = [
     "PstApiComponentManager",
     "PstComponentManager",
@@ -32,8 +34,10 @@ __all__ = [
 
 TaskResponse = Tuple[TaskStatus, str]
 
+DeviceInterface = TypeVar("DeviceInterface", bound=PstDeviceInterface)
 
-class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
+
+class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager, CspObsComponentManager):
     """
     Base Component Manager for the PST.LMC. subsystem.
 
@@ -55,12 +59,9 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
 
     def __init__(
         self: PstComponentManager,
-        device_name: str,
+        *,
+        device_interface: DeviceInterface,
         logger: logging.Logger,
-        communication_state_callback: Callable[[CommunicationStatus], None],
-        component_state_callback: Callable,
-        *args: Any,
-        beam_id: int = 1,
         simulation_mode: SimulationMode = SimulationMode.TRUE,
         **kwargs: Any,
     ) -> None:
@@ -86,13 +87,18 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
             The default value is 1 (used for testing).
         :type beam_id: int
         """
-        self._device_name = device_name
+        self._device_interface = device_interface
+        self._property_callback = device_interface.handle_attribute_value_update
         self._simuation_mode = simulation_mode
         self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
         self._scan_id = 0
         self._config_id = ""
-        self._beam_id = beam_id
-        super().__init__(logger, communication_state_callback, component_state_callback, *args, **kwargs)
+        super().__init__(
+            logger=logger,
+            communication_state_callback=device_interface.handle_communication_state_change,
+            component_state_callback=device_interface.handle_component_state_change,
+            **kwargs,
+        )
 
     @property
     def beam_id(self: PstComponentManager) -> int:
@@ -101,7 +107,12 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
         This value is set during the construction of the component manager,
         and is injected from the `DeviceID` property of the TANGO device.
         """
-        return self._beam_id
+        return self._device_interface.beam_id
+
+    @property
+    def device_name(self: PstComponentManager) -> str:
+        """Get the name of the current device."""
+        return self._device_interface.device_name
 
     def start_communicating(self: PstComponentManager) -> None:
         """
@@ -389,7 +400,9 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
 
         return self.submit_task(_task, task_callback=task_callback)
 
-    def go_to_fault(self: PstComponentManager, task_callback: Callback = None) -> TaskResponse:
+    def go_to_fault(
+        self: PstComponentManager, fault_msg: str, task_callback: Callback = None
+    ) -> TaskResponse:
         """Set the component into a FAULT state.
 
         For BEAM this will make the sub-devices be put into a FAULT state. For
@@ -399,7 +412,11 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager):
         raise NotImplementedError("PstComponentManager is abstract class")
 
 
-class PstApiComponentManager(PstComponentManager):
+T = TypeVar("T")
+Api = TypeVar("Api", bound=PstProcessApi)
+
+
+class PstApiComponentManager(Generic[T, Api], PstComponentManager[PstApiDeviceInterface[T]]):
     """
     A base component Manager for the PST.LMC. that uses an API.
 
@@ -418,12 +435,10 @@ class PstApiComponentManager(PstComponentManager):
 
     def __init__(
         self: PstApiComponentManager,
-        device_name: str,
-        api: PstProcessApi,
+        *,
+        device_interface: PstApiDeviceInterface[T],
+        api: Api,
         logger: logging.Logger,
-        communication_state_callback: Callable[[CommunicationStatus], None],
-        component_state_callback: Callable,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """Initialise instance of the component manager.
@@ -445,9 +460,8 @@ class PstApiComponentManager(PstComponentManager):
         :type component_fault_callback: `Callable`
         """
         self._api = api
-        super().__init__(
-            device_name, logger, communication_state_callback, component_state_callback, *args, **kwargs
-        )
+        self._monitor_polling_rate = device_interface.monitor_polling_rate
+        super().__init__(device_interface=device_interface, logger=logger, **kwargs)
 
     def _handle_communication_state_change(
         self: PstApiComponentManager, communication_state: CommunicationStatus
@@ -476,7 +490,7 @@ class PstApiComponentManager(PstComponentManager):
         curr_communication_state = self.communication_state
         if curr_communication_state == CommunicationStatus.ESTABLISHED:
             self.logger.debug(
-                f"{self._device_name} simulation mode changed while "
+                f"{self.device_name} simulation mode changed while "
                 + "communicating so stopping communication."
             )
             self.stop_communicating()
@@ -485,7 +499,7 @@ class PstApiComponentManager(PstComponentManager):
 
         if curr_communication_state == CommunicationStatus.ESTABLISHED:
             self.logger.debug(
-                f"{self._device_name} simulation mode changed while "
+                f"{self.device_name} simulation mode changed while "
                 + "communicating so restarting communication."
             )
             self.start_communicating()
@@ -496,6 +510,11 @@ class PstApiComponentManager(PstComponentManager):
         This is called when there is a change in the simulation mode.
         """
         raise NotImplementedError("PstApiComponentManager is abstract.")
+
+    @property
+    def api_endpoint(self: PstApiComponentManager) -> str:
+        """Get the API endpoint."""
+        return cast(PstApiDeviceInterface, self._device_interface).process_api_endpoint
 
     def configure_beam(
         self: PstApiComponentManager, resources: Dict[str, Any], task_callback: Callback = None
@@ -584,7 +603,9 @@ class PstApiComponentManager(PstComponentManager):
         """
         return self._submit_background_task(self._api.reset, task_callback=task_callback)
 
-    def go_to_fault(self: PstApiComponentManager, task_callback: Callback = None) -> TaskResponse:
+    def go_to_fault(
+        self: PstApiComponentManager, fault_msg: str, task_callback: Callback = None
+    ) -> TaskResponse:
         """Put the service into a FAULT state."""
 
         def _task(
@@ -594,6 +615,7 @@ class PstApiComponentManager(PstComponentManager):
             wrapped_callback = wrap_callback(task_callback)
             wrapped_callback(status=TaskStatus.IN_PROGRESS)
             self._api.go_to_fault()
+            self._device_interface.handle_fault(fault_msg=fault_msg)
             wrapped_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_background_task(_task, task_callback=task_callback)

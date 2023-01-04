@@ -18,7 +18,7 @@ from tango import DebugIt
 from tango.server import attribute, command, device_property, run
 
 import ska_pst_lmc.release as release
-from ska_pst_lmc.component import as_device_attribute_name
+from ska_pst_lmc.component import PstApiDeviceInterface, as_device_attribute_name
 from ska_pst_lmc.component.pst_device import PstBaseProcessDevice
 from ska_pst_lmc.dsp.dsp_component_manager import PstDspComponentManager
 from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData
@@ -26,7 +26,7 @@ from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData
 __all__ = ["PstDsp", "main"]
 
 
-class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
+class PstDsp(PstBaseProcessDevice[PstDspComponentManager], PstApiDeviceInterface[DspDiskMonitorData]):
     """A software TANGO device for managing the DSP component of the PST.LMC subsystem."""
 
     # -----------------
@@ -70,16 +70,9 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         :return: a component manager for this device.
         """
         return PstDspComponentManager(
-            device_name=self.get_name(),
-            process_api_endpoint=self.process_api_endpoint,
+            device_interface=self,
             simulation_mode=SimulationMode.TRUE,
             logger=self.logger,
-            communication_state_callback=self._communication_state_changed,
-            component_state_callback=self._component_state_changed,
-            monitor_polling_rate=self.monitor_polling_rate,
-            monitor_data_callback=self._update_monitor_data,
-            beam_id=self.DeviceID,
-            property_callback=self._update_attribute_value,
         )
 
     def always_executed_hook(self: PstDsp) -> None:
@@ -93,23 +86,20 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager]):
         destructor and by the device Init command.
         """
 
-    def _update_monitor_data(self: PstDsp, data: DspDiskMonitorData) -> None:
+    def handle_monitor_data_update(self: PstDsp, monitor_data: DspDiskMonitorData) -> None:
+        """Handle monitoring data.
+
+        :param monitor_data: the latest monitoring data that has been reported.
+        :type monitor_data: DspDiskMonitorData
+        """
         values = {
-            **dataclasses.asdict(data),
-            "disk_used_bytes": data.disk_used_bytes,
-            "disk_used_percentage": data.disk_used_percentage,
+            **dataclasses.asdict(monitor_data),
+            "disk_used_bytes": monitor_data.disk_used_bytes,
+            "disk_used_percentage": monitor_data.disk_used_percentage,
         }
 
         for (key, value) in values.items():
-            self._update_attribute_value(key, value)
-
-    def _update_attribute_value(self: PstDsp, key: str, value: Any) -> None:
-        try:
-            attr_key = as_device_attribute_name(key)
-            self.push_change_event(attr_key, value)
-            self.push_archive_event(attr_key, value)
-        except Exception:
-            self.logger.warning(f"Error in attempting to set device attribute {key}.", exc_info=True)
+            self.handle_attribute_value_update(key, value)
 
     # ----------
     # Attributes

@@ -17,7 +17,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionRespo
 from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
-from ska_pst_lmc.component import MonitorDataHandler
+from ska_pst_lmc.component import MonitorDataHandler, PstApiDeviceInterface
 from ska_pst_lmc.smrb.smrb_component_manager import PstSmrbComponentManager
 from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData
 from ska_pst_lmc.smrb.smrb_process_api import (
@@ -31,25 +31,17 @@ from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
 
 @pytest.fixture
 def component_manager(
-    device_name: str,
-    grpc_endpoint: str,
+    device_interface: MagicMock,
     simulation_mode: SimulationMode,
     logger: logging.Logger,
     api: PstSmrbProcessApi,
-    communication_state_callback: Callable[[CommunicationStatus], None],
-    component_state_callback: Callable,
-    monitor_data_callback: Callable,
 ) -> PstSmrbComponentManager:
     """Create instance of a component manager."""
     return PstSmrbComponentManager(
-        device_name=device_name,
-        process_api_endpoint=grpc_endpoint,
+        device_interface=cast(PstApiDeviceInterface[SmrbMonitorData], device_interface),
         simulation_mode=simulation_mode,
         logger=logger,
-        communication_state_callback=communication_state_callback,
-        component_state_callback=component_state_callback,
         api=api,
-        monitor_data_callback=monitor_data_callback,
     )
 
 
@@ -261,7 +253,7 @@ def test_smrb_cm_not_communicating_switching_simulation_mode_not_try_to_establis
     update_communication_state.assert_not_called()
 
 
-def test_smrb_cm_smrb_configure_beam(
+def test_smrb_cm_configure_beam(
     component_manager: PstSmrbComponentManager,
     configure_beam_request: Dict[str, Any],
     task_callback: Callable,
@@ -282,7 +274,7 @@ def test_smrb_cm_smrb_configure_beam(
     )
 
 
-def test_smrb_cm_smrb_deconfigure_beam(
+def test_smrb_cm_deconfigure_beam(
     component_manager: PstSmrbComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -336,7 +328,7 @@ def test_smrb_cm_deconfigure_scan(
     )
 
 
-def test_smrb_cm_smrb_scan(
+def test_smrb_cm_scan(
     component_manager: PstSmrbComponentManager,
     scan_request: Dict[str, Any],
     task_callback: Callable,
@@ -363,7 +355,7 @@ def test_smrb_cm_smrb_scan(
     )
 
 
-def test_smrb_cm_smrb_stop_scan(
+def test_smrb_cm_stop_scan(
     component_manager: PstSmrbComponentManager,
     task_callback: Callable,
     monitor_data_callback: MagicMock,
@@ -384,7 +376,7 @@ def test_smrb_cm_smrb_stop_scan(
     monitor_data_callback.assert_called_once_with(SmrbMonitorData())
 
 
-def test_smrb_cm_smrb_abort(
+def test_smrb_cm_abort(
     component_manager: PstSmrbComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -402,7 +394,7 @@ def test_smrb_cm_smrb_abort(
     )
 
 
-def test_smrb_cm_smrb_obsreset(
+def test_smrb_cm_obsreset(
     component_manager: PstSmrbComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -420,8 +412,9 @@ def test_smrb_cm_smrb_obsreset(
     )
 
 
-def test_smrb_cm_recv_go_to_fault(
+def test_smrb_cm_go_to_fault(
     component_manager: PstSmrbComponentManager,
+    device_interface: MagicMock,
     task_callback: Callable,
 ) -> None:
     """Test that the component manager calls the API start a scan."""
@@ -431,8 +424,9 @@ def test_smrb_cm_recv_go_to_fault(
         task_callback=task_callback,
     )
 
-    component_manager.go_to_fault(task_callback=task_callback)
+    component_manager.go_to_fault(task_callback=task_callback, fault_msg="sending SMRB to fault")
 
     api.go_to_fault.assert_called_once()
     calls = [call(status=TaskStatus.IN_PROGRESS), call(status=TaskStatus.COMPLETED, result="Completed")]
     cast(MagicMock, task_callback).assert_has_calls(calls)
+    device_interface.handle_fault.assert_called_once_with(fault_msg="sending SMRB to fault")

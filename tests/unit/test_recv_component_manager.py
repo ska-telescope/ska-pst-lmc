@@ -17,7 +17,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionRespo
 from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
-from ska_pst_lmc.component import MonitorDataHandler
+from ska_pst_lmc.component import MonitorDataHandler, PstApiDeviceInterface
 from ska_pst_lmc.receive.receive_component_manager import PstReceiveComponentManager
 from ska_pst_lmc.receive.receive_model import ReceiveData
 from ska_pst_lmc.receive.receive_process_api import (
@@ -31,31 +31,21 @@ from ska_pst_lmc.test import TestPstLmcService
 
 @pytest.fixture
 def component_manager(
-    device_name: str,
-    grpc_endpoint: str,
+    device_interface: MagicMock,
     simulation_mode: SimulationMode,
     logger: logging.Logger,
     api: PstReceiveProcessApi,
-    communication_state_callback: Callable[[CommunicationStatus], None],
-    component_state_callback: Callable,
     recv_data_host: str,
     subband_udp_ports: List[int],
-    monitor_data_callback: Callable,
-    property_callback: Callable,
 ) -> PstReceiveComponentManager:
     """Create instance of a component manager."""
     return PstReceiveComponentManager(
-        device_name=device_name,
-        process_api_endpoint=grpc_endpoint,
+        device_interface=cast(PstApiDeviceInterface[ReceiveData], device_interface),
         simulation_mode=simulation_mode,
         logger=logger,
-        communication_state_callback=communication_state_callback,
-        component_state_callback=component_state_callback,
         api=api,
         network_interface=recv_data_host,
         subband_udp_ports=subband_udp_ports,
-        monitor_data_callback=monitor_data_callback,
-        property_callback=property_callback,
     )
 
 
@@ -106,7 +96,7 @@ def calculated_receive_subband_resources(
     )
 
 
-def test_recv_start_communicating_calls_connect_on_api(
+def test_recv_cm_start_communicating_calls_connect_on_api(
     component_manager: PstReceiveComponentManager,
     api: PstReceiveProcessApi,
 ) -> None:
@@ -132,7 +122,7 @@ def test_recv_start_communicating_calls_connect_on_api(
         ("misordered_packets"),
     ],
 )
-def test_recv_properties_comes_from_monitor_data(
+def test_recv_cm_properties_comes_from_monitor_data(
     component_manager: PstReceiveComponentManager,
     api: PstReceiveProcessApi,
     monitor_data: ReceiveData,
@@ -148,7 +138,7 @@ def test_recv_properties_comes_from_monitor_data(
     assert actual == expected
 
 
-def test_recv_configure_beam(
+def test_recv_cm_configure_beam(
     component_manager: PstReceiveComponentManager,
     configure_beam_request: Dict[str, Any],
     task_callback: Callable,
@@ -184,7 +174,7 @@ def test_recv_configure_beam(
     )
 
 
-def test_recv_deconfigure_beam(
+def test_recv_cm_deconfigure_beam(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
     property_callback: Callable,
@@ -203,7 +193,7 @@ def test_recv_deconfigure_beam(
     cast(MagicMock, property_callback).assert_called_once_with("subbandBeamConfiguration", "{}")
 
 
-def test_recv_configure_scan(
+def test_recv_cm_configure_scan(
     component_manager: PstReceiveComponentManager,
     configure_scan_request: Dict[str, Any],
     task_callback: Callable,
@@ -223,7 +213,7 @@ def test_recv_configure_scan(
     )
 
 
-def test_recv_deconfigure_scan(
+def test_recv_cm_deconfigure_scan(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -241,7 +231,7 @@ def test_recv_deconfigure_scan(
     )
 
 
-def test_recv_scan(
+def test_recv_cm_scan(
     component_manager: PstReceiveComponentManager,
     scan_request: Dict[str, Any],
     task_callback: Callable,
@@ -261,7 +251,7 @@ def test_recv_scan(
     )
 
 
-def test_recv_stop_scan(
+def test_recv_cm_stop_scan(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -279,7 +269,7 @@ def test_recv_stop_scan(
     )
 
 
-def test_recv_abort(
+def test_recv_cm_abort(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -297,7 +287,7 @@ def test_recv_abort(
     )
 
 
-def test_recv_obsreset(
+def test_recv_cm_obsreset(
     component_manager: PstReceiveComponentManager,
     task_callback: Callable,
 ) -> None:
@@ -315,7 +305,7 @@ def test_recv_obsreset(
     )
 
 
-def test_api_instance_changes_depending_on_simulation_mode(
+def test_recv_cm_api_instance_changes_depending_on_simulation_mode(
     component_manager: PstReceiveComponentManager,
 ) -> None:
     """Test to assert that the process API changes depending on simulation mode."""
@@ -334,7 +324,7 @@ def test_api_instance_changes_depending_on_simulation_mode(
         (SimulationMode.FALSE,),
     ],
 )
-def test_no_change_in_simulation_mode_value_wont_change_communication_state(
+def test_recv_cm_no_change_in_simulation_mode_value_wont_change_communication_state(
     device_name: str,
     component_manager: PstReceiveComponentManager,
     simulation_mode: SimulationMode,
@@ -366,7 +356,7 @@ def test_no_change_in_simulation_mode_value_wont_change_communication_state(
     update_communication_state.assert_not_called()
 
 
-def test_if_communicating_switching_simulation_mode_must_stop_then_restart(
+def test_recv_cm_if_communicating_switching_simulation_mode_must_stop_then_restart(
     device_name: str,
     component_manager: PstReceiveComponentManager,
     pst_lmc_service: TestPstLmcService,
@@ -409,7 +399,7 @@ def test_if_communicating_switching_simulation_mode_must_stop_then_restart(
     update_communication_state.reset_mock()
 
 
-def test_not_communicating_switching_simulation_mode_not_try_to_establish_connection(
+def test_recv_cm_not_communicating_switching_simulation_mode_not_try_to_establish_connection(
     component_manager: PstReceiveComponentManager,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -430,8 +420,9 @@ def test_not_communicating_switching_simulation_mode_not_try_to_establish_connec
     update_communication_state.assert_not_called()
 
 
-def test_recv_go_to_fault(
+def test_recv_cm_go_to_fault(
     component_manager: PstReceiveComponentManager,
+    device_interface: MagicMock,
     task_callback: Callable,
 ) -> None:
     """Test that the component manager calls the API start a scan."""
@@ -441,8 +432,9 @@ def test_recv_go_to_fault(
         task_callback=task_callback,
     )
 
-    component_manager.go_to_fault(task_callback=task_callback)
+    component_manager.go_to_fault(task_callback=task_callback, fault_msg="this is a fault message")
 
     api.go_to_fault.assert_called_once()
     calls = [call(status=TaskStatus.IN_PROGRESS), call(status=TaskStatus.COMPLETED, result="Completed")]
     cast(MagicMock, task_callback).assert_has_calls(calls)
+    device_interface.handle_fault.assert_called_once_with(fault_msg="this is a fault message")

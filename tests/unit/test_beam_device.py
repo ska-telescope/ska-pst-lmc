@@ -355,12 +355,13 @@ class TestPstBeam:
         assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
 
         tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToFault(),
+            lambda: device_under_test.GoToFault("this is a fault message"),
             expected_obs_state_events=[
                 ObsState.FAULT,
             ],
         )
         assert_obstate(ObsState.FAULT)
+        assert device_under_test.healthFailureMessage == "this is a fault message"
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.ObsReset(),
@@ -460,3 +461,70 @@ class TestPstBeam:
         # Assert attribute values
         for v in attribute_event_validators:
             v.assert_values()
+
+    @pytest.mark.forked
+    def test_beam_mgmt_ends_in_fault_state_when_subordinate_device_ends_up_in_fault_state(
+        self: TestPstBeam,
+        device_under_test: DeviceProxy,
+        multidevice_test_context: MultiDeviceTestContext,
+        tango_device_command_checker: TangoDeviceCommandChecker,
+        change_event_callbacks: MockTangoEventCallbackGroup,
+        logger: logging.Logger,
+    ) -> None:
+        """Test state model of PstReceive."""
+        import random
+
+        # need to go through state mode
+        dsp_proxy = multidevice_test_context.get_device("test/dsp/1")
+        recv_proxy = multidevice_test_context.get_device("test/recv/1")
+        smrb_proxy = multidevice_test_context.get_device("test/smrb/1")
+
+        # trying to avoid potential race condition inside TANGO
+        time.sleep(0.1)
+
+        def assert_state(state: DevState) -> None:
+            assert device_under_test.state() == state
+            assert recv_proxy.state() == state
+            assert smrb_proxy.state() == state
+            assert dsp_proxy.state() == state
+
+        @backoff.on_exception(
+            backoff.expo,
+            AssertionError,
+            factor=1,
+            max_time=5.0,
+        )
+        def assert_obstate(obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
+            assert device_under_test.obsState == obsState
+            assert recv_proxy.obsState == subObsState or obsState
+            assert smrb_proxy.obsState == subObsState or obsState
+            assert dsp_proxy.obsState == subObsState or obsState
+
+        device_under_test.adminMode = AdminMode.ONLINE
+        time.sleep(0.1)
+        assert recv_proxy.adminMode == AdminMode.ONLINE
+        assert smrb_proxy.adminMode == AdminMode.ONLINE
+        assert dsp_proxy.adminMode == AdminMode.ONLINE
+
+        assert_state(DevState.OFF)
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
+        )
+        assert_state(DevState.ON)
+
+        rand_device_id = random.randint(0, 2)
+        if rand_device_id == 0:
+            subdevice = dsp_proxy
+        elif rand_device_id == 1:
+            subdevice = recv_proxy
+        else:
+            subdevice = smrb_proxy
+        fault_msg = f"putting {subdevice.dev_name()} into FAULT"
+
+        subdevice.GoToFault(fault_msg)
+
+        # expect - beam.obsState ends up as fault
+        change_event_callbacks["obsState"].assert_change_event(ObsState.FAULT)
+
+        assert device_under_test.healthFailureMessage == fault_msg
