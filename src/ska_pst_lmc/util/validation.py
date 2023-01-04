@@ -53,12 +53,12 @@ def validate(config: dict, strictness: Strictness = Strictness.Strict) -> dict:
     try:
         version: str = config["interface"]
     except KeyError:
-        raise ValueError("Version not found. It should be >= 2.2")
+        raise ValueError("Version not found. It should be >= 2.3")
 
     (major, minor) = _split_interface_version(version)
 
-    if (major, minor) <= (2, 1):
-        raise ValueError(f"Version {major}.{minor} should be >= 2.2")
+    if (major, minor) <= (2, 2):
+        raise ValueError(f"Version {major}.{minor} should be >= 2.3")
 
     # get the CSP schema
     schema: Schema = get_csp_config_schema(version=version, strict=(strictness == Strictness.Strict))

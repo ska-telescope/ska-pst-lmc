@@ -43,7 +43,7 @@ def test_calculate_receive_subband_resources(
     assert actual_common["frequency"] == configure_beam_request["centre_frequency"] / 1e6
     assert actual_common["bandwidth"] == configure_beam_request["total_bandwidth"] / 1e6
     assert actual_common["nchan"] == configure_beam_request["num_frequency_channels"]
-    assert actual_common["frontend"] == configure_beam_request["timing_beam_id"]
+    assert actual_common["frontend"] == configure_beam_request["receiver_id"]
     assert actual_common["fd_poln"] == configure_beam_request["feed_polarization"]
     assert actual_common["fd_hand"] == configure_beam_request["feed_handedness"]
     assert actual_common["fd_sang"] == configure_beam_request["feed_angle"]
@@ -213,7 +213,7 @@ def test_map_configure_request(
     assert actual["observer"] == configure_scan_request["observer_id"]
     assert actual["projid"] == configure_scan_request["project_id"]
     assert actual["pnt_id"] == configure_scan_request["pointing_id"]
-    assert actual["subarray_id"] == configure_scan_request["subarray_id"]
+    assert actual["subarray_id"] == str(configure_scan_request["subarray_id"])
     assert actual["source"] == configure_scan_request["source"]
     assert actual["itrf"] == ",".join(map(str, configure_scan_request["itrf"]))
     assert actual["coord_md"] == "J2000"
