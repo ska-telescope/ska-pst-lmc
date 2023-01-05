@@ -454,7 +454,7 @@ def test_smrb_cm_on(
     task_callback.assert_has_calls(calls)
 
     device_interface.handle_component_state_change.assert_called_once_with(power=PowerState.ON)
-    device_interface.update_health_state.assert_called_once_with(health_state=HealthState.OK)
+    device_interface.update_health_state.assert_not_called()
 
 
 def test_smrb_cm_on_fails_if_not_communicating(
@@ -481,7 +481,7 @@ def test_smrb_cm_off(
     task_callback.assert_has_calls(calls)
 
     device_interface.handle_component_state_change.assert_called_once_with(power=PowerState.OFF)
-    device_interface.update_health_state.assert_called_once_with(health_state=HealthState.UNKNOWN)
+    device_interface.update_health_state.assert_not_called()
 
 
 def test_smrb_cm_off_fails_if_not_communicating(
@@ -490,3 +490,29 @@ def test_smrb_cm_off_fails_if_not_communicating(
     """Test that the component manager rejects a call to 'off' if not communicating."""
     with pytest.raises(ConnectionError):
         component_manager.off()
+
+
+def test_smrb_cm_start_communicating(
+    component_manager: PstSmrbComponentManager,
+    device_interface: PstApiDeviceInterface,
+) -> None:
+    """Test RECV component manager when start_communicating is called."""
+    component_manager._communication_state = CommunicationStatus.DISABLED
+    component_manager.start_communicating()
+
+    cast(MagicMock, device_interface.update_health_state).assert_called_once_with(health_state=HealthState.OK)
+    assert component_manager._communication_state == CommunicationStatus.ESTABLISHED
+
+
+def test_smrb_cm_stop_communicating(
+    component_manager: PstSmrbComponentManager,
+    device_interface: PstApiDeviceInterface,
+) -> None:
+    """Test RECV component manager when stop_communicating is called."""
+    component_manager._communication_state = CommunicationStatus.ESTABLISHED
+    component_manager.stop_communicating()
+
+    cast(MagicMock, device_interface.update_health_state).assert_called_once_with(
+        health_state=HealthState.UNKNOWN
+    )
+    assert component_manager._communication_state == CommunicationStatus.DISABLED

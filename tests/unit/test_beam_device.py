@@ -235,6 +235,18 @@ class TestPstBeam:
         # trying to avoid potential race condition inside TANGO
         time.sleep(0.1)
 
+        @backoff.on_exception(
+            backoff.expo,
+            AssertionError,
+            factor=1,
+            max_time=5.0,
+        )
+        def assert_admin_mode(admin_mode: AdminMode) -> None:
+            assert device_under_test.adminMode == admin_mode
+            assert recv_proxy.adminMode == admin_mode
+            assert smrb_proxy.adminMode == admin_mode
+            assert dsp_proxy.adminMode == admin_mode
+
         def assert_state(state: DevState) -> None:
             assert device_under_test.state() == state
             assert recv_proxy.state() == state
@@ -268,13 +280,9 @@ class TestPstBeam:
         assert_health_state(HealthState.UNKNOWN)
 
         device_under_test.adminMode = AdminMode.ONLINE
-        time.sleep(0.1)
-        assert recv_proxy.adminMode == AdminMode.ONLINE
-        assert smrb_proxy.adminMode == AdminMode.ONLINE
-        assert dsp_proxy.adminMode == AdminMode.ONLINE
-
+        assert_admin_mode(admin_mode=AdminMode.ONLINE)
         assert_state(DevState.OFF)
-        assert_health_state(HealthState.UNKNOWN)
+        assert_health_state(HealthState.OK)
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
@@ -282,7 +290,6 @@ class TestPstBeam:
         assert_state(DevState.ON)
 
         assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
-        assert_health_state(HealthState.OK)
 
         configuration = json.dumps(csp_configure_scan_request)
         tango_device_command_checker.assert_command(
@@ -323,6 +330,10 @@ class TestPstBeam:
             lambda: device_under_test.Off(),
         )
         assert_state(DevState.OFF)
+        assert_health_state(HealthState.OK)
+
+        device_under_test.adminMode = AdminMode.OFFLINE
+        assert_admin_mode(admin_mode=AdminMode.OFFLINE)
         assert_health_state(HealthState.UNKNOWN)
 
     def test_beam_mgmt_go_to_fault(

@@ -129,14 +129,18 @@ class TestPstSmrb:
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
         """Test state model of PstSmrb."""
-        assert device_under_test.state() == DevState.OFF
+        # need to have this in OFFLINE mode to start with to assert unknown health state
+        device_under_test.adminMode = AdminMode.OFFLINE
         assert device_under_test.healthState == HealthState.UNKNOWN
+
+        device_under_test.adminMode = AdminMode.ONLINE
+        assert device_under_test.healthState == HealthState.OK
+        assert device_under_test.state() == DevState.OFF
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
         )
         assert device_under_test.state() == DevState.ON
-        assert device_under_test.healthState == HealthState.OK
 
         resources = json.dumps(configure_beam_request)
         tango_device_command_checker.assert_command(
@@ -198,6 +202,13 @@ class TestPstSmrb:
                 ObsState.EMPTY,
             ],
         )
+
+        tango_device_command_checker.assert_command(lambda: device_under_test.Off())
+        assert device_under_test.state() == DevState.OFF
+        assert device_under_test.healthState == HealthState.OK
+
+        device_under_test.adminMode = AdminMode.OFFLINE
+        assert device_under_test.healthState == HealthState.UNKNOWN
 
     def test_smrb_mgmt_abort_when_scanning(
         self: TestPstSmrb,

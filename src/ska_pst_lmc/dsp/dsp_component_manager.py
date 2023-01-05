@@ -14,7 +14,7 @@ import threading
 from typing import Any, Dict, List, Optional
 
 from ska_tango_base.base import check_communicating
-from ska_tango_base.control_model import HealthState, PowerState, SimulationMode
+from ska_tango_base.control_model import PowerState, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component import (
@@ -191,9 +191,6 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
         ) -> None:
             callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(power=PowerState.ON)
-
-            self._device_interface.update_health_state(health_state=HealthState.OK)
-
             callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
             # need to submit this as a background task, so clients of On know
             # that we're in the right state so they can subscribe to events

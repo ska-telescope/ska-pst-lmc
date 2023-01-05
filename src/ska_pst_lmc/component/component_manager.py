@@ -217,9 +217,6 @@ class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager
         ) -> None:
             callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(power=PowerState.OFF)
-            cast(PstDeviceInterface, self._device_interface).update_health_state(
-                health_state=HealthState.UNKNOWN
-            )
             callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
 
         return self.submit_task(_task, task_callback=task_callback)
@@ -262,7 +259,6 @@ class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager
         ) -> None:
             callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(power=PowerState.ON)
-            cast(PstDeviceInterface, self._device_interface).update_health_state(health_state=HealthState.OK)
             callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
 
         return self.submit_task(_task, task_callback=task_callback)
@@ -481,12 +477,14 @@ class PstApiComponentManager(Generic[T, Api], PstComponentManager[PstApiDeviceIn
         self._api.connect()
         self._update_communication_state(CommunicationStatus.ESTABLISHED)
         self._push_component_state_update(fault=None, power=PowerState.OFF)
+        self._device_interface.update_health_state(health_state=HealthState.OK)
 
     def _disconnect_from_api(self: PstApiComponentManager) -> None:
         """Establish connection to API component."""
         self._api.disconnect()
         self._update_communication_state(CommunicationStatus.DISABLED)
         self._push_component_state_update(fault=None, power=PowerState.UNKNOWN)
+        self._device_interface.update_health_state(health_state=HealthState.UNKNOWN)
 
     def _simulation_mode_changed(self: PstApiComponentManager) -> None:
         """Handle change of simulation mode."""

@@ -371,9 +371,11 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             self._update_communication_state(CommunicationStatus.NOT_ESTABLISHED)
             self._update_communication_state(CommunicationStatus.ESTABLISHED)
             self._push_component_state_update(fault=None, power=PowerState.OFF)
+            self._device_interface.update_health_state(health_state=HealthState.OK)
         elif communication_state == CommunicationStatus.DISABLED:
             self._push_component_state_update(fault=None, power=PowerState.UNKNOWN)
             self._update_communication_state(CommunicationStatus.DISABLED)
+            self._device_interface.update_health_state(health_state=HealthState.UNKNOWN)
 
     def update_admin_mode(self: PstBeamComponentManager, admin_mode: AdminMode) -> None:
         """Update the admin mode of the remote devices.
@@ -474,10 +476,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'On' commands have completed.")
             self._push_component_state_update(power=PowerState.ON)
-
             self._subscribe_change_events()
-            self._device_interface.update_health_state(health_state=HealthState.OK)
-
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
@@ -502,7 +501,6 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'Off' commands have completed.")
             self._push_component_state_update(power=PowerState.OFF)
-            self._device_interface.update_health_state(health_state=HealthState.UNKNOWN)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         # need to unsubscribe from monitoring events.

@@ -329,33 +329,30 @@ def _complete_job_side_effect() -> Callable[..., Tuple[List[TaskStatus], List[Op
 
 
 @pytest.mark.parametrize(
-    "method_name, remote_action_supplier, component_state_callback_params, health_state",
+    "method_name, remote_action_supplier, component_state_callback_params",
     [
-        ("on", lambda d: d.On, {"power": PowerState.ON}, HealthState.OK),
-        ("off", lambda d: d.Off, {"power": PowerState.OFF}, HealthState.UNKNOWN),
-        ("reset", lambda d: d.Reset, {"power": PowerState.OFF}, None),
-        ("standby", lambda d: d.Standby, {"power": PowerState.STANDBY}, None),
+        ("on", lambda d: d.On, {"power": PowerState.ON}),
+        ("off", lambda d: d.Off, {"power": PowerState.OFF}),
+        ("reset", lambda d: d.Reset, {"power": PowerState.OFF}),
+        ("standby", lambda d: d.Standby, {"power": PowerState.STANDBY}),
         (
             "configure_scan",
             [lambda d: d.ConfigureBeam, lambda d: d.ConfigureScan],
             {"configured": True},
-            None,
         ),
         (
             "deconfigure_scan",
             [lambda d: d.DeconfigureBeam, lambda d: d.DeconfigureScan],
             {"configured": False},
-            None,
         ),
-        ("scan", lambda d: d.Scan, {"scanning": True}, None),
-        ("end_scan", lambda d: d.EndScan, {"scanning": False}, None),
+        ("scan", lambda d: d.Scan, {"scanning": True}),
+        ("end_scan", lambda d: d.EndScan, {"scanning": False}),
         (
             "obsreset",
             [lambda d: d.ObsReset, lambda d: d.DeconfigureBeam],
             {"configured": False},
-            HealthState.OK,
         ),
-        ("go_to_fault", lambda d: d.GoToFault, {"obsfault": True}, None),
+        ("go_to_fault", lambda d: d.GoToFault, {"obsfault": True}),
     ],
 )
 def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity for this test
@@ -371,7 +368,6 @@ def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity
         Callable[[PstDeviceProxy], Callable], List[Callable[[PstDeviceProxy], Callable]]
     ],
     component_state_callback_params: Optional[dict],
-    health_state: Optional[HealthState],
     task_executor: TaskExecutor,
 ) -> None:
     """Assert that actions that need to be delegated to remote devices."""
@@ -438,8 +434,12 @@ def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity
     if method_name == "go_to_fault":
         device_interface.handle_fault.assert_called_once_with(fault_msg="putting BEAM into fault")
 
-    if health_state is not None:
-        device_interface.update_health_state.assert_called_once_with(health_state=health_state)
+    if method_name == "obsreset":
+        cast(MagicMock, device_interface.update_health_state).assert_called_once_with(
+            health_state=HealthState.OK
+        )
+    else:
+        cast(MagicMock, device_interface.update_health_state).assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -794,3 +794,29 @@ def test_beam_cm_removes_frequency_band_only_for_low(
 
     calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
     mock_task_callback.assert_has_calls(calls)
+
+
+def test_beam_cm_start_communicating(
+    component_manager: PstBeamComponentManager,
+    device_interface: PstBeamDeviceInterface,
+) -> None:
+    """Test BEAM component manager when start_communicating is called."""
+    component_manager._communication_state = CommunicationStatus.DISABLED
+    component_manager.start_communicating()
+
+    cast(MagicMock, device_interface.update_health_state).assert_called_once_with(health_state=HealthState.OK)
+    assert component_manager._communication_state == CommunicationStatus.ESTABLISHED
+
+
+def test_beam_cm_stop_communicating(
+    component_manager: PstBeamComponentManager,
+    device_interface: PstBeamDeviceInterface,
+) -> None:
+    """Test BEAM component manager when stop_communicating is called."""
+    component_manager._communication_state = CommunicationStatus.ESTABLISHED
+    component_manager.stop_communicating()
+
+    cast(MagicMock, device_interface.update_health_state).assert_called_once_with(
+        health_state=HealthState.UNKNOWN
+    )
+    assert component_manager._communication_state == CommunicationStatus.DISABLED
