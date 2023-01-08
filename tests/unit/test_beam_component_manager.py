@@ -358,7 +358,13 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
     task_executor: TaskExecutor,
 ) -> None:
     """Assert that actions that need to be delegated to remote devices."""
-    task_callback = MagicMock()
+    mock_task_callback = MagicMock()
+    callback_event = threading.Event()
+
+    def _task_callback(*args: Any, status: TaskStatus, **kwargs: Any) -> None:
+        mock_task_callback(*args, status=status, **kwargs)
+        if status == TaskStatus.COMPLETED:
+            callback_event.set()
 
     component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
 
@@ -372,14 +378,14 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
 
     func = getattr(component_manager, method_name)
     if request_params is not None:
-        (status, message) = func(request_params, task_callback=task_callback)
+        (status, message) = func(request_params, task_callback=_task_callback)
     else:
-        (status, message) = func(task_callback=task_callback)
+        (status, message) = func(task_callback=_task_callback)
 
     assert status == TaskStatus.QUEUED
     assert message == "Task queued"
 
-    time.sleep(0.5)
+    callback_event.wait()
 
     if request_params is not None:
         if method_name == "scan":
@@ -411,7 +417,7 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
         component_state_callback.assert_not_called()  # type: ignore
 
     calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
-    task_callback.assert_has_calls(calls)
+    mock_task_callback.assert_has_calls(calls)
     if method_name == "go_to_fault":
         device_interface.handle_fault.assert_called_once_with(fault_msg="putting BEAM into fault")
 
@@ -731,6 +737,7 @@ def test_beam_cm_removes_frequency_band_only_for_low(
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
     telescope_facility: TelescopeFacilityEnum,
+    task_executor: TaskExecutor,
 ) -> None:
     """Test that component manager removes frequency band for Low but not High."""
     expected_scan_request_str = json.dumps(configure_scan_request)
@@ -740,7 +747,13 @@ def test_beam_cm_removes_frequency_band_only_for_low(
     else:
         assert "frequency_band" in configure_scan_request
 
-    task_callback = MagicMock()
+    mock_task_callback = MagicMock()
+    callback_event = threading.Event()
+
+    def _task_callback(*args: Any, status: TaskStatus, **kwargs: Any) -> None:
+        mock_task_callback(*args, status=status, **kwargs)
+        if status == TaskStatus.COMPLETED:
+            callback_event.set()
 
     component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
 
@@ -749,9 +762,9 @@ def test_beam_cm_removes_frequency_band_only_for_low(
         supplier(recv_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
         supplier(dsp_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
 
-    component_manager.configure_scan(configuration=csp_configure_scan_request, task_callback=task_callback)
+    component_manager.configure_scan(configuration=csp_configure_scan_request, task_callback=_task_callback)
 
-    time.sleep(0.5)
+    callback_event.wait()
 
     [
         supplier(d).assert_called_once_with(expected_scan_request_str)  # type: ignore
@@ -760,4 +773,4 @@ def test_beam_cm_removes_frequency_band_only_for_low(
     ]
 
     calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
-    task_callback.assert_has_calls(calls)
+    mock_task_callback.assert_has_calls(calls)
