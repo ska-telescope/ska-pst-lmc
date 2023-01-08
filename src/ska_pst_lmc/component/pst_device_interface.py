@@ -13,6 +13,8 @@ from typing import Any, Generic, TypeVar
 
 from ska_tango_base.control_model import CommunicationStatus
 
+from ska_pst_lmc.util import TelescopeFacilityEnum
+
 
 class PstDeviceInterface:
     """A purely abstract class to be implemented by Tango device classes.
@@ -59,6 +61,11 @@ class PstDeviceInterface:
 
     def handle_fault(self: PstDeviceInterface, fault_msg: str) -> None:
         """Handle device going into a fault state."""
+        raise NotImplementedError("PstDeviceInteface is abstract")
+
+    @property
+    def facility(self: PstDeviceInterface) -> TelescopeFacilityEnum:
+        """Get the facility that this device is being used for."""
         raise NotImplementedError("PstDeviceInteface is abstract")
 
 

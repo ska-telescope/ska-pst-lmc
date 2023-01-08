@@ -30,6 +30,7 @@ from ska_pst_lmc.job import (
     TaskExecutor,
 )
 from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcService
+from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 from ska_pst_lmc.util.callback import Callback
 
@@ -118,14 +119,21 @@ def csp_configure_scan_request() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def configure_scan_request(csp_configure_scan_request: Dict[str, Any]) -> Dict[str, Any]:
+def configure_scan_request(
+    csp_configure_scan_request: Dict[str, Any], telescope_facility: TelescopeFacilityEnum
+) -> Dict[str, Any]:
     """Return a valid configure scan object."""
     # this has been copied from the SKA Telmodel
     # see https://developer.skao.int/projects/ska-telmodel/en/latest/schemas/ska-csp-configure.html
-    return {
+    request = {
         **csp_configure_scan_request["common"],
         **csp_configure_scan_request["pst"]["scan"],
     }
+
+    if telescope_facility == TelescopeFacilityEnum.Low:
+        del request["frequency_band"]
+
+    return request
 
 
 @pytest.fixture
@@ -656,6 +664,12 @@ def property_callback() -> MagicMock:
 
 
 @pytest.fixture
+def telescope_facility() -> TelescopeFacilityEnum:
+    """Get fixture for simulating which telescop facility to test for."""
+    return TelescopeFacilityEnum.Low
+
+
+@pytest.fixture
 def device_interface(
     device_name: str,
     beam_id: int,
@@ -664,6 +678,7 @@ def device_interface(
     component_state_callback: Callable,
     monitor_data_callback: Callable,
     property_callback: Callable,
+    telescope_facility: TelescopeFacilityEnum,
 ) -> MagicMock:
     """Create device interface fixture to mock a Tango device."""
     device_interface = MagicMock()
@@ -674,5 +689,6 @@ def device_interface(
     device_interface.handle_monitor_data_update = monitor_data_callback
     device_interface.handle_attribute_value_update = property_callback
     device_interface.beam_id = beam_id
+    device_interface.facility = telescope_facility
 
     return device_interface

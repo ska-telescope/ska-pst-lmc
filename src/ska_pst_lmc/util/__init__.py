@@ -27,6 +27,7 @@ __all__ = [
     "AggregateRemoteTask",
     "TimeoutIterator",
     "Callback",
+    "TelescopeFacilityEnum",
 ]
 
 from .configuration import Configuration
@@ -35,3 +36,4 @@ from .background_task import BackgroundTaskProcessor, BackgroundTask, RunState, 
 from .remote_task import RemoteTask, AggregateRemoteTask
 from .timeout_iterator import TimeoutIterator
 from .callback import Callback
+from .telescope_facility import TelescopeFacilityEnum

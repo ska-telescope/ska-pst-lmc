@@ -23,6 +23,7 @@ from ska_pst_lmc.beam import PstBeamComponentManager, PstBeamDeviceInterface
 from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
 from ska_pst_lmc.job import DEVICE_COMMAND_TASK_EXECUTOR, TaskExecutor
+from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
 
@@ -126,6 +127,7 @@ def device_interface(
     communication_state_callback: Callable[[CommunicationStatus], None],
     component_state_callback: Callable,
     property_callback: Callable,
+    telescope_facility: TelescopeFacilityEnum,
 ) -> PstBeamDeviceInterface:
     """Create device interface fixture to mock the BEAM.MGMT tango device."""
     device_interface = MagicMock()
@@ -137,6 +139,7 @@ def device_interface(
     device_interface.handle_component_state_change = component_state_callback
     device_interface.handle_attribute_value_update = property_callback
     device_interface.beam_id = beam_id
+    device_interface.facility = telescope_facility
 
     return cast(PstBeamDeviceInterface, device_interface)
 
@@ -717,3 +720,44 @@ def test_beam_cm_propagates_subordinate_device_error_messages_on_faults(
     cast(MagicMock, device_interface).handle_subdevice_fault.assert_called_once_with(
         device_fqdn=ANY, fault_msg="test error message"
     )
+
+
+@pytest.mark.parametrize("telescope_facility", [TelescopeFacilityEnum.Low, TelescopeFacilityEnum.Mid])
+def test_beam_cm_removes_frequency_band_only_for_low(
+    component_manager: PstBeamComponentManager,
+    csp_configure_scan_request: Dict[str, Any],
+    configure_scan_request: Dict[str, Any],
+    smrb_device_proxy: PstDeviceProxy,
+    recv_device_proxy: PstDeviceProxy,
+    dsp_device_proxy: PstDeviceProxy,
+    telescope_facility: TelescopeFacilityEnum,
+) -> None:
+    """Test that component manager removes frequency band for Low but not High."""
+    expected_scan_request_str = json.dumps(configure_scan_request)
+    assert "frequency_band" in csp_configure_scan_request["common"]
+    if telescope_facility == TelescopeFacilityEnum.Low:
+        assert "frequency_band" not in configure_scan_request
+    else:
+        assert "frequency_band" in configure_scan_request
+
+    task_callback = MagicMock()
+
+    component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
+
+    for (idx, supplier) in enumerate([lambda d: d.ConfigureScan, lambda d: d.ConfigureBeam]):
+        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
+        supplier(recv_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
+        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
+
+    component_manager.configure_scan(configuration=csp_configure_scan_request, task_callback=task_callback)
+
+    time.sleep(0.5)
+
+    [
+        supplier(d).assert_called_once_with(expected_scan_request_str)  # type: ignore
+        for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]
+        for supplier in [lambda d: d.ConfigureScan, lambda d: d.ConfigureBeam]
+    ]
+
+    calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
+    task_callback.assert_has_calls(calls)
