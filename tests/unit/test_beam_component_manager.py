@@ -11,7 +11,7 @@ import json
 import logging
 import sys
 import threading
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union, cast
 from unittest.mock import ANY, MagicMock, call
 
 import pytest
@@ -28,7 +28,7 @@ from ska_tango_base.executor import TaskStatus
 from ska_pst_lmc.beam import PstBeamComponentManager, PstBeamDeviceInterface
 from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
-from ska_pst_lmc.job import DEVICE_COMMAND_TASK_EXECUTOR, TaskExecutor
+from ska_pst_lmc.job import DeviceCommandTaskExecutor
 from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
@@ -163,7 +163,7 @@ def component_manager(
     background_task_processor: BackgroundTaskProcessor,
     monkeypatch: pytest.MonkeyPatch,
     patch_submit_job: bool,
-) -> PstBeamComponentManager:
+) -> Generator[PstBeamComponentManager, None, None]:
     """Create PST Beam Component fixture."""
 
     def _get_device(fqdn: str) -> PstDeviceProxy:
@@ -199,7 +199,8 @@ def component_manager(
         monkeypatch.setattr(component_manager, "submit_task", _submit_task)
         monkeypatch.setattr(_RemoteJob, "__call__", _remote_job_call)
 
-    return component_manager
+    yield component_manager
+    component_manager._pst_task_executor.stop()
 
 
 @pytest.mark.parametrize(
@@ -305,7 +306,9 @@ def request_params(
         return None
 
 
-def _complete_job_side_effect() -> Callable[..., Tuple[List[TaskStatus], List[Optional[str]]]]:
+def _complete_job_side_effect(
+    device_command_task_executor: DeviceCommandTaskExecutor,
+) -> Callable[..., Tuple[List[TaskStatus], List[Optional[str]]]]:
     """Create a complete job side effect.
 
     This is used to stub out completing of remote jobs.
@@ -319,7 +322,7 @@ def _complete_job_side_effect() -> Callable[..., Tuple[List[TaskStatus], List[Op
         def _complete_job() -> None:
             import json
 
-            DEVICE_COMMAND_TASK_EXECUTOR._handle_subscription_event((job_id, json.dumps("Complete")))
+            device_command_task_executor._handle_subscription_event((job_id, json.dumps("Complete")))
 
         threading.Thread(target=_complete_job).start()
 
@@ -368,7 +371,6 @@ def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity
         Callable[[PstDeviceProxy], Callable], List[Callable[[PstDeviceProxy], Callable]]
     ],
     component_state_callback_params: Optional[dict],
-    task_executor: TaskExecutor,
 ) -> None:
     """Assert that actions that need to be delegated to remote devices."""
     mock_task_callback = MagicMock()
@@ -385,9 +387,15 @@ def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity
         remote_action_supplier = [remote_action_supplier]  # type: ignore
 
     for (idx, supplier) in enumerate(remote_action_supplier):
-        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
-        supplier(recv_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
-        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
+        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
+        supplier(recv_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
+        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
 
     func = getattr(component_manager, method_name)
     if request_params is not None:
@@ -757,7 +765,6 @@ def test_beam_cm_removes_frequency_band_only_for_low(
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
     telescope_facility: TelescopeFacilityEnum,
-    task_executor: TaskExecutor,
 ) -> None:
     """Test that component manager removes frequency band for Low but not High."""
     expected_scan_request_str = json.dumps(configure_scan_request)
@@ -778,9 +785,15 @@ def test_beam_cm_removes_frequency_band_only_for_low(
     component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
 
     for (idx, supplier) in enumerate([lambda d: d.ConfigureScan, lambda d: d.ConfigureBeam]):
-        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
-        supplier(recv_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
-        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
+        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
+        supplier(recv_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
+        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
 
     component_manager.configure_scan(configuration=csp_configure_scan_request, task_callback=_task_callback)
 

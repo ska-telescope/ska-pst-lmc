@@ -9,14 +9,13 @@
 
 from __future__ import annotations
 
-import atexit
 import concurrent.futures
 import logging
 import queue
 import threading
-from typing import cast
+from typing import Optional, cast
 
-from ska_pst_lmc.job.common import DEVICE_COMMAND_TASK_QUEUE, JOB_QUEUE
+from ska_pst_lmc.job.device_task_executor import DeviceCommandTaskExecutor
 from ska_pst_lmc.job.task import (
     DeviceCommandTask,
     DeviceCommandTaskContext,
@@ -42,29 +41,28 @@ class TaskExecutor:
     Instances of this class are linked with `DeviceCommandTaskExecutor` that will
     handle the Tango logic of subscriptions and dealing with long running commands.
     Both need to share an instance of a :py:class:`queue.Queue` for which this class
-    will send messages to while the `DeviceCommandTaskExecutor` will read from. The
-    default shared queue is what is stored in `DEVICE_COMMAND_TASK_QUEUE`.
+    will send messages to while the `DeviceCommandTaskExecutor` will read from.
     """
 
     def __init__(
         self: TaskExecutor,
-        job_queue: queue.Queue[TaskContext] = JOB_QUEUE,
-        device_command_task_queue: queue.Queue[DeviceCommandTaskContext] = DEVICE_COMMAND_TASK_QUEUE,
+        job_queue: Optional[queue.Queue[TaskContext]] = None,
+        device_command_task_queue: Optional[queue.Queue[DeviceCommandTaskContext]] = None,
         max_parallel_workers: int = 4,
     ) -> None:
         """Initialise task executor.
 
-        :param job_queue: queue used for main processing of jobs, defaults to TASK_QUEUE
+        :param job_queue: queue used for main processing of jobs, defaults to None
         :type job_queue: queue.Queue, optional
         :param device_command_task_queue: queue used for sending request to a
-            `DeviceCommandTaskExecutor`, defaults to DEVICE_COMMAND_TASK_QUEUE
+            `DeviceCommandTaskExecutor`, defaults to None
         :type device_command_task_queue: queue.Queue, optional
         :param max_parallel_workers: maximum number of workers used for parallel task
             processing.
         :type max_parallel_workers: int
         """
-        self._main_task_queue = job_queue
-        self._device_command_task_queue = device_command_task_queue
+        self._main_task_queue = job_queue or queue.Queue()
+        self._device_command_task_queue = device_command_task_queue or queue.Queue()
 
         self._sequential_task_queue: queue.Queue[TaskContext] = queue.Queue(maxsize=1)
 
@@ -74,6 +72,7 @@ class TaskExecutor:
         self._max_parallel_workers = max_parallel_workers
         self._stop = threading.Event()
         self._running = False
+        self._device_task_executor = DeviceCommandTaskExecutor(task_queue=self._device_command_task_queue)
 
         # need 1 worker for main queue, plus max paralled workers
 
@@ -83,6 +82,12 @@ class TaskExecutor:
 
     def start(self: TaskExecutor) -> None:
         """Start the task executor."""
+        self._device_task_executor.start()
+
+        if self._running:
+            # don't start the executor again
+            return
+
         self._running = True
         # need to reset this each time we start.
         self._stop = threading.Event()
@@ -109,6 +114,8 @@ class TaskExecutor:
             self._main_tpe.shutdown()
             self._sequential_tpe.shutdown()
             self._parallel_tpe.shutdown()
+
+        self._device_task_executor.stop()
 
     def submit_job(self: TaskExecutor, job: Task, callback: Callback = None) -> None:
         """Submit a job to be executed.
@@ -366,31 +373,3 @@ class TaskExecutor:
 
         elif type(task) == DeviceCommandTask:
             self._handle_device_command_task(task_context)
-
-
-TASK_EXECUTOR: TaskExecutor = TaskExecutor()
-"""Global :py:class:`TaskExecutor`.
-
-This should be used alongside the global `DeviceCommandTaskExecutor`.
-"""
-
-
-def submit_job(job: Task, callback: Callback = None) -> None:
-    """Submit a job to the global `TaskExecutor`.
-
-    :param job: the job to submit.
-    :type job: Task
-    :param callback: callback to use when job completes, defaults to None
-    :type callback: Callback, optional
-    """
-    from ska_pst_lmc.job.device_task_executor import DEVICE_COMMAND_TASK_EXECUTOR
-
-    # ensure the executors are running, there is an atexit
-    # to ensure they are stopped.
-    TASK_EXECUTOR.start()
-    DEVICE_COMMAND_TASK_EXECUTOR.start()
-
-    TASK_EXECUTOR.submit_job(job=job, callback=callback)
-
-
-atexit.register(TASK_EXECUTOR.stop)

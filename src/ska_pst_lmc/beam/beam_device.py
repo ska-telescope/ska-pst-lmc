@@ -131,6 +131,9 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         init_device method to be released.  This method is called by the device
         destructor and by the device Init command.
         """
+        # stop the task executor
+        self.component_manager._pst_task_executor.stop()
+        super().delete_device()
 
     def handle_attribute_value_update(self: PstBeam, attribute_name: str, value: Any) -> None:
         """Handle update of a device attribute value.
