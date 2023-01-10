@@ -29,9 +29,8 @@ from dataclasses import dataclass, field
 from typing import Any, List, Optional, Union
 
 from ska_pst_lmc.device_proxy import PstDeviceProxy
+from ska_pst_lmc.job.common import DeviceAction
 from ska_pst_lmc.util.callback import Callback
-
-from .common import DeviceAction
 
 
 @dataclass

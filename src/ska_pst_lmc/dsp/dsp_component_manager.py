@@ -162,11 +162,17 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
         needs to know the value before we monitor.
         """
         environment_values = self._api.get_env()
-        self._monitor_data_store.update_disk_stats(**environment_values)
-        self._monitor_data_handler.update_monitor_data(notify=False)
+        try:
+            self._monitor_data_store.update_disk_stats(**environment_values)
+            self._monitor_data_handler.update_monitor_data(notify=False)
 
-        for k, v in environment_values.items():
-            self._property_callback(k, v)
+            for k, v in environment_values.items():
+                self._property_callback(k, v)
+        except Exception:
+            self.logger.warning(
+                f"Failure to get disk stats from API. environment_values={environment_values}", exc_info=True
+            )
+            raise
 
     @check_communicating
     def on(self: PstDspComponentManager, task_callback: Callback = None) -> TaskResponse:

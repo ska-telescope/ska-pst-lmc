@@ -19,13 +19,13 @@ from ska_tango_base.base import check_communicating
 from ska_tango_base.control_model import AdminMode, CommunicationStatus, ObsState, PowerState
 from ska_tango_base.executor import TaskStatus
 
+from ska_pst_lmc.beam.beam_device_interface import PstBeamDeviceInterface
 from ska_pst_lmc.component import as_device_attribute_name
 from ska_pst_lmc.component.component_manager import PstComponentManager
 from ska_pst_lmc.device_proxy import ChangeEventSubscription, DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.job import DeviceCommandTask, SequentialTask, Task, submit_job
+from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.callback import Callback, callback_safely
-
-from .beam_device_interface import PstBeamDeviceInterface
 
 TaskResponse = Tuple[TaskStatus, str]
 RemoteTaskResponse = Tuple[List[TaskStatus], List[str]]
@@ -579,6 +579,11 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         common_configure = configuration["common"]
         pst_configuration = configuration["pst"]["scan"]
 
+        # hack to remove frequency band for Low as the JSON has
+        # the band as being mandatory but it's only needed for Mid.
+        if self._device_interface.facility == TelescopeFacilityEnum.Low:
+            del common_configure["frequency_band"]
+
         def _completion_callback(task_callback: Callable) -> None:
             from ska_pst_lmc.dsp.dsp_util import generate_dsp_scan_request
 
@@ -709,7 +714,6 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
     def abort(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
         """Tell the component to abort whatever it was doing."""
-        # raise NotImplementedError("SubarrayComponentManager is abstract.")
         self._smrb_device.Abort()
         self._recv_device.Abort()
         self._dsp_device.Abort()

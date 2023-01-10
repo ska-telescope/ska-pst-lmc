@@ -9,10 +9,11 @@
 
 from __future__ import annotations
 
+from collections import UserDict
 from typing import Any
 
 
-class Configuration(object):
+class Configuration(UserDict[str, Any]):
     """Configuration.
 
     This class represents a PST-LMC configuration that is
@@ -25,89 +26,6 @@ class Configuration(object):
     To convert the object to a JSON encoded string should
     be through the :py:meth:`to_json()` method.
     """
-
-    def __init__(self: Configuration, values: dict) -> None:
-        """Initialise object with values.
-
-        :param values: a dict of values that the Configuration object
-            represents.
-        :type values: dict
-        """
-        from copy import deepcopy
-
-        if values is None or len(values) == 0:
-            raise ValueError("Parameter 'values' must not be empty")
-
-        self._values = deepcopy(values)
-
-    def __getattr__(self: Configuration, name: str) -> Any:
-        """Get attribute from configuration.
-
-        Allows calling `cfg.foo` to get the value of foo.
-
-        :param name: name of parameter.
-        :type name: str
-        :rtype: Any
-        """
-        return self._values[name]
-
-    def __setattr__(self: Configuration, name: str, value: Any) -> None:
-        """Set value of configuration item.
-
-        :param name: name of configuration item to set.
-        :type name: str
-        :param value: the value of the configuration item to set.
-        :type value: Any
-        """
-        if name == "_values":
-            self.__dict__["_values"] = value
-        else:
-            self._values[name] = value
-
-    def __getitem__(self: Configuration, name: str) -> Any:
-        """Get value of configuration item.
-
-        :param name: name of configuration item to get.
-        :type name: str
-        :returns: the value of the configuration item.
-        :rtype: Any
-        :raises: :py:class:`KeyError` if item does not exist.
-        """
-        return self._values[name]
-
-    def __delitem__(self: Configuration, name: str) -> None:
-        """Delete configuration item.
-
-        :param name: name of configuration item to delete.
-        :type name: str
-        """
-        del self._values[name]
-
-    def __setitem__(self: Configuration, name: str, value: Any) -> None:
-        """Set item on configuration.
-
-        :param name: name of the configuration item.
-        :type name: str
-        :param value: value of the configuration item.
-        :type name: Any
-        """
-        self._values[name] = value
-
-    def __len__(self: Configuration) -> int:
-        """Get the length of internal dict."""
-        return len(self._values)
-
-    def keys(self: Configuration) -> Any:
-        """Get the keys from internal dict."""
-        return self._values.keys()
-
-    def values(self: Configuration) -> Any:
-        """Get the values from internal dict."""
-        return self._values.values()
-
-    def items(self: Configuration) -> Any:
-        """Get the items from internal dict."""
-        return self._values.items()
 
     @staticmethod
     def from_json(json_str: str) -> Configuration:
@@ -125,13 +43,13 @@ class Configuration(object):
         """
         import json
 
-        from .validation import validate
+        from ska_pst_lmc.util.validation import validate
 
         obj = json.loads(json_str)
 
         obj = validate(obj)
 
-        return Configuration(values=obj)
+        return Configuration(**obj)
 
     def to_json(self: Configuration) -> str:
         """Serialise the Configuration object to a JSON string.
@@ -148,4 +66,4 @@ class Configuration(object):
         """
         import json
 
-        return json.dumps(self._values)
+        return json.dumps(self.data)

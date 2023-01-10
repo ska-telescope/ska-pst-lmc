@@ -62,7 +62,7 @@ def generate_recv_scan_request(
         "observer": request_params["observer_id"],
         "projid": request_params["project_id"],
         "pnt_id": request_params["pointing_id"],
-        "subarray_id": request_params["subarray_id"],
+        "subarray_id": str(request_params["subarray_id"]),
         "source": request_params["source"],
         "itrf": ",".join(map(str, request_params["itrf"])),
         "coord_md": DEFAULT_COORD_MODE,
@@ -115,7 +115,7 @@ def calculate_receive_common_resources(
         "udp_nchan": request_params["udp_nchan"],
         "frequency": request_params["centre_frequency"] / MEGA_HERTZ,
         "bandwidth": bandwidth_mhz,
-        "frontend": request_params["timing_beam_id"],
+        "frontend": request_params["receiver_id"],
         "fd_poln": request_params["feed_polarization"],
         "fd_hand": request_params["feed_handedness"],
         "fd_sang": request_params["feed_angle"],
@@ -179,27 +179,30 @@ def calculate_receive_subband_resources(
             }
 
     """
-    nchan = request_params["num_frequency_channels"]
-    bandwidth = request_params["total_bandwidth"]
+    try:
+        nchan = request_params["num_frequency_channels"]
+        bandwidth = request_params["total_bandwidth"]
 
-    return {
-        "common": calculate_receive_common_resources(request_params),
-        "subbands": {
-            1: {
-                "data_key": generate_data_key(beam_id=beam_id, subband_id=1),
-                "weights_key": generate_weights_key(beam_id=beam_id, subband_id=1),
-                "bandwidth": bandwidth / MEGA_HERTZ,
-                "nchan": nchan,
-                "frequency": request_params["centre_frequency"] / MEGA_HERTZ,
-                "start_channel": 0,
-                "end_channel": nchan,  # using exclusive range
-                "start_channel_out": 0,
-                "end_channel_out": nchan,  # using exclusive range
-                "nchan_out": nchan,
-                "bandwidth_out": bandwidth / MEGA_HERTZ,
-                "frequency_out": request_params["centre_frequency"] / MEGA_HERTZ,
-                "data_host": data_host,
-                "data_port": subband_udp_ports[0],
+        return {
+            "common": calculate_receive_common_resources(request_params),
+            "subbands": {
+                1: {
+                    "data_key": generate_data_key(beam_id=beam_id, subband_id=1),
+                    "weights_key": generate_weights_key(beam_id=beam_id, subband_id=1),
+                    "bandwidth": bandwidth / MEGA_HERTZ,
+                    "nchan": nchan,
+                    "frequency": request_params["centre_frequency"] / MEGA_HERTZ,
+                    "start_channel": 0,
+                    "end_channel": nchan,  # using exclusive range
+                    "start_channel_out": 0,
+                    "end_channel_out": nchan,  # using exclusive range
+                    "nchan_out": nchan,
+                    "bandwidth_out": bandwidth / MEGA_HERTZ,
+                    "frequency_out": request_params["centre_frequency"] / MEGA_HERTZ,
+                    "data_host": data_host,
+                    "data_port": subband_udp_ports[0],
+                },
             },
-        },
-    }
+        }
+    except KeyError as e:
+        raise RuntimeError(f"Error in calculating RECV subband resources. {e} was not found.")

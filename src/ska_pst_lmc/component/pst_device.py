@@ -22,11 +22,11 @@ from ska_tango_base.csp import CspSubElementObsDevice
 from ska_tango_base.faults import StateModelError
 from ska_tango_base.obs import ObsStateModel
 from tango import DebugIt
-from tango.server import attribute, command
+from tango.server import attribute, command, device_property
 
 from ska_pst_lmc.component.component_manager import PstComponentManager
-
-from .pst_device_interface import PstDeviceInterface
+from ska_pst_lmc.component.pst_device_interface import PstDeviceInterface
+from ska_pst_lmc.util import TelescopeFacilityEnum
 
 __all__ = [
     "PstBaseDevice",
@@ -73,6 +73,18 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice, PstDeviceInterface):
     than a `SKASubarray` due to the fact this PST is a software
     subelement within CSP.
     """
+
+    # ---------------
+    # Device properties
+    # ---------------
+    Facility = device_property(
+        dtype=str,
+        default_value="Low",
+        doc=(
+            "The SKA facility that this device is being used for. The"
+            "default value is 'Low' and the only valid values is 'Mid' or 'Low'"
+        ),
+    )
 
     # ---------------
     # General methods
@@ -209,6 +221,11 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice, PstDeviceInterface):
         not the FQDN which can include the Tango DB in a URL.
         """
         return self.get_name()
+
+    @property
+    def facility(self: PstBaseDevice) -> TelescopeFacilityEnum:
+        """Get the facility that this device is being used for."""
+        return TelescopeFacilityEnum[self.Facility]
 
     def handle_fault(self: PstBaseDevice, fault_msg: str) -> None:
         """Handle putting the device into a fault state."""

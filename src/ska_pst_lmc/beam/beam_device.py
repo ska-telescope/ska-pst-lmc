@@ -9,20 +9,21 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import tango
+from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import AdminMode, SimulationMode
 from tango import DebugIt
 from tango.server import attribute, command, device_property, run
 
 import ska_pst_lmc.release as release
 from ska_pst_lmc.beam.beam_component_manager import PstBeamComponentManager
+from ska_pst_lmc.beam.beam_device_interface import PstBeamDeviceInterface
 from ska_pst_lmc.component import as_device_attribute_name
 from ska_pst_lmc.component.pst_device import PstBaseDevice
 from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
-
-from .beam_device_interface import PstBeamDeviceInterface
+from ska_pst_lmc.util import Configuration
 
 __all__ = ["PstBeam", "main"]
 
@@ -174,6 +175,44 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         """
         self._health_failure_msg = fault_msg
         self._component_state_changed(obsfault=True)
+
+    # ----------
+    # Commands
+    # ----------
+    class ConfigureScanCommand(PstBaseDevice.ConfigureScanCommand):
+        """A class for the ObsDevice ConfigureScan command.
+
+        This overrides the `PstBaseDevice` command by ensuring that
+        the JSON request sent is a valid CSP JSON request of at least
+        v2.3.
+        """
+
+        def validate_input(
+            self: PstBeam.ConfigureScanCommand, argin: str
+        ) -> Tuple[Dict[str, Any], ResultCode, str]:
+            """Validate the input request string.
+
+            This tries to parse JSON string via the `Configuration.from_json`
+            method. That method also tries to validate the CSP JSON.
+            """
+            import json
+
+            try:
+                configuration_dict = Configuration.from_json(json_str=argin)
+            except (json.JSONDecodeError, ValueError) as err:
+                msg = f"Validate configuration failed with error:{err}"
+                self.logger.error(msg)
+                return ({}, ResultCode.FAILED, msg)
+            except Exception as err:
+                msg = f"Validate configuration failed with error: {err}"
+                self.logger.error(msg, exc_info=True)
+                return ({}, ResultCode.FAILED, msg)
+
+            return (
+                configuration_dict.data,
+                ResultCode.OK,
+                "ConfigureScan arguments validation successful",
+            )
 
     # ----------
     # Attributes
