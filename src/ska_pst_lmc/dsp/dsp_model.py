@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass, field
-from typing import List
+from typing import Any, List, Optional
 
 from ska_pst_lmc.component import MonitorDataStore
 
@@ -108,17 +108,29 @@ class DspDiskMonitorDataStore(MonitorDataStore[DspDiskSubbandMonitorData, DspDis
         super().__init__()
 
     def update_disk_stats(
-        self: DspDiskMonitorDataStore, disk_capacity: int, available_disk_space: int
+        self: DspDiskMonitorDataStore,
+        disk_capacity: int,
+        available_disk_space: Optional[int] = None,
+        disk_available_bytes: Optional[int] = None,
+        **kwargs: Any,
     ) -> None:
         """Update disk statistics.
+
+        The available_disk_space and disk_available_bytes parameters are
+        the same property but both are provided to work around an issue
+        that coming from DSP
 
         :param disk_capacity: the total disk capacity.
         :type disk_capacity: int
         :param available_disk_space: the available amount of disk space.
-        :type available_disk_space: int
+        :type available_disk_space: Optional[int]
+        :param disk_available_bytes: the available amount of disk space.
+        :type disk_available_bytes: Optional[int]
         """
+        disk_space = available_disk_space or disk_available_bytes or sys.maxsize
+
         self._disk_capacity = disk_capacity
-        self._available_disk_space = available_disk_space
+        self._available_disk_space = disk_space
 
     @property
     def monitor_data(self: DspDiskMonitorDataStore) -> DspDiskMonitorData:

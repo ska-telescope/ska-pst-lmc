@@ -665,7 +665,7 @@ def property_callback() -> MagicMock:
 
 @pytest.fixture
 def telescope_facility() -> TelescopeFacilityEnum:
-    """Get fixture for simulating which telescop facility to test for."""
+    """Get fixture for simulating which telescope facility to test for."""
     return TelescopeFacilityEnum.Low
 
 
