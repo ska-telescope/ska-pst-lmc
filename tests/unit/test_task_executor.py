@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import threading
-import time
 from typing import Any, Callable, List, Optional, Tuple, cast
 from unittest.mock import MagicMock, call
 
@@ -73,7 +72,6 @@ def _complete_job_side_effect(
         job_id = str(uuid.uuid4())
 
         def _complete_job() -> None:
-            time.sleep(0.05)
             device_command_task_executor._handle_subscription_event((job_id, json.dumps(result)))
 
         threading.Thread(target=_complete_job).start()
@@ -98,7 +96,6 @@ def _fail_job_side_effect(
         job_id = str(uuid.uuid4())
 
         def _fail_job() -> None:
-            time.sleep(0.05)
             device_command_task_executor._handle_subscription_event((job_id, failure_message))
 
         threading.Thread(target=_fail_job).start()
@@ -243,7 +240,6 @@ def test_task_executor_successfully_handles_parallel_device_command_job(
 
 
 def test_task_executor_successfully_complex_job(
-    device_command_task_executor: DeviceCommandTaskExecutor,
     smrb_proxy: MagicMock,
     recv_proxy: MagicMock,
     dsp_proxy: MagicMock,
@@ -252,6 +248,7 @@ def test_task_executor_successfully_complex_job(
     """Test that task executor handles a complex job like configure_scan in BEAM."""
     # easier to test the order of parallel calls by setting max workers to 1
     task_executor = TaskExecutor(max_parallel_workers=1)
+    device_command_task_executor = task_executor._device_task_executor
     task_executor.start()
 
     configure_beam_action = MagicMock()
@@ -351,7 +348,6 @@ def test_task_executor_stops_processing_sequential_job_tasks_upon_task_failure(
 
 
 def test_task_executor_stops_processing_parallel_job_tasks_upon_task_failure(
-    device_command_task_executor: DeviceCommandTaskExecutor,
     smrb_proxy: MagicMock,
     recv_proxy: MagicMock,
     mock_task_callback: MagicMock,
@@ -360,6 +356,7 @@ def test_task_executor_stops_processing_parallel_job_tasks_upon_task_failure(
     # easier to test the parallel job code using max_workers of 1 and treating as
     # as sequential queue.
     task_executor = TaskExecutor(max_parallel_workers=1)
+    device_command_task_executor = task_executor._device_task_executor
     task_executor.start()
 
     action = MagicMock()
@@ -426,7 +423,6 @@ def test_device_task_executor_throws_exception_if_device_job_fails(
 
 
 def test_task_executor_stops_processing_parallel_device_command_tasks_upon_task_failure(
-    device_command_task_executor: DeviceCommandTaskExecutor,
     smrb_proxy: MagicMock,
     recv_proxy: MagicMock,
     mock_task_callback: MagicMock,
@@ -435,6 +431,7 @@ def test_task_executor_stops_processing_parallel_device_command_tasks_upon_task_
     # easier to test the parallel job code using max_workers of 1 and treating as
     # as sequential queue.
     task_executor = TaskExecutor(max_parallel_workers=1)
+    device_command_task_executor = task_executor._device_task_executor
     task_executor.start()
 
     action = MagicMock()

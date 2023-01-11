@@ -17,7 +17,7 @@ from typing import Any, Dict, Type
 import pytest
 import tango
 from ska_tango_base.commands import ResultCode, TaskStatus
-from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
+from ska_tango_base.control_model import AdminMode, HealthState, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
 
 from ska_pst_lmc import PstReceive
@@ -126,13 +126,19 @@ class TestPstReceive:
         scan_id: int,
     ) -> None:
         """Test state model of PstReceive."""
-        # need to go through state mode
+        # need to have this in OFFLINE mode to start with to assert unknown health state
+        device_under_test.adminMode = AdminMode.OFFLINE
+        assert device_under_test.healthState == HealthState.UNKNOWN
+
+        device_under_test.adminMode = AdminMode.ONLINE
+        assert device_under_test.healthState == HealthState.OK
         assert device_under_test.state() == DevState.OFF
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
         )
         assert device_under_test.state() == DevState.ON
+        assert device_under_test.healthState == HealthState.OK
 
         resources = json.dumps(configure_beam_request)
         tango_device_command_checker.assert_command(
@@ -188,6 +194,13 @@ class TestPstReceive:
                 ObsState.EMPTY,
             ],
         )
+
+        tango_device_command_checker.assert_command(lambda: device_under_test.Off())
+        assert device_under_test.state() == DevState.OFF
+        assert device_under_test.healthState == HealthState.OK
+
+        device_under_test.adminMode = AdminMode.OFFLINE
+        assert device_under_test.healthState == HealthState.UNKNOWN
 
     def test_recv_mgmt_abort_when_scanning(
         self: TestPstReceive,
@@ -381,6 +394,7 @@ class TestPstReceive:
             ],
         )
         assert device_under_test.healthFailureMessage == "putting RECV.MGMT into FAULT"
+        assert device_under_test.healthState == HealthState.FAILED
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.ObsReset(),
@@ -430,6 +444,7 @@ class TestPstReceive:
             ],
         )
         assert device_under_test.healthFailureMessage == "putting RECV.MGMT into FAULT"
+        assert device_under_test.healthState == HealthState.FAILED
 
     def test_recv_mgmt_go_to_fault_when_scanning(
         self: TestPstReceive,
@@ -479,3 +494,4 @@ class TestPstReceive:
             ],
         )
         assert device_under_test.healthFailureMessage == "putting RECV.MGMT into FAULT"
+        assert device_under_test.healthState == HealthState.FAILED

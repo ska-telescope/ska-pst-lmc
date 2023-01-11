@@ -16,14 +16,14 @@ from threading import Event
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ska_tango_base.base import check_communicating
-from ska_tango_base.control_model import AdminMode, CommunicationStatus, ObsState, PowerState
+from ska_tango_base.control_model import AdminMode, CommunicationStatus, HealthState, ObsState, PowerState
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.beam.beam_device_interface import PstBeamDeviceInterface
 from ska_pst_lmc.component import as_device_attribute_name
 from ska_pst_lmc.component.component_manager import PstComponentManager
 from ska_pst_lmc.device_proxy import ChangeEventSubscription, DeviceProxyFactory, PstDeviceProxy
-from ska_pst_lmc.job import DeviceCommandTask, SequentialTask, Task, submit_job
+from ska_pst_lmc.job import DeviceCommandTask, SequentialTask, Task, TaskExecutor
 from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.callback import Callback, callback_safely
 
@@ -42,12 +42,14 @@ class _RemoteJob:
     def __init__(
         self: _RemoteJob,
         job: Task,
+        task_executor: TaskExecutor,
         completion_callback: Callback,
         logger: logging.Logger,
     ):
         self._job = job
         self._completion_callback = completion_callback
         self._logger = logger
+        self._task_executor = task_executor
 
     def __call__(
         self: _RemoteJob,
@@ -62,7 +64,7 @@ class _RemoteJob:
         callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
 
         try:
-            submit_job(job=self._job, callback=_completion_callback)
+            self._task_executor.submit_job(job=self._job, callback=_completion_callback)
         except Exception as e:
             self._logger.warning("Error in submitting long running commands to remote devices", exc_info=True)
             if task_callback:
@@ -116,6 +118,8 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         self._dsp_device = DeviceProxyFactory.get_device(device_interface.dsp_fqdn)
         self._remote_devices = [self._smrb_device, self._recv_device, self._dsp_device]
         self._subscribed = False
+        self._pst_task_executor = TaskExecutor()
+        self._pst_task_executor.start()
 
         super().__init__(
             device_interface=device_interface,
@@ -126,6 +130,10 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
         self._initialise_monitoring_properties()
         self._change_event_subscriptions: List[ChangeEventSubscription] = []
+
+    def __del__(self: PstBeamComponentManager) -> None:
+        """Handle shutdown of component manager."""
+        self._pst_task_executor.stop()
 
     def _initialise_monitoring_properties(self: PstBeamComponentManager) -> None:
         """
@@ -371,9 +379,11 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             self._update_communication_state(CommunicationStatus.NOT_ESTABLISHED)
             self._update_communication_state(CommunicationStatus.ESTABLISHED)
             self._push_component_state_update(fault=None, power=PowerState.OFF)
+            self._device_interface.update_health_state(health_state=HealthState.OK)
         elif communication_state == CommunicationStatus.DISABLED:
             self._push_component_state_update(fault=None, power=PowerState.UNKNOWN)
             self._update_communication_state(CommunicationStatus.DISABLED)
+            self._device_interface.update_health_state(health_state=HealthState.UNKNOWN)
 
     def update_admin_mode(self: PstBeamComponentManager, admin_mode: AdminMode) -> None:
         """Update the admin mode of the remote devices.
@@ -392,7 +402,12 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         task_callback: Callback,
         completion_callback: Callback,
     ) -> TaskResponse:
-        remote_job = _RemoteJob(job, completion_callback=completion_callback, logger=self.logger)
+        remote_job = _RemoteJob(
+            job,
+            task_executor=self._pst_task_executor,
+            completion_callback=completion_callback,
+            logger=self.logger,
+        )
 
         return self.submit_task(
             remote_job,
@@ -474,9 +489,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'On' commands have completed.")
             self._push_component_state_update(power=PowerState.ON)
-
             self._subscribe_change_events()
-
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
@@ -725,6 +738,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'ObsReset' commands have completed.")
             self._push_component_state_update(configured=False)
+            self._device_interface.update_health_state(health_state=HealthState.OK)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(

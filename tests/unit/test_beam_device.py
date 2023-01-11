@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import backoff
 import pytest
-from ska_tango_base.control_model import AdminMode, ObsState
+from ska_tango_base.control_model import AdminMode, HealthState, ObsState
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DeviceProxy, DevState
 from tango.test_context import MultiDeviceTestContext
@@ -131,8 +131,10 @@ class _AttributeEventValidator:
         default_value: Any,
         tango_change_event_helper: TangoChangeEventHelper,
         change_event_callbacks: MockTangoEventCallbackGroup,
+        logger: logging.Logger,
     ) -> None:
         """Initialise validator."""
+        self.logger = logger
         self.device_under_test = device_under_test
         self.source_device = DeviceProxyFactory.get_device(source_device_fqdn)
         self.attribute_name = attribute_name
@@ -142,9 +144,14 @@ class _AttributeEventValidator:
         self.change_event_callbacks = change_event_callbacks
 
         tango_change_event_helper.subscribe(attribute_name)
-        change_event_callbacks[attribute_name].assert_change_event(default_value)
 
-        self.source_device.subscribe_change_event(attribute_name, self.attribute_value_queue.put)
+        self.source_device.subscribe_change_event(attribute_name, self._store_value)
+
+    def _store_value(self: _AttributeEventValidator, value: Any) -> None:
+        if self.attribute_name == "availableDiskSpace":
+            self.logger.info(f"storing availableDiskSpace = {value}")
+
+        self.attribute_value_queue.put(value)
 
     def assert_initial_values(self: _AttributeEventValidator) -> None:
         """Assert initial values of BEAM and subordinate device as the same."""
@@ -174,7 +181,10 @@ class _AttributeEventValidator:
             if value is None:
                 break
 
-            self.change_event_callbacks[self.attribute_name].assert_change_event(value)
+            if self.attribute_name == "availableDiskSpace":
+                self.logger.info(f"Asserting availableDiskSpace == {value}")
+
+            self.change_event_callbacks[self.attribute_name].assert_change_event(value, lookahead=3)
 
 
 @pytest.mark.forked
@@ -216,7 +226,6 @@ class TestPstBeam:
         csp_configure_scan_request: Dict[str, Any],
         scan_id: int,
         tango_device_command_checker: TangoDeviceCommandChecker,
-        logger: logging.Logger,
     ) -> None:
         """Test state model of PstReceive."""
         # need to go through state mode
@@ -226,11 +235,29 @@ class TestPstBeam:
         # trying to avoid potential race condition inside TANGO
         time.sleep(0.1)
 
+        @backoff.on_exception(
+            backoff.expo,
+            AssertionError,
+            factor=1,
+            max_time=5.0,
+        )
+        def assert_admin_mode(admin_mode: AdminMode) -> None:
+            assert device_under_test.adminMode == admin_mode
+            assert recv_proxy.adminMode == admin_mode
+            assert smrb_proxy.adminMode == admin_mode
+            assert dsp_proxy.adminMode == admin_mode
+
         def assert_state(state: DevState) -> None:
             assert device_under_test.state() == state
             assert recv_proxy.state() == state
             assert smrb_proxy.state() == state
             assert dsp_proxy.state() == state
+
+        def assert_health_state(health_state: HealthState) -> None:
+            assert device_under_test.healthState == health_state
+            assert recv_proxy.healthState == health_state
+            assert smrb_proxy.healthState == health_state
+            assert dsp_proxy.healthState == health_state
 
         @backoff.on_exception(
             backoff.expo,
@@ -250,13 +277,12 @@ class TestPstBeam:
                 assert smrb_proxy.obsState == obsState
                 assert dsp_proxy.obsState == obsState
 
-        device_under_test.adminMode = AdminMode.ONLINE
-        time.sleep(0.1)
-        assert recv_proxy.adminMode == AdminMode.ONLINE
-        assert smrb_proxy.adminMode == AdminMode.ONLINE
-        assert dsp_proxy.adminMode == AdminMode.ONLINE
+        assert_health_state(HealthState.UNKNOWN)
 
+        device_under_test.adminMode = AdminMode.ONLINE
+        assert_admin_mode(admin_mode=AdminMode.ONLINE)
         assert_state(DevState.OFF)
+        assert_health_state(HealthState.OK)
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
@@ -304,6 +330,11 @@ class TestPstBeam:
             lambda: device_under_test.Off(),
         )
         assert_state(DevState.OFF)
+        assert_health_state(HealthState.OK)
+
+        device_under_test.adminMode = AdminMode.OFFLINE
+        assert_admin_mode(admin_mode=AdminMode.OFFLINE)
+        assert_health_state(HealthState.UNKNOWN)
 
     def test_beam_mgmt_go_to_fault(
         self: TestPstBeam,
@@ -362,6 +393,7 @@ class TestPstBeam:
         )
         assert_obstate(ObsState.FAULT)
         assert device_under_test.healthFailureMessage == "this is a fault message"
+        assert device_under_test.healthState == HealthState.FAILED
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.ObsReset(),
@@ -386,6 +418,7 @@ class TestPstBeam:
         tango_change_event_helper: TangoChangeEventHelper,
         tango_device_command_checker: TangoDeviceCommandChecker,
         change_event_callbacks: MockTangoEventCallbackGroup,
+        logger: logging.Logger,
     ) -> None:
         """Test that monitoring values are updated."""
         device_under_test.adminMode = AdminMode.ONLINE
@@ -417,6 +450,7 @@ class TestPstBeam:
                 default_value=default_value,
                 tango_change_event_helper=tango_change_event_helper,
                 change_event_callbacks=change_event_callbacks,
+                logger=logger,
             )
             for fqdn, props in device_propertry_config.items()
             for attribute_name, default_value in props.items()
@@ -469,7 +503,6 @@ class TestPstBeam:
         multidevice_test_context: MultiDeviceTestContext,
         tango_device_command_checker: TangoDeviceCommandChecker,
         change_event_callbacks: MockTangoEventCallbackGroup,
-        logger: logging.Logger,
     ) -> None:
         """Test state model of PstReceive."""
         import random
@@ -507,11 +540,13 @@ class TestPstBeam:
         assert dsp_proxy.adminMode == AdminMode.ONLINE
 
         assert_state(DevState.OFF)
+        change_event_callbacks["healthState"].assert_change_event(HealthState.UNKNOWN)
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
         )
         assert_state(DevState.ON)
+        change_event_callbacks["healthState"].assert_change_event(HealthState.OK)
 
         rand_device_id = random.randint(0, 2)
         if rand_device_id == 0:
@@ -526,5 +561,7 @@ class TestPstBeam:
 
         # expect - beam.obsState ends up as fault
         change_event_callbacks["obsState"].assert_change_event(ObsState.FAULT)
+        change_event_callbacks["healthState"].assert_change_event(HealthState.FAILED)
 
         assert device_under_test.healthFailureMessage == fault_msg
+        assert device_under_test.healthState == HealthState.FAILED

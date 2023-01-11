@@ -12,7 +12,6 @@ This code is based off the SKA TANGO Examples class.
 
 from __future__ import annotations
 
-import functools
 import logging
 import threading
 from typing import Any, Callable, Dict, List, Optional, Type
@@ -121,6 +120,7 @@ class PstDeviceProxy:
         self.__dict__["_lock"] = rwlock.RWLockWrite()
 
     def _event_callback(self: PstDeviceProxy, attribute_name: str, event: tango.EventData) -> None:
+        self._logger.debug(f"Received event for {attribute_name}, event = {event}")
         if event.err:
             self._logger.warning(f"Received failed change event: error stack is {event.errors}.")
             return
@@ -141,9 +141,9 @@ class PstDeviceProxy:
         self._logger.info(f"Received event callback for {self.fqdn}.{attribute_name} with value: {value}")
 
         # read lock
-        # with self._lock.gen_rlock():
-        if attribute_name in self._subscriptions:
-            [c(value) for c in self._subscriptions[attribute_name].callbacks]
+        with self._lock.gen_rlock():
+            if attribute_name in self._subscriptions:
+                [c(value) for c in self._subscriptions[attribute_name].callbacks]
 
     def _read(self: PstDeviceProxy, attribute_name: str) -> Any:
         """
@@ -179,10 +179,19 @@ class PstDeviceProxy:
 
         :param attribute_name: the name of the attribute on the device proxy to subscribe to.
         :param callback: the callback for TANGO to call when an event has happened.
-        :param stateless: whether to use the TANGO stateless event model or not, default is True.
+        :param stateless: whether to use the TANGO stateless event model or not, default is False.
         :returns: a ChangeEventSubscription that can be used to later to unsubscribe from.
         """
         self._logger.info(f"Subscribing to events on {self.fqdn}.{attribute_name}")
+
+        def _handle_event(event: tango.EventData) -> None:
+            # need to do this on a different thread
+            t = threading.Thread(
+                target=self._event_callback,
+                kwargs={"attribute_name": attribute_name, "event": event},
+                daemon=True,
+            )
+            t.start()
 
         if attribute_name in self._subscriptions:
             self._subscriptions[attribute_name].callbacks.append(callback)
@@ -190,19 +199,19 @@ class PstDeviceProxy:
             callback(value.value)
         else:
             # write lock
-            # with self._lock.gen_wlock():
-            subscription_id = self._device.subscribe_event(
-                attribute_name,
-                tango.EventType.CHANGE_EVENT,
-                functools.partial(self._event_callback, attribute_name),
-                stateless=stateless,
-            )
-            subscription = ChangeEventSubscription(
-                subscription_id=subscription_id,
-                device=self._device,
-                callbacks=[callback],
-            )
-            self._subscriptions[attribute_name] = subscription
+            with self._lock.gen_wlock():
+                subscription_id = self._device.subscribe_event(
+                    attribute_name,
+                    tango.EventType.CHANGE_EVENT,
+                    _handle_event,
+                    stateless=stateless,
+                )
+                subscription = ChangeEventSubscription(
+                    subscription_id=subscription_id,
+                    device=self._device,
+                    callbacks=[callback],
+                )
+                self._subscriptions[attribute_name] = subscription
 
         return self._subscriptions[attribute_name]
 

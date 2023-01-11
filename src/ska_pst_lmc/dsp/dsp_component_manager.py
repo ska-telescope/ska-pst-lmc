@@ -151,7 +151,7 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
         """Get a list of current rate of writing per subband, in bytes/seconds."""
         return self._monitor_data.subband_data_record_rate
 
-    def _get_disk_stats_from_api(self: PstDspComponentManager) -> None:
+    def _get_disk_stats_from_api(self: PstDspComponentManager, *args: Any, **kwargs: Any) -> None:
         """Update the disk usage details calling API.
 
         This gets the `disk_capacity` and `available_disk_space` from the API via
@@ -191,13 +191,11 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
         ) -> None:
             callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
             self._push_component_state_update(power=PowerState.ON)
-
+            callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
             # need to submit this as a background task, so clients of On know
             # that we're in the right state so they can subscribe to events
             # and get correct values.
             self.submit_task(self._get_disk_stats_from_api)
-
-            callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
 
         return self.submit_task(_task, task_callback=task_callback)
 

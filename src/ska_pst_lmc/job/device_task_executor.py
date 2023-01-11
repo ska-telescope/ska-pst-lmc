@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 
-import atexit
 import concurrent.futures
 import logging
 import queue
@@ -17,7 +16,6 @@ import threading
 from typing import Dict, Tuple, cast
 
 from ska_pst_lmc.device_proxy import ChangeEventSubscription, PstDeviceProxy
-from ska_pst_lmc.job.common import DEVICE_COMMAND_TASK_QUEUE
 from ska_pst_lmc.job.task import DeviceCommandTaskContext
 
 _logger = logging.getLogger(__name__)
@@ -40,20 +38,19 @@ class DeviceCommandTaskExecutor:
     task queue.
 
     Instances of class and the `TaskExecutor` class work together by sharing
-    a queue, the default is `DEVICE_COMMAND_TASK_QUEUE`. If creating separate
-    instances of both classes, make sure that queue between them is the same.
+    a queue. If creating separate instances of both classes, make sure that
+    queue between them is the same.
     """
 
     def __init__(
         self: DeviceCommandTaskExecutor,
-        task_queue: queue.Queue = DEVICE_COMMAND_TASK_QUEUE,
+        task_queue: queue.Queue,
     ) -> None:
         """Initialise the executor.
 
         :param task_queue: the queue used to submit tasks to,
-            defaults to `DEVICE_COMMAND_TASK_QUEUE`. This should be
-            shared by the `TaskExecutor` which is the producer of the messages
-            this class consumes.
+            This should be shared by the `TaskExecutor` which is the producer
+            of the messages this class consumes.
         :type task_queue: queue.Queue, optional
         """
         self._task_queue = task_queue
@@ -80,6 +77,9 @@ class DeviceCommandTaskExecutor:
 
     def start(self: DeviceCommandTaskExecutor) -> None:
         """Start the executor."""
+        if self._running:
+            return
+
         self._running = True
         # need to reset this each time we start.
         self._stop = threading.Event()
@@ -168,13 +168,3 @@ class DeviceCommandTaskExecutor:
                     task_context.signal_failed_from_str(msg=msg)
 
                 del self._task_context_map[command_id]
-
-
-DEVICE_COMMAND_TASK_EXECUTOR: DeviceCommandTaskExecutor = DeviceCommandTaskExecutor()
-"""Global :py:class:`DeviceCommandTaskExecutor`.
-
-Using this means alongside the global `TaskExecutor` means that the two executors
-are using the shared queue.
-"""
-
-atexit.register(DEVICE_COMMAND_TASK_EXECUTOR.stop)

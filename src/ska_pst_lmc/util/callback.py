@@ -50,5 +50,5 @@ def callback_safely(callback: Callback, *args: Any, **kwargs: Any) -> Any:
         callback_safely(callback, *args, **kwargs)
 
     """
-    if callback:
+    if callback is not None:
         return callback(*args, **kwargs)

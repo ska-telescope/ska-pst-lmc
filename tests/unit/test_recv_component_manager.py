@@ -8,13 +8,12 @@
 """This module contains tests for the RECV component managers class."""
 
 import logging
-import time
 from typing import Any, Callable, Dict, List, cast
-from unittest.mock import MagicMock, call
+from unittest.mock import ANY, MagicMock, call
 
 import pytest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionResponse
-from ska_tango_base.control_model import CommunicationStatus, SimulationMode
+from ska_tango_base.control_model import CommunicationStatus, HealthState, PowerState, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component import MonitorDataHandler, PstApiDeviceInterface
@@ -27,6 +26,7 @@ from ska_pst_lmc.receive.receive_process_api import (
 )
 from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources
 from ska_pst_lmc.test import TestPstLmcService
+from ska_pst_lmc.util import Callback
 
 
 @pytest.fixture
@@ -37,8 +37,15 @@ def component_manager(
     api: PstReceiveProcessApi,
     recv_data_host: str,
     subband_udp_ports: List[int],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> PstReceiveComponentManager:
     """Create instance of a component manager."""
+    # override the background processing.
+    def submit_task(self: PstReceiveComponentManager, task: Callable, task_callback: Callback) -> None:
+        task(task_callback=task_callback)
+
+    monkeypatch.setattr(PstReceiveComponentManager, "submit_task", submit_task)
+
     return PstReceiveComponentManager(
         device_interface=cast(PstApiDeviceInterface[ReceiveData], device_interface),
         simulation_mode=simulation_mode,
@@ -98,10 +105,9 @@ def calculated_receive_subband_resources(
 
 def test_recv_cm_start_communicating_calls_connect_on_api(
     component_manager: PstReceiveComponentManager,
-    api: PstReceiveProcessApi,
 ) -> None:
     """Assert start/stop communicating calls API."""
-    api = MagicMock(wraps=api)
+    api = MagicMock()
     component_manager._api = api
 
     component_manager.start_communicating()
@@ -289,20 +295,25 @@ def test_recv_cm_abort(
 
 def test_recv_cm_obsreset(
     component_manager: PstReceiveComponentManager,
+    device_interface: MagicMock,
     task_callback: Callable,
 ) -> None:
     """Test that the component manager calls the API reset service in ABORTED or FAULT state."""
+
+    def _side_effect(*args: Any, task_callback: Callable, **kwargs: Any) -> None:
+        task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
     api = MagicMock()
+    api.reset.side_effect = _side_effect
     component_manager._api = api
-    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
-        task_callback=task_callback,
-    )
 
     component_manager.obsreset(task_callback=task_callback)
 
     api.reset.assert_called_once_with(
-        task_callback=task_callback,
+        task_callback=ANY,
     )
+    cast(MagicMock, task_callback).assert_called_once_with(status=TaskStatus.COMPLETED, result="Completed")
+    device_interface.update_health_state.assert_called_once_with(health_state=HealthState.OK)
 
 
 def test_recv_cm_api_instance_changes_depending_on_simulation_mode(
@@ -343,7 +354,6 @@ def test_recv_cm_no_change_in_simulation_mode_value_wont_change_communication_st
     assert component_manager.simulation_mode == simulation_mode
 
     component_manager.start_communicating()
-    time.sleep(0.1)
     assert component_manager.communication_state == CommunicationStatus.ESTABLISHED
     if simulation_mode == SimulationMode.FALSE:
         mock_servicer_context.connect.assert_called_once_with(ConnectionRequest(client_id=device_name))
@@ -374,7 +384,6 @@ def test_recv_cm_if_communicating_switching_simulation_mode_must_stop_then_resta
     assert component_manager.simulation_mode == SimulationMode.TRUE
 
     component_manager.start_communicating()
-    time.sleep(0.1)
     assert component_manager.communication_state == CommunicationStatus.ESTABLISHED
 
     calls = [call(CommunicationStatus.NOT_ESTABLISHED), call(CommunicationStatus.ESTABLISHED)]
@@ -382,7 +391,6 @@ def test_recv_cm_if_communicating_switching_simulation_mode_must_stop_then_resta
     update_communication_state.reset_mock()
 
     component_manager.simulation_mode = SimulationMode.FALSE
-    time.sleep(0.1)
     mock_servicer_context.connect.assert_called_once_with(ConnectionRequest(client_id=device_name))
 
     calls = [
@@ -394,7 +402,6 @@ def test_recv_cm_if_communicating_switching_simulation_mode_must_stop_then_resta
     update_communication_state.reset_mock()
 
     component_manager.simulation_mode = SimulationMode.TRUE
-    time.sleep(0.1)
     update_communication_state.assert_has_calls(calls)
     update_communication_state.reset_mock()
 
@@ -438,3 +445,82 @@ def test_recv_cm_go_to_fault(
     calls = [call(status=TaskStatus.IN_PROGRESS), call(status=TaskStatus.COMPLETED, result="Completed")]
     cast(MagicMock, task_callback).assert_has_calls(calls)
     device_interface.handle_fault.assert_called_once_with(fault_msg="this is a fault message")
+
+
+def test_recv_cm_on(
+    component_manager: PstReceiveComponentManager,
+    device_interface: MagicMock,
+) -> None:
+    """Test that the component manager handles the call to on."""
+    task_callback = MagicMock()
+
+    # enforce the communication state to be establised.
+    component_manager._communication_state = CommunicationStatus.ESTABLISHED
+
+    component_manager.on(task_callback=task_callback)
+    calls = [call(status=TaskStatus.IN_PROGRESS), call(status=TaskStatus.COMPLETED, result="Completed")]
+    task_callback.assert_has_calls(calls)
+
+    device_interface.handle_component_state_change.assert_called_once_with(power=PowerState.ON)
+    device_interface.update_health_state.assert_not_called()
+
+
+def test_recv_cm_on_fails_if_not_communicating(
+    component_manager: PstReceiveComponentManager,
+) -> None:
+    """Test that the component manager rejects a call to on if not communicating."""
+    with pytest.raises(ConnectionError):
+        component_manager.on()
+
+
+def test_recv_cm_off(
+    component_manager: PstReceiveComponentManager,
+    device_interface: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that the component manager handles the call to 'off'."""
+    task_callback = MagicMock()
+
+    # enforce the communication state to be establised.
+    component_manager._communication_state = CommunicationStatus.ESTABLISHED
+
+    component_manager.off(task_callback=task_callback)
+    calls = [call(status=TaskStatus.IN_PROGRESS), call(status=TaskStatus.COMPLETED, result="Completed")]
+    task_callback.assert_has_calls(calls)
+
+    device_interface.handle_component_state_change.assert_called_once_with(power=PowerState.OFF)
+    device_interface.update_health_state.assert_not_called()
+
+
+def test_recv_cm_off_fails_if_not_communicating(
+    component_manager: PstReceiveComponentManager,
+) -> None:
+    """Test that the component manager rejects a call to 'off' if not communicating."""
+    with pytest.raises(ConnectionError):
+        component_manager.off()
+
+
+def test_recv_cm_start_communicating(
+    component_manager: PstReceiveComponentManager,
+    device_interface: PstApiDeviceInterface,
+) -> None:
+    """Test RECV component manager when start_communicating is called."""
+    component_manager._communication_state = CommunicationStatus.DISABLED
+    component_manager.start_communicating()
+
+    cast(MagicMock, device_interface.update_health_state).assert_called_once_with(health_state=HealthState.OK)
+    assert component_manager._communication_state == CommunicationStatus.ESTABLISHED
+
+
+def test_recv_cm_stop_communicating(
+    component_manager: PstReceiveComponentManager,
+    device_interface: PstApiDeviceInterface,
+) -> None:
+    """Test RECV component manager when stop_communicating is called."""
+    component_manager._communication_state = CommunicationStatus.ESTABLISHED
+    component_manager.stop_communicating()
+
+    cast(MagicMock, device_interface.update_health_state).assert_called_once_with(
+        health_state=HealthState.UNKNOWN
+    )
+    assert component_manager._communication_state == CommunicationStatus.DISABLED

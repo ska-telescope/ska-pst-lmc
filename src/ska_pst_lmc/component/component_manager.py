@@ -15,7 +15,7 @@ from threading import Event
 from typing import Any, Callable, Dict, Generic, Optional, Tuple, TypeVar, cast
 
 from ska_tango_base.base import check_communicating
-from ska_tango_base.control_model import CommunicationStatus, PowerState, SimulationMode
+from ska_tango_base.control_model import CommunicationStatus, HealthState, PowerState, SimulationMode
 from ska_tango_base.csp.obs import CspObsComponentManager
 from ska_tango_base.executor import TaskExecutorComponentManager, TaskStatus
 
@@ -477,12 +477,14 @@ class PstApiComponentManager(Generic[T, Api], PstComponentManager[PstApiDeviceIn
         self._api.connect()
         self._update_communication_state(CommunicationStatus.ESTABLISHED)
         self._push_component_state_update(fault=None, power=PowerState.OFF)
+        self._device_interface.update_health_state(health_state=HealthState.OK)
 
     def _disconnect_from_api(self: PstApiComponentManager) -> None:
         """Establish connection to API component."""
         self._api.disconnect()
         self._update_communication_state(CommunicationStatus.DISABLED)
         self._push_component_state_update(fault=None, power=PowerState.UNKNOWN)
+        self._device_interface.update_health_state(health_state=HealthState.UNKNOWN)
 
     def _simulation_mode_changed(self: PstApiComponentManager) -> None:
         """Handle change of simulation mode."""
@@ -600,7 +602,15 @@ class PstApiComponentManager(Generic[T, Api], PstComponentManager[PstApiDeviceIn
         This will deconfigure a scan if already configured but will keep the assigned
         resources.
         """
-        return self._submit_background_task(self._api.reset, task_callback=task_callback)
+
+        def _task_callback(*args: Any, **kwargs: Any) -> None:
+            status: Optional[TaskStatus] = kwargs.get("status", None)
+            if status == TaskStatus.COMPLETED:
+                self._device_interface.update_health_state(health_state=HealthState.OK)
+
+            callback_safely(task_callback, *args, **kwargs)
+
+        return self._submit_background_task(self._api.reset, task_callback=_task_callback)
 
     def go_to_fault(
         self: PstApiComponentManager, fault_msg: str, task_callback: Callback = None

@@ -17,7 +17,7 @@ import tango
 from ska_tango_base.base import BaseComponentManager
 from ska_tango_base.base.base_device import DevVarLongStringArrayType
 from ska_tango_base.commands import ResultCode, SubmittedSlowCommand
-from ska_tango_base.control_model import CommunicationStatus, ObsState, SimulationMode
+from ska_tango_base.control_model import CommunicationStatus, HealthState, ObsState, SimulationMode
 from ska_tango_base.csp import CspSubElementObsDevice
 from ska_tango_base.faults import StateModelError
 from ska_tango_base.obs import ObsStateModel
@@ -232,6 +232,14 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice, PstDeviceInterface):
         self.logger.warning(f"{self.device_name} received a fault with error message: '{fault_msg}'")
         self._health_failure_msg = fault_msg
         self._component_state_changed(obsfault=True)
+        self.update_health_state(health_state=HealthState.FAILED)
+
+    def update_health_state(self: PstBaseDevice, health_state: HealthState) -> None:
+        """Update the health state of the device.
+
+        This delegates to the base class `_update_health_state`
+        """
+        self._update_health_state(health_state)
 
     # -----------
     # Commands

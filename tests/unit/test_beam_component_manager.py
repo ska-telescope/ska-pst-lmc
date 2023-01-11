@@ -11,18 +11,24 @@ import json
 import logging
 import sys
 import threading
-import time
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union, cast
 from unittest.mock import ANY, MagicMock, call
 
 import pytest
-from ska_tango_base.control_model import AdminMode, CommunicationStatus, ObsState, PowerState, SimulationMode
+from ska_tango_base.control_model import (
+    AdminMode,
+    CommunicationStatus,
+    HealthState,
+    ObsState,
+    PowerState,
+    SimulationMode,
+)
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.beam import PstBeamComponentManager, PstBeamDeviceInterface
 from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
-from ska_pst_lmc.job import DEVICE_COMMAND_TASK_EXECUTOR, TaskExecutor
+from ska_pst_lmc.job import DeviceCommandTaskExecutor
 from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 
@@ -157,7 +163,7 @@ def component_manager(
     background_task_processor: BackgroundTaskProcessor,
     monkeypatch: pytest.MonkeyPatch,
     patch_submit_job: bool,
-) -> PstBeamComponentManager:
+) -> Generator[PstBeamComponentManager, None, None]:
     """Create PST Beam Component fixture."""
 
     def _get_device(fqdn: str) -> PstDeviceProxy:
@@ -193,7 +199,8 @@ def component_manager(
         monkeypatch.setattr(component_manager, "submit_task", _submit_task)
         monkeypatch.setattr(_RemoteJob, "__call__", _remote_job_call)
 
-    return component_manager
+    yield component_manager
+    component_manager._pst_task_executor.stop()
 
 
 @pytest.mark.parametrize(
@@ -299,7 +306,9 @@ def request_params(
         return None
 
 
-def _complete_job_side_effect() -> Callable[..., Tuple[List[TaskStatus], List[Optional[str]]]]:
+def _complete_job_side_effect(
+    device_command_task_executor: DeviceCommandTaskExecutor,
+) -> Callable[..., Tuple[List[TaskStatus], List[Optional[str]]]]:
     """Create a complete job side effect.
 
     This is used to stub out completing of remote jobs.
@@ -313,8 +322,7 @@ def _complete_job_side_effect() -> Callable[..., Tuple[List[TaskStatus], List[Op
         def _complete_job() -> None:
             import json
 
-            time.sleep(0.05)
-            DEVICE_COMMAND_TASK_EXECUTOR._handle_subscription_event((job_id, json.dumps("Complete")))
+            device_command_task_executor._handle_subscription_event((job_id, json.dumps("Complete")))
 
         threading.Thread(target=_complete_job).start()
 
@@ -330,7 +338,11 @@ def _complete_job_side_effect() -> Callable[..., Tuple[List[TaskStatus], List[Op
         ("off", lambda d: d.Off, {"power": PowerState.OFF}),
         ("reset", lambda d: d.Reset, {"power": PowerState.OFF}),
         ("standby", lambda d: d.Standby, {"power": PowerState.STANDBY}),
-        ("configure_scan", [lambda d: d.ConfigureBeam, lambda d: d.ConfigureScan], {"configured": True}),
+        (
+            "configure_scan",
+            [lambda d: d.ConfigureBeam, lambda d: d.ConfigureScan],
+            {"configured": True},
+        ),
         (
             "deconfigure_scan",
             [lambda d: d.DeconfigureBeam, lambda d: d.DeconfigureScan],
@@ -338,11 +350,15 @@ def _complete_job_side_effect() -> Callable[..., Tuple[List[TaskStatus], List[Op
         ),
         ("scan", lambda d: d.Scan, {"scanning": True}),
         ("end_scan", lambda d: d.EndScan, {"scanning": False}),
-        ("obsreset", [lambda d: d.ObsReset, lambda d: d.DeconfigureBeam], {"configured": False}),
+        (
+            "obsreset",
+            [lambda d: d.ObsReset, lambda d: d.DeconfigureBeam],
+            {"configured": False},
+        ),
         ("go_to_fault", lambda d: d.GoToFault, {"obsfault": True}),
     ],
 )
-def test_remote_actions(  # noqa: C901 - override checking of complexity for this test
+def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity for this test
     component_manager: PstBeamComponentManager,
     device_interface: MagicMock,
     smrb_device_proxy: PstDeviceProxy,
@@ -355,7 +371,6 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
         Callable[[PstDeviceProxy], Callable], List[Callable[[PstDeviceProxy], Callable]]
     ],
     component_state_callback_params: Optional[dict],
-    task_executor: TaskExecutor,
 ) -> None:
     """Assert that actions that need to be delegated to remote devices."""
     mock_task_callback = MagicMock()
@@ -372,9 +387,15 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
         remote_action_supplier = [remote_action_supplier]  # type: ignore
 
     for (idx, supplier) in enumerate(remote_action_supplier):
-        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
-        supplier(recv_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
-        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
+        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
+        supplier(recv_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
+        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
 
     func = getattr(component_manager, method_name)
     if request_params is not None:
@@ -420,6 +441,13 @@ def test_remote_actions(  # noqa: C901 - override checking of complexity for thi
     mock_task_callback.assert_has_calls(calls)
     if method_name == "go_to_fault":
         device_interface.handle_fault.assert_called_once_with(fault_msg="putting BEAM into fault")
+
+    if method_name == "obsreset":
+        cast(MagicMock, device_interface.update_health_state).assert_called_once_with(
+            health_state=HealthState.OK
+        )
+    else:
+        cast(MagicMock, device_interface.update_health_state).assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -737,7 +765,6 @@ def test_beam_cm_removes_frequency_band_only_for_low(
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
     telescope_facility: TelescopeFacilityEnum,
-    task_executor: TaskExecutor,
 ) -> None:
     """Test that component manager removes frequency band for Low but not High."""
     expected_scan_request_str = json.dumps(configure_scan_request)
@@ -758,9 +785,15 @@ def test_beam_cm_removes_frequency_band_only_for_low(
     component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
 
     for (idx, supplier) in enumerate([lambda d: d.ConfigureScan, lambda d: d.ConfigureBeam]):
-        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
-        supplier(recv_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
-        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect()  # type: ignore
+        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
+        supplier(recv_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
+        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
 
     component_manager.configure_scan(configuration=csp_configure_scan_request, task_callback=_task_callback)
 
@@ -774,3 +807,29 @@ def test_beam_cm_removes_frequency_band_only_for_low(
 
     calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
     mock_task_callback.assert_has_calls(calls)
+
+
+def test_beam_cm_start_communicating(
+    component_manager: PstBeamComponentManager,
+    device_interface: PstBeamDeviceInterface,
+) -> None:
+    """Test BEAM component manager when start_communicating is called."""
+    component_manager._communication_state = CommunicationStatus.DISABLED
+    component_manager.start_communicating()
+
+    cast(MagicMock, device_interface.update_health_state).assert_called_once_with(health_state=HealthState.OK)
+    assert component_manager._communication_state == CommunicationStatus.ESTABLISHED
+
+
+def test_beam_cm_stop_communicating(
+    component_manager: PstBeamComponentManager,
+    device_interface: PstBeamDeviceInterface,
+) -> None:
+    """Test BEAM component manager when stop_communicating is called."""
+    component_manager._communication_state = CommunicationStatus.ESTABLISHED
+    component_manager.stop_communicating()
+
+    cast(MagicMock, device_interface.update_health_state).assert_called_once_with(
+        health_state=HealthState.UNKNOWN
+    )
+    assert component_manager._communication_state == CommunicationStatus.DISABLED
