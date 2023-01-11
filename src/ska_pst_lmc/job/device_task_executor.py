@@ -15,6 +15,8 @@ import queue
 import threading
 from typing import Dict, Tuple, cast
 
+from ska_tango_base.commands import ResultCode
+
 from ska_pst_lmc.device_proxy import ChangeEventSubscription, PstDeviceProxy
 from ska_pst_lmc.job.task import DeviceCommandTaskContext
 
@@ -128,17 +130,44 @@ class DeviceCommandTaskExecutor:
         device = task_context.device
         action = task_context.action
 
+        command_str = f"{device}.{task_context.command_name}()"
+
         self._ensure_subscription(device)
 
         with self._lock:
             try:
-                (_, [command_id]) = action(device)
-                if command_id:
-                    self._task_context_map[command_id] = task_context
+                ([result_code], [msg_or_command_id]) = action(device)
+
+                # the task didn't start straight away, could have been rejected or failed.
+                # The Abort() command is a weird one as the return code is STARTED not QUEUED
+                if result_code not in [ResultCode.QUEUED, ResultCode.OK, ResultCode.STARTED]:
+                    # this is a failure state
+                    _logger.error(
+                        (
+                            f"{command_str} failed with status '{result_code.name}'"
+                            f"and message {msg_or_command_id}"
+                        )
+                    )
+                    task_context.signal_failed_from_str(msg_or_command_id)  # type: ignore
+                    return
+
+                # this was a short synchronous task that completed successfully. Mark as complete
+                if result_code == ResultCode.OK:
+                    _logger.debug(
+                        (
+                            f"{device}.{task_context.command_name}() completed successfully."
+                            f" Message = {msg_or_command_id}"
+                        )
+                    )
+                    task_context.signal_complete()
+                    return
+
+                # go an async background task. Need to wait a device proxy subscription callback
+                # to handle the result code
+                self._task_context_map[msg_or_command_id] = task_context   # type: ignore
+
             except Exception as e:
-                _logger.exception(
-                    f"Error while excuting command '{device}.{task_context.command_name}()'", exc_info=True
-                )
+                _logger.exception(f"Error while excuting command {command_str}", exc_info=True)
                 task_context.signal_failed(e)
 
     def _handle_subscription_event(self: DeviceCommandTaskExecutor, event: Tuple[str, str]) -> None:
