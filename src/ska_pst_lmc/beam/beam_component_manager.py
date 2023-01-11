@@ -23,7 +23,7 @@ from ska_pst_lmc.beam.beam_device_interface import PstBeamDeviceInterface
 from ska_pst_lmc.component import as_device_attribute_name
 from ska_pst_lmc.component.component_manager import PstComponentManager
 from ska_pst_lmc.device_proxy import ChangeEventSubscription, DeviceProxyFactory, PstDeviceProxy
-from ska_pst_lmc.job import DeviceCommandTask, SequentialTask, Task, TaskExecutor
+from ska_pst_lmc.job import DeviceCommandTask, NoopTask, SequentialTask, Task, TaskExecutor
 from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.callback import Callback, callback_safely
 
@@ -741,9 +741,23 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             self._device_interface.update_health_state(health_state=HealthState.OK)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
+        # default abort task is do nothing
+        abort_subtask: Task = NoopTask()
+        devices_to_abort = [
+            d for d in self._remote_devices if d.obsState not in [ObsState.ABORTED, ObsState.FAULT]
+        ]
+
+        if len(devices_to_abort) > 0:
+            abort_subtask = DeviceCommandTask(
+                devices=devices_to_abort,
+                action=lambda d: d.Abort(),
+                command_name="Abort",
+            )
+
         return self._submit_remote_job(
             job=SequentialTask(
                 subtasks=[
+                    abort_subtask,
                     # This will put the subordinate classes into IDLE state
                     DeviceCommandTask(
                         devices=self._remote_devices,

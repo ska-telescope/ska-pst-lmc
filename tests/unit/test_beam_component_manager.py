@@ -376,6 +376,11 @@ def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity
     mock_task_callback = MagicMock()
     callback_event = threading.Event()
 
+    if method_name == "obsreset":
+        smrb_device_proxy.obsState = ObsState.ABORTED
+        recv_device_proxy.obsState = ObsState.ABORTED
+        dsp_device_proxy.obsState = ObsState.ABORTED
+
     def _task_callback(*args: Any, status: TaskStatus, **kwargs: Any) -> None:
         mock_task_callback(*args, status=status, **kwargs)
         if status == TaskStatus.COMPLETED:
@@ -833,3 +838,73 @@ def test_beam_cm_stop_communicating(
         health_state=HealthState.UNKNOWN
     )
     assert component_manager._communication_state == CommunicationStatus.DISABLED
+
+
+@pytest.mark.parametrize(
+    "device_fqdn, beam_obs_state, subdevice_obs_state",
+    [
+        ("test/smrb/1", ObsState.ABORTED, ObsState.SCANNING),
+        ("test/recv/1", ObsState.ABORTED, ObsState.READY),
+        ("test/dsp/1", ObsState.ABORTED, ObsState.IDLE),
+        ("test/smrb/1", ObsState.FAULT, ObsState.IDLE),
+        ("test/recv/1", ObsState.FAULT, ObsState.SCANNING),
+        ("test/dsp/1", ObsState.FAULT, ObsState.READY),
+    ],
+)
+def test_beam_cm_puts_subordinate_devices_in_state_to_do_obsreset(
+    component_manager: PstBeamComponentManager,
+    device_proxy: PstDeviceProxy,
+    device_fqdn: str,
+    smrb_device_proxy: PstDeviceProxy,
+    recv_device_proxy: PstDeviceProxy,
+    dsp_device_proxy: PstDeviceProxy,
+    beam_obs_state: ObsState,
+    subdevice_obs_state: ObsState,
+) -> None:
+    """Test that obsreset puts subordinate devices in right state before resetting."""
+    devices = [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]
+    for d in devices:
+        if d.fqdn == device_proxy.fqdn:
+            d.obsState = subdevice_obs_state
+            d.Abort.side_effect = _complete_job_side_effect(  # type: ignore
+                component_manager._pst_task_executor._device_task_executor
+            )
+        else:
+            d.obsState = beam_obs_state
+
+    mock_task_callback = MagicMock()
+    callback_event = threading.Event()
+
+    def _task_callback(*args: Any, status: TaskStatus, **kwargs: Any) -> None:
+        mock_task_callback(*args, status=status, **kwargs)
+        if status == TaskStatus.COMPLETED:
+            callback_event.set()
+
+    component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
+
+    for (idx, supplier) in enumerate([lambda d: d.ObsReset, lambda d: d.DeconfigureBeam]):
+        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
+        supplier(recv_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
+        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
+            component_manager._pst_task_executor._device_task_executor
+        )
+
+    component_manager.obsreset(task_callback=_task_callback)
+
+    callback_event.wait(timeout=1.0)
+
+    cast(MagicMock, device_proxy).Abort.assert_called_once()
+    [cast(MagicMock, d).Abort.assert_not_called() for d in devices if d.fqdn != device_fqdn]
+
+    [
+        supplier(d).assert_called_once()  # type: ignore
+        for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]
+        for supplier in [lambda d: d.ObsReset, lambda d: d.DeconfigureBeam]
+    ]
+
+    calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
+    mock_task_callback.assert_has_calls(calls)
