@@ -33,6 +33,17 @@ from ska_pst_lmc.job.common import DeviceAction
 from ska_pst_lmc.util.callback import Callback
 
 
+class NoopTask:
+    """A class as a placeholder for a no-op task.
+
+    This is useful when nothing is meant to happen but
+    makes it easier for defining a the overall job
+    where there is a conditional task being created. Using
+    the `NoopTask` can be inserted and treated like the Python
+    `None`.
+    """
+
+
 @dataclass
 class SequentialTask:
     """A class used to handle sequential tasks.
@@ -87,7 +98,7 @@ class DeviceCommandTask:
     command_name: str
 
 
-Task = Union[SequentialTask, ParallelTask, DeviceCommandTask]
+Task = Union[SequentialTask, ParallelTask, DeviceCommandTask, NoopTask]
 """Type alias for the different sorts of tasks."""
 
 

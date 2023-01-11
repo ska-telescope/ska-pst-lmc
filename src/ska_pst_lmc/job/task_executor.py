@@ -20,6 +20,7 @@ from ska_pst_lmc.job.task import (
     DeviceCommandTask,
     DeviceCommandTaskContext,
     JobContext,
+    NoopTask,
     ParallelTask,
     ParallelTaskContext,
     SequentialTask,
@@ -365,7 +366,11 @@ class TaskExecutor:
         """
         task = task_context.task
 
-        if type(task) == SequentialTask:
+        if type(task) == NoopTask:
+            # handle this here as there is nothing to do
+            task_context.evt.set()
+
+        elif type(task) == SequentialTask:
             self._handle_sequential_task(task_context)
 
         elif type(task) == ParallelTask:
