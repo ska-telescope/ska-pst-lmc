@@ -306,7 +306,7 @@ class DeviceProxyFactory:
             backoff.expo,
             tango.DevFailed,
             on_giveup=_on_giveup_connect,  # type: ignore
-            factor=1,
+            factor=0.1,
             max_time=120.0,
         )
         def _get_proxy() -> tango.DeviceProxy:

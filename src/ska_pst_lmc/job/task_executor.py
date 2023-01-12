@@ -293,7 +293,7 @@ class TaskExecutor:
 
         self._route_task(task_context)
 
-        # wait unilt subtask completes
+        # wait until subtask completes
         task_context.evt.wait()
 
         # need this parallel lock to avoid a race condition and not updating parent task
@@ -368,7 +368,7 @@ class TaskExecutor:
 
         if type(task) == NoopTask:
             # handle this here as there is nothing to do
-            task_context.evt.set()
+            task_context.signal_complete()
 
         elif type(task) == SequentialTask:
             self._handle_sequential_task(task_context)

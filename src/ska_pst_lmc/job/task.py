@@ -194,7 +194,7 @@ class TaskContext:
         :return: if the task has completed
         :rtype: bool
         """
-        return self.failed or self.result is not None
+        return self.evt.is_set() and not self.failed
 
 
 @dataclass(kw_only=True)

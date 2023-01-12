@@ -71,14 +71,23 @@ class TestPstBeam:
             assert smrb_proxy.obsState == subObsState or obsState
             assert dsp_proxy.obsState == subObsState or obsState
 
+        @backoff.on_exception(
+            backoff.expo,
+            AssertionError,
+            factor=1,
+            max_time=5.0,
+        )
+        def assert_admin_mode(admin_mode: AdminMode) -> None:
+            assert beam_proxy.adminMode == admin_mode
+            assert recv_proxy.adminMode == admin_mode
+            assert smrb_proxy.adminMode == admin_mode
+            assert dsp_proxy.adminMode == admin_mode
+
         # better handle of setup and teardown
         assert_state(DevState.DISABLE)
 
         beam_proxy.adminMode = AdminMode.ONLINE
-        time.sleep(0.2)
-        assert recv_proxy.adminMode == AdminMode.ONLINE
-        assert smrb_proxy.adminMode == AdminMode.ONLINE
-        assert dsp_proxy.adminMode == AdminMode.ONLINE
+        assert_admin_mode(admin_mode=AdminMode.ONLINE)
 
         assert_state(DevState.OFF)
 

@@ -144,8 +144,8 @@ class DeviceCommandTaskExecutor:
                     # this is a failure state
                     _logger.error(
                         (
-                            f"{command_str} failed with status '{result_code.name}'"
-                            f"and message {msg_or_command_id}"
+                            f"{command_str} failed with status '{result_code.name}'."
+                            f" Message: {msg_or_command_id}"
                         )
                     )
                     task_context.signal_failed_from_str(msg_or_command_id)  # type: ignore
@@ -153,18 +153,13 @@ class DeviceCommandTaskExecutor:
 
                 # this was a short synchronous task that completed successfully. Mark as complete
                 if result_code == ResultCode.OK:
-                    _logger.debug(
-                        (
-                            f"{device}.{task_context.command_name}() completed successfully."
-                            f" Message = {msg_or_command_id}"
-                        )
-                    )
+                    _logger.debug((f"{command_str} completed successfully. Message = {msg_or_command_id}"))
                     task_context.signal_complete()
                     return
 
                 # go an async background task. Need to wait a device proxy subscription callback
                 # to handle the result code
-                self._task_context_map[msg_or_command_id] = task_context   # type: ignore
+                self._task_context_map[msg_or_command_id] = task_context  # type: ignore
 
             except Exception as e:
                 _logger.exception(f"Error while excuting command {command_str}", exc_info=True)

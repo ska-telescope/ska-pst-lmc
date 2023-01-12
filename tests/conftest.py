@@ -6,7 +6,7 @@ import logging
 import threading
 from concurrent import futures
 from random import randint
-from typing import Any, Callable, Dict, Generator, List
+from typing import Any, Callable, Dict, Generator, List, Optional
 from unittest.mock import MagicMock
 
 import grpc
@@ -28,6 +28,39 @@ from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcServic
 from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 from ska_pst_lmc.util.callback import Callback
+
+
+class _ThreadingCallback:
+
+    mock_callback: MagicMock
+    callback_event: threading.Event
+
+    def __init__(self: _ThreadingCallback, is_complete: Optional[Callable[..., bool]] = None):
+        self.mock_callback = MagicMock()
+        self.callback_event = threading.Event()
+        self._is_complete = is_complete or self.is_complete
+
+    def __call__(self: _ThreadingCallback, *args: Any, **kwargs: Any) -> Any:
+        self.mock_callback(*args, **kwargs)
+        if self._is_complete(*args, **kwargs):
+            self.callback_event.set()
+
+    def is_complete(
+        self: _ThreadingCallback, *args: Any, status: Optional[TaskStatus] = None, **kwargs: Any
+    ) -> bool:
+        return status is not None and status == TaskStatus.COMPLETED
+
+    def wait(self: _ThreadingCallback, timeout: Optional[float] = None) -> None:
+        self.callback_event.wait(timeout=timeout)
+
+    def clear(self: _ThreadingCallback) -> None:
+        self.callback_event.clear()
+
+    def set(self: _ThreadingCallback) -> None:
+        self.callback_event.set()
+
+    def __getattr__(self: _ThreadingCallback, name: str) -> Any:
+        return getattr(self.mock_callback, name)
 
 
 @pytest.fixture(scope="module")
