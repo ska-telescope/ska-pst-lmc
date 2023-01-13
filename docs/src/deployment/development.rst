@@ -42,11 +42,10 @@ The following environment variables control the deployment and testing of the PS
 Deploy PST.LMC
 --------------
 
-Deploy PST.LMC into the default ``pst`` namespace in simulation mode.
+Deploy PST.LMC into the default ``pst`` namespace using the ``test-parent`` chart.
 
 .. code-block:: console
 
-    $ export K8S_CHART=ska-pst-lmc
     $ make k8s-install-chart
 
 Interact with PST.LMC
