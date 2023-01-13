@@ -15,19 +15,9 @@ This site documents the Local Monitoring and Control (LMC) software
 of the Pulsar Timing Sub-element (PST) within the Central Signal Processor
 (CSP) Element of the Square Kilometre Array (SKA) Low and Mid telescopes.
 
-In addition to the notes for developers of the PST.LMC software, this
-documentation includes
-
-- an overview of the LMC architecture;
-- installation and deployment instructions;
-- instructions for testing PST.LMC in simulation mode;
-- the LMC library internal API (for PST LMC developers);
-- the PST.LMC TANGO API (properties, commands, and attributes);
-
-
 For a description of the fully-integrated PST, please see the ska-pst-integration_ documentation.
 
-.. _ska-pst-integration: https://www.python.org/
+.. _ska-pst-integration: https://developer.skao.int/projects/ska-pst-integration/en/latest/
 
 .. Architecture ===========================================================
 
@@ -35,7 +25,6 @@ For a description of the fully-integrated PST, please see the ska-pst-integratio
   :caption: Architecture
   :maxdepth: 2
 
-  Overview<architecture/index>
   Devices<architecture/devices>
   Integration<architecture/integration>
 

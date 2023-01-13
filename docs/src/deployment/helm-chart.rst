@@ -1,49 +1,19 @@
 
-Helm chart
-==========
+Helm charts
+===========
 
-This is a summary of the Helm chart parameters that can be used to customise
-the PST.LMC deployment. The current default values can be found in the chart's
-`values file`_.
+This page summarises the Helm chart parameters that can be used to customise
+the PST.LMC deployment. The current default values can be found in the chart
+``values.yaml`` files for 
+`test_parent <https://gitlab.com/ska-telescope/pst/ska-pst-lmc/-/blob/main/charts/test-parent/values.yaml>`_
+and
+`ska-pst-lmc <https://gitlab.com/ska-telescope/pst/ska-pst-lmc/-/blob/main/charts/ska-pst-lmc/values.yaml>`_.
 
-Helm deployer
+Release chart
 -------------
 
-.. list-table::
-  :widths: auto
-  :header-rows: 1
-
-  * - Parameter
-    - Description
-    - Default
-  * - ``helmdeploy.image``
-    - Helm deployer container image
-    - ``artefact.skao.int/ska-pst-helmdeploy``
-  * - ``helmdeploy.version``
-    - Helm deployer container version
-    - See `values file`_
-  * - ``helmdeploy.imagePullPolicy``
-    - Helm deployer container image pull policy
-    - ``IfNotPresent``
-  * - ``helmdeploy.namespace``
-    - Namespace for pst dynamic deployments
-    - ``pst``
-  * - ``helmdeploy.releasePrefix``
-    - Prefix for Helm release names
-    - ``""``
-  * - ``helmdeploy.chartPrefix``
-    - Prefix for Helm chart names
-    - ``""``
-  * - ``helmdeploy.chartRepo.url``
-    - Chart repository URL
-    - ``https://gitlab.com/ska-telescope/pst/ska-pst-helmdeploy-charts/-/raw/master/chart-repo/``
-  * - ``helmdeploy.chartRepo.refresh``
-    - Chart repository refresh interval (in seconds)
-    - ``0``
-
-
-LMC (Tango devices)
--------------------
+The ``ska-pst-lmc`` chart deploys the latest release version of PST.LMC in simulation mode.
+The current default Helm chart parameters can be viewed in the `values file`_.
 
 .. list-table::
   :widths: auto
@@ -52,52 +22,18 @@ LMC (Tango devices)
   * - Parameter
     - Description
     - Default
-  * - ``lmc.enabled``
-    - Enable the LMC. If set to ``false``, the PST.LMC will run in headless mode
-    - ``true``
-  * - ``lmc.image``
-    - LMC container image
-    - ``artefact.skao.int/ska-pst-lmc``
-  * - ``lmc.version``
-    - LMC container version
-    - See `values file`_
-  * - ``lmc.imagePullPolicy``
-    - LMC container image pull policy
-    - ``IfNotPresent``
-  * - ``lmc.nsubarray``
-    - Number of subarrays to deploy
-    - ``1``
-  * - ``lmc.prefix``
-    - Telescope prefix for Tango device names (e.g. ``low`` or ``mid``)
-    - ``test``
-  * - ``lmc.newDeviceNames``
-    - Use new-style Tango device names defined in `ADR-9`_
-    - ``true``
-  * - ``lmc.allCommandsHaveArgument``
-    - Enable all Tango device commands to receive a transaction ID
+  * - ``image.registry``
+    - PST.LMC image registry
+    - ``artefact.skao.int``
+  * - ``image.image``
+    - PST.LMC image name
+    - ``ska-pst-lmc``
+  * - ``strictValidation``
+    - Enable strict validation of scan configuration schema
     - ``false``
-  * - ``lmc.strictValidation``
-    - Enable strict validation of subarray command schemas
-    - ``false``
-
-
-Tango infrastructure
---------------------
-
-Parameters for the ska-tango-base subchart and Tango dsconfig. The
-ska-tango-base subchart must be enabled to support the Tango devices when
-running the PST.LMC stand-alone.
-
-.. list-table::
-  :widths: auto
-  :header-rows: 1
-
-  * - Parameter
-    - Description
-    - Default
   * - ``ska-tango-base.enabled``
     - Enable the ska-tango-base subchart
-    - ``true``
+    - ``false``
   * - ``ska-tango-base.itango.enabled``
     - Enable the itango console in the ska-tango-base subchart
     - ``false``
@@ -106,38 +42,20 @@ running the PST.LMC stand-alone.
     - See `values file`_
 
 
-Proxy settings
---------------
-
-Proxy settings are applied to the components that retrieve configuration data
-via HTTPS: the script definitions and the Helm charts.
-
-.. list-table::
-  :widths: auto
-  :header-rows: 1
-
-  * - Parameter
-    - Description
-    - Default
-  * - ``proxy.server``
-    - Address of proxy server
-    - Not set
-  * - ``proxy.noproxy``
-    - List of addresses or subnets for which the proxy should not be used
-    - Not set
-
-Example of proxy settings in a values file:
+Example of setting the ports used for communication between ska-pst-core and ska-pst-lmc
 
 .. code-block:: yaml
 
-  proxy:
-    server: http://proxy.mydomain
-    noproxy:
-    - 192.168.0.1
-    - 192.168.0.2
+    global:
+        ports:
+            recv:
+                recv-mgmt:
+                    port:       28080
+            smrb:
+                smrb-mgmt:
+                    port:       28081
+            dsp:
+                dsp-mgmt:
+                    port:       28082
 
-
-.. _values file: https://gitlab.com/ska-telescope/pst/ska-pst-integration/-/blob/master/charts/ska-pst/values.yaml
-.. _etcd: https://etcd.io
-.. _scripts repository: https://gitlab.com/ska-telescope/pst/ska-pst-script
-.. _ADR-9: https://confluence.skatelescope.org/display/SWSI/ADR-9+Update+naming+conventions+for+TANGO+Devices+and+Servers
+.. _values file: https://gitlab.com/ska-telescope/pst/ska-pst-lmc/-/blob/main/charts/ska-pst-lmc/values.yaml
