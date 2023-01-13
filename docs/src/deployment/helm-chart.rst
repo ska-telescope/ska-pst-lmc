@@ -3,17 +3,14 @@ Helm charts
 ===========
 
 This page summarises the Helm chart parameters that can be used to customise
-the PST.LMC deployment. The current default values can be found in the chart
-``values.yaml`` files for 
-`test_parent <https://gitlab.com/ska-telescope/pst/ska-pst-lmc/-/blob/main/charts/test-parent/values.yaml>`_
-and
-`ska-pst-lmc <https://gitlab.com/ska-telescope/pst/ska-pst-lmc/-/blob/main/charts/ska-pst-lmc/values.yaml>`_.
+the PST.LMC Release and Development deployments. 
 
 Release chart
 -------------
 
-The ``ska-pst-lmc`` chart deploys the latest release version of PST.LMC in simulation mode.
-The current default Helm chart parameters can be viewed in the `values file`_.
+The ``ska-pst-lmc`` chart deploys the latest release of PST.LMC from the ``artefact.skao.int`` registry.
+By default, PST.LMC is deployed in simulation mode.
+The current default Helm chart parameters can be viewed in the ``ska-pst-lmc`` `values file <https://gitlab.com/ska-telescope/pst/ska-pst-lmc/-/blob/main/charts/ska-pst-lmc/values.yaml>`_.
 
 .. list-table::
   :widths: auto
@@ -22,27 +19,38 @@ The current default Helm chart parameters can be viewed in the `values file`_.
   * - Parameter
     - Description
     - Default
-  * - ``image.registry``
-    - PST.LMC image registry
-    - ``artefact.skao.int``
-  * - ``image.image``
-    - PST.LMC image name
-    - ``ska-pst-lmc``
-  * - ``strictValidation``
-    - Enable strict validation of scan configuration schema
-    - ``false``
-  * - ``ska-tango-base.enabled``
-    - Enable the ska-tango-base subchart
-    - ``false``
-  * - ``ska-tango-base.itango.enabled``
-    - Enable the itango console in the ska-tango-base subchart
-    - ``false``
-  * - ``dsconfig.image.*``
-    - Tango dsconfig container image settings
-    - See `values file`_
+  * - ``global.ports``
+    - Port configuration for component devices
+    - ``smrb``, ``recv``, and ``dsp``
+  * - ``global.ports.smrb``
+    - Port configuration for SMRB component device
+    - ``smrb-mgmt``
+  * - ``global.ports.smrb.smrb-mgmt``
+    - Port configuration for SMRB component manager
+    - ``port``, ``protocol``
+  * - ``global.ports.smrb.smrb-mgmt.port``
+    - Port used by SMRB component manager
+    - 8080
+  * - ``global.ports.recv.recv-mgmt.port``
+    - Port used by RECV component manager
+    - 8080
+  * - ``global.ports.dsp.dsp-mgmt.port``
+    - Port used by DSP component manager
+    - 8080
+  * - ``beam.simulationMode``
+    - Run Beam logical device in simulation mode
+    - 1
+  * - ``smrb.simulationMode``
+    - Run SMRB component device in simulation mode
+    - 1
+  * - ``recv.simulationMode``
+    - Run RECV component device in simulation mode
+    - 1
+  * - ``dsp.simulationMode``
+    - Run DSP component device in simulation mode
+    - 1
 
-
-Example of setting the ports used for communication between ska-pst-core and ska-pst-lmc
+Example of changing the ports used for communication between the PST Beam logical device and component device managers.
 
 .. code-block:: yaml
 
@@ -58,4 +66,28 @@ Example of setting the ports used for communication between ska-pst-core and ska
                 dsp-mgmt:
                     port:       28082
 
-.. _values file: https://gitlab.com/ska-telescope/pst/ska-pst-lmc/-/blob/main/charts/ska-pst-lmc/values.yaml
+
+Example of running in normal mode (not simulation mode).
+
+.. code-block:: yaml
+
+    beam:
+      simulationMode: 1
+    
+    smrb:
+      simulationMode: 1
+    
+    recv:
+      simulationMode: 1
+    
+    dsp:
+      simulationMode: 1
+
+Development chart
+-----------------
+
+The ``test-parent`` chart deploys the latest build of PST.LMC from ``registry.gitlab.com/ska-telescope/pst/ska-pst-lmc``.
+The current default Helm chart parameters can be viewed in the 
+``values.yaml`` file for
+`test_parent <https://gitlab.com/ska-telescope/pst/ska-pst-lmc/-/blob/main/charts/test-parent/values.yaml>`_.
+
