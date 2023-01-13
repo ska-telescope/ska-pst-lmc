@@ -359,9 +359,11 @@ def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity
         remote_commands = [remote_commands]  # type: ignore
 
     [
-        setattr(d, c, MagicMock(name=f"{d}.{c}", return_value=([ResultCode.OK], ["Completed"])))  # type: ignore
+        setattr(  # type: ignore
+            d, m, MagicMock(name=f"{d}.{m}", return_value=([ResultCode.OK], ["Completed"]))
+        )
         for d in component_manager._remote_devices
-        for c in remote_commands
+        for m in remote_commands
     ]
 
     func = getattr(component_manager, method_name)
@@ -743,7 +745,9 @@ def test_beam_cm_removes_frequency_band_only_for_low(
     component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
 
     [
-        setattr(d, m, MagicMock(name=f"{d}.{m}", return_value=([ResultCode.OK], ["Completed"])))  # type: ignore
+        setattr(  # type: ignore
+            d, m, MagicMock(name=f"{d}.{m}", return_value=([ResultCode.OK], ["Completed"]))
+        )
         for d in component_manager._remote_devices
         for m in ["ConfigureScan", "ConfigureBeam"]
     ]
@@ -818,7 +822,9 @@ def test_beam_cm_puts_subordinate_devices_in_state_to_do_obsreset(
     component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
 
     [
-        setattr(d, m, MagicMock(name=f"{d}.{m}", return_value=([ResultCode.OK], ["Completed"])))  # type: ignore
+        setattr(  # type: ignore
+            d, m, MagicMock(name=f"{d}.{m}", return_value=([ResultCode.OK], ["Completed"]))
+        )
         for d in component_manager._remote_devices
         for m in ["Abort", "ObsReset", "DeconfigureBeam"]
     ]
