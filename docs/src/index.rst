@@ -45,10 +45,9 @@ For a description of the fully-integrated PST, please see the ska-pst-integratio
   :caption: Deployment
   :maxdepth: 2
 
-  Overview<deployment/index>
   deployment/requirements
-  deployment/standalone
-  deployment/using-make
+  deployment/release
+  deployment/development
   deployment/helm-chart
 
 .. Operation ==============================================================
