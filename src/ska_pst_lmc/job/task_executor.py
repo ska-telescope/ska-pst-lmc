@@ -50,6 +50,7 @@ class TaskExecutor:
         job_queue: Optional[queue.Queue[TaskContext]] = None,
         device_command_task_queue: Optional[queue.Queue[DeviceCommandTaskContext]] = None,
         max_parallel_workers: int = 4,
+        logger: Optional[logging.Logger] = None,
     ) -> None:
         """Initialise task executor.
 
@@ -62,6 +63,7 @@ class TaskExecutor:
             processing.
         :type max_parallel_workers: int
         """
+        self._logger = logger or logging.getLogger(__name__)
         self._main_task_queue = job_queue or queue.Queue()
         self._device_command_task_queue = device_command_task_queue or queue.Queue()
 
@@ -73,7 +75,9 @@ class TaskExecutor:
         self._max_parallel_workers = max_parallel_workers
         self._stop = threading.Event()
         self._running = False
-        self._device_task_executor = DeviceCommandTaskExecutor(task_queue=self._device_command_task_queue)
+        self._device_task_executor = DeviceCommandTaskExecutor(
+            task_queue=self._device_command_task_queue, logger=self._logger
+        )
 
         # need 1 worker for main queue, plus max paralled workers
 
@@ -139,7 +143,7 @@ class TaskExecutor:
         :param task_context: the job context object to submit.
         :type task_context: JobContext
         """
-        _logger.debug(f"Submitting job with context={task_context}")
+        self._logger.debug(f"Submitting job with context={task_context}")
         self._main_task_queue.put(task_context)
 
         # want to wait until job has completed
@@ -160,12 +164,12 @@ class TaskExecutor:
             while not self._stop.is_set():
                 try:
                     task_context = cast(JobContext, self._main_task_queue.get(timeout=0.1))
-                    _logger.debug(f"Main process loop receieved job with context={task_context}")
+                    self._logger.debug(f"Main process loop receieved job with context={task_context}")
                     self._route_task(task_context)
                 except queue.Empty:
                     continue
         except Exception:
-            _logger.exception("Error processing main queue", exc_info=True)
+            self._logger.exception("Error processing main queue", exc_info=True)
 
     def _process_sequential_queue(self: TaskExecutor) -> None:
         """Process messages on the sequential queue.
@@ -177,15 +181,17 @@ class TaskExecutor:
             while not self._stop.is_set():
                 try:
                     task_context = cast(TaskContext, self._sequential_task_queue.get(timeout=0.1))
-                    _logger.debug(f"Sequential process loop receieved task with context={task_context}")
+                    self._logger.debug(f"Sequential process loop receieved task with context={task_context}")
                     self._route_task(task_context)
+                    self._logger.debug(f"Awaiting for sequential task {task_context.task_id} to complete")
                     task_context.evt.wait()
+                    self._logger.debug(f"Sequential task {task_context.task_id} is complete.")
 
                     self._sequential_task_queue.task_done()
                 except queue.Empty:
                     continue
         except Exception:
-            _logger.exception("Error processing sequential queue", exc_info=True)
+            self._logger.exception("Error processing sequential queue", exc_info=True)
 
     def _process_parallel_queue(self: TaskExecutor) -> None:
         """Process messages on the parallel task queue.
@@ -199,12 +205,12 @@ class TaskExecutor:
             while not self._stop.is_set():
                 try:
                     task_context = self._parallel_task_queue.get(timeout=0.1)
-                    _logger.debug(f"Parallel process loop receieved task with context={task_context}")
+                    self._logger.debug(f"Parallel process loop receieved task with context={task_context}")
                     self._handle_parallel_subtask(task_context=task_context)
                 except queue.Empty:
                     continue
         except Exception:
-            _logger.exception("Error during processing parallel queue", exc_info=True)
+            self._logger.exception("Error during processing parallel queue", exc_info=True)
 
     def _handle_sequential_task(self: TaskExecutor, task_context: TaskContext) -> None:
         """Handle a sequential task request.
@@ -224,21 +230,29 @@ class TaskExecutor:
         :type task_context: TaskContext
         """
         task = cast(SequentialTask, task_context.task)
+        self._logger.debug(f"Received sequential task: {task_context}")
         subtasks = [TaskContext(task=t, parent_task_context=task_context) for t in task.subtasks]
 
         for t in subtasks:
             # wait for each subtask by using an event as the callback
+            self._logger.debug(f"Submitting subtask {t.task_id} for parent {task_context.task_id}")
             self._sequential_task_queue.put(t)
 
             # wait for subtask to complete or fail
+            self._logger.debug(f"Waiting subtask {t.task_id} for parent {task_context.task_id}")
             t.evt.wait()
+            self._logger.debug(f"Subtask {t.task_id} for parent {task_context.task_id} complete")
 
             if t.failed:
                 # signal overall task is failed and stop processing
+                self._logger.debug(
+                    f"Subtask {t.task_id} for parent {task_context.task_id} failed marking task as failed"
+                )
                 task_context.signal_failed(exception=t.exception)  # type: ignore
                 break
 
         if not task_context.failed:
+            self._logger.debug(f"All subtasks of {task_context.task_id} completed successfully")
             task_context.signal_complete()
 
     def _handle_parallel_task(self: TaskExecutor, task_context: TaskContext) -> None:
@@ -256,6 +270,7 @@ class TaskExecutor:
         :type task_context: TaskContext
         """
         task = cast(ParallelTask, task_context.task)
+        self._logger.debug(f"Received parallel task: {task_context}")
         parallel_task_context = ParallelTaskContext(
             task=task,
             parent_task_context=task_context,
@@ -264,17 +279,31 @@ class TaskExecutor:
         parallel_task_context.subtasks = [
             TaskContext(task=t, parent_task_context=parallel_task_context) for t in task.subtasks
         ]
+        self._logger.debug(f"Create parallel task context: {parallel_task_context.task_id}")
 
         with self._parallel_lock:
+            self._logger.debug(f"Submitting subtasks for {parallel_task_context.task_id}")
+
             for tc in parallel_task_context.subtasks:
                 self._parallel_task_queue.put(tc)
 
         # block while waiting for subtasks
+        self._logger.debug(f"Awaiting subtasks for {parallel_task_context.task_id}")
         parallel_task_context.evt.wait()
+        self._logger.debug(f"All subtasks for {parallel_task_context.task_id} have completed")
 
         if parallel_task_context.failed:
+            self._logger.debug(
+                f"Task {parallel_task_context.task_id} failed marking {task_context.task_id} as failed"
+            )
             task_context.signal_failed(parallel_task_context.exception)  # type: ignore
         else:
+            self._logger.debug(
+                (
+                    f"Task {parallel_task_context.task_id} completed successfully."
+                    f"Marking {task_context.task_id} as complete"
+                )
+            )
             task_context.signal_complete()
 
     def _handle_parallel_subtask(self: TaskExecutor, task_context: TaskContext) -> None:
@@ -287,19 +316,28 @@ class TaskExecutor:
         :type task_context: TaskContext
         """
         parent_task_context = cast(ParallelTaskContext, task_context.parent_task_context)
+        self._logger.debug(f"Parallel subtask {task_context.task_id} received.")
+
         if parent_task_context.failed:
             # Parent has already been marked as failed.  Avoid processing any further
+            self._logger.debug(
+                f"Parallel subtask {task_context.task_id} parent already marked as failed, aborting."
+            )
             return
 
+        self._logger.debug(f"Routing parallel subtask {task_context.task_id}.")
         self._route_task(task_context)
 
         # wait until subtask completes
+        self._logger.debug(f"Awaiting parallel subtask {task_context.task_id}.")
         task_context.evt.wait()
+        self._logger.debug(f"Parallel subtask {task_context.task_id} has completed.")
 
         # need this parallel lock to avoid a race condition and not updating parent task
         # as complete or failed.
         with self._parallel_lock:
             if task_context.failed and not parent_task_context.failed:
+                self._logger.debug(f"Parallel subtask {task_context.task_id} failed, marking parent as")
                 parent_task_context.signal_failed(exception=task_context.exception)  # type: ignore
 
             if parent_task_context.failed:
@@ -308,6 +346,12 @@ class TaskExecutor:
             states = [st.completed for st in parent_task_context.subtasks]
 
             if all(states) and not parent_task_context.completed:
+                self._logger.debug(
+                    (
+                        f"All subtasks of {parent_task_context.task_id} have completed successfully."
+                        " Marking as complete"
+                    )
+                )
                 parent_task_context.signal_complete()
 
     def _handle_device_command_task(self: TaskExecutor, task_context: TaskContext) -> None:
@@ -323,8 +367,17 @@ class TaskExecutor:
         :type task_context: TaskContext
         """
         task = cast(DeviceCommandTask, task_context.task)
-        if len(task.devices) > 1:
+        self._logger.debug(f"Received device command task: {task_context}")
+        if len(task.devices) == 0:
+            # this is a NoOp task and should return immediately
+            self._logger.debug(f"Device command task {task_context.task_id} is empty.")
+            task_context.signal_complete()
+            return
+        elif len(task.devices) > 1:
             # run this as a parallel task, this will reenter this method but fall into the else
+            self._logger.debug(
+                f"Device command task {task_context.task_id} has multiple devices, changing to parallel task."
+            )
             parallel_task = ParallelTask(
                 subtasks=[
                     DeviceCommandTask(devices=[d], action=task.action, command_name=task.command_name)
@@ -348,6 +401,7 @@ class TaskExecutor:
             self._device_command_task_queue.put(child_task_context)
 
         # wait until child has completed
+        self._logger.debug(f"Awaiting for device command task {task_context.task_id} children to complete.")
         child_task_context.evt.wait()
 
         if child_task_context.failed:
@@ -366,15 +420,23 @@ class TaskExecutor:
         """
         task = task_context.task
 
-        if type(task) == NoopTask:
-            # handle this here as there is nothing to do
-            task_context.signal_complete()
+        try:
+            if type(task) == NoopTask:
+                # handle this here as there is nothing to do
+                self._logger.debug(f"Receieved a NoopTask {task_context}, marking as complete.")
+                task_context.signal_complete()
 
-        elif type(task) == SequentialTask:
-            self._handle_sequential_task(task_context)
+            elif type(task) == SequentialTask:
+                self._handle_sequential_task(task_context)
 
-        elif type(task) == ParallelTask:
-            self._handle_parallel_task(task_context)
+            elif type(task) == ParallelTask:
+                self._handle_parallel_task(task_context)
 
-        elif type(task) == DeviceCommandTask:
-            self._handle_device_command_task(task_context)
+            elif type(task) == DeviceCommandTask:
+                self._handle_device_command_task(task_context)
+
+            else:
+                raise ValueError(f"Invalid task type {type(task)}")
+        except Exception as e:
+            self._logger.exception(f"Error in handling task {task_context.task_id}", exc_info=True)
+            task_context.signal_failed(e)

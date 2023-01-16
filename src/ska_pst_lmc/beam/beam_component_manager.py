@@ -96,6 +96,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         self: PstBeamComponentManager,
         *,
         device_interface: PstBeamDeviceInterface,
+        logger: logging.Logger,
         **kwargs: Any,
     ) -> None:
         """Initialise component manager.
@@ -118,13 +119,14 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         self._dsp_device = DeviceProxyFactory.get_device(device_interface.dsp_fqdn)
         self._remote_devices = [self._smrb_device, self._recv_device, self._dsp_device]
         self._subscribed = False
-        self._pst_task_executor = TaskExecutor()
+        self._pst_task_executor = TaskExecutor(logger=logger)
         self._pst_task_executor.start()
 
         super().__init__(
             device_interface=device_interface,
             power=PowerState.UNKNOWN,
             fault=None,
+            logger=logger,
             **kwargs,
         )
 
@@ -741,12 +743,14 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             self._device_interface.update_health_state(health_state=HealthState.OK)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-        # default abort task is do nothing
-        abort_subtask: Task = NoopTask()
+        # find devices that need to be put into an aborted state. These are any that
+        # are not in ABORTED, FAULT or EMPTY
         devices_to_abort = [
-            d for d in self._remote_devices if d.obsState not in [ObsState.ABORTED, ObsState.FAULT]
+            d
+            for d in self._remote_devices
+            if d.obsState not in [ObsState.ABORTED, ObsState.FAULT, ObsState.EMPTY]
         ]
-
+        abort_subtask: Task = NoopTask()
         if len(devices_to_abort) > 0:
             abort_subtask = DeviceCommandTask(
                 devices=devices_to_abort,
@@ -754,27 +758,45 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
                 command_name="Abort",
             )
 
+        # call ObsReset on devices that aren't in EMPTY state.  This will move them
+        # into IDLE state.
+        devices_to_reset = [d for d in self._remote_devices if d.obsState != ObsState.EMPTY]
+        obsreset_subtask: Task = NoopTask()
+        if len(devices_to_reset) > 0:
+            obsreset_subtask = DeviceCommandTask(
+                devices=devices_to_reset,
+                action=lambda d: d.ObsReset(),
+                command_name="ObsReset",
+            )
+
+        # move DSP and RECV devices into EMPTY state if they're not already in that state.
+        devices_to_deconfigure = [
+            d for d in [self._dsp_device, self._recv_device] if d.obsState != ObsState.EMPTY
+        ]
+        deconfigure_dsp_recv_subtask: Task = NoopTask()
+        if len(devices_to_deconfigure) > 0:
+            deconfigure_dsp_recv_subtask = DeviceCommandTask(
+                devices=devices_to_deconfigure,
+                action=lambda d: d.DeconfigureBeam(),
+                command_name="DeconfigureBeam",
+            )
+
+        # move SMRB into EMPTY state if it isn't already in that state.
+        deconfigure_smrb_subtask: Task = NoopTask()
+        if self._smrb_device.obsState != ObsState.EMPTY:
+            deconfigure_smrb_subtask = DeviceCommandTask(
+                devices=[self._smrb_device],
+                action=lambda d: d.DeconfigureBeam(),
+                command_name="DeconfigureBeam",
+            )
+
         return self._submit_remote_job(
             job=SequentialTask(
                 subtasks=[
                     abort_subtask,
-                    # This will put the subordinate classes into IDLE state
-                    DeviceCommandTask(
-                        devices=self._remote_devices,
-                        action=lambda d: d.ObsReset(),
-                        command_name="ObsReset",
-                    ),
-                    # need to release the ring buffer clients before deconfiguring SMRB
-                    DeviceCommandTask(
-                        devices=[self._dsp_device, self._recv_device],
-                        action=lambda d: d.DeconfigureBeam(),
-                        command_name="DeconfigureBeam",
-                    ),
-                    DeviceCommandTask(
-                        devices=[self._smrb_device],
-                        action=lambda d: d.DeconfigureBeam(),
-                        command_name="DeconfigureBeam",
-                    ),
+                    obsreset_subtask,
+                    deconfigure_dsp_recv_subtask,
+                    deconfigure_smrb_subtask,
                 ],
             ),
             task_callback=task_callback,

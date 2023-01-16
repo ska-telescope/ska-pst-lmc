@@ -13,7 +13,7 @@ import concurrent.futures
 import logging
 import queue
 import threading
-from typing import Dict, Tuple, cast
+from typing import Dict, Optional, Tuple, cast
 
 from ska_tango_base.commands import ResultCode
 
@@ -47,6 +47,7 @@ class DeviceCommandTaskExecutor:
     def __init__(
         self: DeviceCommandTaskExecutor,
         task_queue: queue.Queue,
+        logger: Optional[logging.Logger],
     ) -> None:
         """Initialise the executor.
 
@@ -55,6 +56,7 @@ class DeviceCommandTaskExecutor:
             of the messages this class consumes.
         :type task_queue: queue.Queue, optional
         """
+        self._logger = logger or logging.getLogger(__name__)
         self._task_queue = task_queue
         self._task_context_map: Dict[str, DeviceCommandTaskContext] = {}
         self._lock = threading.Lock()
@@ -114,8 +116,9 @@ class DeviceCommandTaskExecutor:
         while not self._stop.is_set():
             try:
                 task_context = cast(DeviceCommandTaskContext, self._task_queue.get(timeout=0.1))
-                _logger.debug(f"DeviceCommandTaskExecutor received a device task: {task_context}")
+                self._logger.debug(f"DeviceCommandTaskExecutor received a device task: {task_context}")
                 self._handle_task(task_context)
+                self._task_queue.task_done()
             except queue.Empty:
                 continue
 
@@ -137,12 +140,13 @@ class DeviceCommandTaskExecutor:
         with self._lock:
             try:
                 ([result_code], [msg_or_command_id]) = action(device)
+                self._logger.debug(f"Response from {command_str} is: ({result_code}, {msg_or_command_id})")
 
                 # the task didn't start straight away, could have been rejected or failed.
                 # The Abort() command is a weird one as the return code is STARTED not QUEUED
                 if result_code not in [ResultCode.QUEUED, ResultCode.OK, ResultCode.STARTED]:
                     # this is a failure state
-                    _logger.error(
+                    self._logger.error(
                         (
                             f"{command_str} failed with status '{result_code.name}'."
                             f" Message: {msg_or_command_id}"
@@ -153,7 +157,9 @@ class DeviceCommandTaskExecutor:
 
                 # this was a short synchronous task that completed successfully. Mark as complete
                 if result_code == ResultCode.OK:
-                    _logger.debug((f"{command_str} completed successfully. Message = {msg_or_command_id}"))
+                    self._logger.debug(
+                        (f"{command_str} completed successfully. Message = {msg_or_command_id}")
+                    )
                     task_context.signal_complete()
                     return
 
@@ -162,7 +168,7 @@ class DeviceCommandTaskExecutor:
                 self._task_context_map[msg_or_command_id] = task_context  # type: ignore
 
             except Exception as e:
-                _logger.exception(f"Error while excuting command {command_str}", exc_info=True)
+                self._logger.exception(f"Error while excuting command {command_str}", exc_info=True)
                 task_context.signal_failed(e)
 
     def _handle_subscription_event(self: DeviceCommandTaskExecutor, event: Tuple[str, str]) -> None:
@@ -178,17 +184,17 @@ class DeviceCommandTaskExecutor:
 
         # this will come from the subscription
         (command_id, msg) = event
-        _logger.debug(f"Received a subscription event for command {command_id} with msg: '{msg}'")
+        self._logger.debug(f"Received a subscription event for command {command_id} with msg: '{msg}'")
         with self._lock:
             if command_id in self._task_context_map:
                 task_context = self._task_context_map[command_id]
 
                 try:
                     result = json.loads(msg)
-                    _logger.debug(f"Setting task as complete with result: {result}")
+                    self._logger.debug(f"Setting task as complete with result: {result}")
                     task_context.signal_complete(result=result)
                 except json.JSONDecodeError:
-                    _logger.debug(f"Setting task as failed with msg: '{msg}'")
+                    self._logger.debug(f"Setting task as failed with msg: '{msg}'")
                     task_context.signal_failed_from_str(msg=msg)
 
                 del self._task_context_map[command_id]

@@ -801,6 +801,12 @@ def test_beam_cm_stop_communicating(
         ("test/smrb/1", ObsState.FAULT, ObsState.IDLE),
         ("test/recv/1", ObsState.FAULT, ObsState.SCANNING),
         ("test/dsp/1", ObsState.FAULT, ObsState.READY),
+        ("test/smrb/1", ObsState.ABORTED, ObsState.EMPTY),
+        ("test/recv/1", ObsState.ABORTED, ObsState.EMPTY),
+        ("test/dsp/1", ObsState.ABORTED, ObsState.EMPTY),
+        ("test/smrb/1", ObsState.FAULT, ObsState.EMPTY),
+        ("test/recv/1", ObsState.FAULT, ObsState.EMPTY),
+        ("test/dsp/1", ObsState.FAULT, ObsState.EMPTY),
     ],
 )
 def test_beam_cm_puts_subordinate_devices_in_state_to_do_obsreset(
@@ -833,7 +839,9 @@ def test_beam_cm_puts_subordinate_devices_in_state_to_do_obsreset(
 
     task_callback.wait()
 
-    cast(MagicMock, device_proxy).Abort.assert_called_once()
+    if subdevice_obs_state != ObsState.EMPTY:
+        cast(MagicMock, device_proxy).Abort.assert_called_once()
+
     [
         cast(MagicMock, d).Abort.assert_not_called()  # type: ignore
         for d in component_manager._remote_devices
@@ -844,6 +852,7 @@ def test_beam_cm_puts_subordinate_devices_in_state_to_do_obsreset(
         getattr(d, m).assert_called_once()  # type: ignore
         for d in component_manager._remote_devices
         for m in ["ObsReset", "DeconfigureBeam"]
+        if d.fqdn != device_fqdn or subdevice_obs_state != ObsState.EMPTY
     ]
 
     calls = [call(status=TaskStatus.COMPLETED, result="Completed")]

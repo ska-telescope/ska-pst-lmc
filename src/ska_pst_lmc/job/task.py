@@ -33,6 +33,7 @@ from ska_pst_lmc.job.common import DeviceAction
 from ska_pst_lmc.util.callback import Callback
 
 
+@dataclass
 class NoopTask:
     """A class as a placeholder for a no-op task.
 
@@ -131,7 +132,7 @@ class TaskContext:
     task: Task
     task_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     evt: threading.Event = field(default_factory=threading.Event, repr=False)
-    parent_task_context: Optional[TaskContext] = None
+    parent_task_context: Optional[TaskContext] = field(default=None, repr=False)
     result: Optional[Any] = None
     exception: Optional[Exception] = None
 
