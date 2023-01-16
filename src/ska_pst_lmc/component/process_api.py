@@ -500,6 +500,7 @@ class PstProcessApiGrpc(PstProcessApi):
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
         try:
+            self._logger.debug(f"About to call reset on {self._grpc_client._client_id} gRPC.")
             self._grpc_client.reset()
             self._component_state_callback(configured=False)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")

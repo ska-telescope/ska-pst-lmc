@@ -8,7 +8,6 @@
 """This module contains tests for the SMRB component managers class."""
 
 import logging
-import time
 from typing import Any, Callable, Dict, cast
 from unittest.mock import ANY, MagicMock, call
 
@@ -229,7 +228,6 @@ def test_smrb_cm_if_communicating_switching_simulation_mode_must_stop_then_resta
     update_communication_state.reset_mock()
 
     component_manager.simulation_mode = SimulationMode.TRUE
-    time.sleep(0.1)
     update_communication_state.assert_has_calls(calls)
     update_communication_state.reset_mock()
 

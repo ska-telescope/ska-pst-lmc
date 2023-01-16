@@ -10,11 +10,11 @@
 import json
 import logging
 import sys
-import threading
-from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, Dict, Generator, List, Optional, Union, cast
 from unittest.mock import ANY, MagicMock, call
 
 import pytest
+from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import (
     AdminMode,
     CommunicationStatus,
@@ -28,9 +28,9 @@ from ska_tango_base.executor import TaskStatus
 from ska_pst_lmc.beam import PstBeamComponentManager, PstBeamDeviceInterface
 from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
-from ska_pst_lmc.job import DeviceCommandTaskExecutor
 from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
+from tests.conftest import _ThreadingCallback
 
 
 @pytest.fixture
@@ -306,56 +306,31 @@ def request_params(
         return None
 
 
-def _complete_job_side_effect(
-    device_command_task_executor: DeviceCommandTaskExecutor,
-) -> Callable[..., Tuple[List[TaskStatus], List[Optional[str]]]]:
-    """Create a complete job side effect.
-
-    This is used to stub out completing of remote jobs.
-    """
-
-    def _side_effect(*arg: Any, **kwds: Any) -> Tuple[List[TaskStatus], List[Optional[str]]]:
-        import uuid
-
-        job_id = str(uuid.uuid4())
-
-        def _complete_job() -> None:
-            import json
-
-            device_command_task_executor._handle_subscription_event((job_id, json.dumps("Complete")))
-
-        threading.Thread(target=_complete_job).start()
-
-        return ([TaskStatus.QUEUED], [job_id])
-
-    return _side_effect
-
-
 @pytest.mark.parametrize(
-    "method_name, remote_action_supplier, component_state_callback_params",
+    "method_name, remote_commands, component_state_callback_params",
     [
-        ("on", lambda d: d.On, {"power": PowerState.ON}),
-        ("off", lambda d: d.Off, {"power": PowerState.OFF}),
-        ("reset", lambda d: d.Reset, {"power": PowerState.OFF}),
-        ("standby", lambda d: d.Standby, {"power": PowerState.STANDBY}),
+        ("on", "On", {"power": PowerState.ON}),
+        ("off", "Off", {"power": PowerState.OFF}),
+        ("reset", "Reset", {"power": PowerState.OFF}),
+        ("standby", "Standby", {"power": PowerState.STANDBY}),
         (
             "configure_scan",
-            [lambda d: d.ConfigureBeam, lambda d: d.ConfigureScan],
+            ["ConfigureBeam", "ConfigureScan"],
             {"configured": True},
         ),
         (
             "deconfigure_scan",
-            [lambda d: d.DeconfigureBeam, lambda d: d.DeconfigureScan],
+            ["DeconfigureBeam", "DeconfigureScan"],
             {"configured": False},
         ),
-        ("scan", lambda d: d.Scan, {"scanning": True}),
-        ("end_scan", lambda d: d.EndScan, {"scanning": False}),
+        ("scan", "Scan", {"scanning": True}),
+        ("end_scan", "EndScan", {"scanning": False}),
         (
             "obsreset",
-            [lambda d: d.ObsReset, lambda d: d.DeconfigureBeam],
+            ["ObsReset", "DeconfigureBeam"],
             {"configured": False},
         ),
-        ("go_to_fault", lambda d: d.GoToFault, {"obsfault": True}),
+        ("go_to_fault", "GoToFault", {"obsfault": True}),
     ],
 )
 def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity for this test
@@ -367,46 +342,40 @@ def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity
     component_state_callback: Callable,
     method_name: str,
     request_params: Optional[Any],
-    remote_action_supplier: Union[
-        Callable[[PstDeviceProxy], Callable], List[Callable[[PstDeviceProxy], Callable]]
-    ],
+    remote_commands: Union[str, List[str]],
     component_state_callback_params: Optional[dict],
 ) -> None:
     """Assert that actions that need to be delegated to remote devices."""
-    mock_task_callback = MagicMock()
-    callback_event = threading.Event()
+    if method_name == "obsreset":
+        smrb_device_proxy.obsState = ObsState.ABORTED
+        recv_device_proxy.obsState = ObsState.ABORTED
+        dsp_device_proxy.obsState = ObsState.ABORTED
 
-    def _task_callback(*args: Any, status: TaskStatus, **kwargs: Any) -> None:
-        mock_task_callback(*args, status=status, **kwargs)
-        if status == TaskStatus.COMPLETED:
-            callback_event.set()
+    task_callback = _ThreadingCallback()
 
     component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
 
-    if type(remote_action_supplier) is not list:
-        remote_action_supplier = [remote_action_supplier]  # type: ignore
+    if type(remote_commands) is not list:
+        remote_commands = [remote_commands]  # type: ignore
 
-    for (idx, supplier) in enumerate(remote_action_supplier):
-        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
-            component_manager._pst_task_executor._device_task_executor
+    [
+        setattr(  # type: ignore
+            d, m, MagicMock(name=f"{d}.{m}", return_value=([ResultCode.OK], ["Completed"]))
         )
-        supplier(recv_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
-            component_manager._pst_task_executor._device_task_executor
-        )
-        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
-            component_manager._pst_task_executor._device_task_executor
-        )
+        for d in component_manager._remote_devices
+        for m in remote_commands
+    ]
 
     func = getattr(component_manager, method_name)
     if request_params is not None:
-        (status, message) = func(request_params, task_callback=_task_callback)
+        (status, message) = func(request_params, task_callback=task_callback)
     else:
-        (status, message) = func(task_callback=_task_callback)
+        (status, message) = func(task_callback=task_callback)
 
     assert status == TaskStatus.QUEUED
     assert message == "Task queued"
 
-    callback_event.wait()
+    task_callback.wait()
 
     if request_params is not None:
         if method_name == "scan":
@@ -421,15 +390,15 @@ def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity
         else:
             params_str = json.dumps(request_params)
         [
-            supplier(d).assert_called_once_with(params_str)  # type: ignore
-            for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]
-            for supplier in remote_action_supplier
+            getattr(d, m).assert_called_once_with(params_str)  # type: ignore
+            for d in component_manager._remote_devices
+            for m in remote_commands
         ]
     else:
         [
-            supplier(d).assert_called_once()  # type: ignore
-            for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]
-            for supplier in remote_action_supplier
+            getattr(d, m).assert_called_once()  # type: ignore
+            for d in component_manager._remote_devices
+            for m in remote_commands
         ]
 
     if component_state_callback_params:
@@ -438,7 +407,7 @@ def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity
         component_state_callback.assert_not_called()  # type: ignore
 
     calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
-    mock_task_callback.assert_has_calls(calls)
+    task_callback.assert_has_calls(calls)
     if method_name == "go_to_fault":
         device_interface.handle_fault.assert_called_once_with(fault_msg="putting BEAM into fault")
 
@@ -631,7 +600,7 @@ def test_beam_cm_configure_scan_sets_expected_data_record_rate(
     """Test to BEAM component manager updates expected data rate on configure/deconfigure scan."""
     from ska_pst_lmc.dsp.dsp_util import generate_dsp_scan_request
 
-    task_callback = MagicMock()
+    task_callback = _ThreadingCallback()
 
     dsp_scan_request = generate_dsp_scan_request(csp_configure_scan_request["pst"]["scan"])
 
@@ -761,9 +730,6 @@ def test_beam_cm_removes_frequency_band_only_for_low(
     component_manager: PstBeamComponentManager,
     csp_configure_scan_request: Dict[str, Any],
     configure_scan_request: Dict[str, Any],
-    smrb_device_proxy: PstDeviceProxy,
-    recv_device_proxy: PstDeviceProxy,
-    dsp_device_proxy: PstDeviceProxy,
     telescope_facility: TelescopeFacilityEnum,
 ) -> None:
     """Test that component manager removes frequency band for Low but not High."""
@@ -774,39 +740,30 @@ def test_beam_cm_removes_frequency_band_only_for_low(
     else:
         assert "frequency_band" in configure_scan_request
 
-    mock_task_callback = MagicMock()
-    callback_event = threading.Event()
-
-    def _task_callback(*args: Any, status: TaskStatus, **kwargs: Any) -> None:
-        mock_task_callback(*args, status=status, **kwargs)
-        if status == TaskStatus.COMPLETED:
-            callback_event.set()
+    task_callback = _ThreadingCallback()
 
     component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
 
-    for (idx, supplier) in enumerate([lambda d: d.ConfigureScan, lambda d: d.ConfigureBeam]):
-        supplier(smrb_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
-            component_manager._pst_task_executor._device_task_executor
+    [
+        setattr(  # type: ignore
+            d, m, MagicMock(name=f"{d}.{m}", return_value=([ResultCode.OK], ["Completed"]))
         )
-        supplier(recv_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
-            component_manager._pst_task_executor._device_task_executor
-        )
-        supplier(dsp_device_proxy).side_effect = _complete_job_side_effect(  # type: ignore
-            component_manager._pst_task_executor._device_task_executor
-        )
+        for d in component_manager._remote_devices
+        for m in ["ConfigureScan", "ConfigureBeam"]
+    ]
 
-    component_manager.configure_scan(configuration=csp_configure_scan_request, task_callback=_task_callback)
+    component_manager.configure_scan(configuration=csp_configure_scan_request, task_callback=task_callback)
 
-    callback_event.wait()
+    task_callback.wait()
 
     [
-        supplier(d).assert_called_once_with(expected_scan_request_str)  # type: ignore
-        for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]
-        for supplier in [lambda d: d.ConfigureScan, lambda d: d.ConfigureBeam]
+        getattr(d, m).assert_called_once_with(expected_scan_request_str)  # type: ignore
+        for d in component_manager._remote_devices
+        for m in ["ConfigureScan", "ConfigureBeam"]
     ]
 
     calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
-    mock_task_callback.assert_has_calls(calls)
+    task_callback.assert_has_calls(calls)
 
 
 def test_beam_cm_start_communicating(
@@ -833,3 +790,70 @@ def test_beam_cm_stop_communicating(
         health_state=HealthState.UNKNOWN
     )
     assert component_manager._communication_state == CommunicationStatus.DISABLED
+
+
+@pytest.mark.parametrize(
+    "device_fqdn, beam_obs_state, subdevice_obs_state",
+    [
+        ("test/smrb/1", ObsState.ABORTED, ObsState.SCANNING),
+        ("test/recv/1", ObsState.ABORTED, ObsState.READY),
+        ("test/dsp/1", ObsState.ABORTED, ObsState.IDLE),
+        ("test/smrb/1", ObsState.FAULT, ObsState.IDLE),
+        ("test/recv/1", ObsState.FAULT, ObsState.SCANNING),
+        ("test/dsp/1", ObsState.FAULT, ObsState.READY),
+        ("test/smrb/1", ObsState.ABORTED, ObsState.EMPTY),
+        ("test/recv/1", ObsState.ABORTED, ObsState.EMPTY),
+        ("test/dsp/1", ObsState.ABORTED, ObsState.EMPTY),
+        ("test/smrb/1", ObsState.FAULT, ObsState.EMPTY),
+        ("test/recv/1", ObsState.FAULT, ObsState.EMPTY),
+        ("test/dsp/1", ObsState.FAULT, ObsState.EMPTY),
+    ],
+)
+def test_beam_cm_puts_subordinate_devices_in_state_to_do_obsreset(
+    component_manager: PstBeamComponentManager,
+    device_proxy: PstDeviceProxy,
+    device_fqdn: str,
+    beam_obs_state: ObsState,
+    subdevice_obs_state: ObsState,
+) -> None:
+    """Test that obsreset puts subordinate devices in right state before resetting."""
+    for d in component_manager._remote_devices:
+        if d.fqdn == device_proxy.fqdn:
+            d.obsState = subdevice_obs_state
+        else:
+            d.obsState = beam_obs_state
+
+    task_callback = _ThreadingCallback()
+
+    component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
+
+    [
+        setattr(  # type: ignore
+            d, m, MagicMock(name=f"{d}.{m}", return_value=([ResultCode.OK], ["Completed"]))
+        )
+        for d in component_manager._remote_devices
+        for m in ["Abort", "ObsReset", "DeconfigureBeam"]
+    ]
+
+    component_manager.obsreset(task_callback=task_callback)
+
+    task_callback.wait()
+
+    if subdevice_obs_state != ObsState.EMPTY:
+        cast(MagicMock, device_proxy).Abort.assert_called_once()
+
+    [
+        cast(MagicMock, d).Abort.assert_not_called()  # type: ignore
+        for d in component_manager._remote_devices
+        if d.fqdn != device_fqdn
+    ]
+
+    [
+        getattr(d, m).assert_called_once()  # type: ignore
+        for d in component_manager._remote_devices
+        for m in ["ObsReset", "DeconfigureBeam"]
+        if d.fqdn != device_fqdn or subdevice_obs_state != ObsState.EMPTY
+    ]
+
+    calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
+    task_callback.assert_has_calls(calls)

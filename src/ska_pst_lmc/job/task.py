@@ -34,6 +34,18 @@ from ska_pst_lmc.util.callback import Callback
 
 
 @dataclass
+class NoopTask:
+    """A class as a placeholder for a no-op task.
+
+    This is useful when nothing is meant to happen but
+    makes it easier for defining a the overall job
+    where there is a conditional task being created. Using
+    the `NoopTask` can be inserted and treated like the Python
+    `None`.
+    """
+
+
+@dataclass
 class SequentialTask:
     """A class used to handle sequential tasks.
 
@@ -87,7 +99,7 @@ class DeviceCommandTask:
     command_name: str
 
 
-Task = Union[SequentialTask, ParallelTask, DeviceCommandTask]
+Task = Union[SequentialTask, ParallelTask, DeviceCommandTask, NoopTask]
 """Type alias for the different sorts of tasks."""
 
 
@@ -120,7 +132,7 @@ class TaskContext:
     task: Task
     task_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     evt: threading.Event = field(default_factory=threading.Event, repr=False)
-    parent_task_context: Optional[TaskContext] = None
+    parent_task_context: Optional[TaskContext] = field(default=None, repr=False)
     result: Optional[Any] = None
     exception: Optional[Exception] = None
 
@@ -183,7 +195,7 @@ class TaskContext:
         :return: if the task has completed
         :rtype: bool
         """
-        return self.failed or self.result is not None
+        return self.evt.is_set() and not self.failed
 
 
 @dataclass(kw_only=True)

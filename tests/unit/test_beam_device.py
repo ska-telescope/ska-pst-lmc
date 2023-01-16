@@ -48,7 +48,6 @@ def additional_change_events_callbacks() -> List[str]:
 @pytest.fixture()
 def device_under_test(multidevice_test_context: MultiDeviceTestContext) -> DeviceProxy:
     """Create text fixture that yields a DeviceProxy for BEAM TANGO device."""
-    time.sleep(0.15)
     return multidevice_test_context.get_device("test/beam/1")
 
 
@@ -198,8 +197,6 @@ class TestPstBeam:
         :param device_under_test: a proxy to the device under test
         """
         device_under_test.adminMode = AdminMode.ONLINE
-        time.sleep(0.1)
-
         assert device_under_test.state() == DevState.OFF
         assert device_under_test.Status() == "The device is in OFF state."
 
@@ -232,14 +229,12 @@ class TestPstBeam:
         dsp_proxy = multidevice_test_context.get_device("test/recv/1")
         recv_proxy = multidevice_test_context.get_device("test/recv/1")
         smrb_proxy = multidevice_test_context.get_device("test/smrb/1")
-        # trying to avoid potential race condition inside TANGO
-        time.sleep(0.1)
 
         @backoff.on_exception(
             backoff.expo,
             AssertionError,
-            factor=1,
-            max_time=5.0,
+            factor=0.05,
+            max_time=1.0,
         )
         def assert_admin_mode(admin_mode: AdminMode) -> None:
             assert device_under_test.adminMode == admin_mode
@@ -262,8 +257,8 @@ class TestPstBeam:
         @backoff.on_exception(
             backoff.expo,
             AssertionError,
-            factor=1,
-            max_time=5.0,
+            factor=0.05,
+            max_time=1.0,
         )
         def assert_obstate(obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
             assert device_under_test.obsState == obsState
@@ -348,8 +343,18 @@ class TestPstBeam:
         dsp_proxy = multidevice_test_context.get_device("test/dsp/1")
         recv_proxy = multidevice_test_context.get_device("test/recv/1")
         smrb_proxy = multidevice_test_context.get_device("test/smrb/1")
-        # trying to avoid potential race condition inside TANGO
-        time.sleep(0.1)
+
+        @backoff.on_exception(
+            backoff.expo,
+            AssertionError,
+            factor=0.05,
+            max_time=1.0,
+        )
+        def assert_admin_mode(admin_mode: AdminMode) -> None:
+            assert device_under_test.adminMode == admin_mode
+            assert recv_proxy.adminMode == admin_mode
+            assert smrb_proxy.adminMode == admin_mode
+            assert dsp_proxy.adminMode == admin_mode
 
         def assert_state(state: DevState) -> None:
             assert device_under_test.state() == state
@@ -360,8 +365,8 @@ class TestPstBeam:
         @backoff.on_exception(
             backoff.expo,
             AssertionError,
-            factor=1,
-            max_time=5.0,
+            factor=0.05,
+            max_time=1.0,
         )
         def assert_obstate(obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
             assert device_under_test.obsState == obsState
@@ -370,10 +375,7 @@ class TestPstBeam:
             assert dsp_proxy.obsState == subObsState or obsState
 
         device_under_test.adminMode = AdminMode.ONLINE
-        time.sleep(0.1)
-        assert recv_proxy.adminMode == AdminMode.ONLINE
-        assert smrb_proxy.adminMode == AdminMode.ONLINE
-        assert dsp_proxy.adminMode == AdminMode.ONLINE
+        assert_admin_mode(admin_mode=AdminMode.ONLINE)
 
         assert_state(DevState.OFF)
 
@@ -422,7 +424,6 @@ class TestPstBeam:
     ) -> None:
         """Test that monitoring values are updated."""
         device_under_test.adminMode = AdminMode.ONLINE
-        time.sleep(0.2)
 
         device_propertry_config = {
             "test/recv/1": {
@@ -512,8 +513,17 @@ class TestPstBeam:
         recv_proxy = multidevice_test_context.get_device("test/recv/1")
         smrb_proxy = multidevice_test_context.get_device("test/smrb/1")
 
-        # trying to avoid potential race condition inside TANGO
-        time.sleep(0.1)
+        @backoff.on_exception(
+            backoff.expo,
+            AssertionError,
+            factor=0.05,
+            max_time=1.0,
+        )
+        def assert_admin_mode(admin_mode: AdminMode) -> None:
+            assert device_under_test.adminMode == admin_mode
+            assert recv_proxy.adminMode == admin_mode
+            assert smrb_proxy.adminMode == admin_mode
+            assert dsp_proxy.adminMode == admin_mode
 
         def assert_state(state: DevState) -> None:
             assert device_under_test.state() == state
@@ -524,8 +534,8 @@ class TestPstBeam:
         @backoff.on_exception(
             backoff.expo,
             AssertionError,
-            factor=1,
-            max_time=5.0,
+            factor=0.05,
+            max_time=1.0,
         )
         def assert_obstate(obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
             assert device_under_test.obsState == obsState
@@ -534,10 +544,7 @@ class TestPstBeam:
             assert dsp_proxy.obsState == subObsState or obsState
 
         device_under_test.adminMode = AdminMode.ONLINE
-        time.sleep(0.1)
-        assert recv_proxy.adminMode == AdminMode.ONLINE
-        assert smrb_proxy.adminMode == AdminMode.ONLINE
-        assert dsp_proxy.adminMode == AdminMode.ONLINE
+        assert_admin_mode(admin_mode=AdminMode.ONLINE)
 
         assert_state(DevState.OFF)
         change_event_callbacks["healthState"].assert_change_event(HealthState.UNKNOWN)
