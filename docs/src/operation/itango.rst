@@ -95,12 +95,6 @@ execute this code in the itango terminal.
     scan_configuration = json.dumps( <paste configure string here> )
     beam.ConfigureScan(scan_configuration)
 
-This should result in an output message like the following
-
-.. code-block:: python
-
-    [array([2], dtype=int32), ['1673570914.504404_276635284857679_On']]
-
 Check the state (should be ``<obsState.READY: 4>``):
 
 .. code-block:: python
