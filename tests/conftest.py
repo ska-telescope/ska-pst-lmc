@@ -42,31 +42,6 @@ def beam_id() -> int:
 
 
 @pytest.fixture
-def configure_beam_request() -> Dict[str, Any]:
-    """Return a valid configure beam object."""
-    return {
-        # CSP JSON fields / PST fields
-        "num_frequency_channels": 768,  # nchan
-        "num_of_polarizations": 2,  # npol
-        "bits_per_sample": 32,  # this is NDIM * NBITS -> ndim == 2
-        "udp_nsamp": 32,  # udp_nsamp
-        "wt_nsamp": 32,  # wt_nsamp
-        "udp_nchan": 24,  # udp_nchan
-        "centre_frequency": 1000000000.0,  # frequency
-        "total_bandwidth": 800000000,  # bandwidth
-        "timing_beam_id": "beam1",  # frontend
-        "feed_polarization": "CIRC",  # fd_poln
-        "feed_handedness": 1,  # fn_hand
-        "feed_angle": 10.0,  # fn_sang
-        "feed_tracking_mode": "FA",  # fd_mode
-        "feed_position_angle": 0.0,  # fa_req
-        "receptors": ["receptor1"],  # antennnas / also nant is the length of this
-        "receptor_weights": [1],  # ant_weights
-        "oversampling_ratio": [4, 3],  # ovrsamp
-    }
-
-
-@pytest.fixture
 def device_command_job_executor() -> Generator[DeviceCommandJobExecutor, None, None]:
     """Return a generator for a device command job executor."""
     DEVICE_COMMAND_JOB_EXECUTOR.start()
@@ -83,70 +58,99 @@ def job_executor(device_command_job_executor: DeviceCommandJobExecutor) -> Gener
 
 
 @pytest.fixture
-def csp_configure_scan_request(configure_scan_request: Dict[str, Any]) -> Dict[str, Any]:
+def csp_configure_scan_request() -> Dict[str, Any]:
     """Return valid configure JSON object that CSP would send."""
     return {
+        "interface": "https://schema.skao.int/ska-csp-configure/2.3",
         "common": {
             "config_id": "sbi-mvp01-20200325-00001-science_A",
             "frequency_band": "1",
             "subarray_id": 1,
         },
-        "pst": {"scan": {**configure_scan_request}},
+        "subarray": {"subarray_name": "test subarray"},
+        "cbf": {"fsp": []},
+        "pst": {
+            "scan": {
+                "activation_time": "2022-01-19T23:07:45Z",
+                "bits_per_sample": 32,
+                "num_of_polarizations": 2,
+                "udp_nsamp": 32,
+                "wt_nsamp": 32,
+                "udp_nchan": 24,
+                "num_frequency_channels": 768,
+                "centre_frequency": 1000000000.0,
+                "total_bandwidth": 800000000.0,
+                "observation_mode": "PULSAR_TIMING",
+                "observer_id": "jdoe",
+                "project_id": "project1",
+                "pointing_id": "pointing1",
+                "source": "J1921+2153",
+                "itrf": [5109360.133, 2006852.586, -3238948.127],
+                "receiver_id": "receiver3",
+                "feed_polarization": "CIRC",  # fd_poln
+                "feed_handedness": 1,  # fn_hand
+                "feed_angle": 10.0,  # fn_sang
+                "feed_tracking_mode": "FA",  # fd_mode
+                "feed_position_angle": 0.0,  # fa_req
+                "oversampling_ratio": [4, 3],
+                "coordinates": {"ra": "19:21:44.815", "dec": "21.884"},
+                "max_scan_length": 10000.5,
+                "subint_duration": 30.0,
+                "receptors": ["receptor1"],
+                "receptor_weights": [1.0],
+                "num_rfi_frequency_masks": 1,
+                "rfi_frequency_masks": [[1.0, 1.1]],
+                "destination_address": ["192.168.178.26", 9021],
+                "test_vector_id": "test_vector_id",
+                "num_channelization_stages": 1,
+                "channelization_stages": [
+                    {
+                        "num_filter_taps": 1,
+                        "filter_coefficients": [1.0],
+                        "num_frequency_channels": 10,
+                        "oversampling_ratio": [8, 7],
+                    }
+                ],
+            }
+        },
     }
 
 
 @pytest.fixture
-def configure_scan_request() -> Dict[str, Any]:
+def configure_scan_request(csp_configure_scan_request: Dict[str, Any]) -> Dict[str, Any]:
     """Return a valid configure scan object."""
     # this has been copied from the SKA Telmodel
     # see https://developer.skao.int/projects/ska-telmodel/en/latest/schemas/ska-csp-configure.html
     return {
-        "activation_time": "2022-01-19T23:07:45Z",
-        "timing_beam_id": "beam1",
-        "capability": "capability1",
-        "bits_per_sample": 32,
-        "num_of_polarizations": 2,
-        "udp_nsamp": 32,
-        "wt_nsamp": 32,
-        "udp_nchan": 24,
-        "num_frequency_channels": 768,
-        "centre_frequency": 1000000000.0,
-        "total_bandwidth": 800000000,
-        "observation_mode": "PULSAR_TIMING",
-        "observer_id": "jdoe",
-        "project_id": "project1",
-        "pointing_id": "pointing1",
-        "subarray_id": "subarray42",
-        "source": "J1921+2153",
-        "itrf": [5109360.133, 2006852.586, -3238948.127],
-        "receiver_id": "receiver3",
-        "feed_polarization": "CIRC",  # fd_poln
-        "feed_handedness": 1,  # fn_hand
-        "feed_angle": 10.0,  # fn_sang
-        "feed_tracking_mode": "FA",  # fd_mode
-        "feed_position_angle": 0.0,  # fa_req
-        "oversampling_ratio": [4, 3],
-        "coordinates": {"ra": "19:21:44.815", "dec": "21.884"},
-        "max_scan_length": 10000.5,
-        "subint_duration": 30.0,
-        "receptors": ["receptor1"],
-        "receptor_weights": [1],
-        "num_rfi_frequency_masks": 1,
-        "rfi_frequency_masks": [[1.0, 1.1]],
-        "destination_address": ["192.168.178.26", 9021],
-        "test_vector_id": "test_vector_id",
-        "pt": {
-            "dispersion_measure": 100.0,
-            "rotation_measure": 0.0,
-            "ephemeris": "",
-            "pulsar_phase_predictor": "",
-            "output_frequency_channels": 1,
-            "output_phase_bins": 64,
-            "num_sk_config": 1,
-            "sk_config": [{"sk_range": [0.8, 0.9], "sk_integration_limit": 100, "sk_excision_limit": 25.0}],
-            "target_snr": 0.0,
-        },
+        **csp_configure_scan_request["common"],
+        **csp_configure_scan_request["pst"]["scan"],
     }
+
+
+@pytest.fixture
+def configure_beam_request(configure_scan_request: Dict[str, Any]) -> Dict[str, Any]:
+    """Return a valid configure beam object."""
+    keys = [
+        "num_frequency_channels",
+        "num_of_polarizations",
+        "bits_per_sample",
+        "udp_nsamp",
+        "wt_nsamp",
+        "udp_nchan",
+        "centre_frequency",
+        "total_bandwidth",
+        "receiver_id",
+        "feed_polarization",
+        "feed_handedness",
+        "feed_angle",
+        "feed_tracking_mode",
+        "feed_position_angle",
+        "receptors",
+        "receptor_weights",
+        "oversampling_ratio",
+    ]
+
+    return {k: configure_scan_request[k] for k in keys}
 
 
 @pytest.fixture
