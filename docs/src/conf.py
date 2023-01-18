@@ -35,6 +35,7 @@ autodoc_mock_imports = [
     "tango",
     "numpy",
     "readerwriterlock",
+    "typing_extensions",
 ]
 
 autodoc_default_options = {
