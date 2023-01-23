@@ -22,7 +22,6 @@ from ska_pst_lmc.beam.beam_component_manager import PstBeamComponentManager
 from ska_pst_lmc.beam.beam_device_interface import PstBeamDeviceInterface
 from ska_pst_lmc.component import as_device_attribute_name
 from ska_pst_lmc.component.pst_device import PstBaseDevice
-from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
 from ska_pst_lmc.util import Configuration
 
 __all__ = ["PstBeam", "main"]
@@ -69,40 +68,40 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
     # ---------------
 
     def init_device(self: PstBeam) -> None:
-        """Initialise the attributes and properties of the PstReceive.
+        """Initialise the attributes and properties of the PstBeam.
 
         This overrides the :py:class:`SKABaseDevice`.
         """
-        import sys
-
         util = tango.Util.instance()
         util.set_serial_model(tango.SerialModel.NO_SYNC)
         super().init_device()
         self._build_state = "{}, {}, {}".format(release.NAME, release.VERSION, release.DESCRIPTION)
         self._version_id = release.VERSION
 
-        self._data_receive_rate = 0.0
-        self._data_received = 0
-        self._data_drop_rate = 0.0
-        self._data_dropped = 0
-        self._data_record_rate = 0.0
-        self._data_recorded = 0
-        self._available_disk_space = sys.maxsize
-        self._available_recording_time = DEFAULT_RECORDING_TIME
-        self._ring_buffer_utilisation = 0.0
-        self._expected_data_record_rate = 0.0
-
         for prop in [
             "dataReceiveRate",
             "dataReceived",
             "dataDropRate",
             "dataDropped",
+            "misorderedPackets",
+            "misorderedPacketRate",
+            "malformedPackets",
+            "malformedPacketRate",
+            "misdirectedPackets",
+            "misdirectedPacketRate",
+            "checksumFailurePackets",
+            "checksumFailurePacketRate",
+            "timestampSyncErrorPackets",
+            "timestampSyncErrorPacketRate",
+            "seqNumberSyncErrorPackets",
+            "seqNumberSyncErrorPacketRate",
             "dataRecordRate",
             "dataRecorded",
             "availableDiskSpace",
             "expectedDataRecordRate",
             "availableRecordingTime",
             "ringBufferUtilisation",
+            "channelBlockConfiguration",
         ]:
             self.set_change_event(prop, True, False)
             self.set_archive_event(prop, True, False)
@@ -144,7 +143,6 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         :type value: Any
         """
         try:
-            setattr(self, f"_{attribute_name}", value)
             attr_key = as_device_attribute_name(attribute_name)
             self.push_change_event(attr_key, value)
             self.push_archive_event(attr_key, value)
@@ -235,7 +233,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         :returns: available space on the disk that PST.BEAM is writing to, in bytes.
         :rtype: int
         """
-        return self._available_disk_space
+        return self.component_manager.available_disk_space
 
     @attribute(
         dtype=float,
@@ -251,7 +249,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         :returns: available time, in seconds, for writing available.
         :rtype: float
         """
-        return self._available_recording_time
+        return self.component_manager.available_recording_time
 
     # Scan monitoring values
     @attribute(
@@ -269,7 +267,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         :returns: current data receive rate from the CBF interface in Gb/s.
         :rtype: float
         """
-        return self._data_receive_rate
+        return self.component_manager.data_receive_rate
 
     @attribute(
         dtype=int,
@@ -284,7 +282,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
         """
-        return self._data_received
+        return self.component_manager.data_received
 
     @attribute(
         dtype=float,
@@ -306,7 +304,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         :returns: current rate of CBF ingest data being dropped or lost in Bytes/s.
         :rtype: float
         """
-        return self._data_drop_rate
+        return self.component_manager.data_drop_rate
 
     @attribute(
         dtype=int,
@@ -322,7 +320,194 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         :returns: total number of bytes dropped in the current scan.
         :rtype: int
         """
-        return self._data_dropped
+        return self.component_manager.data_dropped
+
+    @attribute(
+        dtype=float,
+        label="Misordered packets",
+        doc=(
+            "Number of out of order UDP packets received in the current scan."
+            "The UDP packets for all frequency channels of a given set of"
+            "time samples that start at time t0 shall arrive before the"
+            "first packet containing data sampled at time t0+2 delta_t,"
+            "where delta_t is the time spanned by the set of time samples"
+            "in a single packet."
+        ),
+    )
+    def misorderedPackets(self: PstBeam) -> int:
+        """Get the total number of packets received out of order in the current scan.
+
+        :returns: total number of packets received out of order in the current scan.
+        :rtype: int
+        """
+        return self.component_manager.misordered_packets
+
+    @attribute(
+        dtype=float,
+        label="Misordered packet rate",
+        unit="packets/sec",
+        doc="The current rate of misordered packets.",
+    )
+    def misorderedPacketRate(self: PstBeam) -> float:
+        """Get the current rate of misordered packets.
+
+        :returns: the current rate of misordered packets in packets/seconds.
+        :rtype: float
+        """
+        return self.component_manager.misordered_packet_rate
+
+    @attribute(
+        dtype=int,
+        label="Malformed packets",
+        doc=(
+            "Malformed packets are valid UDP packets, but where contents of"
+            "the UDP payload does not conform to the specification in the"
+            "CBF/PST ICD. Examples of malformation include: bad magic-word"
+            "field, invalid meta-data, incorrect packet size."
+        ),
+    )
+    def malformedPackets(self: PstBeam) -> int:
+        """Get the total number of packets marked as malformed for current scan.
+
+        :returns: the total number of packets marked as malformed for current scan.
+        :rtype: int
+        """
+        return self.component_manager.malformed_packets
+
+    @attribute(
+        dtype=float,
+        label="Malformed packet rate",
+        unit="packets/sec",
+        doc="The current rate of malformed packets.",
+    )
+    def malformedPacketRate(self: PstBeam) -> float:
+        """Get current rate of malformed packets.
+
+        :return: current rate of malformed packets in packets/seconds.
+        :rtype: float
+        """
+        return self.component_manager.malformed_packet_rate
+
+    @attribute(
+        dtype=int,
+        label="Misdirected packets",
+        doc=(
+            "Total number of (valid) UDP packets that were unexpectedly received."
+            "Misdirection could be due to wrong ScanID, Beam ID, Network Interface"
+            "or UDP port. Receiving misdirected packets is a sign that there is"
+            "something wrong with the upstream configuration for the scan."
+        ),
+    )
+    def misdirectedPackets(self: PstBeam) -> int:
+        """Get the total number of packets as marked as misdirected for current scan.
+
+        :returns: the total number of packets as marked as misdirected for current scan.
+        :rtype: int
+        """
+        return self.component_manager.misdirected_packets
+
+    @attribute(
+        dtype=float,
+        label="Misdirected packet rate",
+        unit="packets/sec",
+        doc="The current rate of misdirected packets.",
+    )
+    def misdirectedPacketRate(self: PstBeam) -> float:
+        """Get the current rate of misdirected packets.
+
+        :return: the current rate of misdirected packets in packets/seconds.
+        :rtype: float
+        """
+        return self.component_manager.misdirected_packet_rate
+
+    @attribute(
+        dtype=int,
+        label="Checksum failure packets",
+        doc="Total number of packets with a UDP, IP header or CRC checksum failure.",
+    )
+    def checksumFailurePackets(self: PstBeam) -> int:
+        """Get the total number of packets with checksum failures for current scan.
+
+        :return: the total number of packets with checksum failures for current scan.
+        :rtype: int
+        """
+        return self.component_manager.checksum_failure_packets
+
+    @attribute(
+        dtype=float,
+        label="Checksum failure packet rate",
+        unit="packets/sec",
+        doc="The current rate of packets with checkesum failures.",
+    )
+    def checksumFailurePacketRate(self: PstBeam) -> float:
+        """Get the current rate of packets with checkesum failures.
+
+        :return: the current rate of packets with checkesum failures in packets/seconds.
+        :rtype: float
+        """
+        return self.component_manager.checksum_failure_packet_rate
+
+    @attribute(
+        dtype=int,
+        label="Timestamp sync error packets",
+        doc=(
+            "The number of packets received where the timestamp has become"
+            "desynchronised with the packet sequence number * sampling interval"
+        ),
+    )
+    def timestampSyncErrorPackets(self: PstBeam) -> int:
+        """Get the total number of packets with a timestamp sync error for current scan.
+
+        :return: the total number of packets with a timestamp sync error for current scan.
+        :rtype: int
+        """
+        return self.component_manager.timestamp_sync_error_packets
+
+    @attribute(
+        dtype=float,
+        label="Timestamp sync error packet rate",
+        unit="packets/sec",
+        doc="The current rate of packets with a timestamp sync error.",
+    )
+    def timestampSyncErrorPacketRate(self: PstBeam) -> float:
+        """Get the current rate of packets with a timestamp sync error.
+
+        :return: the current rate of packets with a timestamp sync error
+            in packets/seconds.
+        :rtype: float
+        """
+        return self.component_manager.timestamp_sync_error_packet_rate
+
+    @attribute(
+        dtype=int,
+        label="Seq. number sync error packets",
+        doc=(
+            "The number of packets received where the packet sequence number has"
+            "become desynchronised with the data rate and elapsed time."
+        ),
+    )
+    def seqNumberSyncErrorPackets(self: PstBeam) -> int:
+        """Get the total number of packets with a seq num sync error in current scan.
+
+        :return: the total number of packets with a seq num sync error in current scan.
+        :rtype: int
+        """
+        return self.component_manager.seq_number_sync_error_packets
+
+    @attribute(
+        dtype=float,
+        label="Seq. number sync error packet rate",
+        unit="packets/sec",
+        doc="The current rate of packets with a sequence number sync error.",
+    )
+    def seqNumberSyncErrorPacketRate(self: PstBeam) -> float:
+        """Get the current rate of packets with a sequence number sync error.
+
+        :return: the current rate of packets with a sequence number sync error
+            in packets/seconds.
+        :rtype: float
+        """
+        return self.component_manager.seq_number_sync_error_packet_rate
 
     @attribute(
         dtype=float,
@@ -336,7 +521,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         :returns: use space on the disk that PST.BEAM is writing to, in bytes.
         :rtype: float
         """
-        return self._data_record_rate
+        return self.component_manager.data_record_rate
 
     @attribute(
         dtype=int,
@@ -350,7 +535,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         :returns: number of bytes written during scan.
         :rtype: int
         """
-        return self._data_recorded
+        return self.component_manager.data_recorded
 
     @attribute(
         dtype=str,
@@ -416,7 +601,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         :returns: the percentage of the ring buffer elements that are full of data.
         :rtype: float
         """
-        return self._ring_buffer_utilisation
+        return self.component_manager.ring_buffer_utilisation
 
     @attribute(
         dtype=float,
@@ -430,7 +615,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         :returns: the expected rate of data to be received by PST Beam component.
         :rtype: float
         """
-        return self._expected_data_record_rate
+        return self.component_manager.expected_data_record_rate
 
     # --------
     # Commands

@@ -643,6 +643,17 @@ def test_recv_grpc_handle_monitor_response(
     data_drop_rate = random()
     data_dropped = randint(1, 100)
     misordered_packets = randint(1, 100)
+    misordered_packet_rate = random()
+    malformed_packets = randint(1, 100)
+    malformed_packet_rate = random()
+    misdirected_packets = randint(1, 100)
+    misdirected_packet_rate = random()
+    checksum_failure_packets = randint(1, 100)
+    checksum_failure_packet_rate = random()
+    timestamp_sync_error_packets = randint(1, 100)
+    timestamp_sync_error_packet_rate = random()
+    seq_number_sync_error_packets = randint(1, 100)
+    seq_number_sync_error_packet_rate = random()
 
     receive_monitor_data = ReceiveMonitorData(
         receive_rate=receive_rate,
@@ -650,6 +661,17 @@ def test_recv_grpc_handle_monitor_response(
         data_drop_rate=data_drop_rate,
         data_dropped=data_dropped,
         misordered_packets=misordered_packets,
+        misordered_packet_rate=misordered_packet_rate,
+        malformed_packets=malformed_packets,
+        malformed_packet_rate=malformed_packet_rate,
+        misdirected_packets=misdirected_packets,
+        misdirected_packet_rate=misdirected_packet_rate,
+        checksum_failure_packets=checksum_failure_packets,
+        checksum_failure_packet_rate=checksum_failure_packet_rate,
+        timestamp_sync_error_packets=timestamp_sync_error_packets,
+        timestamp_sync_error_packet_rate=timestamp_sync_error_packet_rate,
+        seq_number_sync_error_packets=seq_number_sync_error_packets,
+        seq_number_sync_error_packet_rate=seq_number_sync_error_packet_rate,
     )
 
     response_message = MonitorResponse(monitor_data=MonitorData(receive=receive_monitor_data))
@@ -665,6 +687,17 @@ def test_recv_grpc_handle_monitor_response(
             data_dropped=receive_monitor_data.data_dropped,
             data_drop_rate=receive_monitor_data.data_drop_rate,
             misordered_packets=receive_monitor_data.misordered_packets,
+            misordered_packet_rate=receive_monitor_data.misordered_packet_rate,
+            malformed_packets=receive_monitor_data.malformed_packets,
+            malformed_packet_rate=receive_monitor_data.malformed_packet_rate,
+            misdirected_packets=receive_monitor_data.misdirected_packets,
+            misdirected_packet_rate=receive_monitor_data.misdirected_packet_rate,
+            checksum_failure_packets=receive_monitor_data.checksum_failure_packets,
+            checksum_failure_packet_rate=receive_monitor_data.checksum_failure_packet_rate,
+            timestamp_sync_error_packets=receive_monitor_data.timestamp_sync_error_packets,
+            timestamp_sync_error_packet_rate=receive_monitor_data.timestamp_sync_error_packet_rate,
+            seq_number_sync_error_packets=receive_monitor_data.seq_number_sync_error_packets,
+            seq_number_sync_error_packet_rate=receive_monitor_data.seq_number_sync_error_packet_rate,
         ),
     )
 

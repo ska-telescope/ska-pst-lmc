@@ -143,6 +143,125 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
         return self._monitor_data.misordered_packets
 
     @property
+    def misordered_packet_rate(self: PstReceiveComponentManager) -> float:
+        """Get the rate of packets that are received out of order.
+
+        :returns: the rate of packets that are received out of order.
+        :rtype: float
+        """
+        return self._monitor_data.misordered_packet_rate
+
+    @property
+    def malformed_packets(self: PstReceiveComponentManager) -> int:
+        """Get the total number of packets marked as malformed for the current scan.
+
+        Malformed packets are valid UDP packets, but where contents of
+        the UDP payload does not conform to the specification in the
+        CBF/PST ICD. Examples of malformation include: bad magic-word
+        field, invalid meta-data, incorrect packet size.
+
+        :return: total number of packets marked as malformed for the current scan.
+        :rtype: int
+        """
+        return self._monitor_data.malformed_packets
+
+    @property
+    def malformed_packet_rate(self: PstReceiveComponentManager) -> float:
+        """Get the current rate of malformed packets.
+
+        :return: the current rate of malformed packets in packets/seconds.
+        :rtype: float
+        """
+        return self._monitor_data.malformed_packet_rate
+
+    @property
+    def misdirected_packets(self: PstReceiveComponentManager) -> int:
+        """Get the total of misdirected packets received during current scan.
+
+        Total number of (valid) UDP packets that were unexpectedly received.
+        Misdirection could be due to wrong ScanID, Beam ID, Network Interface
+        or UDP port. Receiving misdirected packets is a sign that there is
+        something wrong with the upstream configuration for the scan.
+
+        :return: the total of misdirected packets received during current scan.
+        :rtype: int
+        """
+        return self._monitor_data.misdirected_packets
+
+    @property
+    def misdirected_packet_rate(self: PstReceiveComponentManager) -> float:
+        """Get the current rate of misdirected packets.
+
+        :return: the current rate of misdirected packets in packets/seconds.
+        :rtype: float
+        """
+        return self._monitor_data.misdirected_packet_rate
+
+    @property
+    def checksum_failure_packets(self: PstReceiveComponentManager) -> int:
+        """Get the total number of packets with a checksum failure in current scan.
+
+        Total number of packets with a UDP, IP header or CRC checksum failure.
+
+        :return: the total number of packets with a checksum failure in current scan.
+        :rtype: int
+        """
+        return self._monitor_data.checksum_failure_packets
+
+    @property
+    def checksum_failure_packet_rate(self: PstReceiveComponentManager) -> float:
+        """Get the current rate of packets with a checksum failure.
+
+        :return: the current rate of packets with a checksum failure in packets/seconds.
+        :rtype: float
+        """
+        return self._monitor_data.checksum_failure_packet_rate
+
+    @property
+    def timestamp_sync_error_packets(self: PstReceiveComponentManager) -> int:
+        """Get the total number of packets with a timestamp sync error for current scan.
+
+        The number of packets received where the timestamp has become
+        desynchronised with the packet sequence number * sampling interval
+
+        :return: the total number of packets with a timestamp sync error for current scan.
+        :rtype: int
+        """
+        return self._monitor_data.timestamp_sync_error_packets
+
+    @property
+    def timestamp_sync_error_packet_rate(self: PstReceiveComponentManager) -> float:
+        """Get the current rate of packets marked as having a timestamp sync error.
+
+        :return: the current rate of packets marked as having a timestamp sync error
+            in packets/seconds.
+        :rtype: float
+        """
+        return self._monitor_data.timestamp_sync_error_packet_rate
+
+    @property
+    def seq_number_sync_error_packets(self: PstReceiveComponentManager) -> int:
+        """Get total number of packets with a sequence number sync error for current scan.
+
+        The number of packets received where the packet sequence number has
+        become desynchronised with the data rate and elapsed time.
+
+        :return: total number of packets with a sequence number sync error for current scan.
+        :rtype: int
+        """
+        return self._monitor_data.seq_number_sync_error_packets
+
+    @property
+    def seq_number_sync_error_packet_rate(self: PstReceiveComponentManager) -> float:
+        """Get current rate of packets marked as having a sequence number sync error.
+
+        :return: current rate of packets marked as having a sequence number sync error
+            in packets/seconds.
+        :rtype: float
+        """
+        return self._monitor_data.seq_number_sync_error_packet_rate
+
+    @property
     def _monitor_data(self: PstReceiveComponentManager) -> ReceiveData:
         """Get monitor data from data handler."""
         return self._monitor_data_handler.monitor_data
