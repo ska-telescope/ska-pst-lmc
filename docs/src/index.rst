@@ -51,7 +51,7 @@ For a description of the fully-integrated PST, please see the ska-pst-integratio
 .. API ====================================================================
 
 .. toctree::
-  :caption: TANGO API
+  :caption: Tango API
   :maxdepth: 2
 
   api/tango

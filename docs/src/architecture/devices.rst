@@ -1,6 +1,6 @@
 .. _architecture_tango:
 
-TANGO Devices
+Tango Devices
 =============
 
 BEAM

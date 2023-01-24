@@ -1,10 +1,10 @@
 .. _api_tango:
 
-PST.LMC TANGO API
+PST.LMC Tango API
 =================
 
 This page describes the properties, commands, and attributes exposed by
-the TANGO interface of each PST.BEAM.
+the Tango interface of each PST.BEAM.
 
 Properties
 ----------
@@ -41,7 +41,7 @@ The argument of the Configure command is a JSON string that specifies the type a
 Attributes
 ----------
 
-In addition to the attributes made visible in the TANGO interface by  
+In addition to the attributes made visible in the Tango interface by  
 `SkaObsDevice <https://developer.skao.int/projects/lmc-base-classes/en/latest/SKAObsDevice.html>`_
 and
 `SKABaseDevice <https://developer.skao.int/projects/lmc-base-classes/en/latest/SKABaseDevice.html>`_,

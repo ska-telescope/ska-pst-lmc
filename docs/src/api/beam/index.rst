@@ -1,9 +1,9 @@
 ==========================
-BEAM.MGMT TANGO Component
+BEAM.MGMT Tango Component
 ==========================
 
-The Beam (BEAM) MGMT TANGO Component is a logical TANGO
-component that is used to manage the separate TANGO
+The Beam (BEAM) MGMT Tango Component is a logical Tango
+component that is used to manage the separate Tango
 components that manage the separate processes that make
 up the PST.LMC system.
 

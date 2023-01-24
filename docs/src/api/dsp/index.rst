@@ -1,11 +1,11 @@
 ==============================================
-Digital Signal Processing MGMT TANGO Component
+Digital Signal Processing MGMT Tango Component
 ==============================================
 
-The Digital Signal Processing (DSP.MGMT) TANGO
+The Digital Signal Processing (DSP.MGMT) Tango
 Component is used to manage the DSP.CORE process.
 
-This is component is made up of a TANGO device, a component
+This is component is made up of a Tango device, a component
 manager, as well as including a simulator and a gRPC
 Process API, which used by the component to talk with the
 DSP process via gRPC + Protobuf.
