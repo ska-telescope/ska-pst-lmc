@@ -65,4 +65,5 @@ For a description of the fully-integrated PST, please see the ska-pst-integratio
   :maxdepth: 2
 
   Gitlab README<../../README>
+  api/devices
   Internal API<api/index>

@@ -3,8 +3,8 @@
 Requirements
 ============
 
-To run the PST.LMC, you need to have `Kubernetes <https://kubernetes.io/docs/home>`_ and
-`Helm <https://helm.sh/docs/intro/>`_ installed and ensure that you're using
+To run the PST.LMC, you need to have `Kubernetes <https://kubernetes.io/docs/home>`_ and the
+`Helm package manager <https://helm.sh/docs/intro/>`_ installed and ensure that you're using
 python 3.10 (or higher).  You might also need to obtain cluster 
 access credentials.
 
