@@ -112,12 +112,6 @@ By default, the ``ska-pst-lmc`` chart does not deploy the iTango shell pod from 
 
     $ helm upgrade ska-pst-lmc ska/ska-pst-lmc --set ska-tango-base.itango.enabled=true
 
-Start an iTango session with:
-
-.. code-block:: console
-
-    $ kubectl exec -it ska-tango-base-itango-console -- itango3
-
 See :ref:`Operation / Using itango <operation_itango>` for an example of interacting with PST.LMC via itango.
 
 Shut down PST.LMC
