@@ -146,7 +146,7 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
     def misordered_packet_rate(self: PstReceiveComponentManager) -> float:
         """Get the rate of packets that are received out of order in packets/sec.
 
-        :returns: the rate of packets that are received out of order.
+        :returns: the rate of packets that are received out of order in packets/sec.
         :rtype: float
         """
         return self._monitor_data.misordered_packet_rate
