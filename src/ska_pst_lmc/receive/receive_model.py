@@ -27,7 +27,7 @@ class ReceiveData:
     :ivar data_drop_rate: the rate of data dropped during current scan, in Bytes/s.
     :vartype data_drop_rate: float
     :ivar misordered_packets: the number of misordered packets received during current scan.
-    :vartype misordered_packets: float
+    :vartype misordered_packets: int
     :ivar malformed_packets: the total number of malformed packets during current scan.
     :vartype malformed_packets: int
     :ivar malformed_packet_rate: the current rate of malformed packets.
@@ -36,7 +36,7 @@ class ReceiveData:
         are valid packets but not for the current beam, subband, and/or scan.
     :vartype misdirected_packets: int
     :ivar misdirected_packet_rate: the current rate of misdirected packets.
-    :vartype misordered_packets: float
+    :vartype misdirected_packet_rate: float
     :ivar checksum_failure_packets: the total number of network interface with
         either a UDP, IP header or CRC checksum failure.
     :vartype checksum_failure_packets: int

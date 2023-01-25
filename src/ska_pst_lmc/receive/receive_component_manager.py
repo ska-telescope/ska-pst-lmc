@@ -144,7 +144,7 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def misordered_packet_rate(self: PstReceiveComponentManager) -> float:
-        """Get the rate of packets that are received out of order.
+        """Get the rate of packets that are received out of order in packets/sec.
 
         :returns: the rate of packets that are received out of order.
         :rtype: float
@@ -167,7 +167,7 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def malformed_packet_rate(self: PstReceiveComponentManager) -> float:
-        """Get the current rate of malformed packets.
+        """Get the current rate of malformed packets in packets/sec.
 
         :return: the current rate of malformed packets in packets/seconds.
         :rtype: float
@@ -190,7 +190,7 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def misdirected_packet_rate(self: PstReceiveComponentManager) -> float:
-        """Get the current rate of misdirected packets.
+        """Get the current rate of misdirected packets in packets/sec.
 
         :return: the current rate of misdirected packets in packets/seconds.
         :rtype: float
@@ -210,7 +210,7 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def checksum_failure_packet_rate(self: PstReceiveComponentManager) -> float:
-        """Get the current rate of packets with a checksum failure.
+        """Get the current rate of packets with a checksum failure in packets/sec.
 
         :return: the current rate of packets with a checksum failure in packets/seconds.
         :rtype: float
@@ -231,7 +231,7 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def timestamp_sync_error_packet_rate(self: PstReceiveComponentManager) -> float:
-        """Get the current rate of packets marked as having a timestamp sync error.
+        """Get the current rate of packets marked as having a timestamp sync error in packets/sec.
 
         :return: the current rate of packets marked as having a timestamp sync error
             in packets/seconds.
@@ -253,7 +253,7 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def seq_number_sync_error_packet_rate(self: PstReceiveComponentManager) -> float:
-        """Get current rate of packets marked as having a sequence number sync error.
+        """Get current rate of packets marked as having a sequence number sync error in packets/sec.
 
         :return: current rate of packets marked as having a sequence number sync error
             in packets/seconds.

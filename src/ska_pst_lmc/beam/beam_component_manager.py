@@ -325,12 +325,12 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
     @property
     def malformed_packet_rate(self: PstBeamComponentManager) -> float:
-        """Get the current rate of malformed packets."""
+        """Get the current rate of malformed packets in packets/sec."""
         return self._malformed_packet_rate
 
     @malformed_packet_rate.setter
     def malformed_packet_rate(self: PstBeamComponentManager, malformed_packet_rate: float) -> None:
-        """Set the current rate of malformed packets."""
+        """Set the current rate of malformed packets in packets/sec."""
         self._malformed_packet_rate = malformed_packet_rate
         self._property_callback("malformed_packet_rate", malformed_packet_rate)
 
@@ -347,12 +347,12 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
     @property
     def misdirected_packet_rate(self: PstBeamComponentManager) -> float:
-        """Get the current rate of misdirected packets."""
+        """Get the current rate of misdirected packets in packets/sec."""
         return self._misdirected_packet_rate
 
     @misdirected_packet_rate.setter
     def misdirected_packet_rate(self: PstBeamComponentManager, misdirected_packet_rate: float) -> None:
-        """Set the current rate of misdirected packets."""
+        """Set the current rate of misdirected packets in packets/sec."""
         self._misdirected_packet_rate = misdirected_packet_rate
         self._property_callback("misdirected_packet_rate", misdirected_packet_rate)
 
@@ -369,14 +369,14 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
     @property
     def checksum_failure_packet_rate(self: PstBeamComponentManager) -> float:
-        """Get the current rate of packets with checksum failures."""
+        """Get the current rate of packets with checksum failures in packets/sec."""
         return self._checksum_failure_packet_rate
 
     @checksum_failure_packet_rate.setter
     def checksum_failure_packet_rate(
         self: PstBeamComponentManager, checksum_failure_packet_rate: float
     ) -> None:
-        """Set the current rate of packets with checksum failures."""
+        """Set the current rate of packets with checksum failures in packets/sec."""
         self._checksum_failure_packet_rate = checksum_failure_packet_rate
         self._property_callback("checksum_failure_packet_rate", checksum_failure_packet_rate)
 
@@ -395,14 +395,14 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
     @property
     def timestamp_sync_error_packet_rate(self: PstBeamComponentManager) -> float:
-        """Get the current rate of packets with timestamp sync errors."""
+        """Get the current rate of packets with timestamp sync errors in packets/sec."""
         return self._timestamp_sync_error_packet_rate
 
     @timestamp_sync_error_packet_rate.setter
     def timestamp_sync_error_packet_rate(
         self: PstBeamComponentManager, timestamp_sync_error_packet_rate: float
     ) -> None:
-        """Set the current rate of packets with timestamp sync errors."""
+        """Set the current rate of packets with timestamp sync errors in packets/sec."""
         self._timestamp_sync_error_packet_rate = timestamp_sync_error_packet_rate
         self._property_callback("timestamp_sync_error_packet_rate", timestamp_sync_error_packet_rate)
 
@@ -421,14 +421,14 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
     @property
     def seq_number_sync_error_packet_rate(self: PstBeamComponentManager) -> float:
-        """Get the current rate of packets with seq. number sync error."""
+        """Get the current rate of packets with seq. number sync error in packets/sec."""
         return self._seq_number_sync_error_packet_rate
 
     @seq_number_sync_error_packet_rate.setter
     def seq_number_sync_error_packet_rate(
         self: PstBeamComponentManager, seq_number_sync_error_packet_rate: float
     ) -> None:
-        """Set the current rate of packets with seq. number sync error."""
+        """Set the current rate of packets with seq. number sync error in packets/sec."""
         self._seq_number_sync_error_packet_rate = seq_number_sync_error_packet_rate
         self._property_callback("seq_number_sync_error_packet_rate", seq_number_sync_error_packet_rate)
 

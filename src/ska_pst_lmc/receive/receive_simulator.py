@@ -133,7 +133,7 @@ class PstReceiveSimulator:
             subband_data.misdirected_packets += update.misdirected_packets
             subband_data.checksum_failure_packets += update.checksum_failure_packets
             subband_data.timestamp_sync_error_packets += update.timestamp_sync_error_packets
-            subband_data.seq_number_sync_error_packet_rate += update.seq_number_sync_error_packet_rate
+            subband_data.seq_number_sync_error_packets += update.seq_number_sync_error_packets
 
             # update the rates
             subband_data.data_receive_rate = update.data_receive_rate
@@ -143,7 +143,7 @@ class PstReceiveSimulator:
             subband_data.misdirected_packet_rate = update.misdirected_packet_rate
             subband_data.checksum_failure_packet_rate = update.checksum_failure_packet_rate
             subband_data.timestamp_sync_error_packet_rate = update.timestamp_sync_error_packet_rate
-            subband_data.seq_number_sync_error_packets = update.seq_number_sync_error_packets
+            subband_data.seq_number_sync_error_packet_rate = update.seq_number_sync_error_packet_rate
 
     def get_data(self: PstReceiveSimulator) -> ReceiveData:
         """
