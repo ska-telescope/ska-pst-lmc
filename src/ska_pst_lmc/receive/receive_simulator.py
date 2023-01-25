@@ -19,9 +19,27 @@ def generate_random_update() -> ReceiveData:
     """Generate a random update of ReceivedData."""
     data_receive_rate: float = 1.0 * randint(0, 90)
     data_received: int = int(data_receive_rate * 1e9 / 8)
+
     data_drop_rate: float = data_receive_rate / 1000.0 * random()
     data_dropped: int = int(data_drop_rate * 1e9 / 8)
+
     misordered_packets: int = randint(0, 3)
+    misordered_packet_rate: float = 1.0 * misordered_packets
+
+    malformed_packets: int = randint(0, 3)
+    malformed_packet_rate: float = 1.0 * malformed_packets
+
+    misdirected_packets: int = randint(0, 3)
+    misdirected_packet_rate: float = 1.0 * misordered_packets
+
+    checksum_failure_packets: int = randint(0, 3)
+    checksum_failure_packet_rate: float = 1.0 * checksum_failure_packets
+
+    timestamp_sync_error_packets: int = randint(0, 3)
+    timestamp_sync_error_packet_rate: float = 1.0 * timestamp_sync_error_packets
+
+    seq_number_sync_error_packets: int = randint(0, 3)
+    seq_number_sync_error_packet_rate: float = 1.0 * seq_number_sync_error_packets
 
     return ReceiveData(
         data_received=data_received,
@@ -29,6 +47,17 @@ def generate_random_update() -> ReceiveData:
         data_dropped=data_dropped,
         data_drop_rate=data_drop_rate,
         misordered_packets=misordered_packets,
+        misordered_packet_rate=misordered_packet_rate,
+        malformed_packets=malformed_packets,
+        malformed_packet_rate=malformed_packet_rate,
+        misdirected_packets=misdirected_packets,
+        misdirected_packet_rate=misdirected_packet_rate,
+        checksum_failure_packets=checksum_failure_packets,
+        checksum_failure_packet_rate=checksum_failure_packet_rate,
+        timestamp_sync_error_packets=timestamp_sync_error_packets,
+        timestamp_sync_error_packet_rate=timestamp_sync_error_packet_rate,
+        seq_number_sync_error_packets=seq_number_sync_error_packets,
+        seq_number_sync_error_packet_rate=seq_number_sync_error_packet_rate,
     )
 
 
@@ -96,11 +125,25 @@ class PstReceiveSimulator:
         for subband_data in self._subband_data.values():
             update: ReceiveData = generate_random_update()
 
-            subband_data.data_receive_rate = update.data_receive_rate
+            # update totals
             subband_data.data_received += update.data_received
-            subband_data.data_drop_rate = update.data_drop_rate
             subband_data.data_dropped += update.data_dropped
             subband_data.misordered_packets += update.misordered_packets
+            subband_data.malformed_packets += update.malformed_packets
+            subband_data.misdirected_packets += update.misdirected_packets
+            subband_data.checksum_failure_packets += update.checksum_failure_packets
+            subband_data.timestamp_sync_error_packets += update.timestamp_sync_error_packets
+            subband_data.seq_number_sync_error_packets += update.seq_number_sync_error_packets
+
+            # update the rates
+            subband_data.data_receive_rate = update.data_receive_rate
+            subband_data.data_drop_rate = update.data_drop_rate
+            subband_data.misordered_packet_rate = update.misordered_packet_rate
+            subband_data.malformed_packet_rate = update.malformed_packet_rate
+            subband_data.misdirected_packet_rate = update.misdirected_packet_rate
+            subband_data.checksum_failure_packet_rate = update.checksum_failure_packet_rate
+            subband_data.timestamp_sync_error_packet_rate = update.timestamp_sync_error_packet_rate
+            subband_data.seq_number_sync_error_packet_rate = update.seq_number_sync_error_packet_rate
 
     def get_data(self: PstReceiveSimulator) -> ReceiveData:
         """
@@ -118,9 +161,20 @@ class PstReceiveSimulator:
         for subband_data in self._subband_data.values():
             data.data_dropped += subband_data.data_dropped
             data.data_drop_rate += subband_data.data_drop_rate
+            data.data_received += subband_data.data_received
+            data.data_receive_rate += subband_data.data_receive_rate
             data.misordered_packets += subband_data.misordered_packets
-            data.data_received += data.data_received
-            data.data_receive_rate += data.data_receive_rate
+            data.misordered_packet_rate += subband_data.misordered_packet_rate
+            data.malformed_packets += subband_data.malformed_packets
+            data.malformed_packet_rate += subband_data.malformed_packet_rate
+            data.misdirected_packets += subband_data.misdirected_packets
+            data.misdirected_packet_rate += subband_data.misdirected_packet_rate
+            data.checksum_failure_packets += subband_data.checksum_failure_packets
+            data.checksum_failure_packet_rate += subband_data.checksum_failure_packet_rate
+            data.timestamp_sync_error_packets += subband_data.timestamp_sync_error_packets
+            data.timestamp_sync_error_packet_rate += subband_data.timestamp_sync_error_packet_rate
+            data.seq_number_sync_error_packets += subband_data.seq_number_sync_error_packets
+            data.seq_number_sync_error_packet_rate += subband_data.seq_number_sync_error_packet_rate
 
         return data
 

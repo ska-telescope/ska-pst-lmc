@@ -176,9 +176,16 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         return self.component_manager.data_dropped
 
     @attribute(
-        dtype=int,
-        label="Out of order packets",
-        doc="The total number of packets received out of order in the current scan",
+        dtype=float,
+        label="Misordered packets",
+        doc=(
+            "Number of out of order UDP packets received in the current scan."
+            "The UDP packets for all frequency channels of a given set of"
+            "time samples that start at time t0 shall arrive before the"
+            "first packet containing data sampled at time t0+2 delta_t,"
+            "where delta_t is the time spanned by the set of time samples"
+            "in a single packet."
+        ),
     )
     def misorderedPackets(self: PstReceive) -> int:
         """Get the total number of packets received out of order in the current scan.
@@ -187,6 +194,173 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         :rtype: int
         """
         return self.component_manager.misordered_packets
+
+    @attribute(
+        dtype=float,
+        label="Misordered packet rate",
+        unit="packets/sec",
+        doc="The current rate of misordered packets.",
+    )
+    def misorderedPacketRate(self: PstReceive) -> float:
+        """Get the current rate of misordered packets.
+
+        :returns: the current rate of misordered packets in packets/seconds.
+        :rtype: float
+        """
+        return self.component_manager.misordered_packet_rate
+
+    @attribute(
+        dtype=int,
+        label="Malformed packets",
+        doc=(
+            "Malformed packets are valid UDP packets, but where contents of"
+            "the UDP payload does not conform to the specification in the"
+            "CBF/PST ICD. Examples of malformation include: bad magic-word"
+            "field, invalid meta-data, incorrect packet size."
+        ),
+    )
+    def malformedPackets(self: PstReceive) -> int:
+        """Get the total number of packets marked as malformed for current scan.
+
+        :returns: the total number of packets marked as malformed for current scan.
+        :rtype: int
+        """
+        return self.component_manager.malformed_packets
+
+    @attribute(
+        dtype=float,
+        label="Malformed packet rate",
+        unit="packets/sec",
+        doc="The current rate of malformed packets.",
+    )
+    def malformedPacketRate(self: PstReceive) -> float:
+        """Get current rate of malformed packets.
+
+        :return: current rate of malformed packets in packets/seconds.
+        :rtype: float
+        """
+        return self.component_manager.malformed_packet_rate
+
+    @attribute(
+        dtype=int,
+        label="Misdirected packets",
+        doc=(
+            "Total number of (valid) UDP packets that were unexpectedly received."
+            "Misdirection could be due to wrong ScanID, Beam ID, Network Interface"
+            "or UDP port. Receiving misdirected packets is a sign that there is"
+            "something wrong with the upstream configuration for the scan."
+        ),
+    )
+    def misdirectedPackets(self: PstReceive) -> int:
+        """Get the total number of packets as marked as misdirected for current scan.
+
+        :returns: the total number of packets as marked as misdirected for current scan.
+        :rtype: int
+        """
+        return self.component_manager.misdirected_packets
+
+    @attribute(
+        dtype=float,
+        label="Misdirected packet rate",
+        unit="packets/sec",
+        doc="The current rate of misdirected packets.",
+    )
+    def misdirectedPacketRate(self: PstReceive) -> float:
+        """Get the current rate of misdirected packets.
+
+        :return: the current rate of misdirected packets in packets/seconds.
+        :rtype: float
+        """
+        return self.component_manager.misdirected_packet_rate
+
+    @attribute(
+        dtype=int,
+        label="Checksum failure packets",
+        doc="Total number of packets with a UDP, IP header or CRC checksum failure.",
+    )
+    def checksumFailurePackets(self: PstReceive) -> int:
+        """Get the total number of packets with checksum failures for current scan.
+
+        :return: the total number of packets with checksum failures for current scan.
+        :rtype: int
+        """
+        return self.component_manager.checksum_failure_packets
+
+    @attribute(
+        dtype=float,
+        label="Checksum failure packet rate",
+        unit="packets/sec",
+        doc="The current rate of packets with checkesum failures.",
+    )
+    def checksumFailurePacketRate(self: PstReceive) -> float:
+        """Get the current rate of packets with checkesum failures.
+
+        :return: the current rate of packets with checkesum failures in packets/seconds.
+        :rtype: float
+        """
+        return self.component_manager.checksum_failure_packet_rate
+
+    @attribute(
+        dtype=int,
+        label="Timestamp sync error packets",
+        doc=(
+            "The number of packets received where the timestamp has become"
+            "desynchronised with the packet sequence number * sampling interval"
+        ),
+    )
+    def timestampSyncErrorPackets(self: PstReceive) -> int:
+        """Get the total number of packets with a timestamp sync error for current scan.
+
+        :return: the total number of packets with a timestamp sync error for current scan.
+        :rtype: int
+        """
+        return self.component_manager.timestamp_sync_error_packets
+
+    @attribute(
+        dtype=float,
+        label="Timestamp sync error packet rate",
+        unit="packets/sec",
+        doc="The current rate of packets with a timestamp sync error.",
+    )
+    def timestampSyncErrorPacketRate(self: PstReceive) -> float:
+        """Get the current rate of packets with a timestamp sync error.
+
+        :return: the current rate of packets with a timestamp sync error
+            in packets/seconds.
+        :rtype: float
+        """
+        return self.component_manager.timestamp_sync_error_packet_rate
+
+    @attribute(
+        dtype=int,
+        label="Seq. number sync error packets",
+        doc=(
+            "The number of packets received where the packet sequence number has"
+            "become desynchronised with the data rate and elapsed time."
+        ),
+    )
+    def seqNumberSyncErrorPackets(self: PstReceive) -> int:
+        """Get the total number of packets with a seq num sync error in current scan.
+
+        :return: the total number of packets with a seq num sync error in current scan.
+        :rtype: int
+        """
+        return self.component_manager.seq_number_sync_error_packets
+
+    @attribute(
+        dtype=float,
+        label="Seq. number sync error packet rate",
+        unit="packets/sec",
+        doc="The current rate of packets with a sequence number sync error.",
+    )
+    def seqNumberSyncErrorPacketRate(self: PstReceive) -> float:
+        """Get the current rate of packets with a sequence number sync error.
+
+        :return: the current rate of packets with a sequence number sync error
+            in packets/seconds.
+        :rtype: float
+        """
+        return self.component_manager.seq_number_sync_error_packet_rate
 
     @attribute(
         dtype=str,

@@ -172,6 +172,17 @@ class TestPstReceive:
         assert device_under_test.dataDropRate > 0.0
         assert device_under_test.dataDropped > 0
         assert device_under_test.misorderedPackets >= 0
+        assert device_under_test.misorderedPacketRate >= 0.0
+        assert device_under_test.malformedPackets >= 0
+        assert device_under_test.malformedPacketRate >= 0.0
+        assert device_under_test.misdirectedPackets >= 0
+        assert device_under_test.misdirectedPacketRate >= 0.0
+        assert device_under_test.checksumFailurePackets >= 0
+        assert device_under_test.checksumFailurePacketRate >= 0.0
+        assert device_under_test.timestampSyncErrorPackets >= 0
+        assert device_under_test.timestampSyncErrorPacketRate >= 0.0
+        assert device_under_test.seqNumberSyncErrorPackets >= 0
+        assert device_under_test.seqNumberSyncErrorPacketRate >= 0.0
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.EndScan(),

@@ -160,10 +160,24 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         """
         from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
 
-        self.data_receive_rate = 0.0
+        # RECV properties
         self.data_received = 0
+        self.data_receive_rate = 0.0
         self.data_dropped = 0
         self.data_drop_rate = 0.0
+        self.misordered_packets = 0
+        self.misordered_packet_rate = 0.0
+        self.malformed_packets = 0
+        self.malformed_packet_rate = 0.0
+        self.misdirected_packets = 0
+        self.misdirected_packet_rate = 0.0
+        self.checksum_failure_packets = 0
+        self.checksum_failure_packet_rate = 0.0
+        self.timestamp_sync_error_packets = 0
+        self.timestamp_sync_error_packet_rate = 0.0
+        self.seq_number_sync_error_packets = 0
+        self.seq_number_sync_error_packet_rate = 0.0
+
         self.data_record_rate = 0.0
         self.data_recorded = 0
         self.available_recording_time = DEFAULT_RECORDING_TIME
@@ -275,6 +289,148 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         """Set current dropped data in bytes."""
         self._data_dropped = data_dropped
         self._property_callback("data_dropped", data_dropped)
+
+    @property
+    def misordered_packets(self: PstBeamComponentManager) -> int:
+        """Get the total number of packets received out of order in the current scan."""
+        return self._misordered_packets
+
+    @misordered_packets.setter
+    def misordered_packets(self: PstBeamComponentManager, misordered_packets: int) -> None:
+        """Set the total number of packets received out of order in the current scan."""
+        self._misordered_packets = misordered_packets
+        self._property_callback("misordered_packets", misordered_packets)
+
+    @property
+    def misordered_packet_rate(self: PstBeamComponentManager) -> float:
+        """Get the current rate of packets received out of order in packets/sec."""
+        return self._misordered_packet_rate
+
+    @misordered_packet_rate.setter
+    def misordered_packet_rate(self: PstBeamComponentManager, misordered_packet_rate: float) -> None:
+        """Set the current rate of packets received out of order in packets/sec."""
+        self._misordered_packet_rate = misordered_packet_rate
+        self._property_callback("misordered_packet_rate", misordered_packet_rate)
+
+    @property
+    def malformed_packets(self: PstBeamComponentManager) -> int:
+        """Get the total number of malformed packets in the current scan."""
+        return self._malformed_packets
+
+    @malformed_packets.setter
+    def malformed_packets(self: PstBeamComponentManager, malformed_packets: int) -> None:
+        """Set the total number of malformed packets in the current scan."""
+        self._malformed_packets = malformed_packets
+        self._property_callback("malformed_packets", malformed_packets)
+
+    @property
+    def malformed_packet_rate(self: PstBeamComponentManager) -> float:
+        """Get the current rate of malformed packets in packets/sec."""
+        return self._malformed_packet_rate
+
+    @malformed_packet_rate.setter
+    def malformed_packet_rate(self: PstBeamComponentManager, malformed_packet_rate: float) -> None:
+        """Set the current rate of malformed packets in packets/sec."""
+        self._malformed_packet_rate = malformed_packet_rate
+        self._property_callback("malformed_packet_rate", malformed_packet_rate)
+
+    @property
+    def misdirected_packets(self: PstBeamComponentManager) -> int:
+        """Get the total number of misdirected packets in the current scan."""
+        return self._misdirected_packets
+
+    @misdirected_packets.setter
+    def misdirected_packets(self: PstBeamComponentManager, misdirected_packets: int) -> None:
+        """Set the total number of misdirected packets in the current scan."""
+        self._misdirected_packets = misdirected_packets
+        self._property_callback("misdirected_packets", misdirected_packets)
+
+    @property
+    def misdirected_packet_rate(self: PstBeamComponentManager) -> float:
+        """Get the current rate of misdirected packets in packets/sec."""
+        return self._misdirected_packet_rate
+
+    @misdirected_packet_rate.setter
+    def misdirected_packet_rate(self: PstBeamComponentManager, misdirected_packet_rate: float) -> None:
+        """Set the current rate of misdirected packets in packets/sec."""
+        self._misdirected_packet_rate = misdirected_packet_rate
+        self._property_callback("misdirected_packet_rate", misdirected_packet_rate)
+
+    @property
+    def checksum_failure_packets(self: PstBeamComponentManager) -> int:
+        """Get the total number of packets with checksum failures for the current scan."""
+        return self._checksum_failure_packets
+
+    @checksum_failure_packets.setter
+    def checksum_failure_packets(self: PstBeamComponentManager, checksum_failure_packets: int) -> None:
+        """Set the total number of packets with checksum failures for the current scan."""
+        self._checksum_failure_packets = checksum_failure_packets
+        self._property_callback("checksum_failure_packets", checksum_failure_packets)
+
+    @property
+    def checksum_failure_packet_rate(self: PstBeamComponentManager) -> float:
+        """Get the current rate of packets with checksum failures in packets/sec."""
+        return self._checksum_failure_packet_rate
+
+    @checksum_failure_packet_rate.setter
+    def checksum_failure_packet_rate(
+        self: PstBeamComponentManager, checksum_failure_packet_rate: float
+    ) -> None:
+        """Set the current rate of packets with checksum failures in packets/sec."""
+        self._checksum_failure_packet_rate = checksum_failure_packet_rate
+        self._property_callback("checksum_failure_packet_rate", checksum_failure_packet_rate)
+
+    @property
+    def timestamp_sync_error_packets(self: PstBeamComponentManager) -> int:
+        """Get the total number of packets with timestamp sync errors for the current scan."""
+        return self._timestamp_sync_error_packets
+
+    @timestamp_sync_error_packets.setter
+    def timestamp_sync_error_packets(
+        self: PstBeamComponentManager, timestamp_sync_error_packets: int
+    ) -> None:
+        """Set the total number of packets with timestamp sync errors for the current scan."""
+        self._timestamp_sync_error_packets = timestamp_sync_error_packets
+        self._property_callback("timestamp_sync_error_packets", timestamp_sync_error_packets)
+
+    @property
+    def timestamp_sync_error_packet_rate(self: PstBeamComponentManager) -> float:
+        """Get the current rate of packets with timestamp sync errors in packets/sec."""
+        return self._timestamp_sync_error_packet_rate
+
+    @timestamp_sync_error_packet_rate.setter
+    def timestamp_sync_error_packet_rate(
+        self: PstBeamComponentManager, timestamp_sync_error_packet_rate: float
+    ) -> None:
+        """Set the current rate of packets with timestamp sync errors in packets/sec."""
+        self._timestamp_sync_error_packet_rate = timestamp_sync_error_packet_rate
+        self._property_callback("timestamp_sync_error_packet_rate", timestamp_sync_error_packet_rate)
+
+    @property
+    def seq_number_sync_error_packets(self: PstBeamComponentManager) -> int:
+        """Get the total number of packets with seq. number sync error for the current scan."""
+        return self._seq_number_sync_error_packets
+
+    @seq_number_sync_error_packets.setter
+    def seq_number_sync_error_packets(
+        self: PstBeamComponentManager, seq_number_sync_error_packets: int
+    ) -> None:
+        """Set the total number of packets with seq. number sync error for the current scan."""
+        self._seq_number_sync_error_packets = seq_number_sync_error_packets
+        self._property_callback("seq_number_sync_error_packets", seq_number_sync_error_packets)
+
+    @property
+    def seq_number_sync_error_packet_rate(self: PstBeamComponentManager) -> float:
+        """Get the current rate of packets with seq. number sync error in packets/sec."""
+        return self._seq_number_sync_error_packet_rate
+
+    @seq_number_sync_error_packet_rate.setter
+    def seq_number_sync_error_packet_rate(
+        self: PstBeamComponentManager, seq_number_sync_error_packet_rate: float
+    ) -> None:
+        """Set the current rate of packets with seq. number sync error in packets/sec."""
+        self._seq_number_sync_error_packet_rate = seq_number_sync_error_packet_rate
+        self._property_callback("seq_number_sync_error_packet_rate", seq_number_sync_error_packet_rate)
 
     @property
     def data_record_rate(self: PstBeamComponentManager) -> float:
@@ -425,6 +581,18 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
                 "data_received",
                 "data_dropped",
                 "data_drop_rate",
+                "misordered_packets",
+                "misordered_packet_rate",
+                "malformed_packets",
+                "malformed_packet_rate",
+                "misdirected_packets",
+                "misdirected_packet_rate",
+                "checksum_failure_packets",
+                "checksum_failure_packet_rate",
+                "timestamp_sync_error_packets",
+                "timestamp_sync_error_packet_rate",
+                "seq_number_sync_error_packets",
+                "seq_number_sync_error_packet_rate",
                 "subband_beam_configuration",
                 "obs_state",
             ],

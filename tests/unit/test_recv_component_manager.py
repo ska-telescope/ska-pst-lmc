@@ -126,6 +126,17 @@ def test_recv_cm_start_communicating_calls_connect_on_api(
         ("data_drop_rate"),
         ("data_dropped"),
         ("misordered_packets"),
+        ("misordered_packet_rate"),
+        ("malformed_packets"),
+        ("malformed_packet_rate"),
+        ("misdirected_packets"),
+        ("misdirected_packet_rate"),
+        ("checksum_failure_packets"),
+        ("checksum_failure_packet_rate"),
+        ("timestamp_sync_error_packets"),
+        ("timestamp_sync_error_packet_rate"),
+        ("seq_number_sync_error_packets"),
+        ("seq_number_sync_error_packet_rate"),
     ],
 )
 def test_recv_cm_properties_comes_from_monitor_data(
