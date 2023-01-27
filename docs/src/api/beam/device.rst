@@ -1,5 +1,5 @@
 =================
-BEAM TANGO Device
+BEAM Tango Device
 =================
 
 .. toctree::

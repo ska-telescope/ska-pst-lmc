@@ -13,8 +13,3 @@ API
   Shared Memory Ring Buffer (SMRB) subpackage<smrb/index>
   Util subpackage<util/index>
 
-.. toctree::
-  :caption: Legacy TANGO devices
-  :maxdepth: 3
-
-  Legacy LMC TANGO Devivces<legacy>

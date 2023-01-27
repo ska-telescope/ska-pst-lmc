@@ -1,5 +1,5 @@
 =================
-SMRB TANGO Device
+SMRB Tango Device
 =================
 
 .. toctree::

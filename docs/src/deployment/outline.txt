@@ -1,6 +1,6 @@
-==========
-Deployment
-==========
+
+Deployment Outline
+==================
 
 The deployment of PST.LMC has yet to be documented but this section will include
 the following items:

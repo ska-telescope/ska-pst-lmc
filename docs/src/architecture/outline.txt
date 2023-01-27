@@ -2,6 +2,6 @@
 Architecture
 ============
 
-* Public architecture (i.e TANGO)
+* Public architecture (i.e Tango)
 * Internal software architecture
 * gRPC API architecture
