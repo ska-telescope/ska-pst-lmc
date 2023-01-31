@@ -438,10 +438,15 @@ class TangoChangeEventHelper:
         This returns a :py:class:`MockChangeEventCallback` that can
         then be used to verify changes.
         """
+
+        def _handle_evt(*args: Any, **kwargs: Any) -> None:
+            self.logger.debug(f"Event recevied with: args={args}, kwargs={kwargs}")
+            self.change_event_callbacks[attribute_name](*args, **kwargs)
+
         subscription_id = self.device_under_test.subscribe_event(
             attribute_name,
             tango.EventType.CHANGE_EVENT,
-            self.change_event_callbacks[attribute_name],
+            _handle_evt,
         )
         self.logger.debug(f"Subscribed to events of '{attribute_name}'. subscription_id = {subscription_id}")
         self.subscriptions[attribute_name] = subscription_id
@@ -491,21 +496,26 @@ class TangoDeviceCommandChecker:
         logger: logging.Logger,
     ) -> None:
         """Initialise command checker."""
-        tango_change_event_helper.subscribe("longRunningCommandProgress")
-        change_event_callbacks["longRunningCommandProgress"].assert_change_event(None)
+        self._device = device = tango_change_event_helper.device_under_test
 
-        tango_change_event_helper.subscribe("longRunningCommandResult")
-        change_event_callbacks["longRunningCommandResult"].assert_change_event(("", ""))
+        def _subscribe(property: str) -> None:
+            value = getattr(device, property)
+            tango_change_event_helper.subscribe(property)
+            try:
+                # ignore the first event. This should be able to clear out the events
+                change_event_callbacks[property].assert_change_event(value)
+            except Exception:
+                logger.warning(f"Asserting {device}.{property} to be {value} failed.", exc_info=True)
 
-        tango_change_event_helper.subscribe("longRunningCommandStatus")
-        change_event_callbacks["longRunningCommandStatus"].assert_change_event(None)
-
-        tango_change_event_helper.subscribe("obsState")
-        tango_change_event_helper.subscribe("healthState")
+        _subscribe("longRunningCommandProgress")
+        _subscribe("longRunningCommandResult")
+        _subscribe("longRunningCommandStatus")
+        _subscribe("obsState")
+        _subscribe("healthState")
 
         self.change_event_callbacks = change_event_callbacks
         self._logger = logger
-
+        self._tango_change_event_helper = tango_change_event_helper
         self._command_states: Dict[str, str] = {}
 
     def assert_command(
@@ -539,17 +549,52 @@ class TangoDeviceCommandChecker:
         :param expected_obs_state_events: the expected events of the ObsState
             model. The default is an empty list, meaning no events expected.
         """
+        current_lrc_status = self._device.longRunningCommandStatus
+        current_obs_state = self._device.obsState
+
+        if current_lrc_status is None:
+            current_lrc_status = ()
+
+        self._logger.info(f"Current longRunningCommandStatus = {current_lrc_status}")
+
         [[result], [command_id]] = command()
         assert result == expected_result_code
 
         if expected_command_status_events:
             for expected_command_status in expected_command_status_events:
-                self._command_states[command_id] = expected_command_status.name
-                expected_result = tuple([item for kv in self._command_states.items() for item in kv])
-                self.change_event_callbacks["longRunningCommandStatus"].assert_change_event(
-                    expected_result,
-                )
+                while True:
+                    expected_lrc_status = (
+                        *current_lrc_status,
+                        command_id,
+                        expected_command_status.name,
+                    )
+                    self._logger.info(f"Expecting longRunningCommandStatus = {expected_lrc_status}")
+                    try:
+                        self.change_event_callbacks["longRunningCommandStatus"].assert_change_event(
+                            expected_lrc_status
+                        )
+                        break
+                    except Exception as e:
+                        # it is possible that the first command has been popped
+                        self._logger.info(
+                            f"No change event for longRunningCommandStatus = {expected_lrc_status}"
+                        )
+                        if len(current_lrc_status) >= 2:
+                            current_lrc_status = current_lrc_status[2:]
+                            self._logger.info(
+                                "Removed first 2 items from current_long_running_command_status"
+                            )
+                            continue
 
+                        current_lrc_status = self._device.longRunningCommandStatus
+                        self._logger.exception(
+                            f"Unable to assert longRunningCommandStatus. Current value: {current_lrc_status}",
+                            exc_info=True,
+                        )
+                        self._logger.info(
+                            f"Currend longRunningCommandResult = {self._device.longRunningCommandResult}"
+                        )
+                        raise e
         else:
             self.change_event_callbacks["longRunningCommandStatus"].assert_not_called()
 
@@ -557,7 +602,7 @@ class TangoDeviceCommandChecker:
             (command_id, expected_command_result),
         )
 
-        if expected_obs_state_events:
+        if expected_obs_state_events and [current_obs_state] != expected_obs_state_events:
             for expected_obs_state in expected_obs_state_events:
                 self._logger.debug(f"Checking next obsState event is {expected_obs_state.name}")
                 self.change_event_callbacks["obsState"].assert_change_event(expected_obs_state.value)
@@ -580,7 +625,7 @@ def tango_device_command_checker(
     )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def logger() -> logging.Logger:
     """Fixture that returns a default logger for tests."""
     logger = logging.getLogger("TEST_LOGGER")
