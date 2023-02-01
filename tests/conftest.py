@@ -409,7 +409,7 @@ def change_event_callbacks(additional_change_events_callbacks: List[str]) -> Moc
         "obsState",
         "healthState",
         *additional_change_events_callbacks,
-        timeout=1.0,
+        timeout=5.0,
     )
 
 
