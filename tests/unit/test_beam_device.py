@@ -567,11 +567,14 @@ class TestPstBeam:
             assert smrb_proxy.obsState == subObsState or obsState
             assert dsp_proxy.obsState == subObsState or obsState
 
+        curr_health_state = device_under_test.healthState
+
         device_under_test.adminMode = AdminMode.ONLINE
         assert_admin_mode(admin_mode=AdminMode.ONLINE)
 
         assert_state(DevState.OFF)
-        change_event_callbacks["healthState"].assert_change_event(HealthState.UNKNOWN)
+        if curr_health_state != HealthState.UNKNOWN:
+            change_event_callbacks["healthState"].assert_change_event(HealthState.UNKNOWN)
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
