@@ -179,6 +179,12 @@ class TestPstBeam:
             self.logger.info(f"{self.beam_proxy} is in DevState.OFF. Setting it to OFFLINE")
             self.offline()
 
+    @backoff.on_exception(
+        backoff.expo,
+        AssertionError,
+        factor=0.05,
+        max_time=1.0,
+    )
     def assert_state(self: TestPstBeam, state: DevState) -> None:
         """Assert Tango devices are in a given DevState."""
         assert self.beam_proxy.state() == state
@@ -189,8 +195,8 @@ class TestPstBeam:
     @backoff.on_exception(
         backoff.expo,
         AssertionError,
-        factor=1,
-        max_time=5.0,
+        factor=0.05,
+        max_time=1.0,
     )
     def assert_obstate(self: TestPstBeam, obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
         """Assert that the Tango devices are in a giveen ObsState."""
