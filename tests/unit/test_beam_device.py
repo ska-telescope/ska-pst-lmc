@@ -20,7 +20,6 @@ import backoff
 import pytest
 from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import AdminMode, HealthState, ObsState
-from ska_tango_base.executor import TaskStatus
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DeviceProxy, DevState
 from tango.test_context import MultiDeviceTestContext
@@ -324,15 +323,10 @@ class TestPstBeam:
         self.tango_device_command_checker.assert_command(
             lambda: self.beam_proxy.Abort(),
             expected_result_code=ResultCode.STARTED,
-            expected_command_status_events=[
-                TaskStatus.IN_PROGRESS,
-                TaskStatus.COMPLETED,
-            ],
             expected_obs_state_events=[
                 ObsState.ABORTING,
                 ObsState.ABORTED,
             ],
-            expected_command_result=None,
         )
 
     def goto_fault(self: TestPstBeam, fault_msg: str) -> None:

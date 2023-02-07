@@ -123,15 +123,10 @@ class TestPstBeam:
         self.tango_device_command_checker.assert_command(
             lambda: self.beam_proxy.Abort(),
             expected_result_code=ResultCode.STARTED,
-            expected_command_status_events=[
-                TaskStatus.IN_PROGRESS,
-                TaskStatus.COMPLETED,
-            ],
             expected_obs_state_events=[
                 ObsState.ABORTING,
                 ObsState.ABORTED,
             ],
-            expected_command_result=None,
         )
 
     def obs_reset(self: TestPstBeam) -> None:

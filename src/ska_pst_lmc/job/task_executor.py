@@ -13,13 +13,14 @@ import concurrent.futures
 import logging
 import queue
 import threading
-from typing import Optional, cast
+from typing import Callable, Dict, Optional, Type, cast
 
 from ska_pst_lmc.job.device_task_executor import DeviceCommandTaskExecutor
 from ska_pst_lmc.job.task import (
     DeviceCommandTask,
     DeviceCommandTaskContext,
     JobContext,
+    LambdaTask,
     NoopTask,
     ParallelTask,
     ParallelTaskContext,
@@ -75,11 +76,18 @@ class TaskExecutor:
         self._max_parallel_workers = max_parallel_workers
         self._stop = threading.Event()
         self._running = False
+
+        self.task_routing_map: Dict[Type[Task], Callable[[TaskContext], None]] = {
+            NoopTask: self._handle_noop_task,
+            SequentialTask: self._handle_sequential_task,
+            ParallelTask: self._handle_device_command_task,
+            DeviceCommandTask: self._handle_device_command_task,
+            LambdaTask: self._handle_lambda_task,
+        }
+
         self._device_task_executor = DeviceCommandTaskExecutor(
             task_queue=self._device_command_task_queue, logger=self._logger
         )
-
-        # need 1 worker for main queue, plus max paralled workers
 
     def __del__(self: TaskExecutor) -> None:
         """Tear down class being destroyed."""
@@ -409,6 +417,26 @@ class TaskExecutor:
         else:
             task_context.signal_complete(result=child_task_context.result)
 
+    def _handle_noop_task(self: TaskExecutor, task_context: TaskContext) -> None:
+        """Handle a no-op task.
+
+        This just calls the signal complete on the task context.
+        """
+        self._logger.debug(f"Receieved a NoopTask {task_context}, marking as complete.")
+        task_context.signal_complete()
+
+    def _handle_lambda_task(self: TaskExecutor, task_context: TaskContext) -> None:
+        """Handle a LambdaTask.
+
+        This just calls the action on the task. If successfull it will signal the
+        task context as complete.  Errors are allowed to return as this will be
+        handled in the `_route_task` method.
+        """
+        self._logger.info("Calling a LambdaTask!")
+        task = cast(LambdaTask, task_context.task)
+        task.action()
+        task_context.signal_complete()
+
     def _route_task(self: TaskExecutor, task_context: TaskContext) -> None:
         """Route a task to correct handler method.
 
@@ -421,22 +449,8 @@ class TaskExecutor:
         task = task_context.task
 
         try:
-            if type(task) == NoopTask:
-                # handle this here as there is nothing to do
-                self._logger.debug(f"Receieved a NoopTask {task_context}, marking as complete.")
-                task_context.signal_complete()
-
-            elif type(task) == SequentialTask:
-                self._handle_sequential_task(task_context)
-
-            elif type(task) == ParallelTask:
-                self._handle_parallel_task(task_context)
-
-            elif type(task) == DeviceCommandTask:
-                self._handle_device_command_task(task_context)
-
-            else:
-                raise ValueError(f"Invalid task type {type(task)}")
+            route_action = self.task_routing_map[type(task)]
+            route_action(task_context)
         except Exception as e:
             self._logger.exception(f"Error in handling task {task_context.task_id}", exc_info=True)
             task_context.signal_failed(e)

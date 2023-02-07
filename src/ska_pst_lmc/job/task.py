@@ -26,7 +26,7 @@ from __future__ import annotations
 import threading
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 from ska_pst_lmc.device_proxy import PstDeviceProxy
 from ska_pst_lmc.job.common import DeviceAction
@@ -43,6 +43,21 @@ class NoopTask:
     the `NoopTask` can be inserted and treated like the Python
     `None`.
     """
+
+
+@dataclass
+class LambdaTask:
+    """A class whose operation is to call a lambda.
+
+    The lamdba doesn't take any parameters. Any capturing of
+    variables must be done at the call site of the construction
+    of this task.
+
+    This allows a task to call something like a task_callback
+    to perform an update.
+    """
+
+    action: Callable[[], None]
 
 
 @dataclass
@@ -99,7 +114,7 @@ class DeviceCommandTask:
     command_name: str
 
 
-Task = Union[SequentialTask, ParallelTask, DeviceCommandTask, NoopTask]
+Task = Union[SequentialTask, ParallelTask, DeviceCommandTask, NoopTask, LambdaTask]
 """Type alias for the different sorts of tasks."""
 
 
