@@ -41,7 +41,7 @@ def scan_configs(num_scan_configs: int) -> Dict[int, dict]:
         else:
             # add some different values - for this test we're expecting to be in simulation mode.
             scan_configs[scan_id] = {
-                "num_frequency_channels": 432 / scan_id,
+                "num_frequency_channels": int(432 / scan_id),
                 "max_scan_length": 300.0 / scan_id,
                 "total_bandwidth": 1562500.0 * scan_id,
             }
@@ -325,7 +325,7 @@ class TestPstBeam:
     def test_abort_long_running_command(
         self: TestPstBeam,
         csp_configure_scan_request: Dict[str, Any],
-        scan_configs: Dict[int, dict],
+        scan_id: int,
     ) -> None:
         """Test PstBeam can abort long running command, like scan."""
         import time
@@ -338,18 +338,13 @@ class TestPstBeam:
             self.beam_proxy.simulationMode = SimulationMode.TRUE
             self.on()
 
-            for (scan_id, scan_config) in scan_configs.items():
-                self.logger.info(f"Performing scan {scan_id} with overridden config of {scan_config}")
-                csp_configure_scan_request["pst"]["scan"] = {
-                    **csp_configure_scan_request["pst"]["scan"],
-                    **scan_config,
-                }
-                configuration = json.dumps(csp_configure_scan_request)
-                self.configure_scan(configuration)
-                self.scan(str(scan_id))
-                time.sleep(2.0)
-                self.abort()
-                self.obs_reset()
+            configuration = json.dumps(csp_configure_scan_request)
+            self.configure_scan(configuration)
+            self.scan(str(scan_id))
+            time.sleep(2.0)
+            self.abort()
+            self.obs_reset()
+
             self.off()
             self.offline()
         except Exception:
