@@ -17,7 +17,6 @@ import backoff
 import pytest
 from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
-from ska_tango_base.executor import TaskStatus
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DevState
 
