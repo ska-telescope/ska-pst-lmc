@@ -147,6 +147,7 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
 
         :param task_callback: callable to connect back to the component manager.
         """
+        self.stop_monitoring()
         task_callback(status=TaskStatus.IN_PROGRESS)
         time.sleep(0.01)
         task_callback(progress=31)
@@ -162,11 +163,13 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
 
         :param task_callback: callable to connect back to the component manager.
         """
+        self.stop_monitoring()
         task_callback(status=TaskStatus.IN_PROGRESS)
         self._simulator.abort()
         time.sleep(0.01)
         task_callback(progress=64)
         self._component_state_callback(scanning=False)
+        self._scanning = False
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def reset(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
@@ -174,6 +177,7 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
 
         :param task_callback: callable to connect back to the component manager.
         """
+        self.stop_monitoring()
         task_callback(status=TaskStatus.IN_PROGRESS)
         time.sleep(0.01)
         task_callback(progress=37)
@@ -185,7 +189,7 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
     def _simulated_monitor_data_generator(
         self: PstDspProcessApiSimulator, polling_rate: int
     ) -> Generator[Dict[int, Any], None, None]:
-        while self._scanning:
+        while self._should_be_monitoring():
             self._logger.debug("Background generator is creating data")
             yield self._simulator.get_subband_data()
             self._logger.debug(f"Sleeping {polling_rate}ms")
