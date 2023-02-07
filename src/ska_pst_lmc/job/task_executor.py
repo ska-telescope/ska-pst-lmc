@@ -80,7 +80,7 @@ class TaskExecutor:
         self.task_routing_map: Dict[Type[Task], Callable[[TaskContext], None]] = {
             NoopTask: self._handle_noop_task,
             SequentialTask: self._handle_sequential_task,
-            ParallelTask: self._handle_device_command_task,
+            ParallelTask: self._handle_parallel_task,
             DeviceCommandTask: self._handle_device_command_task,
             LambdaTask: self._handle_lambda_task,
         }
