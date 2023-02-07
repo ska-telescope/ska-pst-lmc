@@ -18,7 +18,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import backoff
 import pytest
+from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import AdminMode, HealthState, ObsState
+from ska_tango_base.executor import TaskStatus
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DeviceProxy, DevState
 from tango.test_context import MultiDeviceTestContext
@@ -202,6 +204,192 @@ class _AttributeEventValidator:
 class TestPstBeam:
     """Test class used for testing the PstReceive TANGO device."""
 
+    @pytest.fixture(autouse=True)
+    def setup_test_class(
+        self: TestPstBeam,
+        device_under_test: DeviceProxy,
+        multidevice_test_context: MultiDeviceTestContext,
+        change_event_callbacks: MockTangoEventCallbackGroup,
+        logger: logging.Logger,
+    ) -> None:
+        """Put test class with Tango devices and event checker."""
+        self.beam_proxy = device_under_test
+        self.dsp_proxy = multidevice_test_context.get_device("test/recv/1")
+        self.recv_proxy = multidevice_test_context.get_device("test/recv/1")
+        self.smrb_proxy = multidevice_test_context.get_device("test/smrb/1")
+
+        self.tango_change_event_helper = TangoChangeEventHelper(
+            device_under_test=self.beam_proxy,
+            change_event_callbacks=change_event_callbacks,
+            logger=logger,
+        )
+
+        self.tango_device_command_checker = TangoDeviceCommandChecker(
+            tango_change_event_helper=self.tango_change_event_helper,
+            change_event_callbacks=change_event_callbacks,
+            logger=logger,
+        )
+
+    @backoff.on_exception(
+        backoff.expo,
+        AssertionError,
+        factor=0.05,
+        max_time=1.0,
+    )
+    def assert_admin_mode(self: TestPstBeam, admin_mode: AdminMode) -> None:
+        """Assert admin mode of devices."""
+        assert self.beam_proxy.adminMode == admin_mode
+        assert self.recv_proxy.adminMode == admin_mode
+        assert self.smrb_proxy.adminMode == admin_mode
+        assert self.dsp_proxy.adminMode == admin_mode
+
+    def assert_state(self: TestPstBeam, state: DevState) -> None:
+        """Assert device state of devices."""
+        assert self.beam_proxy.state() == state
+        assert self.recv_proxy.state() == state
+        assert self.smrb_proxy.state() == state
+        assert self.dsp_proxy.state() == state
+
+    def assert_health_state(self: TestPstBeam, health_state: HealthState) -> None:
+        """Assert health state of devices."""
+        assert self.beam_proxy.healthState == health_state
+        assert self.recv_proxy.healthState == health_state
+        assert self.smrb_proxy.healthState == health_state
+        assert self.dsp_proxy.healthState == health_state
+
+    @backoff.on_exception(
+        backoff.expo,
+        AssertionError,
+        factor=0.05,
+        max_time=1.0,
+    )
+    def assert_obs_state(
+        self: TestPstBeam, obsState: ObsState, subObsState: Optional[ObsState] = None
+    ) -> None:
+        """Assert the observation state of devices."""
+        assert self.beam_proxy.obsState == obsState
+
+        if subObsState is not None:
+            assert self.recv_proxy.obsState == subObsState
+            assert self.smrb_proxy.obsState == subObsState
+            assert self.dsp_proxy.obsState == subObsState
+        else:
+            assert self.recv_proxy.obsState == obsState
+            assert self.smrb_proxy.obsState == obsState
+            assert self.dsp_proxy.obsState == obsState
+
+    def configure_scan(self: TestPstBeam, configuration: str) -> None:
+        """Perform a configure scan."""
+        self.tango_device_command_checker.assert_command(
+            lambda: self.beam_proxy.ConfigureScan(configuration),
+            expected_obs_state_events=[
+                ObsState.CONFIGURING,
+                ObsState.READY,
+            ],
+        )
+        self.assert_obs_state(ObsState.READY)
+
+    def scan(self: TestPstBeam, scan_id: str) -> None:
+        """Perform a scan."""
+        self.tango_device_command_checker.assert_command(
+            lambda: self.beam_proxy.Scan(scan_id),
+            expected_obs_state_events=[
+                ObsState.SCANNING,
+            ],
+        )
+        self.assert_obs_state(ObsState.SCANNING)
+
+    def end_scan(self: TestPstBeam) -> None:
+        """End current scan."""
+        self.tango_device_command_checker.assert_command(
+            lambda: self.beam_proxy.EndScan(),
+            expected_obs_state_events=[
+                ObsState.READY,
+            ],
+        )
+        self.assert_obs_state(ObsState.READY)
+
+    def goto_idle(self: TestPstBeam) -> None:
+        """Put Tango device into IDLE state."""
+        self.tango_device_command_checker.assert_command(
+            lambda: self.beam_proxy.GoToIdle(),
+            expected_obs_state_events=[
+                ObsState.IDLE,
+            ],
+        )
+        self.assert_obs_state(ObsState.IDLE, subObsState=ObsState.EMPTY)
+
+    def abort(self: TestPstBeam) -> None:
+        """Abort long running command."""
+        self.tango_device_command_checker.assert_command(
+            lambda: self.beam_proxy.Abort(),
+            expected_result_code=ResultCode.STARTED,
+            expected_command_status_events=[
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+            ],
+            expected_obs_state_events=[
+                ObsState.ABORTING,
+                ObsState.ABORTED,
+            ],
+            expected_command_result=None,
+        )
+
+    def goto_fault(self: TestPstBeam, fault_msg: str) -> None:
+        """Force device to go to fault."""
+        self.tango_device_command_checker.assert_command(
+            lambda: self.beam_proxy.GoToFault(fault_msg),
+            expected_obs_state_events=[
+                ObsState.FAULT,
+            ],
+        )
+        self.assert_obs_state(ObsState.FAULT)
+        assert self.beam_proxy.healthFailureMessage == fault_msg
+        assert self.beam_proxy.healthState == HealthState.FAILED
+
+    def obs_reset(self: TestPstBeam) -> None:
+        """Reset Tango device."""
+        self.tango_device_command_checker.assert_command(
+            lambda: self.beam_proxy.ObsReset(),
+            expected_obs_state_events=[
+                ObsState.RESETTING,
+                ObsState.IDLE,
+            ],
+        )
+        self.assert_obs_state(ObsState.IDLE, subObsState=ObsState.EMPTY)
+
+    def on(self: TestPstBeam) -> None:
+        """Turn on Tango device."""
+        self.tango_device_command_checker.assert_command(
+            lambda: self.beam_proxy.On(), expected_obs_state_events=[ObsState.IDLE]
+        )
+        self.assert_state(DevState.ON)
+
+        # need to configure beam
+        self.assert_obs_state(ObsState.IDLE, subObsState=ObsState.EMPTY)
+
+    def off(self: TestPstBeam) -> None:
+        """Turn off Tango device."""
+        self.tango_device_command_checker.assert_command(
+            lambda: self.beam_proxy.Off(),
+        )
+        self.assert_state(DevState.OFF)
+        self.assert_health_state(HealthState.OK)
+
+    def online(self: TestPstBeam) -> None:
+        """Put Tango device into ONLINE mode."""
+        self.beam_proxy.adminMode = AdminMode.ONLINE
+        self.assert_admin_mode(admin_mode=AdminMode.ONLINE)
+        self.assert_state(DevState.OFF)
+        self.assert_health_state(HealthState.OK)
+
+    def offline(self: TestPstBeam) -> None:
+        """Put Tango device into OFFLINE mode."""
+        self.beam_proxy.adminMode = AdminMode.OFFLINE
+        self.assert_admin_mode(admin_mode=AdminMode.OFFLINE)
+        self.assert_state(DevState.DISABLE)
+        self.assert_health_state(HealthState.UNKNOWN)
+
     def test_beam_mgmt_State(self: TestPstBeam, device_under_test: DeviceProxy) -> None:
         """
         Test for State.
@@ -230,212 +418,71 @@ class TestPstBeam:
 
     def test_beam_mgmt_configure_then_scan_then_stop(
         self: TestPstBeam,
-        device_under_test: DeviceProxy,
-        multidevice_test_context: MultiDeviceTestContext,
         csp_configure_scan_request: Dict[str, Any],
         scan_id: int,
-        tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
         """Test state model of PstReceive."""
         # need to go through state mode
-        dsp_proxy = multidevice_test_context.get_device("test/recv/1")
-        recv_proxy = multidevice_test_context.get_device("test/recv/1")
-        smrb_proxy = multidevice_test_context.get_device("test/smrb/1")
+        self.assert_health_state(HealthState.UNKNOWN)
 
-        @backoff.on_exception(
-            backoff.expo,
-            AssertionError,
-            factor=0.05,
-            max_time=1.0,
-        )
-        def assert_admin_mode(admin_mode: AdminMode) -> None:
-            assert device_under_test.adminMode == admin_mode
-            assert recv_proxy.adminMode == admin_mode
-            assert smrb_proxy.adminMode == admin_mode
-            assert dsp_proxy.adminMode == admin_mode
-
-        def assert_state(state: DevState) -> None:
-            assert device_under_test.state() == state
-            assert recv_proxy.state() == state
-            assert smrb_proxy.state() == state
-            assert dsp_proxy.state() == state
-
-        def assert_health_state(health_state: HealthState) -> None:
-            assert device_under_test.healthState == health_state
-            assert recv_proxy.healthState == health_state
-            assert smrb_proxy.healthState == health_state
-            assert dsp_proxy.healthState == health_state
-
-        @backoff.on_exception(
-            backoff.expo,
-            AssertionError,
-            factor=0.05,
-            max_time=1.0,
-        )
-        def assert_obstate(obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
-            assert device_under_test.obsState == obsState
-
-            if subObsState is not None:
-                assert recv_proxy.obsState == subObsState
-                assert smrb_proxy.obsState == subObsState
-                assert dsp_proxy.obsState == subObsState
-            else:
-                assert recv_proxy.obsState == obsState
-                assert smrb_proxy.obsState == obsState
-                assert dsp_proxy.obsState == obsState
-
-        assert_health_state(HealthState.UNKNOWN)
-
-        device_under_test.adminMode = AdminMode.ONLINE
-        assert_admin_mode(admin_mode=AdminMode.ONLINE)
-        assert_state(DevState.OFF)
-        assert_health_state(HealthState.OK)
-
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
-        )
-        assert_state(DevState.ON)
-
-        assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
+        self.online()
+        self.on()
 
         configuration = json.dumps(csp_configure_scan_request)
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.ConfigureScan(configuration),
-            expected_obs_state_events=[
-                ObsState.CONFIGURING,
-                ObsState.READY,
-            ],
-        )
-        assert_obstate(ObsState.READY)
+        self.configure_scan(configuration)
 
         scan = str(scan_id)
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.Scan(scan),
-            expected_obs_state_events=[
-                ObsState.SCANNING,
-            ],
-        )
-        assert_obstate(ObsState.SCANNING)
+        self.scan(scan)
+        self.end_scan()
+        self.goto_idle()
+        self.off()
+        self.offline()
 
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.EndScan(),
-            expected_obs_state_events=[
-                ObsState.READY,
-            ],
-        )
-        assert_obstate(ObsState.READY)
+    def test_beam_mgmt_abort(
+        self: TestPstBeam,
+        csp_configure_scan_request: Dict[str, Any],
+        scan_id: int,
+    ) -> None:
+        """Test PstBeam can abort."""
+        self.online()
+        self.on()
 
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToIdle(),
-            expected_obs_state_events=[
-                ObsState.IDLE,
-            ],
-        )
-        assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
+        configuration = json.dumps(csp_configure_scan_request)
+        self.configure_scan(configuration)
 
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.Off(),
-        )
-        assert_state(DevState.OFF)
-        assert_health_state(HealthState.OK)
+        scan = str(scan_id)
+        self.scan(scan)
 
-        device_under_test.adminMode = AdminMode.OFFLINE
-        assert_admin_mode(admin_mode=AdminMode.OFFLINE)
-        assert_health_state(HealthState.UNKNOWN)
+        self.abort()
+        self.obs_reset()
+
+        self.off()
+        self.offline()
 
     def test_beam_mgmt_go_to_fault(
         self: TestPstBeam,
-        device_under_test: DeviceProxy,
-        multidevice_test_context: MultiDeviceTestContext,
-        tango_device_command_checker: TangoDeviceCommandChecker,
-        logger: logging.Logger,
     ) -> None:
         """Test state model of PstReceive."""
-        # need to go through state mode
-        dsp_proxy = multidevice_test_context.get_device("test/dsp/1")
-        recv_proxy = multidevice_test_context.get_device("test/recv/1")
-        smrb_proxy = multidevice_test_context.get_device("test/smrb/1")
+        self.online()
+        self.on()
 
-        @backoff.on_exception(
-            backoff.expo,
-            AssertionError,
-            factor=0.05,
-            max_time=1.0,
-        )
-        def assert_admin_mode(admin_mode: AdminMode) -> None:
-            assert device_under_test.adminMode == admin_mode
-            assert recv_proxy.adminMode == admin_mode
-            assert smrb_proxy.adminMode == admin_mode
-            assert dsp_proxy.adminMode == admin_mode
+        self.goto_fault("this is a fault message")
 
-        def assert_state(state: DevState) -> None:
-            assert device_under_test.state() == state
-            assert recv_proxy.state() == state
-            assert smrb_proxy.state() == state
-            assert dsp_proxy.state() == state
-
-        @backoff.on_exception(
-            backoff.expo,
-            AssertionError,
-            factor=0.05,
-            max_time=1.0,
-        )
-        def assert_obstate(obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
-            assert device_under_test.obsState == obsState
-            assert recv_proxy.obsState == subObsState or obsState
-            assert smrb_proxy.obsState == subObsState or obsState
-            assert dsp_proxy.obsState == subObsState or obsState
-
-        device_under_test.adminMode = AdminMode.ONLINE
-        assert_admin_mode(admin_mode=AdminMode.ONLINE)
-
-        assert_state(DevState.OFF)
-
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
-        )
-        assert_state(DevState.ON)
-
-        # need to configure beam
-        assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
-
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.GoToFault("this is a fault message"),
-            expected_obs_state_events=[
-                ObsState.FAULT,
-            ],
-        )
-        assert_obstate(ObsState.FAULT)
-        assert device_under_test.healthFailureMessage == "this is a fault message"
-        assert device_under_test.healthState == HealthState.FAILED
-
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.ObsReset(),
-            expected_obs_state_events=[
-                ObsState.RESETTING,
-                ObsState.IDLE,
-            ],
-        )
-        assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
-
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.Off(),
-        )
-        assert_state(DevState.OFF)
+        self.obs_reset()
+        self.off()
+        self.offline()
 
     @pytest.mark.forked
     def test_beam_mgmt_scan_monitoring_values(
         self: TestPstBeam,
-        device_under_test: DeviceProxy,
         csp_configure_scan_request: Dict[str, Any],
         scan_id: int,
         tango_change_event_helper: TangoChangeEventHelper,
-        tango_device_command_checker: TangoDeviceCommandChecker,
         change_event_callbacks: MockTangoEventCallbackGroup,
         logger: logging.Logger,
     ) -> None:
         """Test that monitoring values are updated."""
-        device_under_test.adminMode = AdminMode.ONLINE
+        self.online()
 
         device_propertry_config = {
             "test/recv/1": {
@@ -469,7 +516,7 @@ class TestPstBeam:
 
         attribute_event_validators = [
             _AttributeEventValidator(
-                device_under_test=device_under_test,
+                device_under_test=self.beam_proxy,
                 source_device_fqdn=fqdn,
                 attribute_name=attribute_name,
                 default_value=default_value,
@@ -481,9 +528,7 @@ class TestPstBeam:
             for attribute_name, default_value in props.items()
         ]
 
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
-        )
+        self.on()
 
         # assert initial values.
         for v in attribute_event_validators:
@@ -491,31 +536,15 @@ class TestPstBeam:
 
         # need to set up scanning
         configuration = json.dumps(csp_configure_scan_request)
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.ConfigureScan(configuration),
-            expected_obs_state_events=[
-                ObsState.CONFIGURING,
-                ObsState.READY,
-            ],
-        )
+        self.configure_scan(configuration)
 
         scan = str(scan_id)
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.Scan(scan),
-            expected_obs_state_events=[
-                ObsState.SCANNING,
-            ],
-        )
+        self.scan(scan)
 
         # wait for a monitoring period?
         time.sleep(0.25)
 
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.EndScan(),
-            expected_obs_state_events=[
-                ObsState.READY,
-            ],
-        )
+        self.end_scan()
 
         # Assert attribute values
         for v in attribute_event_validators:
@@ -524,71 +553,28 @@ class TestPstBeam:
     @pytest.mark.forked
     def test_beam_mgmt_ends_in_fault_state_when_subordinate_device_ends_up_in_fault_state(
         self: TestPstBeam,
-        device_under_test: DeviceProxy,
-        multidevice_test_context: MultiDeviceTestContext,
-        tango_device_command_checker: TangoDeviceCommandChecker,
         change_event_callbacks: MockTangoEventCallbackGroup,
     ) -> None:
         """Test state model of PstReceive."""
         import random
 
-        # need to go through state mode
-        dsp_proxy = multidevice_test_context.get_device("test/dsp/1")
-        recv_proxy = multidevice_test_context.get_device("test/recv/1")
-        smrb_proxy = multidevice_test_context.get_device("test/smrb/1")
+        curr_health_state = self.beam_proxy.healthState
 
-        @backoff.on_exception(
-            backoff.expo,
-            AssertionError,
-            factor=0.05,
-            max_time=1.0,
-        )
-        def assert_admin_mode(admin_mode: AdminMode) -> None:
-            assert device_under_test.adminMode == admin_mode
-            assert recv_proxy.adminMode == admin_mode
-            assert smrb_proxy.adminMode == admin_mode
-            assert dsp_proxy.adminMode == admin_mode
+        self.online()
 
-        def assert_state(state: DevState) -> None:
-            assert device_under_test.state() == state
-            assert recv_proxy.state() == state
-            assert smrb_proxy.state() == state
-            assert dsp_proxy.state() == state
-
-        @backoff.on_exception(
-            backoff.expo,
-            AssertionError,
-            factor=0.05,
-            max_time=1.0,
-        )
-        def assert_obstate(obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
-            assert device_under_test.obsState == obsState
-            assert recv_proxy.obsState == subObsState or obsState
-            assert smrb_proxy.obsState == subObsState or obsState
-            assert dsp_proxy.obsState == subObsState or obsState
-
-        curr_health_state = device_under_test.healthState
-
-        device_under_test.adminMode = AdminMode.ONLINE
-        assert_admin_mode(admin_mode=AdminMode.ONLINE)
-
-        assert_state(DevState.OFF)
         if curr_health_state != HealthState.UNKNOWN:
             change_event_callbacks["healthState"].assert_change_event(HealthState.UNKNOWN)
 
-        tango_device_command_checker.assert_command(
-            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.IDLE]
-        )
-        assert_state(DevState.ON)
+        self.on()
         change_event_callbacks["healthState"].assert_change_event(HealthState.OK)
 
         rand_device_id = random.randint(0, 2)
         if rand_device_id == 0:
-            subdevice = dsp_proxy
+            subdevice = self.dsp_proxy
         elif rand_device_id == 1:
-            subdevice = recv_proxy
+            subdevice = self.recv_proxy
         else:
-            subdevice = smrb_proxy
+            subdevice = self.smrb_proxy
         fault_msg = f"putting {subdevice.dev_name()} into FAULT"
 
         subdevice.GoToFault(fault_msg)
@@ -597,5 +583,5 @@ class TestPstBeam:
         change_event_callbacks["obsState"].assert_change_event(ObsState.FAULT)
         change_event_callbacks["healthState"].assert_change_event(HealthState.FAILED)
 
-        assert device_under_test.healthFailureMessage == fault_msg
-        assert device_under_test.healthState == HealthState.FAILED
+        assert self.beam_proxy.healthFailureMessage == fault_msg
+        assert self.beam_proxy.healthState == HealthState.FAILED
