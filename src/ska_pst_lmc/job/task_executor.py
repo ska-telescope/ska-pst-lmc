@@ -172,7 +172,7 @@ class TaskExecutor:
             while not self._stop.is_set():
                 try:
                     task_context = cast(JobContext, self._main_task_queue.get(timeout=0.1))
-                    self._logger.debug(f"Main process loop receieved job with context={task_context}")
+                    self._logger.debug(f"Main process loop received job with context={task_context}")
                     self._route_task(task_context)
                 except queue.Empty:
                     continue
@@ -189,7 +189,7 @@ class TaskExecutor:
             while not self._stop.is_set():
                 try:
                     task_context = cast(TaskContext, self._sequential_task_queue.get(timeout=0.1))
-                    self._logger.debug(f"Sequential process loop receieved task with context={task_context}")
+                    self._logger.debug(f"Sequential process loop received task with context={task_context}")
                     self._route_task(task_context)
                     self._logger.debug(f"Awaiting for sequential task {task_context.task_id} to complete")
                     task_context.evt.wait()
@@ -213,7 +213,7 @@ class TaskExecutor:
             while not self._stop.is_set():
                 try:
                     task_context = self._parallel_task_queue.get(timeout=0.1)
-                    self._logger.debug(f"Parallel process loop receieved task with context={task_context}")
+                    self._logger.debug(f"Parallel process loop received task with context={task_context}")
                     self._handle_parallel_subtask(task_context=task_context)
                 except queue.Empty:
                     continue
@@ -422,7 +422,7 @@ class TaskExecutor:
 
         This just calls the signal complete on the task context.
         """
-        self._logger.debug(f"Receieved a NoopTask {task_context}, marking as complete.")
+        self._logger.debug(f"Received a NoopTask {task_context}, marking as complete.")
         task_context.signal_complete()
 
     def _handle_lambda_task(self: TaskExecutor, task_context: TaskContext) -> None:

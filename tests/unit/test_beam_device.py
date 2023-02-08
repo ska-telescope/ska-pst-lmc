@@ -201,7 +201,7 @@ class _AttributeEventValidator:
 
 @pytest.mark.forked
 class TestPstBeam:
-    """Test class used for testing the PstReceive TANGO device."""
+    """Test class used for testing the PstBeam TANGO device."""
 
     @pytest.fixture(autouse=True)
     def setup_test_class(
@@ -415,7 +415,7 @@ class TestPstBeam:
         csp_configure_scan_request: Dict[str, Any],
         scan_id: int,
     ) -> None:
-        """Test state model of PstReceive."""
+        """Test state model of PstBeam can configure, scan and stop."""
         # need to go through state mode
         self.assert_health_state(HealthState.UNKNOWN)
 
@@ -438,6 +438,7 @@ class TestPstBeam:
         scan_id: int,
     ) -> None:
         """Test PstBeam can abort."""
+        self.assert_health_state(HealthState.UNKNOWN)
         self.online()
         self.on()
 
@@ -456,7 +457,8 @@ class TestPstBeam:
     def test_beam_mgmt_go_to_fault(
         self: TestPstBeam,
     ) -> None:
-        """Test state model of PstReceive."""
+        """Test state model of PstBeam and go to Fault state."""
+        self.assert_health_state(HealthState.UNKNOWN)
         self.online()
         self.on()
 
@@ -476,6 +478,8 @@ class TestPstBeam:
         logger: logging.Logger,
     ) -> None:
         """Test that monitoring values are updated."""
+        self.assert_health_state(HealthState.UNKNOWN)
+
         self.online()
 
         device_propertry_config = {
@@ -549,16 +553,11 @@ class TestPstBeam:
         self: TestPstBeam,
         change_event_callbacks: MockTangoEventCallbackGroup,
     ) -> None:
-        """Test state model of PstReceive."""
+        """Test state model of PstBeam ends up in FAULT when subordinate device faults."""
         import random
 
-        curr_health_state = self.beam_proxy.healthState
-
+        self.assert_health_state(HealthState.UNKNOWN)
         self.online()
-
-        if curr_health_state != HealthState.UNKNOWN:
-            change_event_callbacks["healthState"].assert_change_event(HealthState.UNKNOWN)
-
         self.on()
         change_event_callbacks["healthState"].assert_change_event(HealthState.OK)
 

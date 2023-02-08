@@ -292,8 +292,6 @@ def test_beam_cm_calls_abort_on_subdevices(
     recv_device_proxy.Abort.assert_called_once()
     dsp_device_proxy.Abort.assert_called_once()
 
-    # task_executor.abort.assert_called_once()
-
 
 @pytest.fixture
 def request_params(
