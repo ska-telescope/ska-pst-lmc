@@ -160,11 +160,11 @@ OCI_IMAGES = ska-pst-lmc
 TANGO_HOST ?= databaseds-tango-base-test:10000
 
 ifneq ($(CI_REGISTRY),)
-K8S_TEST_TANGO_IMAGE = --set ska_pst_lmc.ska_pst_lmc.image.tag=$(VERSION)-dev.c$(CI_COMMIT_SHORT_SHA) \
-        --set ska_pst_lmc.ska_pst_lmc.image.registry=$(CI_REGISTRY)/ska-telescope/pst/ska-pst-lmc
+K8S_TEST_TANGO_IMAGE = --set ska-pst-lmc.image.tag=$(VERSION)-dev.c$(CI_COMMIT_SHORT_SHA) \
+        --set ska-pst-lmc.image.registry=$(CI_REGISTRY)/ska-telescope/pst/ska-pst-lmc
 K8S_TEST_IMAGE_TO_TEST = $(CI_REGISTRY)/ska-telescope/pst/ska-pst-lmc/ska-pst-lmc:$(VERSION)-dev.c$(CI_COMMIT_SHORT_SHA)
 else
-K8S_TEST_TANGO_IMAGE = --set ska_pst_lmc.ska_pst_lmc.image.tag=$(VERSION)
+K8S_TEST_TANGO_IMAGE = --set ska-pst-lmc.image.tag=$(VERSION)
 K8S_TEST_IMAGE_TO_TEST = $(CAR_OCI_REGISTRY_HOST)/$(NAME):$(VERSION)
 endif
 
