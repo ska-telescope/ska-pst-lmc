@@ -163,6 +163,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
 
         :param task_callback: callable to connect back to the component manager.
         """
+        self.stop_monitoring()
         task_callback(status=TaskStatus.IN_PROGRESS)
         time.sleep(0.01)
         task_callback(progress=32)
@@ -179,10 +180,12 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
 
         :param task_callback: callable to connect back to the component manager.
         """
+        self.stop_monitoring()
         task_callback(status=TaskStatus.IN_PROGRESS)
         time.sleep(0.01)
         task_callback(progress=60)
         self._component_state_callback(scanning=False)
+        self._scanning = False
         self._simulator.abort()
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
@@ -191,6 +194,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
 
         :param task_callback: callable to connect back to the component manager.
         """
+        self.stop_monitoring()
         task_callback(status=TaskStatus.IN_PROGRESS)
         time.sleep(0.01)
         task_callback(progress=47)

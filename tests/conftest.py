@@ -394,8 +394,16 @@ def additional_change_events_callbacks() -> List[str]:
     return []
 
 
+@pytest.fixture
+def change_event_callback_time() -> float:
+    """Get timeout used for change event callbacks."""
+    return 1.0
+
+
 @pytest.fixture()
-def change_event_callbacks(additional_change_events_callbacks: List[str]) -> MockTangoEventCallbackGroup:
+def change_event_callbacks(
+    additional_change_events_callbacks: List[str], change_event_callback_time: float
+) -> MockTangoEventCallbackGroup:
     """
     Return a dictionary of Tango device change event callbacks with asynchrony support.
 
@@ -409,7 +417,7 @@ def change_event_callbacks(additional_change_events_callbacks: List[str]) -> Moc
         "obsState",
         "healthState",
         *additional_change_events_callbacks,
-        timeout=5.0,
+        timeout=change_event_callback_time,
     )
 
 
@@ -518,11 +526,11 @@ class TangoDeviceCommandChecker:
         self._tango_change_event_helper = tango_change_event_helper
         self._command_states: Dict[str, str] = {}
 
-    def assert_command(
+    def assert_command(  # noqa: C901 - override checking of complexity for this test
         self: TangoDeviceCommandChecker,
         command: Callable,
         expected_result_code: ResultCode = ResultCode.QUEUED,
-        expected_command_result: str = '"Completed"',
+        expected_command_result: Optional[str] = '"Completed"',
         expected_command_status_events: List[TaskStatus] = [
             TaskStatus.QUEUED,
             TaskStatus.IN_PROGRESS,
@@ -598,9 +606,10 @@ class TangoDeviceCommandChecker:
         else:
             self.change_event_callbacks["longRunningCommandStatus"].assert_not_called()
 
-        self.change_event_callbacks["longRunningCommandResult"].assert_change_event(
-            (command_id, expected_command_result),
-        )
+        if expected_command_result is not None:
+            self.change_event_callbacks["longRunningCommandResult"].assert_change_event(
+                (command_id, expected_command_result),
+            )
 
         if expected_obs_state_events and [current_obs_state] != expected_obs_state_events:
             for expected_obs_state in expected_obs_state_events:

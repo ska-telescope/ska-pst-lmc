@@ -150,6 +150,7 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
 
         :param task_callback: callable to connect back to the component manager.
         """
+        self.stop_monitoring()
         task_callback(status=TaskStatus.IN_PROGRESS)
         time.sleep(0.01)
         task_callback(progress=37)
@@ -165,11 +166,13 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
 
         :param task_callback: callable to connect back to the component manager.
         """
+        self.stop_monitoring()
         task_callback(status=TaskStatus.IN_PROGRESS)
         self._simulator.abort()
         time.sleep(0.01)
         task_callback(progress=59)
         self._component_state_callback(scanning=False)
+        self._scanning = False
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def reset(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
@@ -177,6 +180,7 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
 
         :param task_callback: callable to connect back to the component manager.
         """
+        self.stop_monitoring()
         task_callback(status=TaskStatus.IN_PROGRESS)
         time.sleep(0.01)
         task_callback(progress=37)

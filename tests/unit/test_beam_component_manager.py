@@ -271,22 +271,26 @@ def test_beam_cm_calls_abort_on_subdevices(
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
 ) -> None:
-    """Test component manager delegates setting admin mode to sub-component devices."""
-    task_executor = MagicMock()
-    task_executor.abort.return_value = (TaskStatus.IN_PROGRESS, "Aborting tasks")
+    """Test component manager calls Abort to sub-component devices."""
+    task_callback = _ThreadingCallback()
 
-    component_manager._task_executor = task_executor
-    callback = MagicMock()
-    (status, message) = component_manager.abort(task_callback=callback)
+    [
+        setattr(  # type: ignore
+            d, "Abort", MagicMock(name=f"{d}.Abort", return_value=([ResultCode.OK], ["Completed"]))
+        )
+        for d in component_manager._remote_devices
+    ]
+
+    (status, message) = component_manager.abort(task_callback=task_callback)
 
     assert status == TaskStatus.IN_PROGRESS
-    assert message == "Aborting tasks"
+    assert message == "Aborting"
+
+    task_callback.wait()
 
     smrb_device_proxy.Abort.assert_called_once()
     recv_device_proxy.Abort.assert_called_once()
     dsp_device_proxy.Abort.assert_called_once()
-
-    task_executor.abort.assert_called_once()
 
 
 @pytest.fixture

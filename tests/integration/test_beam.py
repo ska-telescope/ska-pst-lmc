@@ -15,12 +15,19 @@ from typing import Any, Dict, Optional
 
 import backoff
 import pytest
+from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DevState
 
 from ska_pst_lmc import DeviceProxyFactory
 from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker
+
+
+@pytest.fixture
+def change_event_callback_time() -> float:
+    """Get timeout used for change event callbacks."""
+    return 5.0
 
 
 @pytest.fixture
@@ -40,9 +47,8 @@ def scan_configs(num_scan_configs: int) -> Dict[int, dict]:
         else:
             # add some different values - for this test we're expecting to be in simulation mode.
             scan_configs[scan_id] = {
-                "centre_frequency": 1000000000.0 * scan_id,
-                "num_frequency_channels": 432 * scan_id,
-                "max_scan_length": 300.0 * scan_id,
+                "num_frequency_channels": int(432 / scan_id),
+                "max_scan_length": 300.0 / scan_id,
                 "total_bandwidth": 1562500.0 * scan_id,
             }
 
@@ -116,6 +122,17 @@ class TestPstBeam:
             ],
         )
         self.assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
+
+    def abort(self: TestPstBeam) -> None:
+        """Abort long running command."""
+        self.tango_device_command_checker.assert_command(
+            lambda: self.beam_proxy.Abort(),
+            expected_result_code=ResultCode.STARTED,
+            expected_obs_state_events=[
+                ObsState.ABORTING,
+                ObsState.ABORTED,
+            ],
+        )
 
     def obs_reset(self: TestPstBeam) -> None:
         """Reset Tango device."""
@@ -291,6 +308,53 @@ class TestPstBeam:
             self.offline()
         except Exception:
             self.logger.exception("Error in trying test_configure_then_scan_then_stop.", exc_info=False)
+
+            for p in [
+                "longRunningCommandStatus",
+                "longRunningCommandResult",
+                "obsState",
+                "adminMode",
+                "state()",
+            ]:
+                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy]:
+                    if p == "state()":
+                        self.logger.info(f"{d}.{p} = {d.state()}")
+                    else:
+                        if d.state() != DevState.DISABLE:
+                            self.logger.info(f"{d}.{p} = {getattr(d, p)}")
+
+            raise
+        finally:
+            self.tango_change_event_helper.release()
+
+    @pytest.mark.forked
+    def test_abort_long_running_command(
+        self: TestPstBeam,
+        csp_configure_scan_request: Dict[str, Any],
+        scan_id: int,
+    ) -> None:
+        """Test PstBeam can abort long running command, like scan."""
+        import time
+
+        try:
+            self.setup_test_state()
+            self.assert_state(DevState.DISABLE)
+
+            self.online()
+            self.beam_proxy.simulationMode = SimulationMode.TRUE
+            self.on()
+
+            configuration = json.dumps(csp_configure_scan_request)
+            self.configure_scan(configuration)
+            self.scan(str(scan_id))
+            time.sleep(2.0)
+            self.abort()
+            self.obs_reset()
+
+            self.off()
+            self.offline()
+        except Exception:
+            self.logger.exception("Error in trying test_abort_long_running_command.", exc_info=False)
 
             for p in [
                 "longRunningCommandStatus",

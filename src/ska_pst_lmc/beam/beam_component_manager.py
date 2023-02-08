@@ -23,7 +23,7 @@ from ska_pst_lmc.beam.beam_device_interface import PstBeamDeviceInterface
 from ska_pst_lmc.component import as_device_attribute_name
 from ska_pst_lmc.component.component_manager import PstComponentManager
 from ska_pst_lmc.device_proxy import ChangeEventSubscription, DeviceProxyFactory, PstDeviceProxy
-from ska_pst_lmc.job import DeviceCommandTask, NoopTask, SequentialTask, Task, TaskExecutor
+from ska_pst_lmc.job import DeviceCommandTask, LambdaTask, NoopTask, SequentialTask, Task, TaskExecutor
 from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.callback import Callback, callback_safely
 
@@ -895,12 +895,46 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             completion_callback=_completion_callback,
         )
 
+    def _abort_task(self: PstBeamComponentManager) -> Task:
+        # find devices that need to be put into an aborted state. These are any that
+        # are not in ABORTED, FAULT or EMPTY
+        devices_to_abort = [
+            d
+            for d in self._remote_devices
+            if d.obsState not in [ObsState.ABORTED, ObsState.FAULT, ObsState.EMPTY]
+        ]
+
+        abort_subtask: Task = NoopTask()
+        if len(devices_to_abort) > 0:
+            abort_subtask = DeviceCommandTask(
+                devices=devices_to_abort,
+                action=lambda d: d.Abort(),
+                command_name="Abort",
+            )
+        return abort_subtask
+
     def abort(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
         """Tell the component to abort whatever it was doing."""
-        self._smrb_device.Abort()
-        self._recv_device.Abort()
-        self._dsp_device.Abort()
-        return self.abort_commands(task_callback)
+        # return self.abort_commands(task_callback=task_callback)
+
+        def _completion_callback(task_callback: Callable) -> None:
+            self.logger.debug("All the 'Abort' commands have completed.")
+            self._push_component_state_update(scanning=False)
+            self.abort_commands()
+            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+
+        self._submit_remote_job(
+            job=SequentialTask(
+                subtasks=[
+                    LambdaTask(action=lambda: callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)),
+                    self._abort_task(),
+                ]
+            ),
+            task_callback=task_callback,
+            completion_callback=_completion_callback,
+        )
+
+        return TaskStatus.IN_PROGRESS, "Aborting"
 
     def obsreset(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
         """Reset the component and put it into a READY state."""
@@ -911,20 +945,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             self._device_interface.update_health_state(health_state=HealthState.OK)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-        # find devices that need to be put into an aborted state. These are any that
-        # are not in ABORTED, FAULT or EMPTY
-        devices_to_abort = [
-            d
-            for d in self._remote_devices
-            if d.obsState not in [ObsState.ABORTED, ObsState.FAULT, ObsState.EMPTY]
-        ]
-        abort_subtask: Task = NoopTask()
-        if len(devices_to_abort) > 0:
-            abort_subtask = DeviceCommandTask(
-                devices=devices_to_abort,
-                action=lambda d: d.Abort(),
-                command_name="Abort",
-            )
+        abort_subtask: Task = self._abort_task()
 
         # call ObsReset on devices that aren't in EMPTY state.  This will move them
         # into IDLE state.

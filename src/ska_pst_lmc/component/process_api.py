@@ -171,17 +171,22 @@ class PstProcessApiSimulator(PstProcessApi):
         **kwargs: Any,
     ) -> None:
         """Initialise the API."""
-        self._monitor_abort_event: Optional[threading.Event] = None
+        self._monitor_abort_event = threading.Event()
         self._scanning = False
         super().__init__(logger=logger, component_state_callback=component_state_callback, **kwargs)
+
+    def _should_be_monitoring(self: PstProcessApiSimulator) -> bool:
+        if self._monitor_abort_event.is_set():
+            return False
+
+        return self._scanning
 
     def connect(self: PstProcessApiSimulator) -> None:
         """Connect to the external process."""
 
     def disconnect(self: PstProcessApiSimulator) -> None:
         """Disconnect from the external process."""
-        if self._monitor_abort_event is not None:
-            self._monitor_abort_event.set()
+        self.stop_monitoring()
 
     def _simulated_monitor_data_generator(
         self: PstProcessApiSimulator, polling_rate: int
@@ -202,8 +207,7 @@ class PstProcessApiSimulator(PstProcessApi):
         if self._scanning:
             self._scanning = False
 
-        if self._monitor_abort_event is not None:
-            self._monitor_abort_event.set()
+        self.stop_monitoring()
 
         self._component_state_callback(obsfault=True)
 
@@ -228,10 +232,10 @@ class PstProcessApiSimulator(PstProcessApi):
         """
         self._logger.debug(f"Starting to monitor at {polling_rate}")
         try:
-            if monitor_abort_event is None:
-                self._monitor_abort_event = threading.Event()
-            else:
+            if monitor_abort_event is not None:
                 self._monitor_abort_event = monitor_abort_event
+            # make sure we reset the monitoring event
+            self._monitor_abort_event.clear()
 
             for data in TimeoutIterator(
                 self._simulated_monitor_data_generator(polling_rate=polling_rate),
@@ -243,6 +247,10 @@ class PstProcessApiSimulator(PstProcessApi):
                     subband_monitor_data_callback(subband_id=subband_id, subband_data=subband_data)
         except Exception:
             self._logger.error("error while monitoring.", exc_info=True)
+
+    def stop_monitoring(self: PstProcessApiSimulator) -> None:
+        """Stop the monitoring background thread by setting event."""
+        self._monitor_abort_event.set()
 
 
 class PstProcessApiGrpc(PstProcessApi):
