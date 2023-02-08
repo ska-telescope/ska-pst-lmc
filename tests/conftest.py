@@ -394,8 +394,16 @@ def additional_change_events_callbacks() -> List[str]:
     return []
 
 
+@pytest.fixture
+def change_event_callback_time() -> float:
+    """Get timeout used for change event callbacks."""
+    return 1.0
+
+
 @pytest.fixture()
-def change_event_callbacks(additional_change_events_callbacks: List[str]) -> MockTangoEventCallbackGroup:
+def change_event_callbacks(
+    additional_change_events_callbacks: List[str], change_event_callback_time: float
+) -> MockTangoEventCallbackGroup:
     """
     Return a dictionary of Tango device change event callbacks with asynchrony support.
 
@@ -409,7 +417,7 @@ def change_event_callbacks(additional_change_events_callbacks: List[str]) -> Moc
         "obsState",
         "healthState",
         *additional_change_events_callbacks,
-        timeout=1.0,
+        timeout=change_event_callback_time,
     )
 
 

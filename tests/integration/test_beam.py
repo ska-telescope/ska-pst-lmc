@@ -25,6 +25,12 @@ from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker
 
 
 @pytest.fixture
+def change_event_callback_time() -> float:
+    """Get timeout used for change event callbacks."""
+    return 5.0
+
+
+@pytest.fixture
 def num_scan_configs() -> int:
     """Get number of scan configurations to create."""
     return 3
