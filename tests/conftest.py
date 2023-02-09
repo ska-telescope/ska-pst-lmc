@@ -94,8 +94,6 @@ def csp_configure_scan_request() -> Dict[str, Any]:
             "frequency_band": "1",
             "subarray_id": 1,
         },
-        "subarray": {"subarray_name": "test subarray"},
-        "cbf": {"fsp": []},
         "pst": {
             "scan": {
                 "activation_time": "2022-01-19T23:07:45Z",
