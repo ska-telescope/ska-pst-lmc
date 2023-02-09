@@ -30,7 +30,7 @@ from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
 from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
-from tests.conftest import _ThreadingCallback
+from tests.conftest import _ThreadingCallback, calc_expected_beam_channel_block_configuration
 
 
 @pytest.fixture
@@ -513,35 +513,27 @@ def test_beam_cm_channel_block_configuration(
     # still need worry about the event callback to TANGO device
     cast(MagicMock, property_callback).assert_called_with("channel_block_configuration", "{}")
 
-    callback(
-        json.dumps(
-            {
-                "common": {"nsubband": 2},
-                "subbands": {
-                    1: {
-                        "data_host": "10.10.0.1",
-                        "data_port": 30000,
-                        "start_channel": 0,
-                        "end_channel": 10,
-                    },
-                    2: {
-                        "data_host": "10.10.0.1",
-                        "data_port": 30001,
-                        "start_channel": 10,
-                        "end_channel": 16,
-                    },
-                },
-            }
-        )
-    )
-
-    expected_channel_block_configuration = {
-        "num_channel_blocks": 2,
-        "channel_blocks": [
-            {"data_host": "10.10.0.1", "data_port": 30000, "start_channel": 0, "num_channels": 10},
-            {"data_host": "10.10.0.1", "data_port": 30001, "start_channel": 10, "num_channels": 6},
-        ],
+    recv_subband_config = {
+        "common": {"nsubband": 2},
+        "subbands": {
+            1: {
+                "data_host": "10.10.0.1",
+                "data_port": 30000,
+                "start_channel": 0,
+                "end_channel": 10,
+            },
+            2: {
+                "data_host": "10.10.0.1",
+                "data_port": 30001,
+                "start_channel": 10,
+                "end_channel": 16,
+            },
+        },
     }
+
+    callback(json.dumps(recv_subband_config))
+
+    expected_channel_block_configuration = calc_expected_beam_channel_block_configuration(recv_subband_config)
 
     assert component_manager.channel_block_configuration == expected_channel_block_configuration
     cast(MagicMock, property_callback).assert_called_with(

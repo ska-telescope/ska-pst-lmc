@@ -773,3 +773,23 @@ def device_interface(
     device_interface.facility = telescope_facility
 
     return device_interface
+
+
+def calc_expected_beam_channel_block_configuration(recv_subband_config: Dict[str, Any]) -> Dict[str, Any]:
+    """Calculate the expected channel block configuration JSON."""
+    num_subband = recv_subband_config["common"]["nsubband"]
+    subbands = recv_subband_config["subbands"]
+
+    return {
+        "num_channel_blocks": num_subband,
+        "channel_blocks": [
+            {
+                "destination_host": subbands[subband_id]["data_host"],
+                "destination_port": subbands[subband_id]["data_port"],
+                "start_pst_channel": subbands[subband_id]["start_channel"],
+                "num_pst_channels": subbands[subband_id]["end_channel"]
+                - subbands[subband_id]["start_channel"],
+            }
+            for subband_id in range(1, num_subband + 1)
+        ],
+    }

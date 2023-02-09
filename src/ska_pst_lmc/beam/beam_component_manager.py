@@ -214,16 +214,16 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
                 "num_channel_blocks": 2,
                 "channel_blocks": [
                     {
-                        "data_host": "10.10.0.1",
-                        "data_port": 20000,
-                        "start_channel": 0,
-                        "num_channels": 12,
+                        "destination_host": "10.10.0.1",
+                        "destination_port": 20000,
+                        "start_pst_channel": 0,
+                        "num_pst_channels": 12,
                     },
                     {
-                        "data_host": "10.10.0.1",
-                        "data_port": 20001,
-                        "start_channel": 12,
-                        "num_channels": 10,
+                        "destination_host": "10.10.0.1",
+                        "destination_port": 20001,
+                        "start_pst_channel": 12,
+                        "num_pst_channels": 10,
                     },
                 ]
             }
@@ -235,10 +235,10 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
                 "num_channel_blocks": subband_resources["common"]["nsubband"],
                 "channel_blocks": [
                     {
-                        "data_host": subband["data_host"],
-                        "data_port": subband["data_port"],
-                        "start_channel": subband["start_channel"],
-                        "num_channels": subband["end_channel"] - subband["start_channel"],
+                        "destination_host": subband["data_host"],
+                        "destination_port": subband["data_port"],
+                        "start_pst_channel": subband["start_channel"],
+                        "num_pst_channels": subband["end_channel"] - subband["start_channel"],
                     }
                     for subband in subband_resources["subbands"].values()
                 ],

@@ -14,7 +14,7 @@ import logging
 import queue
 import sys
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import backoff
 import pytest
@@ -27,7 +27,11 @@ from tango.test_context import MultiDeviceTestContext
 from ska_pst_lmc import PstBeam, PstDsp, PstReceive, PstSmrb
 from ska_pst_lmc.device_proxy import DeviceProxyFactory
 from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
-from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker
+from tests.conftest import (
+    TangoChangeEventHelper,
+    TangoDeviceCommandChecker,
+    calc_expected_beam_channel_block_configuration,
+)
 
 
 @pytest.fixture
@@ -55,6 +59,7 @@ def additional_change_events_callbacks() -> List[str]:
         "availableDiskSpace",
         "availableRecordingTime",
         "ringBufferUtilisation",
+        "channelBlockConfiguration",
     ]
 
 
@@ -149,19 +154,26 @@ class _AttributeEventValidator:
         self.logger = logger
         self.device_under_test = device_under_test
         self.source_device = DeviceProxyFactory.get_device(source_device_fqdn)
-        self.attribute_name = attribute_name
+        if attribute_name == "subbandBeamConfiguration":
+            self.attribute_name = "channelBlockConfiguration"
+        else:
+            self.attribute_name = attribute_name
         self.default_value = default_value
 
         self.attribute_value_queue: queue.Queue[Any] = queue.Queue()
         self.change_event_callbacks = change_event_callbacks
 
-        tango_change_event_helper.subscribe(attribute_name)
-
+        tango_change_event_helper.subscribe(self.attribute_name)
         self.source_device.subscribe_change_event(attribute_name, self._store_value)
 
     def _store_value(self: _AttributeEventValidator, value: Any) -> None:
-        if self.attribute_name == "availableDiskSpace":
-            self.logger.info(f"storing availableDiskSpace = {value}")
+        if self.attribute_name == "channelBlockConfiguration":
+            # we need to map from subbandBeamConfiguration
+            recv_subband_config = cast(Dict[str, Any], json.loads(value))
+            if len(recv_subband_config) == 0:
+                value = json.dumps(recv_subband_config)
+            else:
+                value = json.dumps(calc_expected_beam_channel_block_configuration(recv_subband_config))
 
         self.attribute_value_queue.put(value)
 
@@ -169,9 +181,13 @@ class _AttributeEventValidator:
         """Assert initial values of BEAM and subordinate device as the same."""
 
         def _get_values() -> Tuple[Any, Any]:
-            return getattr(self.device_under_test, self.attribute_name), getattr(
-                self.source_device, self.attribute_name
-            )
+            beam_value = getattr(self.device_under_test, self.attribute_name)
+            if self.attribute_name == "channelBlockConfiguration":
+                source_value = getattr(self.source_device, "subbandBeamConfiguration")
+            else:
+                source_value = getattr(self.source_device, self.attribute_name)
+
+            return beam_value, source_value
 
         initial_values = _get_values()
 
@@ -192,9 +208,6 @@ class _AttributeEventValidator:
         for idx, value in enumerate(self.attribute_value_queue.queue):
             if value is None:
                 break
-
-            if self.attribute_name == "availableDiskSpace":
-                self.logger.info(f"Asserting availableDiskSpace == {value}")
 
             self.change_event_callbacks[self.attribute_name].assert_change_event(value, lookahead=3)
 
@@ -482,7 +495,7 @@ class TestPstBeam:
 
         self.online()
 
-        device_propertry_config = {
+        device_propertry_config: Dict[str, Dict[str, Any]] = {
             "test/recv/1": {
                 "dataReceiveRate": 0.0,
                 "dataReceived": 0,
@@ -500,6 +513,7 @@ class TestPstBeam:
                 "timestampSyncErrorPacketRate": 0.0,
                 "seqNumberSyncErrorPackets": 0,
                 "seqNumberSyncErrorPacketRate": 0.0,
+                "subbandBeamConfiguration": json.dumps({}),
             },
             "test/dsp/1": {
                 "dataRecordRate": 0.0,
