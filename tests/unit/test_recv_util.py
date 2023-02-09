@@ -82,6 +82,7 @@ def test_calculate_receive_subband_resources(
     "frequency_band, expected_udp_format",
     [
         (None, "LowPST"),
+        ("low", "LowPST"),
         ("1", "MidPSTBand1"),
         ("2", "MidPSTBand2"),
         ("3", "MidPSTBand3"),

@@ -762,10 +762,9 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         common_configure = configuration["common"]
         pst_configuration = configuration["pst"]["scan"]
 
-        # hack to remove frequency band for Low as the JSON has
-        # the band as being mandatory but it's only needed for Mid.
         if self._device_interface.facility == TelescopeFacilityEnum.Low:
-            del common_configure["frequency_band"]
+            # force using a low Frequency Band if the facility is SKALow
+            common_configure["frequency_band"] = "low"
 
         def _completion_callback(task_callback: Callable) -> None:
             from ska_pst_lmc.dsp.dsp_util import generate_dsp_scan_request

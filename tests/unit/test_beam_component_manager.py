@@ -734,17 +734,17 @@ def test_beam_cm_propagates_subordinate_device_error_messages_on_faults(
 
 
 @pytest.mark.parametrize("telescope_facility", [TelescopeFacilityEnum.Low, TelescopeFacilityEnum.Mid])
-def test_beam_cm_removes_frequency_band_only_for_low(
+def test_beam_cm_updates_frequency_band_to_low_for_skalow(
     component_manager: PstBeamComponentManager,
     csp_configure_scan_request: Dict[str, Any],
     configure_scan_request: Dict[str, Any],
     telescope_facility: TelescopeFacilityEnum,
 ) -> None:
     """Test that component manager removes frequency band for Low but not High."""
-    expected_scan_request_str = json.dumps(configure_scan_request)
     assert "frequency_band" in csp_configure_scan_request["common"]
     if telescope_facility == TelescopeFacilityEnum.Low:
         assert "frequency_band" not in configure_scan_request
+        configure_scan_request["frequency_band"] = "low"
     else:
         assert "frequency_band" in configure_scan_request
 
@@ -764,11 +764,14 @@ def test_beam_cm_removes_frequency_band_only_for_low(
 
     task_callback.wait()
 
-    [
-        getattr(d, m).assert_called_once_with(expected_scan_request_str)  # type: ignore
-        for d in component_manager._remote_devices
-        for m in ["ConfigureScan", "ConfigureBeam"]
-    ]
+    for m in ["ConfigureScan", "ConfigureBeam"]:
+        for d in component_manager._remote_devices:
+            mock = cast(MagicMock, getattr(d, m))
+            mock.assert_called_once()
+            kall = mock.call_args
+            assert len(kall.args) == 1
+            request = json.loads(kall.args[0])
+            assert request == configure_scan_request
 
     calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
     task_callback.assert_has_calls(calls)
