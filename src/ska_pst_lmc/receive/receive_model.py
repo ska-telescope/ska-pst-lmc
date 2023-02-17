@@ -98,5 +98,7 @@ class ReceiveDataStore(MonitorDataStore[ReceiveData, ReceiveData]):
             monitor_data.data_received += subband_monitor_data.data_received
             monitor_data.data_receive_rate += subband_monitor_data.data_receive_rate
             monitor_data.misordered_packets += subband_monitor_data.misordered_packets
+            monitor_data.malformed_packets += subband_monitor_data.malformed_packets
+            monitor_data.misdirected_packets += subband_monitor_data.misdirected_packets
 
         return monitor_data
