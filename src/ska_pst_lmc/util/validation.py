@@ -42,7 +42,7 @@ def pst_schema(version: str, strictness: Strictness = Strictness.Permissive) -> 
     """Get the PST.LMC schema.
 
     This is a scaled down schema from the CSP.LMC schema. If we used
-    the CSP schema the `subarray` and `cbf` fields would be need
+    the CSP schema the `subarray` and `cbf` fields would be needed.
     """
     from inspect import cleandoc
 
@@ -51,7 +51,7 @@ def pst_schema(version: str, strictness: Strictness = Strictness.Permissive) -> 
 
     strict = strictness == Strictness.Strict
     schema = TMSchema.new(
-        "PST Configure Scan Schame",
+        "PST Configure Scan Schema",
         version,
         strict,
         description=cleandoc(
