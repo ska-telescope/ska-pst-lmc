@@ -214,16 +214,16 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
                 "num_channel_blocks": 2,
                 "channel_blocks": [
                     {
-                        "data_host": "10.10.0.1",
-                        "data_port": 20000,
-                        "start_channel": 0,
-                        "num_channels": 12,
+                        "destination_host": "10.10.0.1",
+                        "destination_port": 20000,
+                        "start_pst_channel": 0,
+                        "num_pst_channels": 12,
                     },
                     {
-                        "data_host": "10.10.0.1",
-                        "data_port": 20001,
-                        "start_channel": 12,
-                        "num_channels": 10,
+                        "destination_host": "10.10.0.1",
+                        "destination_port": 20001,
+                        "start_pst_channel": 12,
+                        "num_pst_channels": 10,
                     },
                 ]
             }
@@ -235,10 +235,10 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
                 "num_channel_blocks": subband_resources["common"]["nsubband"],
                 "channel_blocks": [
                     {
-                        "data_host": subband["data_host"],
-                        "data_port": subband["data_port"],
-                        "start_channel": subband["start_channel"],
-                        "num_channels": subband["end_channel"] - subband["start_channel"],
+                        "destination_host": subband["data_host"],
+                        "destination_port": subband["data_port"],
+                        "start_pst_channel": subband["start_channel"],
+                        "num_pst_channels": subband["end_channel"] - subband["start_channel"],
                     }
                     for subband in subband_resources["subbands"].values()
                 ],
@@ -762,10 +762,9 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         common_configure = configuration["common"]
         pst_configuration = configuration["pst"]["scan"]
 
-        # hack to remove frequency band for Low as the JSON has
-        # the band as being mandatory but it's only needed for Mid.
         if self._device_interface.facility == TelescopeFacilityEnum.Low:
-            del common_configure["frequency_band"]
+            # force using a low Frequency Band if the facility is SKALow
+            common_configure["frequency_band"] = "low"
 
         def _completion_callback(task_callback: Callable) -> None:
             from ska_pst_lmc.dsp.dsp_util import generate_dsp_scan_request

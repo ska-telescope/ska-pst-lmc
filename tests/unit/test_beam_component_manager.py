@@ -30,7 +30,7 @@ from ska_pst_lmc.device_proxy import DeviceProxyFactory, PstDeviceProxy
 from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
 from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
-from tests.conftest import _ThreadingCallback
+from tests.conftest import _ThreadingCallback, calc_expected_beam_channel_block_configuration
 
 
 @pytest.fixture
@@ -513,35 +513,27 @@ def test_beam_cm_channel_block_configuration(
     # still need worry about the event callback to TANGO device
     cast(MagicMock, property_callback).assert_called_with("channel_block_configuration", "{}")
 
-    callback(
-        json.dumps(
-            {
-                "common": {"nsubband": 2},
-                "subbands": {
-                    1: {
-                        "data_host": "10.10.0.1",
-                        "data_port": 30000,
-                        "start_channel": 0,
-                        "end_channel": 10,
-                    },
-                    2: {
-                        "data_host": "10.10.0.1",
-                        "data_port": 30001,
-                        "start_channel": 10,
-                        "end_channel": 16,
-                    },
-                },
-            }
-        )
-    )
-
-    expected_channel_block_configuration = {
-        "num_channel_blocks": 2,
-        "channel_blocks": [
-            {"data_host": "10.10.0.1", "data_port": 30000, "start_channel": 0, "num_channels": 10},
-            {"data_host": "10.10.0.1", "data_port": 30001, "start_channel": 10, "num_channels": 6},
-        ],
+    recv_subband_config = {
+        "common": {"nsubband": 2},
+        "subbands": {
+            1: {
+                "data_host": "10.10.0.1",
+                "data_port": 30000,
+                "start_channel": 0,
+                "end_channel": 10,
+            },
+            2: {
+                "data_host": "10.10.0.1",
+                "data_port": 30001,
+                "start_channel": 10,
+                "end_channel": 16,
+            },
+        },
     }
+
+    callback(json.dumps(recv_subband_config))
+
+    expected_channel_block_configuration = calc_expected_beam_channel_block_configuration(recv_subband_config)
 
     assert component_manager.channel_block_configuration == expected_channel_block_configuration
     cast(MagicMock, property_callback).assert_called_with(
@@ -742,17 +734,17 @@ def test_beam_cm_propagates_subordinate_device_error_messages_on_faults(
 
 
 @pytest.mark.parametrize("telescope_facility", [TelescopeFacilityEnum.Low, TelescopeFacilityEnum.Mid])
-def test_beam_cm_removes_frequency_band_only_for_low(
+def test_beam_cm_updates_frequency_band_to_low_for_skalow(
     component_manager: PstBeamComponentManager,
     csp_configure_scan_request: Dict[str, Any],
     configure_scan_request: Dict[str, Any],
     telescope_facility: TelescopeFacilityEnum,
 ) -> None:
     """Test that component manager removes frequency band for Low but not High."""
-    expected_scan_request_str = json.dumps(configure_scan_request)
     assert "frequency_band" in csp_configure_scan_request["common"]
     if telescope_facility == TelescopeFacilityEnum.Low:
         assert "frequency_band" not in configure_scan_request
+        configure_scan_request["frequency_band"] = "low"
     else:
         assert "frequency_band" in configure_scan_request
 
@@ -772,11 +764,14 @@ def test_beam_cm_removes_frequency_band_only_for_low(
 
     task_callback.wait()
 
-    [
-        getattr(d, m).assert_called_once_with(expected_scan_request_str)  # type: ignore
-        for d in component_manager._remote_devices
-        for m in ["ConfigureScan", "ConfigureBeam"]
-    ]
+    for m in ["ConfigureScan", "ConfigureBeam"]:
+        for d in component_manager._remote_devices:
+            mock = cast(MagicMock, getattr(d, m))
+            mock.assert_called_once()
+            kall = mock.call_args
+            assert len(kall.args) == 1
+            request = json.loads(kall.args[0])
+            assert request == configure_scan_request
 
     calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
     task_callback.assert_has_calls(calls)

@@ -77,7 +77,7 @@ def test_generate_weights_key(beam_id: int, subband_id: int, expected_key: str) 
     "frequency_band, nchan, nbits, udp_nsamp, wt_nsamp, db_bufsz, wb_bufsz, num_of_buffers",
     [
         (None, 82944, 32, 32, 32, 339738624, 2875392, 64),
-        ("0", 82944, 32, 32, 32, 339738624, 2875392, 64),
+        ("low", 82944, 32, 32, 32, 339738624, 2875392, 64),
         ("1", 13021, 32, 4, 4, 426672128, 26953728, 128),
         ("2", 15067, 32, 4, 4, 493715456, 31188992, 128),
         ("3", 26042, 24, 4, 4, 320004096, 26953728, 256),

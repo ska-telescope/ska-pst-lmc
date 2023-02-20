@@ -7,12 +7,12 @@
 
 """This module contains the pytest tests for the validate method."""
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import pytest
 from ska_telmodel._common import split_interface_version
 from ska_telmodel.csp.examples import get_csp_config_example
-from ska_telmodel.csp.version import CSP_CONFIG_VER2_3, CSP_CONFIG_VERSIONS
+from ska_telmodel.csp.version import CSP_CONFIG_VERSIONS
 
 from ska_pst_lmc.util import Strictness, validate
 
@@ -82,16 +82,7 @@ def test_only_version_2_3_or_above_accepted(version: str, valid: bool, scan: str
         pass
 
 
-def test_should_fail_validation() -> None:
+def test_should_pass_valiation_validation(csp_configure_scan_request: Dict[str, Any]) -> None:
     """Test that invalice CSP JSON/dict fails validation."""
-    config = {
-        "interface": CSP_CONFIG_VER2_3,
-        "pst": {
-            "scan": {
-                "foo": "bar",
-            },
-        },
-    }
-
-    with pytest.raises(ValueError):
-        validate(config)
+    validate(csp_configure_scan_request, strictness=Strictness.Permissive)
+    validate(csp_configure_scan_request, strictness=Strictness.Strict)

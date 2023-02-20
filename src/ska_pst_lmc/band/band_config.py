@@ -73,7 +73,7 @@ def get_frequency_band_config(frequency_band: Optional[str] = None, **kwargs: An
     """Get the configuration specific for a frequency band.
 
     This will return the configuration that is specific to a frequency band.
-    The standard for SKA is that if the frequency_band is only set or is "0"
+    The standard for SKA is that if the frequency_band is only set or is "low"
     then it corresponds to the Low telescope, which has only one band. Frequency
     bands of 1, 2, 3, 4, 5a, or 5b will return specific configuration.
 
@@ -99,7 +99,7 @@ def get_frequency_band_config(frequency_band: Optional[str] = None, **kwargs: An
     :return: a dictionary of configuration for the frequency band.
     :rtype: Dict[str, Any]
     """
-    if frequency_band is None or frequency_band == "0":
+    if frequency_band is None or frequency_band == "low":
         return LOW_BAND_CONFIG
 
     return MID_BAND_CONFIG[frequency_band]
