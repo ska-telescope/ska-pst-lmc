@@ -13,7 +13,7 @@ __all__ = [
 
 from typing import Any, Dict
 
-from ska_pst_lmc.receive.receive_util import calculate_receive_common_resources
+from ska_pst_lmc.receive.receive_util import calculate_receive_packet_resources
 from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 
 
@@ -53,8 +53,8 @@ def calculate_dsp_subband_resources(beam_id: int, **kwargs: Any) -> Dict[int, di
 
 
 def generate_dsp_scan_request(request_params: Dict[str, Any]) -> Dict[str, Any]:
-    recv_common_resources = calculate_receive_common_resources(request_params=request_params)
-    bytes_per_second = recv_common_resources["bytes_per_second"]
+    recv_packet_resources = calculate_receive_packet_resources(request_params=request_params)
+    bytes_per_second = recv_packet_resources["bytes_per_second"]
     scanlen_max = request_params.get("max_scan_length", 0.0)
 
     return {"bytes_per_second": bytes_per_second, "scanlen_max": scanlen_max}

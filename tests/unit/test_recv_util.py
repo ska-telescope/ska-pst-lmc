@@ -56,6 +56,7 @@ def test_calculate_receive_subband_resources(
     assert actual_common["nbits"] == configure_beam_request["bits_per_sample"] // 2
     assert actual_common["ndim"] == 2
     assert actual_common["ovrsamp"] == "/".join(map(str, configure_beam_request["oversampling_ratio"]))
+    assert actual_common["beam_id"] == str(beam_id)
 
     actual_subband_1 = actual["subbands"][1]
 
@@ -76,6 +77,27 @@ def test_calculate_receive_subband_resources(
     assert actual_subband_1["frequency_out"] == actual_common["frequency"]
     assert actual_subband_1["start_channel_out"] == 0
     assert actual_subband_1["end_channel_out"] == configure_beam_request["num_frequency_channels"]
+
+
+def test_calculate_receive_subband_resources_uses_timing_beam_id_from_request(
+    beam_id: int,
+    configure_beam_request: Dict[str, Any],
+    recv_data_host: str,
+    subband_udp_ports: List[int],
+) -> None:
+    """Test that if timing_beam_id is in request that it is used not beam_id."""
+    from random import randint
+
+    timing_beam_id = str(randint(2, 10))
+    configure_beam_request["timing_beam_id"] = timing_beam_id
+    actual = calculate_receive_subband_resources(
+        beam_id=beam_id,
+        request_params=configure_beam_request,
+        data_host=recv_data_host,
+        subband_udp_ports=subband_udp_ports,
+    )
+
+    assert actual["common"]["beam_id"] == timing_beam_id
 
 
 @pytest.mark.parametrize(
