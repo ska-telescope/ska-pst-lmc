@@ -10,6 +10,7 @@
 __all__ = [
     "calculate_receive_common_resources",
     "calculate_receive_subband_resources",
+    "calculate_receive_packet_resources",
 ]
 
 from typing import Any, Dict, List, Optional
