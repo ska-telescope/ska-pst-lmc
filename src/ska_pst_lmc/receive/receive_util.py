@@ -10,6 +10,7 @@
 __all__ = [
     "calculate_receive_common_resources",
     "calculate_receive_subband_resources",
+    "calculate_receive_packet_resources",
 ]
 
 from typing import Any, Dict, List, Optional
@@ -79,18 +80,20 @@ def generate_recv_scan_request(
     return result
 
 
-def calculate_receive_common_resources(
+def calculate_receive_packet_resources(
     request_params: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """Calculate the RECV common resources.
+    """Calculate RECV packet values.
 
-    This method has been refactored out of `calculate_receive_subband_resources`
-    as there are parameters that are calculated that can be reused in other
-    areas such as the `bytes_per_second` used in DSP.
+    This method has been refactored out of `calculate_receive_common_resources`
+    the common did 2 things: a) calculate receive packet specific values, and b)
+    overall scan configuration.  The `ska_pst_lmc.dsp` subpackage needs the
+    `bytes_per_second` which is a receive packet specific value but doesn't need
+    the rest of common params. Adding the `beam_id` now requires the default
+    `beam_id` to be passed in which causes issues in DSP component code.
 
     :param request_params: a dictionary of request parameters that is used to
-        configure PST, the specific parameters for SMRB are extracted within
-        this method.
+        configure PST RECV.
     """
     udp_format = get_udp_format(**request_params)
 
@@ -109,12 +112,39 @@ def calculate_receive_common_resources(
 
     return {
         "nchan": nchan,
+        "bandwidth": bandwidth_mhz,
+        "npol": npol,
+        "nbits": nbits,
+        "ndim": NUM_DIMENSIONS,
+        "tsamp": tsamp,
+        "ovrsamp": "/".join(map(str, oversampling_ratio)),
+        "udp_format": udp_format,
+        "bytes_per_second": bytes_per_second,
+    }
+
+
+def calculate_receive_common_resources(
+    beam_id: int,
+    request_params: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Calculate the RECV common resources.
+
+    This method has been refactored out of `calculate_receive_subband_resources`
+    as there are parameters that are calculated that can be reused in other
+    areas such as the `bytes_per_second` used in DSP.
+
+    :param request_params: a dictionary of request parameters that is used to
+        configure PST, the specific parameters for RECV are extracted within
+        this method.
+    """
+    recv_packet_resources = calculate_receive_packet_resources(request_params=request_params)
+
+    return {
         "nsubband": 1,
         "udp_nsamp": request_params["udp_nsamp"],
         "wt_nsamp": request_params["wt_nsamp"],
         "udp_nchan": request_params["udp_nchan"],
         "frequency": request_params["centre_frequency"] / MEGA_HERTZ,
-        "bandwidth": bandwidth_mhz,
         "frontend": request_params["receiver_id"],
         "fd_poln": request_params["feed_polarization"],
         "fd_hand": request_params["feed_handedness"],
@@ -124,13 +154,11 @@ def calculate_receive_common_resources(
         "nant": len(request_params["receptors"]),
         "antennas": ",".join(request_params["receptors"]),
         "ant_weights": ",".join(map(str, request_params["receptor_weights"])),
-        "npol": npol,
-        "nbits": nbits,
-        "ndim": NUM_DIMENSIONS,
-        "tsamp": tsamp,
-        "ovrsamp": "/".join(map(str, oversampling_ratio)),
-        "udp_format": udp_format,
-        "bytes_per_second": bytes_per_second,
+        # this is for AAO.5 where we will only have one beam, the default will
+        # be the device's configured beam id. Ideally this should come from
+        # the configure scan request from CSP.LMC
+        "beam_id": str(request_params.get("timing_beam_id", beam_id)),
+        **recv_packet_resources,
     }
 
 
@@ -184,7 +212,7 @@ def calculate_receive_subband_resources(
         bandwidth = request_params["total_bandwidth"]
 
         return {
-            "common": calculate_receive_common_resources(request_params),
+            "common": calculate_receive_common_resources(beam_id=beam_id, request_params=request_params),
             "subbands": {
                 1: {
                     "data_key": generate_data_key(beam_id=beam_id, subband_id=1),
