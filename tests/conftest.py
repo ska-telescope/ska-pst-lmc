@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 import collections
+import json
 import logging
+import queue
+import sys
 import threading
 from concurrent import futures
 from random import randint
-from typing import Any, Callable, Dict, Generator, List, Optional
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, cast
 from unittest.mock import MagicMock
 
 import grpc
@@ -23,6 +26,7 @@ from tango import DeviceProxy
 from tango.test_context import DeviceTestContext, MultiDeviceTestContext, get_host_ip
 
 from ska_pst_lmc.device_proxy import DeviceProxyFactory
+from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
 from ska_pst_lmc.job import DeviceCommandTaskExecutor, TaskExecutor
 from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcService
 from ska_pst_lmc.util import TelescopeFacilityEnum
@@ -61,6 +65,119 @@ class _ThreadingCallback:
 
     def __getattr__(self: _ThreadingCallback, name: str) -> Any:
         return getattr(self.mock_callback, name)
+
+
+class _AttributeEventValidator:
+    """Class to validate attribute events between BEAM and subordinate devices."""
+
+    def __init__(
+        self: _AttributeEventValidator,
+        device_under_test: DeviceProxy,
+        source_device_fqdn: str,
+        attribute_name: str,
+        default_value: Any,
+        tango_change_event_helper: TangoChangeEventHelper,
+        change_event_callbacks: MockTangoEventCallbackGroup,
+        logger: logging.Logger,
+    ) -> None:
+        """Initialise validator."""
+        self.logger = logger
+        self.device_under_test = device_under_test
+        self.source_device = DeviceProxyFactory.get_device(source_device_fqdn)
+        if attribute_name == "subbandBeamConfiguration":
+            self.attribute_name = "channelBlockConfiguration"
+        else:
+            self.attribute_name = attribute_name
+        self.default_value = default_value
+
+        self.attribute_value_queue: queue.Queue[Any] = queue.Queue()
+        self.change_event_callbacks = change_event_callbacks
+
+        tango_change_event_helper.subscribe(self.attribute_name)
+        self.source_device.subscribe_change_event(attribute_name, self._store_value)
+
+    def _store_value(self: _AttributeEventValidator, value: Any) -> None:
+        if self.attribute_name == "channelBlockConfiguration":
+            # we need to map from subbandBeamConfiguration
+            recv_subband_config = cast(Dict[str, Any], json.loads(value))
+            if len(recv_subband_config) == 0:
+                value = json.dumps(recv_subband_config)
+            else:
+                value = json.dumps(calc_expected_beam_channel_block_configuration(recv_subband_config))
+
+        self.attribute_value_queue.put(value)
+
+    def assert_initial_values(self: _AttributeEventValidator) -> None:
+        """Assert initial values of BEAM and subordinate device as the same."""
+
+        def _get_values() -> Tuple[Any, Any]:
+            beam_value = getattr(self.device_under_test, self.attribute_name)
+            if self.attribute_name == "channelBlockConfiguration":
+                source_value = getattr(self.source_device, "subbandBeamConfiguration")
+            else:
+                source_value = getattr(self.source_device, self.attribute_name)
+
+            return beam_value, source_value
+
+        initial_values = _get_values()
+
+        if self.attribute_name != "availableDiskSpace":
+            # availableDiskSpace actually changes from a default value a new value when the On command
+            # happens
+            assert (
+                initial_values[0] == self.default_value
+            ), f"{self.attribute_name} on {self.device_under_test} not {self.default_value} but {initial_values[0]}"  # noqa: E501
+            assert (
+                initial_values[1] == self.default_value
+            ), f"{self.attribute_name} on {self.device_under_test} not {self.default_value} but {initial_values[1]}"  # noqa: E501
+
+    def assert_values(self: _AttributeEventValidator) -> None:
+        """Assert that the events on BEAM as those from subordinate device."""
+        # use None as a sentinal value to break out of assertion loop
+        try:
+            value: Any
+            for value in iter(self.attribute_value_queue.get_nowait, None):
+                if value is None:
+                    break
+
+                self.change_event_callbacks[self.attribute_name].assert_change_event(value, lookahead=3)
+        except queue.Empty:
+            pass
+
+
+@pytest.fixture
+def default_device_propertry_config() -> Dict[str, Dict[str, Any]]:
+    """Get map of default values for device properties."""
+    return {
+        "test/recv/1": {
+            "dataReceiveRate": 0.0,
+            "dataReceived": 0,
+            "dataDropRate": 0.0,
+            "dataDropped": 0,
+            "misorderedPackets": 0,
+            "misorderedPacketRate": 0.0,
+            "malformedPackets": 0,
+            "malformedPacketRate": 0.0,
+            "misdirectedPackets": 0,
+            "misdirectedPacketRate": 0.0,
+            "checksumFailurePackets": 0,
+            "checksumFailurePacketRate": 0.0,
+            "timestampSyncErrorPackets": 0,
+            "timestampSyncErrorPacketRate": 0.0,
+            "seqNumberSyncErrorPackets": 0,
+            "seqNumberSyncErrorPacketRate": 0.0,
+            "subbandBeamConfiguration": json.dumps({}),
+        },
+        "test/dsp/1": {
+            "dataRecordRate": 0.0,
+            "dataRecorded": 0,
+            "availableDiskSpace": sys.maxsize,
+            "availableRecordingTime": DEFAULT_RECORDING_TIME,
+        },
+        "test/smrb/1": {
+            "ringBufferUtilisation": 0.0,
+        },
+    }
 
 
 @pytest.fixture(scope="module")
@@ -386,6 +503,35 @@ def callbacks() -> dict:
     return collections.defaultdict(MockCallable)
 
 
+@pytest.fixture
+def beam_attribute_names() -> List[str]:
+    """Get list of beam change event attributes."""
+    return [
+        "dataReceiveRate",
+        "dataReceived",
+        "dataDropRate",
+        "dataDropped",
+        "misorderedPackets",
+        "misorderedPacketRate",
+        "malformedPackets",
+        "malformedPacketRate",
+        "misdirectedPackets",
+        "misdirectedPacketRate",
+        "checksumFailurePackets",
+        "checksumFailurePacketRate",
+        "timestampSyncErrorPackets",
+        "timestampSyncErrorPacketRate",
+        "seqNumberSyncErrorPackets",
+        "seqNumberSyncErrorPacketRate",
+        "dataRecordRate",
+        "dataRecorded",
+        "availableDiskSpace",
+        "availableRecordingTime",
+        "ringBufferUtilisation",
+        "channelBlockConfiguration",
+    ]
+
+
 @pytest.fixture()
 def additional_change_events_callbacks() -> List[str]:
     """Return additional change event callbacks."""
@@ -398,9 +544,29 @@ def change_event_callback_time() -> float:
     return 1.0
 
 
+@pytest.fixture
+def change_event_callbacks_factory(
+    additional_change_events_callbacks: List[str], change_event_callback_time: float
+) -> Callable[..., MockTangoEventCallbackGroup]:
+    """Get factory to create instances of a `MockTangoEventCallbackGroup`."""
+
+    def _factory() -> MockTangoEventCallbackGroup:
+        return MockTangoEventCallbackGroup(
+            "longRunningCommandProgress",
+            "longRunningCommandStatus",
+            "longRunningCommandResult",
+            "obsState",
+            "healthState",
+            *additional_change_events_callbacks,
+            timeout=change_event_callback_time,
+        )
+
+    return _factory
+
+
 @pytest.fixture()
 def change_event_callbacks(
-    additional_change_events_callbacks: List[str], change_event_callback_time: float
+    change_event_callbacks_factory: Callable[..., MockTangoEventCallbackGroup]
 ) -> MockTangoEventCallbackGroup:
     """
     Return a dictionary of Tango device change event callbacks with asynchrony support.
@@ -408,15 +574,7 @@ def change_event_callbacks(
     :return: a collections.defaultdict that returns change event
         callbacks by name.
     """
-    return MockTangoEventCallbackGroup(
-        "longRunningCommandProgress",
-        "longRunningCommandStatus",
-        "longRunningCommandResult",
-        "obsState",
-        "healthState",
-        *additional_change_events_callbacks,
-        timeout=change_event_callback_time,
-    )
+    return change_event_callbacks_factory()
 
 
 class TangoChangeEventHelper:

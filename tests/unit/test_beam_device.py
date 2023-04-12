@@ -11,10 +11,8 @@ from __future__ import annotations
 
 import json
 import logging
-import queue
-import sys
 import time
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Callable, Dict, List, Optional
 
 import backoff
 import pytest
@@ -25,42 +23,13 @@ from tango import DeviceProxy, DevState
 from tango.test_context import MultiDeviceTestContext
 
 from ska_pst_lmc import PstBeam, PstDsp, PstReceive, PstSmrb
-from ska_pst_lmc.device_proxy import DeviceProxyFactory
-from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
-from tests.conftest import (
-    TangoChangeEventHelper,
-    TangoDeviceCommandChecker,
-    calc_expected_beam_channel_block_configuration,
-)
+from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker, _AttributeEventValidator
 
 
 @pytest.fixture
-def additional_change_events_callbacks() -> List[str]:
+def additional_change_events_callbacks(beam_attribute_names: List[str]) -> List[str]:
     """Return additional change event callbacks."""
-    return [
-        "dataReceiveRate",
-        "dataReceived",
-        "dataDropRate",
-        "dataDropped",
-        "misorderedPackets",
-        "misorderedPacketRate",
-        "malformedPackets",
-        "malformedPacketRate",
-        "misdirectedPackets",
-        "misdirectedPacketRate",
-        "checksumFailurePackets",
-        "checksumFailurePacketRate",
-        "timestampSyncErrorPackets",
-        "timestampSyncErrorPacketRate",
-        "seqNumberSyncErrorPackets",
-        "seqNumberSyncErrorPacketRate",
-        "dataRecordRate",
-        "dataRecorded",
-        "availableDiskSpace",
-        "availableRecordingTime",
-        "ringBufferUtilisation",
-        "channelBlockConfiguration",
-    ]
+    return [*beam_attribute_names]
 
 
 @pytest.fixture()
@@ -137,85 +106,6 @@ def devices_info() -> List[dict]:
     ]
 
 
-class _AttributeEventValidator:
-    """Class to validate attribute events between BEAM and subordinate devices."""
-
-    def __init__(
-        self: _AttributeEventValidator,
-        device_under_test: DeviceProxy,
-        source_device_fqdn: str,
-        attribute_name: str,
-        default_value: Any,
-        tango_change_event_helper: TangoChangeEventHelper,
-        change_event_callbacks: MockTangoEventCallbackGroup,
-        logger: logging.Logger,
-    ) -> None:
-        """Initialise validator."""
-        self.logger = logger
-        self.device_under_test = device_under_test
-        self.source_device = DeviceProxyFactory.get_device(source_device_fqdn)
-        if attribute_name == "subbandBeamConfiguration":
-            self.attribute_name = "channelBlockConfiguration"
-        else:
-            self.attribute_name = attribute_name
-        self.default_value = default_value
-
-        self.attribute_value_queue: queue.Queue[Any] = queue.Queue()
-        self.change_event_callbacks = change_event_callbacks
-
-        tango_change_event_helper.subscribe(self.attribute_name)
-        self.source_device.subscribe_change_event(attribute_name, self._store_value)
-
-    def _store_value(self: _AttributeEventValidator, value: Any) -> None:
-        if self.attribute_name == "channelBlockConfiguration":
-            # we need to map from subbandBeamConfiguration
-            recv_subband_config = cast(Dict[str, Any], json.loads(value))
-            if len(recv_subband_config) == 0:
-                value = json.dumps(recv_subband_config)
-            else:
-                value = json.dumps(calc_expected_beam_channel_block_configuration(recv_subband_config))
-
-        self.attribute_value_queue.put(value)
-
-    def assert_initial_values(self: _AttributeEventValidator) -> None:
-        """Assert initial values of BEAM and subordinate device as the same."""
-
-        def _get_values() -> Tuple[Any, Any]:
-            beam_value = getattr(self.device_under_test, self.attribute_name)
-            if self.attribute_name == "channelBlockConfiguration":
-                source_value = getattr(self.source_device, "subbandBeamConfiguration")
-            else:
-                source_value = getattr(self.source_device, self.attribute_name)
-
-            return beam_value, source_value
-
-        initial_values = _get_values()
-
-        if self.attribute_name != "availableDiskSpace":
-            # availableDiskSpace actually changes from a default value a new value when the On command
-            # happens
-            assert (
-                initial_values[0] == self.default_value
-            ), f"{self.attribute_name} on {self.device_under_test} not {self.default_value} but {initial_values[0]}"  # noqa: E501
-            assert (
-                initial_values[1] == self.default_value
-            ), f"{self.attribute_name} on {self.device_under_test} not {self.default_value} but {initial_values[1]}"  # noqa: E501
-
-    def assert_values(self: _AttributeEventValidator) -> None:
-        """Assert that the events on BEAM as those from subordinate device."""
-        # use None as a sentinal value to break out of assertion loop
-        # self.attribute_value_queue.put(None)
-        try:
-            value: Any
-            for value in iter(self.attribute_value_queue.get_nowait, None):
-                if value is None:
-                    break
-
-                self.change_event_callbacks[self.attribute_name].assert_change_event(value, lookahead=3)
-        except queue.Empty:
-            pass
-
-
 @pytest.mark.forked
 class TestPstBeam:
     """Test class used for testing the PstBeam TANGO device."""
@@ -226,6 +116,7 @@ class TestPstBeam:
         device_under_test: DeviceProxy,
         multidevice_test_context: MultiDeviceTestContext,
         change_event_callbacks: MockTangoEventCallbackGroup,
+        beam_attribute_names: List[str],
         logger: logging.Logger,
     ) -> None:
         """Put test class with Tango devices and event checker."""
@@ -233,6 +124,7 @@ class TestPstBeam:
         self.dsp_proxy = multidevice_test_context.get_device("test/recv/1")
         self.recv_proxy = multidevice_test_context.get_device("test/recv/1")
         self.smrb_proxy = multidevice_test_context.get_device("test/smrb/1")
+        self._beam_attribute_names = [*beam_attribute_names]
 
         self.tango_change_event_helper = TangoChangeEventHelper(
             device_under_test=self.beam_proxy,
@@ -245,6 +137,16 @@ class TestPstBeam:
             change_event_callbacks=change_event_callbacks,
             logger=logger,
         )
+
+    def current_attribute_values(self: TestPstBeam) -> Dict[str, Any]:
+        """Get current attributate values for BEAM device."""
+        # ignore availableDiskSpace as this can change but other props
+        # will should get reset when going to Off
+        return {
+            attr: getattr(self.beam_proxy, attr)
+            for attr in self._beam_attribute_names
+            if attr != "availableDiskSpace"
+        }
 
     @backoff.on_exception(
         backoff.expo,
@@ -493,42 +395,12 @@ class TestPstBeam:
         tango_change_event_helper: TangoChangeEventHelper,
         change_event_callbacks: MockTangoEventCallbackGroup,
         logger: logging.Logger,
+        default_device_propertry_config: Dict[str, Dict[str, Any]],
     ) -> None:
         """Test that monitoring values are updated."""
         self.assert_health_state(HealthState.UNKNOWN)
 
         self.online()
-
-        device_propertry_config: Dict[str, Dict[str, Any]] = {
-            "test/recv/1": {
-                "dataReceiveRate": 0.0,
-                "dataReceived": 0,
-                "dataDropRate": 0.0,
-                "dataDropped": 0,
-                "misorderedPackets": 0,
-                "misorderedPacketRate": 0.0,
-                "malformedPackets": 0,
-                "malformedPacketRate": 0.0,
-                "misdirectedPackets": 0,
-                "misdirectedPacketRate": 0.0,
-                "checksumFailurePackets": 0,
-                "checksumFailurePacketRate": 0.0,
-                "timestampSyncErrorPackets": 0,
-                "timestampSyncErrorPacketRate": 0.0,
-                "seqNumberSyncErrorPackets": 0,
-                "seqNumberSyncErrorPacketRate": 0.0,
-                "subbandBeamConfiguration": json.dumps({}),
-            },
-            "test/dsp/1": {
-                "dataRecordRate": 0.0,
-                "dataRecorded": 0,
-                "availableDiskSpace": sys.maxsize,
-                "availableRecordingTime": DEFAULT_RECORDING_TIME,
-            },
-            "test/smrb/1": {
-                "ringBufferUtilisation": 0.0,
-            },
-        }
 
         attribute_event_validators = [
             _AttributeEventValidator(
@@ -540,7 +412,7 @@ class TestPstBeam:
                 change_event_callbacks=change_event_callbacks,
                 logger=logger,
             )
-            for fqdn, props in device_propertry_config.items()
+            for fqdn, props in default_device_propertry_config.items()
             for attribute_name, default_value in props.items()
         ]
 
@@ -575,6 +447,65 @@ class TestPstBeam:
 
         for v in attribute_event_validators:
             v.assert_values()
+
+    @pytest.mark.forked
+    def test_beam_mgmt_resubscribes_to_device_events(
+        self: TestPstBeam,
+        csp_configure_scan_request: Dict[str, Any],
+        scan_id: int,
+        tango_change_event_helper: TangoChangeEventHelper,
+        change_event_callbacks_factory: Callable[..., MockTangoEventCallbackGroup],
+        logger: logging.Logger,
+        default_device_propertry_config: Dict[str, Dict[str, Any]],
+    ) -> None:
+        """Test that monitoring values are updated."""
+        self.assert_health_state(HealthState.UNKNOWN)
+
+        self.online()
+
+        init_attr_values = self.current_attribute_values()
+        self.on()
+
+        # need to set up scanning
+        configuration = json.dumps(csp_configure_scan_request)
+        self.configure_scan(configuration)
+
+        scan = str(scan_id)
+        self.scan(scan)
+
+        # assert that the attribute values have been updated during monitoring
+        assert init_attr_values != self.current_attribute_values()
+
+        # wait for a monitoring period?
+        time.sleep(0.25)
+
+        self.end_scan()
+
+        self.goto_idle()
+        self.off()
+
+        # assert the attribute values are reset when in Off state
+        assert init_attr_values == self.current_attribute_values()
+
+        self.on()
+
+        configuration = json.dumps(csp_configure_scan_request)
+        self.configure_scan(configuration)
+
+        scan = str(scan_id + 1)
+        self.scan(scan)
+
+        time.sleep(0.25)
+
+        # assert that the attribute values have been updated during monitoring
+        assert init_attr_values != self.current_attribute_values()
+
+        self.end_scan()
+
+        self.goto_idle()
+        self.off()
+
+        assert init_attr_values == self.current_attribute_values()
 
     @pytest.mark.forked
     def test_beam_mgmt_ends_in_fault_state_when_subordinate_device_ends_up_in_fault_state(

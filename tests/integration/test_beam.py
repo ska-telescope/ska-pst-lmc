@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import backoff
 import pytest
@@ -22,6 +22,12 @@ from tango import DevState
 
 from ska_pst_lmc import DeviceProxyFactory
 from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker
+
+
+@pytest.fixture
+def additional_change_events_callbacks(beam_change_event_attributes: List[str]) -> List[str]:
+    """Return additional change event callbacks."""
+    return [*beam_change_event_attributes]
 
 
 @pytest.fixture
@@ -61,7 +67,10 @@ class TestPstBeam:
 
     @pytest.fixture(autouse=True)
     def setup_test_class(
-        self: TestPstBeam, change_event_callbacks: MockTangoEventCallbackGroup, logger: logging.Logger
+        self: TestPstBeam,
+        change_event_callbacks: MockTangoEventCallbackGroup,
+        logger: logging.Logger,
+        beam_attribute_names: List[str],
     ) -> None:
         """Put test class with Tango devices and event checker."""
         self.dsp_proxy = DeviceProxyFactory.get_device("low-pst/dsp/01")
@@ -69,6 +78,7 @@ class TestPstBeam:
         self.smrb_proxy = DeviceProxyFactory.get_device("low-pst/smrb/01")
         self.beam_proxy = DeviceProxyFactory.get_device("low-pst/beam/01")
         self.logger = logger
+        self._beam_attribute_names = beam_attribute_names
 
         self.tango_change_event_helper = TangoChangeEventHelper(
             device_under_test=self.beam_proxy.device,
@@ -81,6 +91,16 @@ class TestPstBeam:
             change_event_callbacks=change_event_callbacks,
             logger=logger,
         )
+
+    def current_attribute_values(self: TestPstBeam) -> Dict[str, Any]:
+        """Get current attributate values for BEAM device."""
+        # ignore availableDiskSpace as this can change but other props
+        # will should get reset when going to Off
+        return {
+            attr: getattr(self.beam_proxy, attr)
+            for attr in self._beam_attribute_names
+            if attr != "availableDiskSpace"
+        }
 
     def configure_scan(self: TestPstBeam, configuration: str) -> None:
         """Perform a configure scan."""
@@ -355,6 +375,62 @@ class TestPstBeam:
             self.offline()
         except Exception:
             self.logger.exception("Error in trying test_abort_long_running_command.", exc_info=False)
+
+            for p in [
+                "longRunningCommandStatus",
+                "longRunningCommandResult",
+                "obsState",
+                "adminMode",
+                "state()",
+            ]:
+                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy]:
+                    if p == "state()":
+                        self.logger.info(f"{d}.{p} = {d.state()}")
+                    else:
+                        if d.state() != DevState.DISABLE:
+                            self.logger.info(f"{d}.{p} = {getattr(d, p)}")
+
+            raise
+        finally:
+            self.tango_change_event_helper.release()
+
+    @pytest.mark.forked
+    def test_multiple_lifecycles_with_monitoring(
+        self: TestPstBeam,
+        csp_configure_scan_request: Dict[str, Any],
+        scan_configs: Dict[int, dict],
+    ) -> None:
+        """Test state model of PstBeam with multiple scans."""
+        try:
+            self.setup_test_state()
+            self.assert_state(DevState.DISABLE)
+
+            self.online()
+            self.beam_proxy.simulationMode = SimulationMode.TRUE
+            init_attr_values = self.current_attribute_values()
+            for (scan_id, scan_config) in scan_configs.items():
+                self.on()
+
+                self.logger.info(f"Performing scan {scan_id} with overridden config of {scan_config}")
+                csp_configure_scan_request["pst"]["scan"] = {
+                    **csp_configure_scan_request["pst"]["scan"],
+                    **scan_config,
+                }
+                configuration = json.dumps(csp_configure_scan_request)
+                self.configure_scan(configuration)
+                self.scan(str(scan_id))
+
+                assert init_attr_values != self.current_attribute_values()
+
+                self.end_scan()
+                self.goto_idle()
+                self.off()
+
+                assert init_attr_values == self.current_attribute_values()
+
+            self.offline()
+        except Exception:
+            self.logger.exception("Error in trying test_configure_then_scan_then_stop.", exc_info=False)
 
             for p in [
                 "longRunningCommandStatus",

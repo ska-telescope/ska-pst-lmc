@@ -299,6 +299,17 @@ class PstDeviceProxy:
         """
         return f"PstDeviceProxy(fqdn='{self._fqdn}')"
 
+    def is_subscribed_to_events(self: PstDeviceProxy, attribute_name: str) -> bool:
+        """Check if there is an active event subscription for attribute.
+
+        Checks if there is a `ChangeEventSubscription` for the attribute and if
+        it is actively subscribed.
+
+        :param attribute_name: the name of the attribute to check if there is an
+            active event subscription.
+        """
+        return attribute_name in self._subscriptions and self._subscriptions[attribute_name].subscribed
+
 
 class DeviceProxyFactory:
     """
