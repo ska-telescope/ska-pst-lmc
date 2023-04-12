@@ -37,6 +37,8 @@ class ChangeEventSubscription:
         subscription_id: int,
         device: PstDeviceProxy,
         callbacks: List[Callable],
+        attribute_name: str,
+        logger: logging.Logger,
     ) -> None:
         """Initialise object.
 
@@ -47,6 +49,8 @@ class ChangeEventSubscription:
         self._device = device
         self._subscribed = True
         self._callbacks = callbacks
+        self._attribute_name = attribute_name
+        self._logger = logger
 
     @property
     def callbacks(self: ChangeEventSubscription) -> List[Callable]:
@@ -64,18 +68,17 @@ class ChangeEventSubscription:
         as device. As this is potentially called from a Python thread this will
         try to run this within a Tango OmniThread using a background thread.
         """
-
-        def _task() -> None:
-            self._subscribed = False
-            with tango.EnsureOmniThread():
-                self._device.unsubscribe_event(self._subscription_id)
-
-            self._callbacks.clear()
-
         if self._subscribed:
-            thread = threading.Thread(target=_task)
-            thread.start()
-            thread.join()
+            self._logger.debug(
+                (
+                    f"Unsubscribing {self._device.fqdn}.{self._attribute_name} "
+                    f"with subscription_id = {self._subscription_id}"
+                )
+            )
+
+            self._device.unsubscribe_change_event(subscription=self)
+            self._subscribed = False
+            self.callbacks.clear()
 
     @property
     def subscribed(self: ChangeEventSubscription) -> bool:
@@ -138,7 +141,7 @@ class PstDeviceProxy:
         if isinstance(value, tango.DeviceAttribute):
             value = value.value
 
-        self._logger.info(f"Received event callback for {self.fqdn}.{attribute_name} with value: {value}")
+        self._logger.debug(f"Received event callback for {self.fqdn}.{attribute_name} with value: {value}")
 
         # read lock
         with self._lock.gen_rlock():
@@ -182,7 +185,7 @@ class PstDeviceProxy:
         :param stateless: whether to use the TANGO stateless event model or not, default is False.
         :returns: a ChangeEventSubscription that can be used to later to unsubscribe from.
         """
-        self._logger.info(f"Subscribing to events on {self.fqdn}.{attribute_name}")
+        self._logger.debug(f"DeviceProxy subscribing to events on {self.fqdn}.{attribute_name}")
 
         def _handle_event(event: tango.EventData) -> None:
             # need to do this on a different thread
@@ -194,26 +197,71 @@ class PstDeviceProxy:
             t.start()
 
         if attribute_name in self._subscriptions:
+            self._logger.info(f"{attribute_name} already in subscriptions. Adding to callings")
             self._subscriptions[attribute_name].callbacks.append(callback)
             value = self._read(attribute_name)
             callback(value.value)
         else:
             # write lock
             with self._lock.gen_wlock():
+                self._logger.info(f"Subscribing to events on {self.fqdn}.{attribute_name} on Tango Device")
                 subscription_id = self._device.subscribe_event(
                     attribute_name,
                     tango.EventType.CHANGE_EVENT,
                     _handle_event,
                     stateless=stateless,
                 )
+                self._logger.debug(f"Subscription ID is {subscription_id}")
                 subscription = ChangeEventSubscription(
                     subscription_id=subscription_id,
-                    device=self._device,
+                    device=self,
                     callbacks=[callback],
+                    attribute_name=attribute_name,
+                    logger=self._logger,
                 )
                 self._subscriptions[attribute_name] = subscription
 
         return self._subscriptions[attribute_name]
+
+    def unsubscribe_change_event(self: PstDeviceProxy, subscription: ChangeEventSubscription) -> None:
+        """Unsubscribe to change events for a given subscription.
+
+        This method is used to unsubscribe to an attribute changed event on the given
+            proxy object. This is similar to:
+
+        .. code-block:: python
+
+            device.unsubscribe_event(subscription_id)
+
+        :param subscription: the subscription to unsubscribe to.
+        """
+        attribute_name = subscription._attribute_name
+        subscription_id = subscription._subscription_id
+
+        self._logger.debug(
+            f"{self} handling unsubscribe for attribute '{attribute_name}', with subid = {subscription_id}"
+        )
+
+        def _task() -> None:
+            try:
+                with tango.EnsureOmniThread():
+                    self._device.unsubscribe_event(subscription_id)
+            except Exception:
+                self._logger.warning(
+                    (
+                        f"Error in unsubscribing from {self._device.fqdn}.{attribute_name}"
+                        f"with subscription id = {subscription_id}"
+                    ),
+                    exc_info=True,
+                )
+
+        with self._lock.gen_wlock():
+            thread = threading.Thread(target=_task)
+            thread.start()
+            thread.join()
+
+            if attribute_name in self._subscriptions:
+                del self._subscriptions[attribute_name]
 
     def __setattr__(self: PstDeviceProxy, name: str, value: Any) -> None:
         """Set attritube.
