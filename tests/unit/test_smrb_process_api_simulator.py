@@ -56,18 +56,18 @@ def test_smrb_simulator_api_simulated_monitor_calls_callback(
     simulation_api._scanning = True
 
     def _abort_monitor() -> None:
-        time.sleep(0.05)
+        time.sleep(0.015)
         logger.debug("Aborting monitoring.")
         abort_event.set()
 
-    simulation_api.monitor(
-        subband_monitor_data_callback=subband_monitor_data_callback,
-        polling_rate=60,
-        monitor_abort_event=abort_event,
-    )
-
     abort_thread = threading.Thread(target=_abort_monitor, daemon=True)
     abort_thread.start()
+
+    simulation_api.monitor(
+        subband_monitor_data_callback=subband_monitor_data_callback,
+        polling_rate=10,
+        monitor_abort_event=abort_event,
+    )
     abort_thread.join()
 
     calls = [

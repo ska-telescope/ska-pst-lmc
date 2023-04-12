@@ -204,12 +204,16 @@ class _AttributeEventValidator:
     def assert_values(self: _AttributeEventValidator) -> None:
         """Assert that the events on BEAM as those from subordinate device."""
         # use None as a sentinal value to break out of assertion loop
-        self.attribute_value_queue.put(None)
-        for idx, value in enumerate(self.attribute_value_queue.queue):
-            if value is None:
-                break
+        # self.attribute_value_queue.put(None)
+        try:
+            value: Any
+            for value in iter(self.attribute_value_queue.get_nowait, None):
+                if value is None:
+                    break
 
-            self.change_event_callbacks[self.attribute_name].assert_change_event(value, lookahead=3)
+                self.change_event_callbacks[self.attribute_name].assert_change_event(value, lookahead=3)
+        except queue.Empty:
+            pass
 
 
 @pytest.mark.forked
@@ -559,6 +563,16 @@ class TestPstBeam:
         self.end_scan()
 
         # Assert attribute values
+        for v in attribute_event_validators:
+            v.assert_values()
+
+        self.scan(scan)
+
+        # wait for a monitoring period?
+        time.sleep(0.25)
+
+        self.end_scan()
+
         for v in attribute_event_validators:
             v.assert_values()
 

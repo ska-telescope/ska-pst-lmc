@@ -56,8 +56,7 @@ def test_dsp_simulator_api_monitor_calls_callback(
     simulation_api._scanning = True
 
     def _abort_monitor() -> None:
-        logger.debug("Test sleeping 600ms")
-        time.sleep(0.05)
+        time.sleep(0.015)
         logger.debug("Aborting monitoring.")
         abort_event.set()
 
@@ -70,7 +69,6 @@ def test_dsp_simulator_api_monitor_calls_callback(
         monitor_abort_event=abort_event,
     )
     abort_thread.join()
-    logger.debug("Abort thread finished.")
 
     calls = [
         call(subband_id=subband_id, subband_data=subband_data)

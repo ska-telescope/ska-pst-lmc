@@ -230,21 +230,29 @@ class PstProcessApiSimulator(PstProcessApi):
             used to signal to stop monitoring. If not set then the background task
             will create one.
         """
-        self._logger.debug(f"Starting to monitor at {polling_rate}")
+        self._logger.debug(f"Starting to monitor at {polling_rate}ms")
         try:
             if monitor_abort_event is not None:
                 self._monitor_abort_event = monitor_abort_event
             # make sure we reset the monitoring event
             self._monitor_abort_event.clear()
 
-            for data in TimeoutIterator(
-                self._simulated_monitor_data_generator(polling_rate=polling_rate),
-                abort_event=self._monitor_abort_event,
-                timeout=2 * polling_rate / 1000.0,
-                expected_rate=polling_rate / 1000.0,
-            ):
-                for (subband_id, subband_data) in data.items():
-                    subband_monitor_data_callback(subband_id=subband_id, subband_data=subband_data)
+            while not self._monitor_abort_event.is_set():
+                try:
+                    for data in TimeoutIterator(
+                        self._simulated_monitor_data_generator(polling_rate=polling_rate),
+                        abort_event=self._monitor_abort_event,
+                        timeout=2 * polling_rate / 1000.0,
+                        expected_rate=polling_rate / 1000.0,
+                    ):
+                        for (subband_id, subband_data) in data.items():
+                            subband_monitor_data_callback(subband_id=subband_id, subband_data=subband_data)
+                except TimeoutError:
+                    if self._monitor_abort_event.is_set():
+                        # this could be a race condition for the abort event, so ignore timeout
+                        continue
+                    self._logger.warning("received timeout during monitoring before abort event set.")
+
         except Exception:
             self._logger.error("error while monitoring.", exc_info=True)
 
@@ -572,3 +580,9 @@ class PstProcessApiGrpc(PstProcessApi):
                 )
         except Exception:
             self._logger.warning("Error while handing monitoring.", exc_info=True)
+        finally:
+            # ensure monitor abort event is set
+            if not self._monitor_abort_event.is_set():
+                self._monitor_abort_event.set()
+
+            self._monitor_abort_event = None
