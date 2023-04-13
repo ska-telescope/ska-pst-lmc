@@ -25,9 +25,9 @@ from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker
 
 
 @pytest.fixture
-def additional_change_events_callbacks(beam_change_event_attributes: List[str]) -> List[str]:
+def additional_change_events_callbacks(beam_attribute_names: List[str]) -> List[str]:
     """Return additional change event callbacks."""
-    return [*beam_change_event_attributes]
+    return [*beam_attribute_names]
 
 
 @pytest.fixture
