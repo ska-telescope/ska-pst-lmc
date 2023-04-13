@@ -948,20 +948,26 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
         # call ObsReset on devices that aren't in EMPTY state.  This will move them
         # into IDLE state.
-        devices_to_reset = [d for d in self._remote_devices if d.obsState != ObsState.EMPTY]
-        obsreset_subtask: Task = NoopTask()
+        #
+        # Cannot reset devices in parallel.  This will reset the devices in the following order:
+        # DSP, RECV, and then SMRB
+        devices_to_reset = [d for d in reversed(self._remote_devices) if d.obsState != ObsState.EMPTY]
+        obsreset_subtasks: List[Task] = []
         if len(devices_to_reset) > 0:
-            obsreset_subtask = DeviceCommandTask(
-                devices=devices_to_reset,
-                action=lambda d: d.ObsReset(),
-                command_name="ObsReset",
-            )
+            obsreset_subtasks = [
+                DeviceCommandTask(
+                    devices=[d],
+                    action=lambda d: d.ObsReset(),
+                    command_name="ObsReset",
+                )
+                for d in devices_to_reset
+            ]
 
         return self._submit_remote_job(
             job=SequentialTask(
                 subtasks=[
                     abort_subtask,
-                    obsreset_subtask,
+                    *obsreset_subtasks,
                 ],
             ),
             task_callback=task_callback,
