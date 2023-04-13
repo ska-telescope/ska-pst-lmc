@@ -25,6 +25,7 @@ from tango import DebugIt
 from tango.server import attribute, command, device_property
 
 from ska_pst_lmc.component.component_manager import PstComponentManager
+from ska_pst_lmc.component.obs_state_model import PstObsStateMachine
 from ska_pst_lmc.component.pst_device_interface import PstDeviceInterface
 from ska_pst_lmc.util import TelescopeFacilityEnum
 
@@ -381,6 +382,7 @@ class PstBaseProcessDevice(Generic[T], PstBaseDevice[T]):
         self.obs_state_model = ObsStateModel(
             logger=self.logger,
             callback=self._update_obs_state,
+            state_machine_factory=PstObsStateMachine,
         )
 
     def _component_state_changed(  # type: ignore[override]

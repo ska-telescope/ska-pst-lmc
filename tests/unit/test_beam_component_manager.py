@@ -331,7 +331,7 @@ def request_params(
         ("end_scan", "EndScan", {"scanning": False}),
         (
             "obsreset",
-            ["ObsReset", "DeconfigureBeam"],
+            ["ObsReset"],
             {"configured": False},
         ),
         ("go_to_fault", "GoToFault", {"obsfault": True}),
@@ -843,7 +843,7 @@ def test_beam_cm_puts_subordinate_devices_in_state_to_do_obsreset(
             d, m, MagicMock(name=f"{d}.{m}", return_value=([ResultCode.OK], ["Completed"]))
         )
         for d in component_manager._remote_devices
-        for m in ["Abort", "ObsReset", "DeconfigureBeam"]
+        for m in ["Abort", "ObsReset"]
     ]
 
     component_manager.obsreset(task_callback=task_callback)
@@ -860,9 +860,8 @@ def test_beam_cm_puts_subordinate_devices_in_state_to_do_obsreset(
     ]
 
     [
-        getattr(d, m).assert_called_once()  # type: ignore
+        getattr(d, "ObsReset").assert_called_once()  # type: ignore
         for d in component_manager._remote_devices
-        for m in ["ObsReset", "DeconfigureBeam"]
         if d.fqdn != device_fqdn or subdevice_obs_state != ObsState.EMPTY
     ]
 

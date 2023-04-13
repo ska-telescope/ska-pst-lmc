@@ -268,6 +268,15 @@ class TestPstSmrb:
             lambda: device_under_test.ObsReset(),
             expected_obs_state_events=[
                 ObsState.RESETTING,
+                ObsState.EMPTY,
+            ],
+        )
+
+        resources = json.dumps(configure_beam_request)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.ConfigureBeam(resources),
+            expected_obs_state_events=[
+                ObsState.RESOURCING,
                 ObsState.IDLE,
             ],
         )
@@ -408,7 +417,7 @@ class TestPstSmrb:
             lambda: device_under_test.ObsReset(),
             expected_obs_state_events=[
                 ObsState.RESETTING,
-                ObsState.IDLE,
+                ObsState.EMPTY,
             ],
         )
 

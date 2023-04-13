@@ -402,6 +402,7 @@ def test_smrb_cm_obsreset(
     """Test that the component manager calls the API to reset service in ABORTED or FAULT state."""
 
     def _side_effect(*args: Any, task_callback: Callable, **kwargs: Any) -> None:
+        task_callback(configured=False, resourced=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     api = MagicMock()
@@ -413,7 +414,9 @@ def test_smrb_cm_obsreset(
     api.reset.assert_called_once_with(
         task_callback=ANY,
     )
-    cast(MagicMock, task_callback).assert_called_once_with(status=TaskStatus.COMPLETED, result="Completed")
+
+    calls = [call(configured=False, resourced=False), call(status=TaskStatus.COMPLETED, result="Completed")]
+    cast(MagicMock, task_callback).assert_has_calls(calls=calls)
     device_interface.update_health_state.assert_called_once_with(health_state=HealthState.OK)
 
 

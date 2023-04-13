@@ -957,34 +957,11 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
                 command_name="ObsReset",
             )
 
-        # move DSP and RECV devices into EMPTY state if they're not already in that state.
-        devices_to_deconfigure = [
-            d for d in [self._dsp_device, self._recv_device] if d.obsState != ObsState.EMPTY
-        ]
-        deconfigure_dsp_recv_subtask: Task = NoopTask()
-        if len(devices_to_deconfigure) > 0:
-            deconfigure_dsp_recv_subtask = DeviceCommandTask(
-                devices=devices_to_deconfigure,
-                action=lambda d: d.DeconfigureBeam(),
-                command_name="DeconfigureBeam",
-            )
-
-        # move SMRB into EMPTY state if it isn't already in that state.
-        deconfigure_smrb_subtask: Task = NoopTask()
-        if self._smrb_device.obsState != ObsState.EMPTY:
-            deconfigure_smrb_subtask = DeviceCommandTask(
-                devices=[self._smrb_device],
-                action=lambda d: d.DeconfigureBeam(),
-                command_name="DeconfigureBeam",
-            )
-
         return self._submit_remote_job(
             job=SequentialTask(
                 subtasks=[
                     abort_subtask,
                     obsreset_subtask,
-                    deconfigure_dsp_recv_subtask,
-                    deconfigure_smrb_subtask,
                 ],
             ),
             task_callback=task_callback,
