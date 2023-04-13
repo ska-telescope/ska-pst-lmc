@@ -57,6 +57,7 @@ protobuf-init = "^0.1.0"
 ipython = "^8.4.0"
 gitchangelog = "^3.0.4"
 ska-tango-testing = "^0.4.1"
+sphinxcontrib-plantuml = "^0.25"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -72,6 +72,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
     "recommonmark",
+    "sphinxcontrib.plantuml",
 ]
 
 # show autodoc type hints
@@ -275,3 +276,7 @@ epub_exclude_files = ["search.html"]
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {"https://docs.python.org/": None}
+
+
+## sphinxcontrib.plantuml
+plantuml_syntax_error_image = True
