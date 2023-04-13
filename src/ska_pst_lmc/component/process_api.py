@@ -518,7 +518,7 @@ class PstProcessApiGrpc(PstProcessApi):
         try:
             self._logger.debug(f"About to call reset on {self._grpc_client._client_id} gRPC.")
             self._grpc_client.reset()
-            self._component_state_callback(configured=False)
+            self._component_state_callback(configured=False, resourced=False)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
         except BaseGrpcException as e:
             self._logger.error(f"Error raised while resetting '{self._client_id}'", exc_info=True)

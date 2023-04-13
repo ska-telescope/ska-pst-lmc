@@ -271,7 +271,7 @@ def test_recv_simulator_api_reset(
         call(status=TaskStatus.COMPLETED, result="Completed"),
     ]
     task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_with(configured=False)
+    component_state_callback.assert_called_with(configured=False, resourced=False)
 
 
 def test_recv_simulator_api_go_to_fault(

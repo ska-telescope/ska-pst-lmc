@@ -183,7 +183,7 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(progress=37)
         time.sleep(0.01)
         task_callback(progress=63)
-        self._component_state_callback(configured=False)
+        self._component_state_callback(configured=False, resourced=False)
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def _simulated_monitor_data_generator(

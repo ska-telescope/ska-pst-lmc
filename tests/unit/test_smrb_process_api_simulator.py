@@ -223,6 +223,25 @@ def test_smrb_simulator_api_abort(
     component_state_callback.assert_called_with(scanning=False)
 
 
+def test_dsp_simulator_api_reset(
+    simulation_api: PstSmrbProcessApiSimulator,
+    simulator: PstSmrbSimulator,
+    component_state_callback: MagicMock,
+    task_callback: MagicMock,
+) -> None:
+    """Test that reset simulator calls task."""
+    simulation_api.reset(task_callback)
+
+    expected_calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(progress=37),
+        call(progress=63),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    task_callback.assert_has_calls(expected_calls)
+    component_state_callback.assert_called_once_with(configured=False, resourced=False)
+
+
 def test_smrb_simulator_api_go_to_fault(
     simulation_api: PstSmrbProcessApiSimulator,
     component_state_callback: MagicMock,

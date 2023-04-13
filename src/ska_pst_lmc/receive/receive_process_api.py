@@ -198,7 +198,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         task_callback(status=TaskStatus.IN_PROGRESS)
         time.sleep(0.01)
         task_callback(progress=47)
-        self._component_state_callback(configured=False)
+        self._component_state_callback(configured=False, resourced=False)
         self._simulator.reset()
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
