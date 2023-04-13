@@ -62,12 +62,14 @@ def test_pst_device_proxy_subscribe_to_event() -> None:
 
     assert subscription is not None
     assert subscription.subscribed
+    assert "obsState" in device._subscriptions
     assert callback in subscription._callbacks
 
     callback2 = MagicMock()
     subscription2 = device.subscribe_change_event("obsState", callback=callback2, stateless=False)
     assert subscription == subscription2
     assert subscription2._callbacks == [callback, callback2]
+    assert "obsState" in device._subscriptions
 
     device._device.subscribe_event.assert_called_once_with(
         "obsState",
@@ -79,6 +81,7 @@ def test_pst_device_proxy_subscribe_to_event() -> None:
     subscription.unsubscribe()
     assert not subscription.subscribed
     assert subscription.callbacks == []
+    assert "obsState" not in device._subscriptions
     device._device.unsubscribe_event.assert_called_once_with(subscription._subscription_id)
 
 

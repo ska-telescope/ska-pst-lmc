@@ -383,15 +383,15 @@ class PstGrpcLmcClient:
 
     def monitor(
         self: PstGrpcLmcClient,
+        abort_event: Event,
         polling_rate: int = 5000,
-        abort_event: Optional[Event] = None,
     ) -> Generator[MonitorResponse, None, None]:
         """Call monitor on reqmore gRPC service.
 
-        :param polling_rate: the rate, in milliseconds, at which the monitoring
-            should poll. The default value is 5000ms (i.e. 5 seconds).
         :param abort_event: a :py:class:`threading.Event` that can be
             used to signal to stop monitoring.
+        :param polling_rate: the rate, in milliseconds, at which the monitoring
+            should poll. The default value is 5000ms (i.e. 5 seconds).
         """
         self._logger.debug("Calling monitor")
         try:
@@ -401,11 +401,17 @@ class PstGrpcLmcClient:
                 abort_event=abort_event,
                 expected_rate=polling_rate / 1000.0,
             )
-            for t in self._monitor_stream:
-                yield t
-
-        except TimeoutError:
-            pass
+            while not abort_event.is_set():
+                try:
+                    for t in self._monitor_stream:
+                        yield t
+                except TimeoutError:
+                    if abort_event.is_set():
+                        # received timeout during abort event being set.
+                        continue
+                    self._logger.warning(
+                        f"received timeout during monitoring for '{self._client_id}' before abort event set."
+                    )
 
         except grpc.RpcError as e:
             _handle_grpc_error(e)

@@ -43,6 +43,7 @@ class TimeoutIterator(Iterable[T]):
         self._abort_event = abort_event or threading.Event()
         self._expected_rate = expected_rate
         self._logger = logging.getLogger(__name__)
+        self._first = True
 
         self._thread = Thread(target=self.__background_iterate, daemon=True)
         self._thread.start()
@@ -62,6 +63,14 @@ class TimeoutIterator(Iterable[T]):
         """Return the next item."""
         if self._done or self._abort_event.is_set():
             raise StopIteration
+
+        # cannot guarantee that the iterator has produced anything yet
+        # wait for the expected rate on first call.
+        if self._first:
+            import time
+
+            time.sleep(self._expected_rate)
+            self._first = False
 
         try:
             if self._timeout == NO_TIMEOUT:
