@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from typing import Any, Dict, List, Optional
 
 import backoff
@@ -420,6 +421,8 @@ class TestPstBeam:
                 self.configure_scan(configuration)
                 self.scan(str(scan_id))
 
+                # need to wait 2 polling periods - set to being 500ms in test-parent
+                time.sleep(1)
                 assert init_attr_values != self.current_attribute_values()
 
                 self.end_scan()

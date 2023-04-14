@@ -26,7 +26,7 @@ from tests.conftest import TangoDeviceCommandChecker
 
 
 @pytest.fixture
-def monitor_polling_rate() -> int:
+def monitoring_polling_rate() -> int:
     """Fixture to get monitoring polling rate for test."""
     return 100
 
@@ -34,12 +34,12 @@ def monitor_polling_rate() -> int:
 @pytest.fixture
 def device_properties(
     grpc_endpoint: str,
-    monitor_polling_rate: int,
+    monitoring_polling_rate: int,
 ) -> dict:
     """Fixture that returns device_properties to be provided to the device under test."""
     return {
         "process_api_endpoint": grpc_endpoint,
-        "monitor_polling_rate": monitor_polling_rate,
+        "monitoring_polling_rate": monitoring_polling_rate,
     }
 
 

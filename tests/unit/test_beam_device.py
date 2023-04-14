@@ -61,7 +61,7 @@ def devices_info() -> List[dict]:
                 {
                     "name": "test/dsp/1",
                     "properties": {
-                        "monitor_polling_rate": 100,
+                        "monitoring_polling_rate": 100,
                     },
                 }
             ],
@@ -72,7 +72,7 @@ def devices_info() -> List[dict]:
                 {
                     "name": "test/recv/1",
                     "properties": {
-                        "monitor_polling_rate": 100,
+                        "monitoring_polling_rate": 100,
                     },
                 }
             ],
@@ -83,7 +83,7 @@ def devices_info() -> List[dict]:
                 {
                     "name": "test/smrb/1",
                     "properties": {
-                        "monitor_polling_rate": 100,
+                        "monitoring_polling_rate": 100,
                     },
                 }
             ],

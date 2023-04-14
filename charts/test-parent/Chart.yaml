@@ -27,11 +27,3 @@ dependencies:
 - name: ska-pst-lmc
   version: 0.4.3
   repository: file://../ska-pst-lmc
-- name: ska-pst-smrb
-  version: 0.1.1
-  repository: https://artefact.skao.int/repository/helm-internal
-  condition: ska-pst-smrb.enabled
-- name: ska-pst-recv
-  version: 0.4.0
-  repository: https://artefact.skao.int/repository/helm-internal
-  condition: ska-pst-recv.enabled
