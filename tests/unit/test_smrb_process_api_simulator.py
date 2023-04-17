@@ -223,7 +223,7 @@ def test_smrb_simulator_api_abort(
     component_state_callback.assert_called_with(scanning=False)
 
 
-def test_dsp_simulator_api_reset(
+def test_smrb_simulator_api_reset(
     simulation_api: PstSmrbProcessApiSimulator,
     simulator: PstSmrbSimulator,
     component_state_callback: MagicMock,
