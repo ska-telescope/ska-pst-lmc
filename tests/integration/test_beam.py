@@ -420,6 +420,7 @@ class TestPstBeam:
         self: TestPstBeam,
         csp_configure_scan_request: Dict[str, Any],
         scan_configs: Dict[int, dict],
+        monitor_polling_rate_ms: int,
     ) -> None:
         """Test state model of PstBeam with multiple scans."""
         try:
@@ -442,7 +443,7 @@ class TestPstBeam:
                 self.scan(str(scan_id))
 
                 # need to wait 2 polling periods - set to being 500ms in test-parent
-                time.sleep(1)
+                time.sleep(2 * monitor_polling_rate_ms / 1000.0)
 
                 # assert that a scan will update values
                 self.assert_attribute_values(prev_attr_values, assert_equal=False)

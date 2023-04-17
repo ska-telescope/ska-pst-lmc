@@ -5,7 +5,7 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
 
-"""This modue provides the PST overrides of the ObsStateModel.
+"""This module provides the PST overrides of the ObsStateModel.
 
 There is known tech debt in PST in regards to the fact that it
 was initially developed using a sub-array model and not an
