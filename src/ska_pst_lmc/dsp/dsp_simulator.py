@@ -125,7 +125,7 @@ class PstDspSimulator:
         )
 
         self._subband_data_record_rates = configuration.get(
-            "subband_data_record_rates", self.num_subbands * [1e9 * (random() + 0.5)]
+            "subband_data_record_rates", self.num_subbands * [1e8 * (random() + 0.5)]
         )
 
         self._subband_data_recorded = configuration.get("subband_data_recorded", self.num_subbands * [0])

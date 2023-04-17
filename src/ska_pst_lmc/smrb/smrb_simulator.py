@@ -121,7 +121,8 @@ class PstSmrbSimulator:
             subband_data = self._data_store._subband_data[idx + 1]
 
             written = randint(2**10, 2**16)
-            utilisation = randint(0, 1000) / 10.0  # between 0-100%
+            # between 0-70% - too high and it causes Tango k8s-tests to fail
+            utilisation = randint(0, 700) / 10.0
             full = int(subband_data.num_of_buffers * utilisation / 100.0)
 
             subband_data.total_written += written
