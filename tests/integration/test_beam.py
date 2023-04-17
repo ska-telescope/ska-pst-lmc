@@ -103,6 +103,26 @@ class TestPstBeam:
             if attr != "availableDiskSpace"
         }
 
+    def assert_attribute_values(
+        self: TestPstBeam,
+        prev_attr_values: Dict[str, Any],
+        assert_equal: bool = True,
+        ignore_channel_bock_config: bool = False,
+    ) -> None:
+        """Assert whether the current and previous attribute values are equal or not."""
+        from copy import deepcopy
+
+        curr_attr_values = self.current_attribute_values()
+        if ignore_channel_bock_config:
+            prev_attr_values = deepcopy(prev_attr_values)
+            del prev_attr_values["channelBlockConfiguration"]
+            del curr_attr_values["channelBlockConfiguration"]
+
+        if assert_equal:
+            assert prev_attr_values == curr_attr_values
+        else:
+            assert prev_attr_values != curr_attr_values
+
     def configure_scan(self: TestPstBeam, configuration: str) -> None:
         """Perform a configure scan."""
         self.tango_device_command_checker.assert_command(
@@ -408,7 +428,7 @@ class TestPstBeam:
 
             self.online()
             self.beam_proxy.simulationMode = SimulationMode.TRUE
-            init_attr_values = self.current_attribute_values()
+            prev_attr_values = self.current_attribute_values()
             for (scan_id, scan_config) in scan_configs.items():
                 self.on()
 
@@ -423,13 +443,21 @@ class TestPstBeam:
 
                 # need to wait 2 polling periods - set to being 500ms in test-parent
                 time.sleep(1)
-                assert init_attr_values != self.current_attribute_values()
+
+                # assert that a scan will update values
+                self.assert_attribute_values(prev_attr_values, assert_equal=False)
 
                 self.end_scan()
+
+                # ending a scan will stop monitoring
+                prev_attr_values = self.current_attribute_values()
+
                 self.goto_idle()
                 self.off()
 
-                assert init_attr_values == self.current_attribute_values()
+                # as monitoring had stopped there should be no update of values
+                self.assert_attribute_values(prev_attr_values, ignore_channel_bock_config=True)
+                prev_attr_values = self.current_attribute_values()
 
             self.offline()
         except Exception:
