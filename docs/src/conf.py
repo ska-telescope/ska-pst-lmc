@@ -280,3 +280,5 @@ intersphinx_mapping = {"https://docs.python.org/": None}
 
 ## sphinxcontrib.plantuml
 plantuml_syntax_error_image = True
+
+plantuml = '/usr/bin/plantuml -Djava.awt.headless=true '

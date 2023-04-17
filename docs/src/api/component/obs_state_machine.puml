@@ -1,3 +1,4 @@
+@startuml PST Subdevice State Machine
 EMPTY: The PST subdevice has no configuration
 RESOURCING: The PST subdevice is performing a configure beam operation
 IDLE: The PST subdevice is beam configured but has no scan configuration
@@ -34,3 +35,4 @@ RESETTING -down-> ABORTING: abort_invoked
 RESETTING -right-> EMPTY: obsreset_completed
 [*] -up-> FAULT: component_obsfault\n(from any state)
 FAULT -up-> RESETTING: obsreset_invoked
+@enduml

@@ -62,7 +62,7 @@ class PstObsStateMachine(Machine):
     and transitions to FAULT obs state are omitted to simplify the
     diagram.
 
-    .. uml:: obs_state_machine.uml
+    .. uml:: obs_state_machine.puml
       :caption: Diagram of the PST subdevice state machine
 
     """
