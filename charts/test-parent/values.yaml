@@ -44,6 +44,14 @@ ska-pst-lmc:
     low-pst-beam:
       instances: ["01"]
       polling: 600
+  smrb:
+    monitor_polling_rate: 500
+
+  recv:
+    monitor_polling_rate: 500
+
+  dsp:
+    monitor_polling_rate: 500
 
 ska-dashboard-repo:
   enabled: false
@@ -71,31 +79,3 @@ ska-taranta:
 
 ska-taranta-auth:
   enabled: false
-
-ska-pst-smrb:
-  enabled: true
-  hostIPC: true
-  tolerations: []
-  config:
-    smrb:
-      data:
-        SMRB_CORE_CMD: "/usr/local/bin/ska_pst_smrb_core -vvv -c 8080"
-
-ska-pst-recv:
-  enabled: true
-  hostIPC: true
-  service:
-    protocol: TCP
-  tolerations: []
-  envFrom:
-    - type: "configMapRef"
-      name: recv
-  # data:
-  subbands:
-  - name: ska-pst-recv
-    command: ["bash"]
-    args:
-    - -c
-    - $(RECV_CMD) -vvv -c 8080
-    tty: true
-    config: {}

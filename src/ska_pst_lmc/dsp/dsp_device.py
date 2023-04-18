@@ -34,7 +34,7 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager], PstApiDeviceInterface
     # -----------------
     process_api_endpoint = device_property(dtype=str, doc="Endpoint for the DSP.CORE service.")
 
-    monitor_polling_rate = device_property(
+    monitoring_polling_rate = device_property(
         dtype=int, default_value=5000, doc="Rate at which monitor polling should happen, in milliseconds."
     )
 
@@ -158,8 +158,8 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager], PstApiDeviceInterface
         display_unit="%",
         max_value=100,
         min_value=0,
-        max_alarm=90,
-        max_warning=80,
+        max_alarm=99,
+        max_warning=95,
         doc="Used space on the disk that DSP is writing to.",
     )
     def diskUsedPercentage(self: PstDsp) -> float:

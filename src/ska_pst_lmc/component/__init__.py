@@ -21,6 +21,7 @@ __all__ = [
     "as_device_attribute_name",
     "PstDeviceInterface",
     "PstApiDeviceInterface",
+    "PstObsStateMachine",
 ]
 
 from .monitor_data_handler import MonitorDataHandler, MonitorDataStore
@@ -33,3 +34,4 @@ from .process_api import PstProcessApi, PstProcessApiGrpc
 from .pst_device_interface import PstDeviceInterface, PstApiDeviceInterface
 from .pst_device import PstBaseDevice, PstBaseProcessDevice, as_device_attribute_name
 from .grpc_lmc_client import PstGrpcLmcClient
+from .obs_state_model import PstObsStateMachine

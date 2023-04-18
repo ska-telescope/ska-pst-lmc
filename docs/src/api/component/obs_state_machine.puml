@@ -1,0 +1,38 @@
+@startuml PST Subdevice State Machine
+EMPTY: The PST subdevice has no configuration
+RESOURCING: The PST subdevice is performing a configure beam operation
+IDLE: The PST subdevice is beam configured but has no scan configuration
+CONFIGURING: The PST subdevice is performing a configure scan operation
+READY: The PST subdevice is configured for a scan
+SCANNING: The PST subdevice is scanning
+ABORTING: The PST subdevice is aborting
+ABORTED: The PST subdevice has aborted
+RESETTING: The PST subdevice is resetting to EMPTY\nfrom FAULT or ABORTED state
+FAULT: The PST subdevice has faulted
+
+EMPTY -down-> RESOURCING: assign_invoked
+RESOURCING -up-> EMPTY: assign_completed
+RESOURCING -up-> EMPTY: release_completed
+RESOURCING -down-> IDLE: assign_completed
+RESOURCING -down-> IDLE: release_completed
+IDLE -up-> RESOURCING: assign_invoked
+IDLE -up-> RESOURCING: release_invoked
+IDLE -down-> CONFIGURING: configure_invoked
+IDLE -left-> ABORTING: abort_invoked
+CONFIGURING -up-> IDLE: configure_completed
+CONFIGURING -left-> ABORTING: abort_invoked
+CONFIGURING -down-> READY: configure_completed
+CONFIGURING -left-> ABORTING: abort_invoked
+READY -up-> CONFIGURING: configure_invoked
+READY -up-> IDLE: component_unconfigured
+READY -down-> SCANNING: component_scanning
+READY -left-> ABORTING: abort_invoked
+SCANNING -up-> READY: component_not_scanning
+SCANNING -left-> ABORTING: abort_invoked
+ABORTING -up-> ABORTED: abort_completed
+ABORTED -up-> RESETTING: obsreset_invoked
+RESETTING -down-> ABORTING: abort_invoked
+RESETTING -right-> EMPTY: obsreset_completed
+[*] -up-> FAULT: component_obsfault\n(from any state)
+FAULT -up-> RESETTING: obsreset_invoked
+@enduml

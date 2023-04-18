@@ -948,43 +948,26 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
         # call ObsReset on devices that aren't in EMPTY state.  This will move them
         # into IDLE state.
-        devices_to_reset = [d for d in self._remote_devices if d.obsState != ObsState.EMPTY]
-        obsreset_subtask: Task = NoopTask()
+        #
+        # Cannot reset devices in parallel.  This will reset the devices in the following order:
+        # DSP, RECV, and then SMRB
+        devices_to_reset = [d for d in reversed(self._remote_devices) if d.obsState != ObsState.EMPTY]
+        obsreset_subtasks: List[Task] = []
         if len(devices_to_reset) > 0:
-            obsreset_subtask = DeviceCommandTask(
-                devices=devices_to_reset,
-                action=lambda d: d.ObsReset(),
-                command_name="ObsReset",
-            )
-
-        # move DSP and RECV devices into EMPTY state if they're not already in that state.
-        devices_to_deconfigure = [
-            d for d in [self._dsp_device, self._recv_device] if d.obsState != ObsState.EMPTY
-        ]
-        deconfigure_dsp_recv_subtask: Task = NoopTask()
-        if len(devices_to_deconfigure) > 0:
-            deconfigure_dsp_recv_subtask = DeviceCommandTask(
-                devices=devices_to_deconfigure,
-                action=lambda d: d.DeconfigureBeam(),
-                command_name="DeconfigureBeam",
-            )
-
-        # move SMRB into EMPTY state if it isn't already in that state.
-        deconfigure_smrb_subtask: Task = NoopTask()
-        if self._smrb_device.obsState != ObsState.EMPTY:
-            deconfigure_smrb_subtask = DeviceCommandTask(
-                devices=[self._smrb_device],
-                action=lambda d: d.DeconfigureBeam(),
-                command_name="DeconfigureBeam",
-            )
+            obsreset_subtasks = [
+                DeviceCommandTask(
+                    devices=[d],
+                    action=lambda d: d.ObsReset(),
+                    command_name="ObsReset",
+                )
+                for d in devices_to_reset
+            ]
 
         return self._submit_remote_job(
             job=SequentialTask(
                 subtasks=[
                     abort_subtask,
-                    obsreset_subtask,
-                    deconfigure_dsp_recv_subtask,
-                    deconfigure_smrb_subtask,
+                    *obsreset_subtasks,
                 ],
             ),
             task_callback=task_callback,

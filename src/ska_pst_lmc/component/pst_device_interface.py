@@ -97,7 +97,7 @@ class PstApiDeviceInterface(Generic[T], PstDeviceInterface):
         raise NotImplementedError("PstApiDeviceInterface is abstract")
 
     @property
-    def monitor_polling_rate(self: PstApiDeviceInterface) -> int:
+    def monitoring_polling_rate(self: PstApiDeviceInterface) -> int:
         """Get the monitoring polling rate."""
         raise NotImplementedError("PstApiDeviceInterface is abstract")
 

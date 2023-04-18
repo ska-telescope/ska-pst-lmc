@@ -8,7 +8,7 @@ HELM_CHARTS_TO_PUBLISH = ska-pst-lmc
 # E203 and W503 conflict with black
 PYTHON_SWITCHES_FOR_FLAKE8 = --extend-ignore=BLK,T --enable=DAR104 --ignore=E203,FS003,W503,N802 --max-complexity=10 \
     --max-line-length=110 --rst-roles=py:attr,py:class,py:const,py:exc,py:func,py:meth,py:mod \
-		--rst-directives deprecated --exclude=src/ska_pst_lmc_proto
+		--rst-directives deprecated,uml --exclude=src/ska_pst_lmc_proto
 PYTHON_SWITCHES_FOR_BLACK = --line-length=110
 PYTHON_SWITCHES_FOR_ISORT = --skip-glob="*/__init__.py" -w=110 --py 39 --thirdparty=ska_pst_lmc_proto
 PYTHON_TEST_FILE = tests
@@ -67,7 +67,7 @@ SKA_TANGO_PYTANGO_RUNTIME_IMAGE=ska-tango-images-pytango-runtime
 SKA_TANGO_PYTANGO_RUNTIME_TAG=9.3.19
 SKA_PST_PYTHON_RUNTIME_IMAGE=$(SKA_TANGO_PYTANGO_RUNTIME_REGISTRY)/$(SKA_TANGO_PYTANGO_RUNTIME_IMAGE):$(SKA_TANGO_PYTANGO_RUNTIME_TAG)
 
-PST_COMMON_TAG=0.7.0
+PST_COMMON_TAG=0.8.2
 
 PST_OCI_COMMON_BUILDER_REGISTRY=$(PST_DEV_REGISTRY)/ska-pst-common
 PST_OCI_COMMON_BUILDER_IMAGE=ska-pst-common-builder

@@ -15,3 +15,5 @@ base component manager, and Process API abstraction.
   Monitor Data Handler<monitor_data_handler>
   Process API<process_api>
   PST Device<pst_device>
+  Observation State model<obs_state_model>
+

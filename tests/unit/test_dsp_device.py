@@ -27,7 +27,7 @@ from tests.conftest import TangoDeviceCommandChecker
 
 
 @pytest.fixture
-def monitor_polling_rate() -> int:
+def monitoring_polling_rate() -> int:
     """Fixture to get monitoring polling rate for test."""
     return 100
 
@@ -35,12 +35,12 @@ def monitor_polling_rate() -> int:
 @pytest.fixture
 def device_properties(
     grpc_endpoint: str,
-    monitor_polling_rate: int,
+    monitoring_polling_rate: int,
 ) -> dict:
     """Fixture that returns device_properties to be provided to the device under test."""
     return {
         "process_api_endpoint": grpc_endpoint,
-        "monitor_polling_rate": monitor_polling_rate,
+        "monitoring_polling_rate": monitoring_polling_rate,
     }
 
 
@@ -281,6 +281,15 @@ class TestPstDsp:
             lambda: device_under_test.ObsReset(),
             expected_obs_state_events=[
                 ObsState.RESETTING,
+                ObsState.EMPTY,
+            ],
+        )
+
+        resources = json.dumps(configure_beam_request)
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.ConfigureBeam(resources),
+            expected_obs_state_events=[
+                ObsState.RESOURCING,
                 ObsState.IDLE,
             ],
         )
@@ -421,7 +430,7 @@ class TestPstDsp:
             lambda: device_under_test.ObsReset(),
             expected_obs_state_events=[
                 ObsState.RESETTING,
-                ObsState.IDLE,
+                ObsState.EMPTY,
             ],
         )
 

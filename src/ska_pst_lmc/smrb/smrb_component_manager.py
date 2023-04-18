@@ -214,7 +214,7 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
             self._api.monitor(
                 # for now only handling 1 subband
                 subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
-                polling_rate=self._monitor_polling_rate,
+                polling_rate=self._monitoring_polling_rate,
             )
 
         return self._submit_background_task(_task, task_callback=task_callback)

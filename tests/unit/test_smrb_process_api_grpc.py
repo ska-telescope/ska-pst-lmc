@@ -620,7 +620,7 @@ def test_smrb_grpc_reset(
         call(status=TaskStatus.COMPLETED, result="Completed"),
     ]
     task_callback.assert_has_calls(expected_calls)
-    component_state_callback.assert_called_once_with(configured=False)
+    component_state_callback.assert_called_once_with(configured=False, resourced=False)
 
 
 def test_smrb_grpc_reset_when_exception_thrown(
