@@ -34,10 +34,6 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager], PstApiDeviceInterface
     # -----------------
     process_api_endpoint = device_property(dtype=str, doc="Endpoint for the DSP.CORE service.")
 
-    monitoring_polling_rate = device_property(
-        dtype=int, default_value=5000, doc="Rate at which monitor polling should happen, in milliseconds."
-    )
-
     # ---------------
     # General methods
     # ---------------

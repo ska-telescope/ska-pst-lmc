@@ -40,7 +40,7 @@ def device_properties(
     """Fixture that returns device_properties to be provided to the device under test."""
     return {
         "process_api_endpoint": grpc_endpoint,
-        "monitoring_polling_rate": monitoring_polling_rate,
+        "initial_monitoring_polling_rate": monitoring_polling_rate,
     }
 
 

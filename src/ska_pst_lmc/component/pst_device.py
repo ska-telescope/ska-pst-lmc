@@ -346,6 +346,38 @@ class PstBaseProcessDevice(Generic[T], PstBaseDevice[T]):
     may not change as often as the scan configuration.
     """
 
+    initial_monitoring_polling_rate = device_property(
+        dtype=int, default_value=5000, doc="Rate at which monitor polling should happen, in milliseconds."
+    )
+
+    def init_device(self: PstBaseProcessDevice) -> None:
+        """Initialise the device."""
+        super().init_device()
+        self._monitoring_polling_rate = self.initial_monitoring_polling_rate
+
+    # -----------
+    # Attributes
+    # -----------
+
+    @property
+    def monitoring_polling_rate(self: PstBaseProcessDevice) -> int:
+        """Get the monitoring polling rate."""
+        return self._monitoring_polling_rate
+
+    @attribute(
+        dtype=int,
+        label="Monitoring polling rate",
+        doc=("Rate at which data from CORE apps is monitored during a scan in milliseconds."),
+    )
+    def monitoringPollingRate(self: PstBaseProcessDevice) -> int:
+        """Get the current monitoring polling rate, in milliseconds."""
+        return self._monitoring_polling_rate
+
+    @monitoringPollingRate.write  # type: ignore[no-redef]
+    def monitoringPollingRate(self: PstBaseProcessDevice, monitoring_polling_rate: int) -> None:
+        """Update the monitoring polling rate."""
+        self._monitoring_polling_rate = monitoring_polling_rate
+
     def init_command_objects(self: PstBaseProcessDevice) -> None:
         """Set up the command objects."""
         super().init_command_objects()
