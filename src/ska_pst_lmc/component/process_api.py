@@ -302,6 +302,9 @@ class PstProcessApiGrpc(PstProcessApi):
         self._background_task_processor = background_task_processor or BackgroundTaskProcessor(
             default_logger=logger
         )
+        # need a reentrant lock
+        self._monitor_lock = threading.RLock()
+        self._monitor_condvar = threading.Condition()
         self._monitor_abort_event: Optional[threading.Event] = None
         self._connected = False
 
@@ -316,9 +319,11 @@ class PstProcessApiGrpc(PstProcessApi):
         self._connected = self._grpc_client.connect()
 
     def disconnect(self: PstProcessApiGrpc) -> None:
-        """Disconnect from the external process."""
-        if self._monitor_abort_event is not None:
-            self._monitor_abort_event.set()
+        """Disconnect from the external process.
+
+        This will ensure any monitoring background task has stopped.
+        """
+        self._stop_monitoring()
 
     def _get_configure_beam_request(self: PstProcessApiGrpc, resources: Dict[str, Any]) -> BeamConfiguration:
         """Convert resources dictionary to instance of `BeamConfiguration`."""
@@ -544,8 +549,16 @@ class PstProcessApiGrpc(PstProcessApi):
         return self._grpc_client.get_env()
 
     def _stop_monitoring(self: PstProcessApiGrpc) -> None:
-        if self._monitor_abort_event is not None:
+        # ensure we have a lock
+        with self._monitor_lock:
+            # not monitoring so just return
+            if self._monitor_abort_event is None:
+                return
+
             self._monitor_abort_event.set()
+
+        with self._monitor_condvar:
+            self._monitor_condvar.wait()
 
     def _handle_monitor_response(
         self: PstProcessApiGrpc, data: MonitorData, monitor_data_callback: Callable[..., None]
@@ -570,7 +583,15 @@ class PstProcessApiGrpc(PstProcessApi):
             used to signal to stop monitoring. If not set then the background task
             will create one.
         """
-        self._monitor_abort_event = monitor_abort_event or threading.Event()
+        with self._monitor_lock:
+            if self._monitor_abort_event is not None and not self._monitor_abort_event.is_set():
+                self._logger.warning(
+                    "Request to start monitoring while already monitoring. Stopping previous monitoring."
+                )
+                self._stop_monitoring()
+
+            self._monitor_abort_event = monitor_abort_event or threading.Event()
+
         try:
             for d in self._grpc_client.monitor(
                 polling_rate=polling_rate, abort_event=self._monitor_abort_event
@@ -581,8 +602,14 @@ class PstProcessApiGrpc(PstProcessApi):
         except Exception:
             self._logger.warning("Error while handing monitoring.", exc_info=True)
         finally:
-            # ensure monitor abort event is set
-            if not self._monitor_abort_event.is_set():
-                self._monitor_abort_event.set()
+            # ensure monitor abort event is set and notify all awaiting for
+            # the monitoring to stop.
+            with self._monitor_lock:
+                if self._monitor_abort_event is not None:
+                    if not self._monitor_abort_event.is_set():
+                        self._monitor_abort_event.set()
 
-            self._monitor_abort_event = None
+                self._monitor_abort_event = None
+
+            with self._monitor_condvar:
+                self._monitor_condvar.notify_all()
