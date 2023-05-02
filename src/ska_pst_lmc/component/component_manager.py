@@ -459,8 +459,12 @@ class PstApiComponentManager(Generic[T, Api], PstComponentManager[PstApiDeviceIn
         :type component_fault_callback: `Callable`
         """
         self._api = api
-        self._monitoring_polling_rate = device_interface.monitoring_polling_rate
         super().__init__(device_interface=device_interface, logger=logger, **kwargs)
+
+    @property
+    def monitoring_polling_rate(self: PstApiComponentManager) -> int:
+        """Get current monitoring polling rate in milliseconds."""
+        return self._device_interface.monitoring_polling_rate
 
     def _handle_communication_state_change(
         self: PstApiComponentManager, communication_state: CommunicationStatus

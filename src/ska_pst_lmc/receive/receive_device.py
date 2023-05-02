@@ -38,10 +38,6 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
         dtype=(int,), default_value=[20000], doc="The UDP ports for RECV subbands to listen on."
     )
 
-    monitoring_polling_rate = device_property(
-        dtype=int, default_value=5000, doc="Rate at which monitor polling should happen, in milliseconds."
-    )
-
     # ---------------
     # General methods
     # ---------------

@@ -26,7 +26,7 @@ server:
           - name: "process_api_endpoint"
             values:
             - {{.Release.Name}}-{{.Values.dsp.dsp_process_api_endpoint}}:{{index .Values.global.ports.dsp "dsp-mgmt" "port"}}
-          - name: "monitoring_polling_rate"
+          - name: "initial_monitoring_polling_rate"
             values:
             - "{{.Values.dsp.monitor_polling_rate}}"
           - name: "LoggingLevelDefault"
@@ -48,7 +48,7 @@ server:
           - name: "process_api_endpoint"
             values:
             - {{.Release.Name}}-{{.Values.recv.recv_process_api_endpoint}}:{{index .Values.global.ports.recv "recv-mgmt" "port"}}
-          - name: "monitoring_polling_rate"
+          - name: "initial_monitoring_polling_rate"
             values:
             - "{{.Values.recv.monitor_polling_rate}}"
           - name: "LoggingLevelDefault"
@@ -70,7 +70,7 @@ server:
           - name: "process_api_endpoint"
             values:
             - {{.Release.Name}}-{{.Values.smrb.smrb_process_api_endpoint}}:{{index .Values.global.ports.smrb "smrb-mgmt" "port"}}
-          - name: "monitoring_polling_rate"
+          - name: "initial_monitoring_polling_rate"
             values:
             - "{{.Values.smrb.monitor_polling_rate}}"
           - name: "LoggingLevelDefault"

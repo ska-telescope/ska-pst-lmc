@@ -375,7 +375,7 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
                 self._api.monitor(
                     # for now only handling 1 subband
                     subband_monitor_data_callback=self._monitor_data_handler.handle_subband_data,
-                    polling_rate=self._monitoring_polling_rate,
+                    polling_rate=self.monitoring_polling_rate,
                 )
             except Exception:
                 self.logger.exception("Error in starting scan for RECV.MGMT", exc_info=True)

@@ -351,7 +351,7 @@ def test_smrb_cm_scan(
     )
     api.monitor.assert_called_once_with(
         subband_monitor_data_callback=component_manager._monitor_data_handler.handle_subband_data,
-        polling_rate=component_manager._monitoring_polling_rate,
+        polling_rate=component_manager.monitoring_polling_rate,
     )
 
 
