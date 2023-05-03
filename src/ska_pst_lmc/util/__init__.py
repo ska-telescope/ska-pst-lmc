@@ -18,6 +18,7 @@ Functionality provided within this module is:
 __all__ = [
     "validate",
     "Strictness",
+    "ValidationError",
     "Configuration",
     "BackgroundTask",
     "BackgroundTaskProcessor",
@@ -31,7 +32,7 @@ __all__ = [
 ]
 
 from .configuration import Configuration
-from .validation import validate, Strictness
+from .validation import validate, Strictness, ValidationError
 from .background_task import BackgroundTaskProcessor, BackgroundTask, RunState, background_task
 from .remote_task import RemoteTask, AggregateRemoteTask
 from .timeout_iterator import TimeoutIterator

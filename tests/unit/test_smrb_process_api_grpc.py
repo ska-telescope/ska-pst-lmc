@@ -56,6 +56,7 @@ from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApiGrpc
 from ska_pst_lmc.smrb.smrb_util import calculate_smrb_subband_resources
 from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
+from ska_pst_lmc.util.validation import ValidationError
 
 
 @pytest.fixture
@@ -92,6 +93,80 @@ def test_smrb_grpc_sends_connect_request(
     grpc_api.connect()
 
     mock_servicer_context.connect.assert_called_once_with(ConnectionRequest(client_id=client_id))
+
+
+def test_smrb_grpc_validate_configure_beam(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_beam_request: Dict[str, Any],
+) -> None:
+    """Test that SMRB gRPC validate_configure_beam is called."""
+    response = ConfigureBeamResponse()
+    mock_servicer_context.configure_beam = MagicMock(return_value=response)
+    configuration = calculate_smrb_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
+
+    grpc_api.validate_configure_beam(configuration=configuration)
+
+    expected_smrb_request = SmrbBeamConfiguration(**configuration)
+    expected_request = ConfigureBeamRequest(
+        beam_configuration=BeamConfiguration(smrb=expected_smrb_request),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
+
+
+def test_smrb_grpc_validate_configure_beam_throws_invalid_request(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_beam_request: Dict[str, Any],
+) -> None:
+    """Test that SMRB gRPC validate_configure_beam is called when there are validation errors."""
+    mock_servicer_context.configure_beam.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.INVALID_REQUEST,
+        message="Validate configure beam error.",
+    )
+
+    configuration = calculate_smrb_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
+
+    with pytest.raises(ValidationError) as e_info:
+        grpc_api.validate_configure_beam(configuration=configuration)
+
+    assert e_info.value.message == "Validate configure beam error."
+
+    expected_smrb_request = SmrbBeamConfiguration(**configuration)
+    expected_request = ConfigureBeamRequest(
+        beam_configuration=BeamConfiguration(smrb=expected_smrb_request),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
+
+
+def test_smrb_grpc_validate_configure_beam_throws_resources_already_assigned(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_beam_request: Dict[str, Any],
+) -> None:
+    """Test that SMRB gRPC validate_configure_beam when already beam configured."""
+    mock_servicer_context.configure_beam.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.CONFIGURED_FOR_BEAM_ALREADY,
+        message="Beam configured already.",
+    )
+
+    configuration = calculate_smrb_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
+
+    with pytest.raises(ValidationError) as e_info:
+        grpc_api.validate_configure_beam(configuration=configuration)
+
+    assert e_info.value.message == "Beam configured already."
+
+    expected_smrb_request = SmrbBeamConfiguration(**configuration)
+    expected_request = ConfigureBeamRequest(
+        beam_configuration=BeamConfiguration(smrb=expected_smrb_request),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
 
 
 def test_smrb_grpc_configure_beam(
@@ -249,6 +324,72 @@ def test_smrb_grpc_deconfigure_beam_when_throws_exception(
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_once_with(obsfault=True)
+
+
+def test_smrb_grpc_validate_configure_scan(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_scan_request: Dict[str, Any],
+) -> None:
+    """Test that SMRB gRPC validate_configure_scan is called."""
+    response = ConfigureScanResponse()
+    mock_servicer_context.configure_scan = MagicMock(return_value=response)
+
+    grpc_api.validate_configure_scan(configure_scan_request)
+
+    expected_request = ConfigureScanRequest(
+        scan_configuration=ScanConfiguration(smrb=SmrbScanConfiguration()),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
+
+
+def test_smrb_grpc_validate_configure_scan_throws_invalid_request(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_scan_request: Dict[str, Any],
+) -> None:
+    """Test that SMRB gRPC validate_configure_beam is called when there are validation errors."""
+    mock_servicer_context.configure_scan.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.INVALID_REQUEST,
+        message="Validate configure scan error.",
+    )
+
+    with pytest.raises(ValidationError) as e_info:
+        grpc_api.validate_configure_scan(configuration=configure_scan_request)
+
+    assert e_info.value.message == "Validate configure scan error."
+
+    expected_request = ConfigureScanRequest(
+        scan_configuration=ScanConfiguration(smrb=SmrbScanConfiguration()),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
+
+
+def test_smrb_grpc_validate_configure_scan_throws_scan_already_configured(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_scan_request: Dict[str, Any],
+) -> None:
+    """Test that SMRB gRPC validate_configure_scan is called when already configured for scanning."""
+    mock_servicer_context.configure_scan.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.CONFIGURED_FOR_SCAN_ALREADY,
+        message="Already configured for scanning.",
+    )
+
+    with pytest.raises(ValidationError) as e_info:
+        grpc_api.validate_configure_scan(configuration=configure_scan_request)
+
+    assert e_info.value.message == "Already configured for scanning."
+
+    expected_request = ConfigureScanRequest(
+        scan_configuration=ScanConfiguration(smrb=SmrbScanConfiguration()),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
 
 
 def test_smrb_grpc_configure_scan(

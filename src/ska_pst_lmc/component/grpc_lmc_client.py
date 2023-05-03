@@ -237,7 +237,7 @@ class PstGrpcLmcClient:
 
     def configure_beam(self: PstGrpcLmcClient, request: ConfigureBeamRequest) -> bool:
         """Call configure_beam on remote gRPC service."""
-        self._logger.debug("Assigning resources.")
+        self._logger.debug(f"Configuring beam for '{self._client_id}'.")
         try:
             self._service.configure_beam(request)
             return True
@@ -246,7 +246,7 @@ class PstGrpcLmcClient:
 
     def deconfigure_beam(self: PstGrpcLmcClient) -> bool:
         """Call deconfigure_beam on remote gRPC service."""
-        self._logger.debug("Releasing component resources")
+        self._logger.debug(f"Deconfiguring beam for '{self._client_id}'")
         try:
             self._service.deconfigure_beam(DeconfigureBeamRequest())
             return True
@@ -255,7 +255,7 @@ class PstGrpcLmcClient:
 
     def get_beam_configuration(self: PstGrpcLmcClient) -> GetBeamConfigurationResponse:
         """Call get_beam_configuration on remote gRPC service."""
-        self._logger.debug("Getting assigned resources.")
+        self._logger.debug(f"Getting beam configuration for '{self._client_id}'.")
         try:
             return self._service.get_beam_configuration(GetBeamConfigurationRequest())
         except grpc.RpcError as e:
@@ -263,7 +263,7 @@ class PstGrpcLmcClient:
 
     def configure_scan(self: PstGrpcLmcClient, request: ConfigureScanRequest) -> bool:
         """Call configure_scan on remote gRPC service."""
-        self._logger.debug("Calling configure on remote service.")
+        self._logger.debug(f"Calling configure_scan on remote service for '{self._client_id}'.")
         try:
             self._service.configure_scan(request)
             return True
@@ -272,7 +272,7 @@ class PstGrpcLmcClient:
 
     def deconfigure_scan(self: PstGrpcLmcClient) -> bool:
         """Call deconfigure_scan on remote gRPC service."""
-        self._logger.debug("Calling deconfigure on remote service.")
+        self._logger.debug(f"Calling deconfigure_scan on remote service for '{self._client_id}'.")
         try:
             self._service.deconfigure_scan(DeconfigureScanRequest())
             return True
@@ -281,7 +281,7 @@ class PstGrpcLmcClient:
 
     def get_scan_configuration(self: PstGrpcLmcClient) -> GetScanConfigurationResponse:
         """Call get_scan_configuration on remote gRPC service."""
-        self._logger.debug("Calling remote service for its scan configuration.")
+        self._logger.debug(f"Calling remote service for its scan configuration for '{self._client_id}'.")
         try:
             return self._service.get_scan_configuration(GetScanConfigurationRequest())
         except grpc.RpcError as e:
@@ -289,7 +289,7 @@ class PstGrpcLmcClient:
 
     def start_scan(self: PstGrpcLmcClient, request: StartScanRequest) -> bool:
         """Call start_scan on remote gRPC service."""
-        self._logger.debug("Calling start_scan")
+        self._logger.debug(f"Calling start_scan for '{self._client_id}'.")
         try:
             self._service.start_scan(request)
             return True
@@ -298,7 +298,7 @@ class PstGrpcLmcClient:
 
     def stop_scan(self: PstGrpcLmcClient) -> bool:
         """Call stop_scan on remote gRPC service."""
-        self._logger.debug("Calling stop_scan")
+        self._logger.debug(f"Calling stop_scan for '{self._client_id}'.")
         try:
             self._service.stop_scan(StopScanRequest())
             return True
@@ -307,7 +307,7 @@ class PstGrpcLmcClient:
 
     def go_to_fault(self: PstGrpcLmcClient) -> None:
         """Put the gRPC service in to a FAULT state."""
-        self._logger.debug("Calling go_to_fault on remote service.")
+        self._logger.debug(f"Calling go_to_fault on remote service for '{self._client_id}'.")
         try:
             self._service.go_to_fault(GoToFaultRequest())
         except grpc.RpcError as e:
@@ -315,7 +315,7 @@ class PstGrpcLmcClient:
 
     def get_state(self: PstGrpcLmcClient) -> ObsState:
         """Call get_state on remote gRPC service."""
-        self._logger.debug("Calling get_state")
+        self._logger.debug(f"Calling get_state for '{self._client_id}'.")
         try:
             result: GetStateResponse = self._service.get_state(GetStateRequest())
             return ObsState(result.state)
@@ -362,7 +362,7 @@ class PstGrpcLmcClient:
 
         After this call the state of the service should be ABORTED.
         """
-        self._logger.debug("Calling abort")
+        self._logger.debug(f"Calling abort for '{self._client_id}'.")
         try:
             self._service.abort(AbortRequest())
         except grpc.RpcError as e:
@@ -393,7 +393,7 @@ class PstGrpcLmcClient:
         :param polling_rate: the rate, in milliseconds, at which the monitoring
             should poll. The default value is 5000ms (i.e. 5 seconds).
         """
-        self._logger.debug("Calling monitor")
+        self._logger.debug(f"Calling monitor for '{self._client_id}'.")
         try:
             self._monitor_stream = TimeoutIterator(
                 iterator=self._service.monitor(MonitorRequest(polling_rate=polling_rate)),

@@ -6,16 +6,23 @@
 # See LICENSE for more info.
 
 """This module is used as a utility module for dealing with validation."""
+from __future__ import annotations
 
-__all__ = [
-    "validate",
-    "Strictness",
-]
+__all__ = ["validate", "Strictness", "ValidationError"]
 
 from enum import IntEnum
-from typing import Tuple
+from typing import Any, Tuple
 
 from schema import Schema
+
+
+class ValidationError(Exception):
+    """Exception representing a validation exception."""
+
+    def __init__(self: ValidationError, message: str, *args: Any) -> None:
+        """Create instance of ValidationError."""
+        self.message = message
+        super().__init__(*args)
 
 
 def _split_interface_version(version: str) -> Tuple[int, int]:
