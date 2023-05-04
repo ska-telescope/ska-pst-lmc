@@ -271,7 +271,7 @@ def configure_scan_request(
     }
 
     if telescope_facility == TelescopeFacilityEnum.Low:
-        del request["frequency_band"]
+        request["frequency_band"] = "low"
 
     return request
 

@@ -80,10 +80,10 @@ class PstProcessApi:
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
-    def configure_beam(self: PstProcessApi, resources: Dict[str, Any], task_callback: Callable) -> None:
+    def configure_beam(self: PstProcessApi, configuration: Dict[str, Any], task_callback: Callable) -> None:
         """Configure beam for service.
 
-        :param resources: Dictionary of resources to allocate.
+        :param configuration: Dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
@@ -360,7 +360,7 @@ class PstProcessApiGrpc(PstProcessApi):
     def _get_configure_beam_request(
         self: PstProcessApiGrpc, configuration: Dict[str, Any]
     ) -> BeamConfiguration:
-        """Convert resources dictionary to instance of `BeamConfiguration`."""
+        """Convert resources configuration dictionary to instance of `BeamConfiguration`."""
         raise NotImplementedError("PstProcessApiGrpc is an abstract class.")
 
     def _get_configure_scan_request(
@@ -380,7 +380,7 @@ class PstProcessApiGrpc(PstProcessApi):
     def validate_configure_beam(self: PstProcessApiGrpc, configuration: Dict[str, Any]) -> None:
         """Validate configuration for a `configure_beam` request.
 
-        :param resources: Dictionary of resources to allocate.
+        :param configuration: Dictionary of resources to allocate.
         :raises ValidationError: if there an issue validating the request.
             The error message contains the details.
         """
@@ -397,16 +397,18 @@ class PstProcessApiGrpc(PstProcessApi):
             self._logger.error(f"gRPC request to {self._client_id} failed validation: {e.message}")
             raise ValidationError(e.message) from e
 
-    def configure_beam(self: PstProcessApiGrpc, resources: Dict[str, Any], task_callback: Callable) -> None:
-        """Configure the beam with the resources.
+    def configure_beam(
+        self: PstProcessApiGrpc, configuration: Dict[str, Any], task_callback: Callable
+    ) -> None:
+        """Configure the beam with the resources definted in configuration.
 
-        :param resources: Dictionary of resources to allocate.
+        :param configuration: Dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
         """
-        self._logger.debug(f"Configuring beam for '{self._client_id}': {resources}")
+        self._logger.debug(f"Configuring beam for '{self._client_id}': {configuration}")
         task_callback(status=TaskStatus.IN_PROGRESS)
 
-        beam_configuration = self._get_configure_beam_request(resources)
+        beam_configuration = self._get_configure_beam_request(configuration)
         request = ConfigureBeamRequest(beam_configuration=beam_configuration, dry_run=False)
         try:
             self._grpc_client.configure_beam(request=request)

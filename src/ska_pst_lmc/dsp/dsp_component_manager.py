@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from ska_tango_base.base import check_communicating
 from ska_tango_base.control_model import PowerState, SimulationMode
@@ -199,21 +199,53 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
 
         return self.submit_task(_task, task_callback=task_callback)
 
+    def validate_configure_scan(
+        self: PstDspComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
+    ) -> TaskResponse:
+        """
+        Validate a ConfigureScan request sent from CSP.LMC to the DSP sub-component.
+
+        This asserts the request can be converted to DSP resources and then calls the
+        process API to perform the validation.
+
+        :param configuration: configuration that would be used when the configure_beam and
+            configure_scan methods are called.
+        :type configuration: Dict[str, Any]
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callback
+        """
+
+        def _task(task_callback: Callable) -> None:
+            task_callback(status=TaskStatus.IN_PROGRESS)
+            try:
+                dsp_resources = calculate_dsp_subband_resources(self.beam_id, request_params=configuration)
+
+                self._api.validate_configure_beam(configuration=dsp_resources[1])
+                task_callback(progress=50)
+                self._api.validate_configure_scan(configuration=configuration)
+                task_callback(status=TaskStatus.COMPLETED)
+            except Exception as e:
+                task_callback(status=TaskStatus.FAILED, exception=e)
+
+        return self._submit_background_task(_task, task_callback=task_callback)
+
     def configure_beam(
-        self: PstDspComponentManager, resources: Dict[str, Any], task_callback: Callback = None
+        self: PstDspComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
         """
         Configure the beam of the the component with the resources.
 
-        :param resources: resources to be assigned
+        :param configuration: resources to be assigned
         """
-        dsp_resources = calculate_dsp_subband_resources(self.beam_id, request_params=resources)
+        dsp_resources = calculate_dsp_subband_resources(self.beam_id, request_params=configuration)
 
         # deal only with subband 1 for now.
         self.logger.debug(f"Submitting API with dsp_resources={dsp_resources[1]}")
 
         def _task(task_callback: Callback = None) -> None:
-            self._api.configure_beam(resources=dsp_resources[1], task_callback=wrap_callback(task_callback))
+            self._api.configure_beam(
+                configuration=dsp_resources[1], task_callback=wrap_callback(task_callback)
+            )
             self._get_disk_stats_from_api()
             # callback_safely(task_callback)
 
