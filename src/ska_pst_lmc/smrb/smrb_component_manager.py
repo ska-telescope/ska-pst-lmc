@@ -209,10 +209,12 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
                 smrb_resources = calculate_smrb_subband_resources(self.beam_id, request_params=configuration)
 
                 self._api.validate_configure_beam(configuration=smrb_resources[1])
-                task_callback(progress=50)
                 self._api.validate_configure_scan(configuration=configuration)
-                task_callback(status=TaskStatus.COMPLETED)
+                task_callback(status=TaskStatus.COMPLETED, result="Completed")
             except Exception as e:
+                self.logger.exception(
+                    f"Failed to validate scan configuration for {self.device_name}.", exc_info=True
+                )
                 task_callback(status=TaskStatus.FAILED, exception=e)
 
         return self._submit_background_task(_task, task_callback=task_callback)

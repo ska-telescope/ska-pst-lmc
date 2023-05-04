@@ -24,6 +24,10 @@ class ValidationError(Exception):
         self.message = message
         super().__init__(*args)
 
+    def __str__(self: ValidationError) -> str:
+        """Get string representation of exception."""
+        return f"{self.message}"
+
 
 def _split_interface_version(version: str) -> Tuple[int, int]:
     """Extract version number from interface URI.

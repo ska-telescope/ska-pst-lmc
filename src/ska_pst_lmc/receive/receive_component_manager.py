@@ -345,9 +345,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
                 }
 
                 self._api.validate_configure_beam(configuration=subband_resources)
-                task_callback(progress=50)
                 self._api.validate_configure_scan(configuration=configuration)
-                task_callback(status=TaskStatus.COMPLETED)
+                task_callback(status=TaskStatus.COMPLETED, result="Completed")
             except Exception as e:
                 task_callback(status=TaskStatus.FAILED, exception=e)
 

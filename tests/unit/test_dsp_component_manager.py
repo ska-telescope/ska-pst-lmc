@@ -279,8 +279,7 @@ def test_dsp_cm_validate_configure_scan(
 
     calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(progress=50),
-        call(status=TaskStatus.COMPLETED),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
     ]
     cast(MagicMock, task_callback).assert_has_calls(calls=calls)
 
@@ -342,7 +341,6 @@ def test_dsp_cm_validate_configure_scan_fails_scan_configuration(
 
     calls = [
         call(status=TaskStatus.IN_PROGRESS),
-        call(progress=50),
         call(status=TaskStatus.FAILED, exception=validation_exception),
     ]
     cast(MagicMock, task_callback).assert_has_calls(calls=calls)

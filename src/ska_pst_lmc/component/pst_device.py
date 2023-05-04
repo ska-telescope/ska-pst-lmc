@@ -390,6 +390,7 @@ class PstBaseProcessDevice(Generic[T], PstBaseDevice[T]):
             ("ConfigureBeam", "configure_beam", "assign"),
             ("DeconfigureBeam", "deconfigure_beam", "release"),
             ("DeconfigureScan", "deconfigure_scan", None),
+            ("ValidateConfigureScan", "validate_configure_scan", None),
         ]:
             callback = None if state_model_hook is None else functools.partial(_callback, state_model_hook)
             self.register_command_object(
@@ -462,6 +463,52 @@ class PstBaseProcessDevice(Generic[T], PstBaseDevice[T]):
 
             message = "PstBaseProccesDevice.InitCommand completed OK"
             return (ResultCode.OK, message)
+
+    def is_ValidateConfigureScan_allowed(self: PstBaseProcessDevice) -> bool:
+        """
+        Return whether the `ValidateConfigureScan` command may be called in the current state.
+
+        :return: whether the command may be called in the current device
+            state
+        :rtype: bool
+        """
+        # If we return False here, Tango will raise an exception that incorrectly blames
+        # refusal on device state.
+        # e.g. "ConfigureBeam not allowed when the device is in ON state".
+        # So let's raise an exception ourselves.
+        if self._obs_state not in [ObsState.EMPTY]:
+            raise StateModelError(
+                f"ValidateConfigureBeam command not permitted in observation state {self._obs_state.name}"
+            )
+        return True
+
+    @command(
+        dtype_in="DevString",
+        doc_in="JSON formatted string with the scan configuration.",
+        dtype_out="DevVarLongStringArray",
+        doc_out="A tuple containing a return code and a string message indicating status. "
+        "The message is for information purpose only.",
+    )
+    @DebugIt()
+    def ValidateConfigureScan(self: PstBaseProcessDevice, argin: str) -> DevVarLongStringArrayType:
+        """
+        Validate the scan configuration is valid for the sub-component of the BEAM.
+
+        This will validate that both Beam and Scan configuration.
+
+        :param argin: JSON formatted string with the scan configuration.
+        :type argin: str
+
+        :return: A tuple containing a return code and a string message indicating status.
+            The message is for information purpose only.
+        :rtype: (ResultCode, str)
+        """
+        handler = self.get_command_object("ValidateConfigureScan")
+
+        configuration: Dict[str, Any] = cast(Dict[str, Any], json.loads(argin))
+        (result_code, message) = handler(configuration)
+
+        return ([result_code], [message])
 
     def is_ConfigureBeam_allowed(self: PstBaseProcessDevice) -> bool:
         """

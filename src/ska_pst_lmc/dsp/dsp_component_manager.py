@@ -221,9 +221,8 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
                 dsp_resources = calculate_dsp_subband_resources(self.beam_id, request_params=configuration)
 
                 self._api.validate_configure_beam(configuration=dsp_resources[1])
-                task_callback(progress=50)
                 self._api.validate_configure_scan(configuration=configuration)
-                task_callback(status=TaskStatus.COMPLETED)
+                task_callback(status=TaskStatus.COMPLETED, result="Completed")
             except Exception as e:
                 task_callback(status=TaskStatus.FAILED, exception=e)
 

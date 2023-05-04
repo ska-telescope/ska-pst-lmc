@@ -949,3 +949,15 @@ def calc_expected_beam_channel_block_configuration(recv_subband_config: Dict[str
             for subband_id in range(1, num_subband + 1)
         ],
     }
+
+
+@pytest.fixture
+def fail_validate_configure_beam() -> bool:
+    """Fixture used to override simulator to fail validation or not."""
+    return False
+
+
+@pytest.fixture
+def fail_validate_configure_scan() -> bool:
+    """Fixture used to override simulator to fail validation or not."""
+    return False
