@@ -200,7 +200,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
             import json
 
             try:
-                configuration_dict = Configuration.from_json(json_str=argin)
+                configuration = Configuration.from_json(json_str=argin)
             except (json.JSONDecodeError, ValueError) as err:
                 msg = f"Validate configuration failed with error:{err}"
                 self.logger.error(msg)
@@ -211,7 +211,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
                 return ({}, ResultCode.FAILED, msg)
 
             return (
-                configuration_dict.data,
+                configuration.data,
                 ResultCode.OK,
                 "ConfigureScan arguments validation successful",
             )

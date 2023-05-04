@@ -788,6 +788,13 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         return self._submit_remote_job(
             job=SequentialTask(
                 subtasks=[
+                    # validate the request first.  If this any of these fail
+                    # then the whole command will fail.
+                    DeviceCommandTask(
+                        devices=[self._dsp_device, self._recv_device, self._smrb_device],
+                        action=lambda d: d.ValidateConfigureScan(request_str),
+                        command_name="ValidateConfigureScan",
+                    ),
                     # first do configre_beam on SMRB
                     DeviceCommandTask(
                         devices=[self._smrb_device],

@@ -319,7 +319,7 @@ def request_params(
         ("standby", "Standby", {"power": PowerState.STANDBY}),
         (
             "configure_scan",
-            ["ConfigureBeam", "ConfigureScan"],
+            ["ValidateConfigureScan", "ConfigureBeam", "ConfigureScan"],
             {"configured": True},
         ),
         (
@@ -743,7 +743,6 @@ def test_beam_cm_updates_frequency_band_to_low_for_skalow(
     """Test that component manager removes frequency band for Low but not High."""
     assert "frequency_band" in csp_configure_scan_request["common"]
     if telescope_facility == TelescopeFacilityEnum.Low:
-        assert "frequency_band" not in configure_scan_request
         configure_scan_request["frequency_band"] = "low"
     else:
         assert "frequency_band" in configure_scan_request
@@ -757,7 +756,7 @@ def test_beam_cm_updates_frequency_band_to_low_for_skalow(
             d, m, MagicMock(name=f"{d}.{m}", return_value=([ResultCode.OK], ["Completed"]))
         )
         for d in component_manager._remote_devices
-        for m in ["ConfigureScan", "ConfigureBeam"]
+        for m in ["ValidateConfigureScan", "ConfigureScan", "ConfigureBeam"]
     ]
 
     component_manager.configure_scan(configuration=csp_configure_scan_request, task_callback=task_callback)
