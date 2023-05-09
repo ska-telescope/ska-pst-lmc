@@ -319,7 +319,7 @@ def request_params(
         ("standby", "Standby", {"power": PowerState.STANDBY}),
         (
             "configure_scan",
-            ["ValidateConfigureScan", "ConfigureBeam", "ConfigureScan"],
+            ["ConfigureBeam", "ConfigureScan"],
             {"configured": True},
         ),
         (
