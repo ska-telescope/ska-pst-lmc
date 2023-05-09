@@ -215,10 +215,16 @@ class PstProcessApiSimulator(PstProcessApi):
         if self.fail_validate_configure_beam:
             raise ValidationError("Simulated validation error for configure beam.")
 
+        if "source" in configuration and configuration["source"] == "invalid source":
+            raise ValidationError("Simulated validation error due to invalid source")
+
     def validate_configure_scan(self: PstProcessApiSimulator, configuration: Dict[str, Any]) -> None:
         """Validate configure scan request."""
         if self.fail_validate_configure_scan:
             raise ValidationError("Simulated validation error for configure scan.")
+
+        if "source" in configuration and configuration["source"] == "invalid source":
+            raise ValidationError("Simulated validation error due to invalid source")
 
     def _simulated_monitor_data_generator(
         self: PstProcessApiSimulator, polling_rate: int

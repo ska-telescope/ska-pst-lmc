@@ -623,6 +623,57 @@ def test_beam_cm_configure_scan_sets_expected_data_record_rate(
     assert component_manager.expected_data_record_rate == 0.0
 
 
+@pytest.mark.parametrize(
+    "err_device_fqdn,err_msg,expected_status",
+    [
+        (None, "Completed", TaskStatus.COMPLETED),
+        ("test/dsp/1", "Something went wrong", TaskStatus.FAILED),
+        ("test/recv/1", "That's not a valid request", TaskStatus.FAILED),
+        ("test/smrb/1", "Oops something went wrong with the validation", TaskStatus.FAILED),
+    ],
+)
+def test_beam_cm_validate_configure_scan(
+    component_manager: PstBeamComponentManager,
+    csp_configure_scan_request: Dict[str, Any],
+    smrb_device_proxy: PstDeviceProxy,
+    recv_device_proxy: PstDeviceProxy,
+    dsp_device_proxy: PstDeviceProxy,
+    err_device_fqdn: Optional[str],
+    err_msg: str,
+    expected_status: TaskStatus,
+) -> None:
+    """Assert that actions that need to be delegated to remote devices."""
+    component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
+
+    for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]:
+        if d.fqdn == err_device_fqdn:
+            cast(MagicMock, d.ValidateConfigureScan).return_value = (
+                [ResultCode.FAILED],
+                [err_msg],
+            )
+        else:
+            cast(MagicMock, d.ValidateConfigureScan).return_value = (
+                [ResultCode.OK],
+                ["Completed"],
+            )
+
+    scan_configuration = {**csp_configure_scan_request["common"], **csp_configure_scan_request["pst"]["scan"]}
+    scan_configuration["frequency_band"] = "low"
+    request_str = json.dumps(scan_configuration)
+
+    (status, message) = component_manager.validate_configure_scan(csp_configure_scan_request)
+
+    assert status == expected_status
+    assert message == err_msg
+
+    for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]:
+        if d.fqdn == err_device_fqdn:
+            cast(MagicMock, d.ValidateConfigureScan).assert_called_once_with(request_str)
+
+        cast(MagicMock, d.ConfigureBeam).assert_not_called()
+        cast(MagicMock, d.ConfigureScan).assert_not_called()
+
+
 @pytest.mark.parametrize("patch_submit_job", [True])
 def test_beam_cm_updates_scan_id_on_start_scan_stop_scan(
     component_manager: PstBeamComponentManager, scan_id: int

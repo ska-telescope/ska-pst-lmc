@@ -12,7 +12,7 @@ from __future__ import annotations
 import functools
 import json
 import logging
-from threading import Event
+import threading
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ska_tango_base.base import check_communicating
@@ -55,7 +55,7 @@ class _RemoteJob:
         self: _RemoteJob,
         *args: Any,
         task_callback: Optional[Callable] = None,
-        task_abort_event: Optional[Event] = None,
+        task_abort_event: Optional[threading.Event] = None,
         **kwargs: Any,
     ) -> None:
         def _completion_callback(*arg: Any, **kwargs: Any) -> None:
@@ -747,6 +747,42 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             completion_callback=_completion_callback,
         )
 
+    def _as_pst_configure_scan_request_str(
+        self: PstBeamComponentManager, configuration: Dict[str, Any]
+    ) -> str:
+        """Convert configure scan request into a PST request string."""
+        common_configure = configuration["common"]
+        pst_configuration = configuration["pst"]["scan"]
+
+        if self._device_interface.facility == TelescopeFacilityEnum.Low:
+            # force using a low Frequency Band if the facility is SKALow
+            common_configure["frequency_band"] = "low"
+
+        request = {
+            **common_configure,
+            **pst_configuration,
+        }
+        return json.dumps(request)
+
+    def validate_configure_scan(
+        self: PstBeamComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
+    ) -> TaskResponse:
+        """Validate the configure scan request."""
+        request_str = self._as_pst_configure_scan_request_str(configuration)
+
+        validation_task = DeviceCommandTask(
+            devices=[self._dsp_device, self._recv_device, self._smrb_device],
+            action=lambda d: d.ValidateConfigureScan(request_str),
+            command_name="ValidateConfigureScan",
+        )
+
+        try:
+            self._pst_task_executor.submit_job(job=validation_task)
+            return (TaskStatus.COMPLETED, "Completed")
+        except Exception as e:
+            self.logger.warning(f"Error in validating against core apps: {str(e)}", exc_info=True)
+            return (TaskStatus.FAILED, str(e))
+
     def configure_scan(
         self: PstBeamComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
@@ -759,12 +795,8 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         # we only care about PST and common parts of the JSON
         # when sending to subordinated devices. Merge these into on configuration
         # request
-        common_configure = configuration["common"]
         pst_configuration = configuration["pst"]["scan"]
-
-        if self._device_interface.facility == TelescopeFacilityEnum.Low:
-            # force using a low Frequency Band if the facility is SKALow
-            common_configure["frequency_band"] = "low"
+        request_str = self._as_pst_configure_scan_request_str(configuration=configuration)
 
         def _completion_callback(task_callback: Callable) -> None:
             from ska_pst_lmc.dsp.dsp_util import generate_dsp_scan_request
@@ -779,22 +811,9 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-        request = {
-            **common_configure,
-            **pst_configuration,
-        }
-        request_str = json.dumps(request)
-
         return self._submit_remote_job(
             job=SequentialTask(
                 subtasks=[
-                    # validate the request first.  If this any of these fail
-                    # then the whole command will fail.
-                    DeviceCommandTask(
-                        devices=[self._dsp_device, self._recv_device, self._smrb_device],
-                        action=lambda d: d.ValidateConfigureScan(request_str),
-                        command_name="ValidateConfigureScan",
-                    ),
                     # first do configre_beam on SMRB
                     DeviceCommandTask(
                         devices=[self._smrb_device],

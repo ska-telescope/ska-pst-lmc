@@ -52,7 +52,7 @@ class _ThreadingCallback:
     def is_complete(
         self: _ThreadingCallback, *args: Any, status: Optional[TaskStatus] = None, **kwargs: Any
     ) -> bool:
-        return status is not None and status == TaskStatus.COMPLETED
+        return status is not None and status in [TaskStatus.COMPLETED, TaskStatus.FAILED]
 
     def wait(self: _ThreadingCallback, timeout: Optional[float] = None) -> None:
         self.callback_event.wait(timeout=timeout)
