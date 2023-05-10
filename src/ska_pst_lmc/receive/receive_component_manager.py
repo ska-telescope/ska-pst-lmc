@@ -358,7 +358,7 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
         """
         Configure beam resources in the component.
 
-        :param configuration: resources to be assigned
+        :param configuration: parameters to be configured and their requested values
         """
         # deal only with subband 1 for now. otherwise we have to deal with tracking
         # multiple long running tasks.

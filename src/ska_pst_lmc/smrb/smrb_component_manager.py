@@ -225,7 +225,7 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
         """
         Configure beam resources in the component.
 
-        :param configuration: resources to be assigned
+        :param configuration: parameters to be configured and their requested values.
         """
         smrb_resources = calculate_smrb_subband_resources(self.beam_id, request_params=configuration)
 

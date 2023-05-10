@@ -142,12 +142,12 @@ def test_dsp_grpc_validate_configure_beam_throws_invalid_request(
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
 
 
-def test_dsp_grpc_validate_configure_beam_throws_resources_already_assigned(
+def test_dsp_grpc_validate_configure_beam_throws_beam_already_configured(
     grpc_api: PstDspProcessApiGrpc,
     mock_servicer_context: MagicMock,
     configure_beam_request: Dict[str, Any],
 ) -> None:
-    """Test that DSP gRPC validate_configure_beam when already beam configured."""
+    """Test that DSP gRPC validate_configure_beam raises an exception when already beam configured."""
     mock_servicer_context.configure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.CONFIGURED_FOR_BEAM_ALREADY,
@@ -361,7 +361,7 @@ def test_dsp_grpc_validate_configure_scan_throws_invalid_request(
     mock_servicer_context: MagicMock,
     configure_scan_request: Dict[str, Any],
 ) -> None:
-    """Test that DSP gRPC validate_configure_beam is called when there are validation errors."""
+    """Test that DSP gRPC validate_configure_beam raises exception when there are validation errors."""
     mock_servicer_context.configure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.INVALID_REQUEST,
@@ -388,7 +388,7 @@ def test_dsp_grpc_validate_configure_scan_throws_scan_already_configured(
     mock_servicer_context: MagicMock,
     configure_scan_request: Dict[str, Any],
 ) -> None:
-    """Test that DSP gRPC validate_configure_scan is called when already configured for scanning."""
+    """Test that DSP gRPC validate_configure_scan raises exception when already configured for scanning."""
     mock_servicer_context.configure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.CONFIGURED_FOR_SCAN_ALREADY,

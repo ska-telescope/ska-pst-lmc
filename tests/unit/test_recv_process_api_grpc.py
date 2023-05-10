@@ -391,7 +391,7 @@ def test_receive_grpc_deconfigure_beam_when_throws_exception(
     component_state_callback.assert_called_once_with(obsfault=True)
 
 
-def test_dsp_grpc_validate_configure_scan(
+def test_recv_grpc_validate_configure_scan(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     configure_scan_request: Dict[str, Any],
@@ -410,7 +410,7 @@ def test_dsp_grpc_validate_configure_scan(
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
 
 
-def test_dsp_grpc_validate_configure_scan_throws_invalid_request(
+def test_recv_grpc_validate_configure_scan_throws_invalid_request(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     configure_scan_request: Dict[str, Any],
@@ -435,7 +435,7 @@ def test_dsp_grpc_validate_configure_scan_throws_invalid_request(
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
 
 
-def test_dsp_grpc_validate_configure_scan_throws_scan_already_configured(
+def test_recv_grpc_validate_configure_scan_throws_scan_already_configured(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     configure_scan_request: Dict[str, Any],

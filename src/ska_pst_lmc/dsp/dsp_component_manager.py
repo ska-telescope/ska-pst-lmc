@@ -234,7 +234,7 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
         """
         Configure the beam of the the component with the resources.
 
-        :param configuration: resources to be assigned
+        :param configuration: parameters to be configured and their requested values
         """
         dsp_resources = calculate_dsp_subband_resources(self.beam_id, request_params=configuration)
 

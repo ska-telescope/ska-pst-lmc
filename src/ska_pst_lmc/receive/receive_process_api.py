@@ -83,7 +83,7 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
     ) -> None:
         """Configure beam for the service.
 
-        :param configuration: dictionary of resources to allocate.
+        :param configuration: dictionary of parameters to be configured and their requested values.
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)

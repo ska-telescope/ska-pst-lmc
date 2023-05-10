@@ -71,7 +71,7 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
     def configure_beam(self: PstDspProcessApiSimulator, configuration: dict, task_callback: Callable) -> None:
         """Configure the beam.
 
-        :param configuration: dictionary of resources to allocate.
+        :param configuration: dictionary of parameters to be configured and their requested values
         :param task_callback: callable to connect back to the component manager.
         """
         self._logger.info(f"Assigning resources for DSP. {configuration}")
