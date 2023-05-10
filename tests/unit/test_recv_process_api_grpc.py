@@ -188,7 +188,7 @@ def test_receive_grpc_validate_configure_beam_throws_invalid_request(
     subband_configure_beam_request: Dict[str, Any],
     expected_beam_configuration_protobuf: ReceiveBeamConfiguration,
 ) -> None:
-    """Test that RECV gRPC validate_configure_beam is called when there are validation errors."""
+    """Test that RECV gRPC validate_configure_beam throws exception."""
     mock_servicer_context.configure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.INVALID_REQUEST,
@@ -213,7 +213,7 @@ def test_receive_grpc_validate_configure_beam_throws_resources_already_assigned(
     subband_configure_beam_request: Dict[str, Any],
     expected_beam_configuration_protobuf: ReceiveBeamConfiguration,
 ) -> None:
-    """Test that RECV gRPC validate_configure_beam when already beam configured."""
+    """Test that validate_configure_beam throws exception when already beam configured."""
     mock_servicer_context.configure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.CONFIGURED_FOR_BEAM_ALREADY,
@@ -397,7 +397,7 @@ def test_recv_grpc_validate_configure_scan(
     configure_scan_request: Dict[str, Any],
     expected_receive_configure_protobuf: ReceiveScanConfiguration,
 ) -> None:
-    """Test that DSP gRPC validate_configure_scan is called."""
+    """Test that RECV gRPC validate_configure_scan is called."""
     response = ConfigureScanResponse()
     mock_servicer_context.configure_scan = MagicMock(return_value=response)
 
@@ -416,7 +416,7 @@ def test_recv_grpc_validate_configure_scan_throws_invalid_request(
     configure_scan_request: Dict[str, Any],
     expected_receive_configure_protobuf: ReceiveScanConfiguration,
 ) -> None:
-    """Test that DSP gRPC validate_configure_beam is called when there are validation errors."""
+    """Test that validate_configure_beam throws exception when there are validation errors."""
     mock_servicer_context.configure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.INVALID_REQUEST,
@@ -441,7 +441,7 @@ def test_recv_grpc_validate_configure_scan_throws_scan_already_configured(
     configure_scan_request: Dict[str, Any],
     expected_receive_configure_protobuf: ReceiveScanConfiguration,
 ) -> None:
-    """Test that DSP gRPC validate_configure_scan is called when already configured for scanning."""
+    """Test that validate_configure_scan throws exception when already configured for scanning."""
     mock_servicer_context.configure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.CONFIGURED_FOR_SCAN_ALREADY,

@@ -81,7 +81,7 @@ def test_dsp_simulator_api_monitor_calls_callback(
 def test_dsp_simulator_api_validate_configure_beam(
     simulation_api: PstDspProcessApiSimulator,
 ) -> None:
-    """Tests that validate configure beam on simulator API."""
+    """Tests that validate configure beam when valid does not throw exception."""
     simulation_api.fail_validate_configure_beam = False
     simulation_api.validate_configure_beam(configuration={})
 
@@ -89,7 +89,7 @@ def test_dsp_simulator_api_validate_configure_beam(
 def test_dsp_simulator_api_validate_configure_beam_throws_validation_exception(
     simulation_api: PstDspProcessApiSimulator,
 ) -> None:
-    """Tests that validate configure beam on simulator API."""
+    """Tests that validate configure beam on simulator API throws validation."""
     simulation_api.fail_validate_configure_beam = True
     with pytest.raises(ValidationError):
         simulation_api.validate_configure_beam(configuration={})
@@ -134,7 +134,7 @@ def test_dsp_simulator_api_deconfigure_beam(
 def test_dsp_simulator_api_validate_configure_scan(
     simulation_api: PstDspProcessApiSimulator,
 ) -> None:
-    """Tests that validate configure beam on simulator API."""
+    """Tests that validate configure scan on simulator API."""
     simulation_api.fail_validate_configure_scan = False
     simulation_api.validate_configure_scan(configuration={})
 
@@ -142,7 +142,7 @@ def test_dsp_simulator_api_validate_configure_scan(
 def test_dsp_simulator_api_validate_configure_scan_throws_validation_exception(
     simulation_api: PstDspProcessApiSimulator,
 ) -> None:
-    """Tests that validate configure beam on simulator API."""
+    """ests that validate configure scan on simulator API throws validation exception."""
     simulation_api.fail_validate_configure_scan = True
     with pytest.raises(ValidationError):
         simulation_api.validate_configure_scan(configuration={})
