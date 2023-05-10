@@ -142,7 +142,7 @@ def test_dsp_simulator_api_validate_configure_scan(
 def test_dsp_simulator_api_validate_configure_scan_throws_validation_exception(
     simulation_api: PstDspProcessApiSimulator,
 ) -> None:
-    """ests that validate configure scan on simulator API throws validation exception."""
+    """Tests that validate configure scan on simulator API throws validation exception."""
     simulation_api.fail_validate_configure_scan = True
     with pytest.raises(ValidationError):
         simulation_api.validate_configure_scan(configuration={})
