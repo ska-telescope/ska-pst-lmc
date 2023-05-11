@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import logging
 from functools import cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from ska_tango_base.control_model import PowerState, SimulationMode
+from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component import PstApiComponentManager, PstApiDeviceInterface
 from ska_pst_lmc.component.component_manager import TaskResponse
@@ -313,13 +314,51 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
         self._subband_beam_configuration = config
         self._property_callback("subbandBeamConfiguration", json.dumps(self._subband_beam_configuration))
 
+    def validate_configure_scan(
+        self: PstReceiveComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
+    ) -> TaskResponse:
+        """
+        Validate a ConfigureScan request sent from CSP.LMC to for the RECV sub-component.
+
+        If this command fails it will ensure then a call to either ConfigureBeam or ConfigureScan
+        would have failed leaving the BEAM in an invalid state.
+
+        :param configuration: configuration that would be used when the configure_beam and
+            configure_scan methods are called.
+        :type configuration: Dict[str, Any]
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callback
+        """
+
+        def _task(task_callback: Callable) -> None:
+            task_callback(status=TaskStatus.IN_PROGRESS)
+            try:
+                recv_resources = calculate_receive_subband_resources(
+                    self.beam_id,
+                    request_params=configuration,
+                    data_host=self.data_host,
+                    subband_udp_ports=self.subband_udp_ports,
+                )
+                subband_resources = {
+                    "common": recv_resources["common"],
+                    "subband": recv_resources["subbands"][1],
+                }
+
+                self._api.validate_configure_beam(configuration=subband_resources)
+                self._api.validate_configure_scan(configuration=configuration)
+                task_callback(status=TaskStatus.COMPLETED, result="Completed")
+            except Exception as e:
+                task_callback(status=TaskStatus.FAILED, exception=e)
+
+        return self._submit_background_task(_task, task_callback=task_callback)
+
     def configure_beam(
-        self: PstReceiveComponentManager, resources: Dict[str, Any], task_callback: Callback = None
+        self: PstReceiveComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
         """
         Configure beam resources in the component.
 
-        :param resources: resources to be assigned
+        :param configuration: parameters to be configured and their requested values
         """
         # deal only with subband 1 for now. otherwise we have to deal with tracking
         # multiple long running tasks.
@@ -327,7 +366,7 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
             try:
                 recv_resources = calculate_receive_subband_resources(
                     self.beam_id,
-                    request_params=resources,
+                    request_params=configuration,
                     data_host=self.data_host,
                     subband_udp_ports=self.subband_udp_ports,
                 )
@@ -339,7 +378,7 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
                 }
 
                 self._api.configure_beam(
-                    resources=subband_resources, task_callback=wrap_callback(task_callback)
+                    configuration=subband_resources, task_callback=wrap_callback(task_callback)
                 )
                 self.subband_beam_configuration = recv_resources
             except Exception:

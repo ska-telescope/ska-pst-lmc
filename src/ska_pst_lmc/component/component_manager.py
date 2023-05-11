@@ -284,6 +284,24 @@ class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager
 
         return self.submit_task(_task, task_callback=task_callback)
 
+    def validate_configure_scan(
+        self: PstComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
+    ) -> TaskResponse:
+        """
+        Validate configure scan request with the specific configuration of the component.
+
+        Note this is for the whole ConfigureScan request for a PST BEAM component, which
+        includes checking both the beam and scan configuration is correct. This is due to
+        the fact that clients of BEAM.MGMT only exposes a ConfigureScan request as it's
+        an Obs device.
+
+        :param configuration: configuration for scan.
+        :type configuration: Dict[str, Any]
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callback
+        """
+        raise NotImplementedError("PstComponentManager is abstract.")
+
     def configure_beam(
         self: PstComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
@@ -522,18 +540,19 @@ class PstApiComponentManager(Generic[T, Api], PstComponentManager[PstApiDeviceIn
         return cast(PstApiDeviceInterface, self._device_interface).process_api_endpoint
 
     def configure_beam(
-        self: PstApiComponentManager, resources: Dict[str, Any], task_callback: Callback = None
+        self: PstApiComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
         """
         Configure the beam resources of the component.
 
-        :param resources: resources to be assigned
-        :type resources: Dict[str, Any]
+        :param configuration: configuration to be assigned
+        :type configuration: Dict[str, Any]
         :param task_callback: callback for background processing to update device status.
         :type task_callback: Callback
         """
         return self._submit_background_task(
-            functools.partial(self._api.configure_beam, resources=resources), task_callback=task_callback
+            functools.partial(self._api.configure_beam, configuration=configuration),
+            task_callback=task_callback,
         )
 
     def deconfigure_beam(self: PstApiComponentManager, task_callback: Callback = None) -> TaskResponse:

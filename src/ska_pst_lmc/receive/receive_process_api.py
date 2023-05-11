@@ -79,11 +79,11 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         super().__init__(logger=logger, component_state_callback=component_state_callback)
 
     def configure_beam(
-        self: PstReceiveProcessApiSimulator, resources: Dict[str, Any], task_callback: Callable
+        self: PstReceiveProcessApiSimulator, configuration: Dict[str, Any], task_callback: Callable
     ) -> None:
         """Configure beam for the service.
 
-        :param resources: dictionary of resources to allocate.
+        :param configuration: dictionary of parameters to be configured and their requested values.
         :param task_callback: callable to connect back to the component manager.
         """
         task_callback(status=TaskStatus.IN_PROGRESS)
@@ -234,11 +234,11 @@ class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):
     """
 
     def _get_configure_beam_request(
-        self: PstReceiveProcessApiGrpc, resources: Dict[str, Any]
+        self: PstReceiveProcessApiGrpc, configuration: Dict[str, Any]
     ) -> BeamConfiguration:
-        subband_resources = ReceiveSubbandResources(**resources["subband"])
+        subband_resources = ReceiveSubbandResources(**configuration["subband"])
         return BeamConfiguration(
-            receive=ReceiveBeamConfiguration(subband_resources=subband_resources, **resources["common"])
+            receive=ReceiveBeamConfiguration(subband_resources=subband_resources, **configuration["common"])
         )
 
     def _get_configure_scan_request(

@@ -56,6 +56,7 @@ from ska_pst_lmc.dsp.dsp_process_api import PstDspProcessApiGrpc
 from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources, generate_dsp_scan_request
 from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
+from ska_pst_lmc.util.validation import ValidationError
 
 
 @pytest.fixture
@@ -85,13 +86,87 @@ def test_dsp_grpc_sends_connect_request(
     mock_servicer_context: MagicMock,
     client_id: str,
 ) -> None:
-    """Test that DSP gRPC API connects to the server."""
+    """Test that  API connects to the server."""
     response = ConnectionResponse()
     mock_servicer_context.connect = MagicMock(return_value=response)
 
     grpc_api.connect()
 
     mock_servicer_context.connect.assert_called_once_with(ConnectionRequest(client_id=client_id))
+
+
+def test_dsp_grpc_validate_configure_beam(
+    grpc_api: PstDspProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_beam_request: Dict[str, Any],
+) -> None:
+    """Test that  validate_configure_beam is called."""
+    response = ConfigureBeamResponse()
+    mock_servicer_context.configure_beam = MagicMock(return_value=response)
+    configuration = calculate_dsp_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
+
+    grpc_api.validate_configure_beam(configuration=configuration)
+
+    expected_dsp_request = DspDiskBeamConfiguration(**configuration)
+    expected_request = ConfigureBeamRequest(
+        beam_configuration=BeamConfiguration(dsp_disk=expected_dsp_request),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
+
+
+def test_dsp_grpc_validate_configure_beam_throws_invalid_request(
+    grpc_api: PstDspProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_beam_request: Dict[str, Any],
+) -> None:
+    """Test that  validate_configure_beam raises exception when there are validation errors."""
+    mock_servicer_context.configure_beam.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.INVALID_REQUEST,
+        message="Validate configure beam error.",
+    )
+
+    configuration = calculate_dsp_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
+
+    with pytest.raises(ValidationError) as e_info:
+        grpc_api.validate_configure_beam(configuration=configuration)
+
+    assert e_info.value.message == "Validate configure beam error."
+
+    expected_dsp_request = DspDiskBeamConfiguration(**configuration)
+    expected_request = ConfigureBeamRequest(
+        beam_configuration=BeamConfiguration(dsp_disk=expected_dsp_request),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
+
+
+def test_dsp_grpc_validate_configure_beam_throws_beam_already_configured(
+    grpc_api: PstDspProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_beam_request: Dict[str, Any],
+) -> None:
+    """Test that  validate_configure_beam raises an exception when already beam configured."""
+    mock_servicer_context.configure_beam.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.CONFIGURED_FOR_BEAM_ALREADY,
+        message="Beam configured already.",
+    )
+
+    configuration = calculate_dsp_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
+
+    with pytest.raises(ValidationError) as e_info:
+        grpc_api.validate_configure_beam(configuration=configuration)
+
+    assert e_info.value.message == "Beam configured already."
+
+    expected_dsp_request = DspDiskBeamConfiguration(**configuration)
+    expected_request = ConfigureBeamRequest(
+        beam_configuration=BeamConfiguration(dsp_disk=expected_dsp_request),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
 
 
 def test_dsp_grpc_configure_beam(
@@ -101,16 +176,17 @@ def test_dsp_grpc_configure_beam(
     configure_beam_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC configure beam."""
+    """Test that  configure beam."""
     response = ConfigureBeamResponse()
     mock_servicer_context.configure_beam = MagicMock(return_value=response)
-    resources = calculate_dsp_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
+    configuration = calculate_dsp_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
 
-    grpc_api.configure_beam(resources, task_callback=task_callback)
+    grpc_api.configure_beam(configuration, task_callback=task_callback)
 
-    expected_dsp_request = DspDiskBeamConfiguration(**resources)
+    expected_dsp_request = DspDiskBeamConfiguration(**configuration)
     expected_request = ConfigureBeamRequest(
-        beam_configuration=BeamConfiguration(dsp_disk=expected_dsp_request)
+        beam_configuration=BeamConfiguration(dsp_disk=expected_dsp_request),
+        dry_run=False,
     )
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
 
@@ -129,19 +205,20 @@ def test_dsp_grpc_configure_beam_when_beam_configured(
     configure_beam_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC configure beam when beam already configured."""
+    """Test that  configure beam when beam already configured."""
     mock_servicer_context.configure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.CONFIGURED_FOR_BEAM_ALREADY,
         message="Beam has already been configured",
     )
-    resources = calculate_dsp_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
+    configuration = calculate_dsp_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
 
-    grpc_api.configure_beam(resources, task_callback=task_callback)
+    grpc_api.configure_beam(configuration, task_callback=task_callback)
 
-    expected_dsp_request = DspDiskBeamConfiguration(**resources)
+    expected_dsp_request = DspDiskBeamConfiguration(**configuration)
     expected_request = ConfigureBeamRequest(
-        beam_configuration=BeamConfiguration(dsp_disk=expected_dsp_request)
+        beam_configuration=BeamConfiguration(dsp_disk=expected_dsp_request),
+        dry_run=False,
     )
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
 
@@ -160,20 +237,21 @@ def test_dsp_grpc_configure_beam_when_throws_exception(
     configure_beam_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC configure beam throws an exception."""
+    """Test that  configure beam throws an exception."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
     mock_servicer_context.configure_beam.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.INTERNAL_ERROR,
         message="Internal server error occurred",
     )
-    resources = calculate_dsp_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
+    configuration = calculate_dsp_subband_resources(beam_id=1, request_params=configure_beam_request)[1]
 
-    grpc_api.configure_beam(resources, task_callback=task_callback)
+    grpc_api.configure_beam(configuration, task_callback=task_callback)
 
-    expected_dsp_request = DspDiskBeamConfiguration(**resources)
+    expected_dsp_request = DspDiskBeamConfiguration(**configuration)
     expected_request = ConfigureBeamRequest(
-        beam_configuration=BeamConfiguration(dsp_disk=expected_dsp_request)
+        beam_configuration=BeamConfiguration(dsp_disk=expected_dsp_request),
+        dry_run=False,
     )
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
     mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
@@ -192,7 +270,7 @@ def test_dsp_grpc_deconfigure_beam(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC deconfigure beam."""
+    """Test that  deconfigure beam."""
     response = DeconfigureBeamResponse()
     mock_servicer_context.deconfigure_beam = MagicMock(return_value=response)
 
@@ -257,6 +335,81 @@ def test_dsp_grpc_deconfigure_beam_when_throws_exception(
     component_state_callback.assert_called_once_with(obsfault=True)
 
 
+def test_dsp_grpc_validate_configure_scan(
+    grpc_api: PstDspProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_scan_request: Dict[str, Any],
+) -> None:
+    """Test that  validate_configure_scan is called."""
+    response = ConfigureScanResponse()
+    mock_servicer_context.configure_scan = MagicMock(return_value=response)
+
+    grpc_api.validate_configure_scan(configure_scan_request)
+
+    expected_scan_configuration = generate_dsp_scan_request(request_params=configure_scan_request)
+    expected_request = ConfigureScanRequest(
+        scan_configuration=ScanConfiguration(
+            dsp_disk=DspDiskScanConfiguration(**expected_scan_configuration)
+        ),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
+
+
+def test_dsp_grpc_validate_configure_scan_throws_invalid_request(
+    grpc_api: PstDspProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_scan_request: Dict[str, Any],
+) -> None:
+    """Test that  validate_configure_beam raises exception when there are validation errors."""
+    mock_servicer_context.configure_scan.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.INVALID_REQUEST,
+        message="Validate configure scan error.",
+    )
+
+    with pytest.raises(ValidationError) as e_info:
+        grpc_api.validate_configure_scan(configuration=configure_scan_request)
+
+    assert e_info.value.message == "Validate configure scan error."
+
+    expected_scan_configuration = generate_dsp_scan_request(request_params=configure_scan_request)
+    expected_request = ConfigureScanRequest(
+        scan_configuration=ScanConfiguration(
+            dsp_disk=DspDiskScanConfiguration(**expected_scan_configuration)
+        ),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
+
+
+def test_dsp_grpc_validate_configure_scan_throws_scan_already_configured(
+    grpc_api: PstDspProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_scan_request: Dict[str, Any],
+) -> None:
+    """Test that  validate_configure_scan raises exception when already configured for scanning."""
+    mock_servicer_context.configure_scan.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.CONFIGURED_FOR_SCAN_ALREADY,
+        message="Already configured for scanning.",
+    )
+
+    with pytest.raises(ValidationError) as e_info:
+        grpc_api.validate_configure_scan(configuration=configure_scan_request)
+
+    assert e_info.value.message == "Already configured for scanning."
+
+    expected_scan_configuration = generate_dsp_scan_request(request_params=configure_scan_request)
+    expected_request = ConfigureScanRequest(
+        scan_configuration=ScanConfiguration(
+            dsp_disk=DspDiskScanConfiguration(**expected_scan_configuration)
+        ),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
+
+
 def test_dsp_grpc_configure_scan(
     grpc_api: PstDspProcessApiGrpc,
     mock_servicer_context: MagicMock,
@@ -264,7 +417,7 @@ def test_dsp_grpc_configure_scan(
     configure_scan_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC calls configure_scan on remote service."""
+    """Test that  calls configure_scan on remote service."""
     response = ConfigureScanResponse()
     mock_servicer_context.configure_scan = MagicMock(return_value=response)
 
@@ -272,7 +425,10 @@ def test_dsp_grpc_configure_scan(
 
     expected_scan_configuration = generate_dsp_scan_request(request_params=configure_scan_request)
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(dsp_disk=DspDiskScanConfiguration(**expected_scan_configuration))
+        scan_configuration=ScanConfiguration(
+            dsp_disk=DspDiskScanConfiguration(**expected_scan_configuration)
+        ),
+        dry_run=False,
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
 
@@ -291,7 +447,7 @@ def test_dsp_grpc_configure_when_already_configured(
     configure_scan_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC configure scan and already configured."""
+    """Test that  configure scan and already configured."""
     mock_servicer_context.configure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.CONFIGURED_FOR_SCAN_ALREADY,
@@ -301,7 +457,10 @@ def test_dsp_grpc_configure_when_already_configured(
 
     expected_scan_configuration = generate_dsp_scan_request(request_params=configure_scan_request)
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(dsp_disk=DspDiskScanConfiguration(**expected_scan_configuration))
+        scan_configuration=ScanConfiguration(
+            dsp_disk=DspDiskScanConfiguration(**expected_scan_configuration)
+        ),
+        dry_run=False,
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
 
@@ -320,7 +479,7 @@ def test_dsp_grpc_configure_when_throws_exception(
     configure_scan_request: Dict[str, Any],
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC configure scan throws an exception."""
+    """Test that  configure scan throws an exception."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
     mock_servicer_context.configure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
@@ -331,7 +490,10 @@ def test_dsp_grpc_configure_when_throws_exception(
 
     expected_scan_configuration = generate_dsp_scan_request(request_params=configure_scan_request)
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(dsp_disk=DspDiskScanConfiguration(**expected_scan_configuration))
+        scan_configuration=ScanConfiguration(
+            dsp_disk=DspDiskScanConfiguration(**expected_scan_configuration)
+        ),
+        dry_run=False,
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
     mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
@@ -350,7 +512,7 @@ def test_dsp_grpc_deconfigure_scan(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC calls configure_scan on remote service."""
+    """Test that  calls configure_scan on remote service."""
     response = DeconfigureScanResponse()
     mock_servicer_context.deconfigure_scan = MagicMock(return_value=response)
 
@@ -372,7 +534,7 @@ def test_dsp_grpc_deconfigure_when_not_configured_for_scan(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC deconfigure scan and currently not configured."""
+    """Test that  deconfigure scan and currently not configured."""
     mock_servicer_context.deconfigure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.NOT_CONFIGURED_FOR_SCAN,
@@ -396,7 +558,7 @@ def test_dsp_grpc_deconfigure_when_throws_exception(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC deconfigure scan throws an exception."""
+    """Test that  deconfigure scan throws an exception."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
     mock_servicer_context.deconfigure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
@@ -424,7 +586,7 @@ def test_dsp_grpc_scan(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC scan."""
+    """Test that  scan."""
     response = StartScanResponse()
     mock_servicer_context.start_scan = MagicMock(return_value=response)
 
@@ -447,7 +609,7 @@ def test_dsp_grpc_scan_when_already_scanning(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC scan when already scanning."""
+    """Test that  scan when already scanning."""
     mock_servicer_context.start_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.ALREADY_SCANNING,
@@ -473,7 +635,7 @@ def test_dsp_grpc_scan_when_throws_exception(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC scan when an exception is thrown."""
+    """Test that  scan when an exception is thrown."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
     mock_servicer_context.start_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.INTERNAL,
@@ -499,7 +661,7 @@ def test_dsp_grpc_stop_scan(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC end scan."""
+    """Test that  end scan."""
     response = StopScanResponse()
     mock_servicer_context.stop_scan = MagicMock(return_value=response)
 
@@ -520,7 +682,7 @@ def test_dsp_grpc_stop_scan_when_not_scanning(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC end scan when not scanning."""
+    """Test that  end scan when not scanning."""
     mock_servicer_context.stop_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.NOT_SCANNING,
@@ -544,7 +706,7 @@ def test_dsp_grpc_stop_scan_when_exception_thrown(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC end scan when an exception is thrown."""
+    """Test that  end scan when an exception is thrown."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
     mock_servicer_context.stop_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.INTERNAL,
@@ -570,7 +732,7 @@ def test_dsp_grpc_abort(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC abort."""
+    """Test that  abort."""
     response = AbortResponse()
     mock_servicer_context.abort = MagicMock(return_value=response)
 
@@ -591,7 +753,7 @@ def test_dsp_grpc_abort_throws_exception(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC abort when an exception is thrown."""
+    """Test that  abort when an exception is thrown."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
     mock_servicer_context.abort.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.INTERNAL,
@@ -617,7 +779,7 @@ def test_dsp_grpc_reset(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC reset."""
+    """Test that  reset."""
     response = ResetResponse()
     mock_servicer_context.reset = MagicMock(return_value=response)
 
@@ -638,7 +800,7 @@ def test_dsp_grpc_reset_when_exception_thrown(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC reset when exception is thrown."""
+    """Test that  reset when exception is thrown."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
     mock_servicer_context.reset.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.INTERNAL,
@@ -728,7 +890,7 @@ def test_dsp_grpc_go_to_fault(
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
 ) -> None:
-    """Test that DSP gRPC go_to_fault."""
+    """Test that  go_to_fault."""
     mock_servicer_context.go_to_fault = MagicMock(return_value=GoToFaultResponse())
 
     grpc_api.go_to_fault()

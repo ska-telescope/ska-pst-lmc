@@ -68,13 +68,13 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
 
         super().__init__(logger=logger, component_state_callback=component_state_callback)
 
-    def configure_beam(self: PstDspProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
+    def configure_beam(self: PstDspProcessApiSimulator, configuration: dict, task_callback: Callable) -> None:
         """Configure the beam.
 
-        :param resources: dictionary of resources to allocate.
+        :param configuration: dictionary of parameters to be configured and their requested values
         :param task_callback: callable to connect back to the component manager.
         """
-        self._logger.info(f"Assigning resources for DSP. {resources}")
+        self._logger.info(f"Assigning resources for DSP. {configuration}")
         task_callback(status=TaskStatus.IN_PROGRESS)
         time.sleep(0.01)
         task_callback(progress=42)
@@ -214,8 +214,8 @@ class PstDspProcessApiGrpc(PstProcessApiGrpc, PstDspProcessApi):
     subband, rather than one for all of DSP.DISK as a whole.
     """
 
-    def _get_configure_beam_request(self: PstDspProcessApiGrpc, resources: dict) -> BeamConfiguration:
-        return BeamConfiguration(dsp_disk=DspDiskBeamConfiguration(**resources))
+    def _get_configure_beam_request(self: PstDspProcessApiGrpc, configuration: dict) -> BeamConfiguration:
+        return BeamConfiguration(dsp_disk=DspDiskBeamConfiguration(**configuration))
 
     def _handle_monitor_response(
         self: PstDspProcessApiGrpc, data: MonitorData, monitor_data_callback: Callable[..., None]

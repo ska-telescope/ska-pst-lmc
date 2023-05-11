@@ -9,11 +9,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import tango
 from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import AdminMode, HealthState, SimulationMode
+from ska_tango_base.executor import TaskStatus
 from tango import DebugIt
 from tango.server import attribute, command, device_property, run
 
@@ -200,7 +201,13 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
             import json
 
             try:
-                configuration_dict = Configuration.from_json(json_str=argin)
+                configuration = Configuration.from_json(json_str=argin)
+                (result, msg) = cast(
+                    PstBeamComponentManager, self._component_manager
+                ).validate_configure_scan(configuration=configuration.data)
+                self.logger.debug(f"validate_configure_scan return result={result} and msg={msg}")
+                if not result == TaskStatus.COMPLETED:
+                    return ({}, ResultCode.FAILED, msg)
             except (json.JSONDecodeError, ValueError) as err:
                 msg = f"Validate configuration failed with error:{err}"
                 self.logger.error(msg)
@@ -211,7 +218,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
                 return ({}, ResultCode.FAILED, msg)
 
             return (
-                configuration_dict.data,
+                configuration.data,
                 ResultCode.OK,
                 "ConfigureScan arguments validation successful",
             )

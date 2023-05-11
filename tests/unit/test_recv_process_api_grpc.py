@@ -61,6 +61,7 @@ from ska_pst_lmc.receive.receive_process_api import (
 from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources, generate_recv_scan_request
 from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
+from ska_pst_lmc.util.validation import ValidationError
 
 
 @pytest.fixture
@@ -142,7 +143,7 @@ def subband_configure_beam_request(
 
 
 @pytest.fixture
-def expected_receive_resources_protobuf(
+def expected_beam_configuration_protobuf(
     subband_configure_beam_request: Dict[str, Any],
 ) -> ReceiveBeamConfiguration:
     """Create expected protobuf resources message for RECV."""
@@ -162,12 +163,81 @@ def expected_receive_configure_protobuf(
     return ReceiveScanConfiguration(**mapped_configure_request)
 
 
+def test_receive_grpc_validate_configure_beam(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    subband_configure_beam_request: Dict[str, Any],
+    expected_beam_configuration_protobuf: ReceiveBeamConfiguration,
+) -> None:
+    """Test that RECV gRPC validate_configure_beam is called."""
+    response = ConfigureBeamResponse()
+    mock_servicer_context.configure_beam = MagicMock(return_value=response)
+
+    grpc_api.validate_configure_beam(configuration=subband_configure_beam_request)
+
+    expected_request = ConfigureBeamRequest(
+        beam_configuration=BeamConfiguration(receive=expected_beam_configuration_protobuf),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
+
+
+def test_receive_grpc_validate_configure_beam_throws_invalid_request(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    subband_configure_beam_request: Dict[str, Any],
+    expected_beam_configuration_protobuf: ReceiveBeamConfiguration,
+) -> None:
+    """Test that RECV gRPC validate_configure_beam throws exception."""
+    mock_servicer_context.configure_beam.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.INVALID_REQUEST,
+        message="Validate configure beam error.",
+    )
+
+    with pytest.raises(ValidationError) as e_info:
+        grpc_api.validate_configure_beam(configuration=subband_configure_beam_request)
+
+    assert e_info.value.message == "Validate configure beam error."
+
+    expected_request = ConfigureBeamRequest(
+        beam_configuration=BeamConfiguration(receive=expected_beam_configuration_protobuf),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
+
+
+def test_receive_grpc_validate_configure_beam_throws_resources_already_assigned(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    subband_configure_beam_request: Dict[str, Any],
+    expected_beam_configuration_protobuf: ReceiveBeamConfiguration,
+) -> None:
+    """Test that validate_configure_beam throws exception when already beam configured."""
+    mock_servicer_context.configure_beam.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.CONFIGURED_FOR_BEAM_ALREADY,
+        message="Beam configured already.",
+    )
+
+    with pytest.raises(ValidationError) as e_info:
+        grpc_api.validate_configure_beam(configuration=subband_configure_beam_request)
+
+    assert e_info.value.message == "Beam configured already."
+
+    expected_request = ConfigureBeamRequest(
+        beam_configuration=BeamConfiguration(receive=expected_beam_configuration_protobuf),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
+
+
 def test_receive_grpc_configure_beam(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
     subband_configure_beam_request: Dict[str, Any],
-    expected_receive_resources_protobuf: dict,
+    expected_beam_configuration_protobuf: ReceiveBeamConfiguration,
     task_callback: MagicMock,
 ) -> None:
     """Test that RECV gRPC configure beam."""
@@ -177,7 +247,7 @@ def test_receive_grpc_configure_beam(
     grpc_api.configure_beam(subband_configure_beam_request, task_callback=task_callback)
 
     expected_request = ConfigureBeamRequest(
-        beam_configuration=BeamConfiguration(receive=expected_receive_resources_protobuf)
+        beam_configuration=BeamConfiguration(receive=expected_beam_configuration_protobuf)
     )
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
 
@@ -194,7 +264,7 @@ def test_receive_grpc_configure_beam_when_beam_configured(
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
     subband_configure_beam_request: Dict[str, Any],
-    expected_receive_resources_protobuf: dict,
+    expected_beam_configuration_protobuf: ReceiveBeamConfiguration,
     task_callback: MagicMock,
 ) -> None:
     """Test that RECV gRPC configure beam when beam already configured."""
@@ -207,7 +277,7 @@ def test_receive_grpc_configure_beam_when_beam_configured(
     grpc_api.configure_beam(subband_configure_beam_request, task_callback=task_callback)
 
     expected_request = ConfigureBeamRequest(
-        beam_configuration=BeamConfiguration(receive=expected_receive_resources_protobuf)
+        beam_configuration=BeamConfiguration(receive=expected_beam_configuration_protobuf)
     )
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
 
@@ -224,7 +294,7 @@ def test_receive_grpc_configure_beam_when_throws_exception(
     mock_servicer_context: MagicMock,
     component_state_callback: MagicMock,
     subband_configure_beam_request: Dict[str, Any],
-    expected_receive_resources_protobuf: dict,
+    expected_beam_configuration_protobuf: ReceiveBeamConfiguration,
     task_callback: MagicMock,
 ) -> None:
     """Test that RECV gRPC configure beam throws an exception."""
@@ -237,7 +307,7 @@ def test_receive_grpc_configure_beam_when_throws_exception(
     grpc_api.configure_beam(subband_configure_beam_request, task_callback=task_callback)
 
     expected_request = ConfigureBeamRequest(
-        beam_configuration=BeamConfiguration(receive=expected_receive_resources_protobuf)
+        beam_configuration=BeamConfiguration(receive=expected_beam_configuration_protobuf)
     )
     mock_servicer_context.configure_beam.assert_called_once_with(expected_request)
     mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
@@ -319,6 +389,75 @@ def test_receive_grpc_deconfigure_beam_when_throws_exception(
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_once_with(obsfault=True)
+
+
+def test_recv_grpc_validate_configure_scan(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_scan_request: Dict[str, Any],
+    expected_receive_configure_protobuf: ReceiveScanConfiguration,
+) -> None:
+    """Test that RECV gRPC validate_configure_scan is called."""
+    response = ConfigureScanResponse()
+    mock_servicer_context.configure_scan = MagicMock(return_value=response)
+
+    grpc_api.validate_configure_scan(configure_scan_request)
+
+    expected_request = ConfigureScanRequest(
+        scan_configuration=ScanConfiguration(receive=expected_receive_configure_protobuf),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
+
+
+def test_recv_grpc_validate_configure_scan_throws_invalid_request(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_scan_request: Dict[str, Any],
+    expected_receive_configure_protobuf: ReceiveScanConfiguration,
+) -> None:
+    """Test that validate_configure_beam throws exception when there are validation errors."""
+    mock_servicer_context.configure_scan.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.INVALID_REQUEST,
+        message="Validate configure scan error.",
+    )
+
+    with pytest.raises(ValidationError) as e_info:
+        grpc_api.validate_configure_scan(configuration=configure_scan_request)
+
+    assert e_info.value.message == "Validate configure scan error."
+
+    expected_request = ConfigureScanRequest(
+        scan_configuration=ScanConfiguration(receive=expected_receive_configure_protobuf),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
+
+
+def test_recv_grpc_validate_configure_scan_throws_scan_already_configured(
+    grpc_api: PstReceiveProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    configure_scan_request: Dict[str, Any],
+    expected_receive_configure_protobuf: ReceiveScanConfiguration,
+) -> None:
+    """Test that validate_configure_scan throws exception when already configured for scanning."""
+    mock_servicer_context.configure_scan.side_effect = TestMockException(
+        grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
+        error_code=ErrorCode.CONFIGURED_FOR_SCAN_ALREADY,
+        message="Already configured for scanning.",
+    )
+
+    with pytest.raises(ValidationError) as e_info:
+        grpc_api.validate_configure_scan(configuration=configure_scan_request)
+
+    assert e_info.value.message == "Already configured for scanning."
+
+    expected_request = ConfigureScanRequest(
+        scan_configuration=ScanConfiguration(receive=expected_receive_configure_protobuf),
+        dry_run=True,
+    )
+    mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
 
 
 def test_recv_grpc_configure_scan(

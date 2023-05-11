@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import functools
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from ska_tango_base.control_model import PowerState, SimulationMode
+from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component import (
     MonitorDataHandler,
@@ -186,21 +187,53 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
                 component_state_callback=self._push_component_state_update,
             )
 
+    def validate_configure_scan(
+        self: PstSmrbComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
+    ) -> TaskResponse:
+        """
+        Validate a ConfigureScan request sent from CSP.LMC to the SMRB sub-component.
+
+        This asserts the request can be converted to SMRB resources and then calls the
+        process API to perform the validation.
+
+        :param configuration: configuration that would be used when the configure_beam and
+            configure_scan methods are called.
+        :type configuration: Dict[str, Any]
+        :param task_callback: callback for background processing to update device status.
+        :type task_callback: Callback
+        """
+
+        def _task(task_callback: Callable) -> None:
+            task_callback(status=TaskStatus.IN_PROGRESS)
+            try:
+                smrb_resources = calculate_smrb_subband_resources(self.beam_id, request_params=configuration)
+
+                self._api.validate_configure_beam(configuration=smrb_resources[1])
+                self._api.validate_configure_scan(configuration=configuration)
+                task_callback(status=TaskStatus.COMPLETED, result="Completed")
+            except Exception as e:
+                self.logger.exception(
+                    f"Failed to validate scan configuration for {self.device_name}.", exc_info=True
+                )
+                task_callback(status=TaskStatus.FAILED, exception=e)
+
+        return self._submit_background_task(_task, task_callback=task_callback)
+
     def configure_beam(
-        self: PstSmrbComponentManager, resources: Dict[str, Any], task_callback: Callback = None
+        self: PstSmrbComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
         """
         Configure beam resources in the component.
 
-        :param resources: resources to be assigned
+        :param configuration: parameters to be configured and their requested values.
         """
-        smrb_resources = calculate_smrb_subband_resources(self.beam_id, request_params=resources)
+        smrb_resources = calculate_smrb_subband_resources(self.beam_id, request_params=configuration)
 
         # deal only with subband 1 for now.
         self.logger.debug(f"Submitting API with smrb_resources={smrb_resources[1]}")
 
         return self._submit_background_task(
-            functools.partial(self._api.configure_beam, resources=smrb_resources[1]),
+            functools.partial(self._api.configure_beam, configuration=smrb_resources[1]),
             task_callback=task_callback,
         )
 

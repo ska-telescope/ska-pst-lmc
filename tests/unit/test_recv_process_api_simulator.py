@@ -20,6 +20,7 @@ from ska_tango_base.commands import TaskStatus
 from ska_pst_lmc import PstReceiveSimulator
 from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApiSimulator
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
+from ska_pst_lmc.util.validation import ValidationError
 
 
 @pytest.fixture
@@ -107,6 +108,23 @@ def test_recv_simulator_api_simulated_monitor_calls_callback(
     subband_monitor_data_callback.assert_has_calls(calls=calls)
 
 
+def test_recv_simulator_api_validate_configure_beam(
+    simulation_api: PstReceiveProcessApiSimulator,
+) -> None:
+    """Tests that validate configure beam on simulator API."""
+    simulation_api.fail_validate_configure_beam = False
+    simulation_api.validate_configure_beam(configuration={})
+
+
+def test_recv_simulator_api_validate_configure_beam_throws_validation_exception(
+    simulation_api: PstReceiveProcessApiSimulator,
+) -> None:
+    """Tests that validate configure beam on simulator API throws exception."""
+    simulation_api.fail_validate_configure_beam = True
+    with pytest.raises(ValidationError):
+        simulation_api.validate_configure_beam(configuration={})
+
+
 def test_recv_simulator_api_configure_beam(
     simulation_api: PstReceiveProcessApiSimulator,
     component_state_callback: MagicMock,
@@ -142,6 +160,23 @@ def test_recv_simulator_api_deconfigure_beam(
     ]
     task_callback.assert_has_calls(expected_calls)
     component_state_callback.assert_called_with(resourced=False)
+
+
+def test_recv_simulator_api_validate_configure_scan(
+    simulation_api: PstReceiveProcessApiSimulator,
+) -> None:
+    """Tests that validate configure scan on simulator API."""
+    simulation_api.fail_validate_configure_scan = False
+    simulation_api.validate_configure_scan(configuration={})
+
+
+def test_recv_simulator_api_validate_configure_scan_throws_validation_exception(
+    simulation_api: PstReceiveProcessApiSimulator,
+) -> None:
+    """Tests that validate configure scan on simulator API throws validation exception."""
+    simulation_api.fail_validate_configure_scan = True
+    with pytest.raises(ValidationError):
+        simulation_api.validate_configure_scan(configuration={})
 
 
 def test_recv_simulator_api_configure_scan(

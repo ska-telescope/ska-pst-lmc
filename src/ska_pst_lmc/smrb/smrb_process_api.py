@@ -69,13 +69,15 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
 
         super().__init__(logger=logger, component_state_callback=component_state_callback)
 
-    def configure_beam(self: PstSmrbProcessApiSimulator, resources: dict, task_callback: Callable) -> None:
+    def configure_beam(
+        self: PstSmrbProcessApiSimulator, configuration: dict, task_callback: Callable
+    ) -> None:
         """Configure beam resources.
 
-        :param resources: dictionary of resources to allocate.
+        :param configuration: dictionary of parameters to be configured and their requested values.
         :param task_callback: callable to connect back to the component manager.
         """
-        self._logger.info(f"Assigning resources for SMRB. {resources}")
+        self._logger.info(f"Assigning resources for SMRB. {configuration}")
         task_callback(status=TaskStatus.IN_PROGRESS)
         time.sleep(0.01)
         task_callback(progress=50)
@@ -207,8 +209,8 @@ class PstSmrbProcessApiGrpc(PstProcessApiGrpc, PstSmrbProcessApi):
     subband, rather than one for all of SMRB as a whole.
     """
 
-    def _get_configure_beam_request(self: PstSmrbProcessApiGrpc, resources: dict) -> BeamConfiguration:
-        return BeamConfiguration(smrb=SmrbBeamConfiguration(**resources))
+    def _get_configure_beam_request(self: PstSmrbProcessApiGrpc, configuration: dict) -> BeamConfiguration:
+        return BeamConfiguration(smrb=SmrbBeamConfiguration(**configuration))
 
     def _handle_monitor_response(
         self: PstSmrbProcessApiGrpc, data: MonitorData, monitor_data_callback: Callable[..., None]

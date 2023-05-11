@@ -23,6 +23,7 @@ from ska_pst_lmc.dsp.dsp_process_api import PstDspProcessApi, PstDspProcessApiGr
 from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources
 from ska_pst_lmc.test.test_grpc_server import TestPstLmcService
 from ska_pst_lmc.util.callback import Callback
+from ska_pst_lmc.util.validation import ValidationError
 
 
 @pytest.fixture
@@ -255,6 +256,96 @@ def test_dsp_cm_not_communicating_switching_simulation_mode_not_try_to_establish
     update_communication_state.assert_not_called()
 
 
+def test_dsp_cm_validate_configure_scan(
+    component_manager: PstDspComponentManager,
+    configure_scan_request: Dict[str, Any],
+    task_callback: Callable,
+    calculated_dsp_subband_resources: dict,
+) -> None:
+    """Test that validate configuration when valid."""
+    api = MagicMock()
+    component_manager._api = api
+    # override the background processing.
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback
+    )
+
+    component_manager.validate_configure_scan(
+        configuration=configure_scan_request, task_callback=task_callback
+    )
+
+    api.validate_configure_beam.assert_called_once_with(configuration=calculated_dsp_subband_resources)
+    api.validate_configure_scan.assert_called_once_with(configuration=configure_scan_request)
+
+    calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    cast(MagicMock, task_callback).assert_has_calls(calls=calls)
+
+
+def test_dsp_cm_validate_configure_scan_fails_beam_configuration(
+    component_manager: PstDspComponentManager,
+    configure_scan_request: Dict[str, Any],
+    task_callback: Callable,
+    calculated_dsp_subband_resources: dict,
+) -> None:
+    """Test that validate configuration when invalid beam configuration."""
+    api = MagicMock()
+    validation_exception = ValidationError("This is not the configuration you're looking for.")
+    api.validate_configure_beam.side_effect = validation_exception
+
+    component_manager._api = api
+    # override the background processing.
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback
+    )
+
+    component_manager.validate_configure_scan(
+        configuration=configure_scan_request, task_callback=task_callback
+    )
+
+    api.validate_configure_beam.assert_called_once_with(configuration=calculated_dsp_subband_resources)
+    api.validate_configure_scan.assert_not_called()
+
+    calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, exception=validation_exception),
+    ]
+    cast(MagicMock, task_callback).assert_has_calls(calls=calls)
+
+
+def test_dsp_cm_validate_configure_scan_fails_scan_configuration(
+    component_manager: PstDspComponentManager,
+    configure_scan_request: Dict[str, Any],
+    task_callback: Callable,
+    calculated_dsp_subband_resources: dict,
+) -> None:
+    """Test that validate configuration when invalid scan configuration."""
+    api = MagicMock()
+    validation_exception = ValidationError("That's no scan configuration")
+    api.validate_configure_scan.side_effect = validation_exception
+
+    component_manager._api = api
+    # override the background processing.
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback
+    )
+
+    component_manager.validate_configure_scan(
+        configuration=configure_scan_request, task_callback=task_callback
+    )
+
+    api.validate_configure_beam.assert_called_once_with(configuration=calculated_dsp_subband_resources)
+    api.validate_configure_scan.assert_called_once_with(configuration=configure_scan_request)
+
+    calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, exception=validation_exception),
+    ]
+    cast(MagicMock, task_callback).assert_has_calls(calls=calls)
+
+
 def test_dsp_cm_configure_beam(
     component_manager: PstDspComponentManager,
     configure_beam_request: Dict[str, Any],
@@ -267,10 +358,10 @@ def test_dsp_cm_configure_beam(
     configure_beam = MagicMock()
     monkeypatch.setattr(api, "configure_beam", configure_beam)
 
-    component_manager.configure_beam(resources=configure_beam_request, task_callback=task_callback)
+    component_manager.configure_beam(configuration=configure_beam_request, task_callback=task_callback)
 
     configure_beam.assert_called_once_with(
-        resources=calculated_dsp_subband_resources, task_callback=task_callback
+        configuration=calculated_dsp_subband_resources, task_callback=task_callback
     )
 
 

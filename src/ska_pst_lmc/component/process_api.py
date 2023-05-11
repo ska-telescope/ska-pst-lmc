@@ -32,6 +32,7 @@ from ska_tango_base.commands import TaskStatus
 from ska_pst_lmc.component.grpc_lmc_client import (
     AlreadyScanningException,
     BaseGrpcException,
+    InvalidRequestException,
     NotConfiguredForScanException,
     NotScanningException,
     PstGrpcLmcClient,
@@ -39,6 +40,7 @@ from ska_pst_lmc.component.grpc_lmc_client import (
     ResourcesNotAssignedException,
     ScanConfiguredAlreadyException,
 )
+from ska_pst_lmc.util import ValidationError
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor, background_task
 from ska_pst_lmc.util.timeout_iterator import TimeoutIterator
 
@@ -69,10 +71,19 @@ class PstProcessApi:
         """Disconnect from the external process."""
         raise NotImplementedError("PstProcessApi is abstract class")
 
-    def configure_beam(self: PstProcessApi, resources: Dict[str, Any], task_callback: Callable) -> None:
+    def validate_configure_beam(self: PstProcessApi, configuration: Dict[str, Any]) -> None:
+        """Validate a configure beam for service.
+
+        :param configuration: Dictionary of resources to allocate.
+        :raises ValidationError: if there an issue validating the request.
+            The error message contains the details.
+        """
+        raise NotImplementedError("PstProcessApi is abstract class")
+
+    def configure_beam(self: PstProcessApi, configuration: Dict[str, Any], task_callback: Callable) -> None:
         """Configure beam for service.
 
-        :param resources: Dictionary of resources to allocate.
+        :param configuration: Dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
@@ -81,6 +92,15 @@ class PstProcessApi:
         """Deconfigure beam to release all resources.
 
         :param task_callback: callable to connect back to the component manager.
+        """
+        raise NotImplementedError("PstProcessApi is abstract class")
+
+    def validate_configure_scan(self: PstProcessApi, configuration: Dict[str, Any]) -> None:
+        """Validate a configure_scan request.
+
+        :param configuration: the scan configuration for the device.
+        :raises ValidationError: if there an issue validating the request.
+            The error message contains the details.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
@@ -173,6 +193,8 @@ class PstProcessApiSimulator(PstProcessApi):
         """Initialise the API."""
         self._monitor_abort_event = threading.Event()
         self._scanning = False
+        self.fail_validate_configure_beam = False
+        self.fail_validate_configure_scan = False
         super().__init__(logger=logger, component_state_callback=component_state_callback, **kwargs)
 
     def _should_be_monitoring(self: PstProcessApiSimulator) -> bool:
@@ -187,6 +209,22 @@ class PstProcessApiSimulator(PstProcessApi):
     def disconnect(self: PstProcessApiSimulator) -> None:
         """Disconnect from the external process."""
         self.stop_monitoring()
+
+    def validate_configure_beam(self: PstProcessApiSimulator, configuration: Dict[str, Any]) -> None:
+        """Validate configure beam request."""
+        if self.fail_validate_configure_beam:
+            raise ValidationError("Simulated validation error for configure beam.")
+
+        if "source" in configuration and configuration["source"] == "invalid source":
+            raise ValidationError("Simulated validation error due to invalid source")
+
+    def validate_configure_scan(self: PstProcessApiSimulator, configuration: Dict[str, Any]) -> None:
+        """Validate configure scan request."""
+        if self.fail_validate_configure_scan:
+            raise ValidationError("Simulated validation error for configure scan.")
+
+        if "source" in configuration and configuration["source"] == "invalid source":
+            raise ValidationError("Simulated validation error due to invalid source")
 
     def _simulated_monitor_data_generator(
         self: PstProcessApiSimulator, polling_rate: int
@@ -325,8 +363,10 @@ class PstProcessApiGrpc(PstProcessApi):
         """
         self._stop_monitoring()
 
-    def _get_configure_beam_request(self: PstProcessApiGrpc, resources: Dict[str, Any]) -> BeamConfiguration:
-        """Convert resources dictionary to instance of `BeamConfiguration`."""
+    def _get_configure_beam_request(
+        self: PstProcessApiGrpc, configuration: Dict[str, Any]
+    ) -> BeamConfiguration:
+        """Convert resources configuration dictionary to instance of `BeamConfiguration`."""
         raise NotImplementedError("PstProcessApiGrpc is an abstract class.")
 
     def _get_configure_scan_request(
@@ -343,17 +383,39 @@ class PstProcessApiGrpc(PstProcessApi):
         """
         return StartScanRequest(**scan_parameters)
 
-    def configure_beam(self: PstProcessApiGrpc, resources: Dict[str, Any], task_callback: Callable) -> None:
-        """Configure the beam with the resources.
+    def validate_configure_beam(self: PstProcessApiGrpc, configuration: Dict[str, Any]) -> None:
+        """Validate configuration for a `configure_beam` request.
 
-        :param resources: Dictionary of resources to allocate.
+        :param configuration: Dictionary of resources to allocate.
+        :raises ValidationError: if there an issue validating the request.
+            The error message contains the details.
+        """
+        self._logger.debug(f"Validating configure_beam request for '{self._client_id}': {configuration}")
+
+        beam_configuration = self._get_configure_beam_request(configuration)
+        request = ConfigureBeamRequest(
+            beam_configuration=beam_configuration,
+            dry_run=True,
+        )
+        try:
+            self._grpc_client.configure_beam(request=request)
+        except (InvalidRequestException, ResourcesAlreadyAssignedException) as e:
+            self._logger.error(f"gRPC request to {self._client_id} failed validation: {e.message}")
+            raise ValidationError(e.message) from e
+
+    def configure_beam(
+        self: PstProcessApiGrpc, configuration: Dict[str, Any], task_callback: Callable
+    ) -> None:
+        """Configure the beam with the resources definted in configuration.
+
+        :param configuration: Dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
         """
-        self._logger.debug(f"Assigning resources for '{self._client_id}': {resources}")
+        self._logger.debug(f"Configuring beam for '{self._client_id}': {configuration}")
         task_callback(status=TaskStatus.IN_PROGRESS)
 
-        beam_configuration = self._get_configure_beam_request(resources)
-        request = ConfigureBeamRequest(beam_configuration=beam_configuration)
+        beam_configuration = self._get_configure_beam_request(configuration)
+        request = ConfigureBeamRequest(beam_configuration=beam_configuration, dry_run=False)
         try:
             self._grpc_client.configure_beam(request=request)
 
@@ -392,6 +454,25 @@ class PstProcessApiGrpc(PstProcessApi):
             self.go_to_fault()
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
+    def validate_configure_scan(self: PstProcessApiGrpc, configuration: Dict[str, Any]) -> None:
+        """Validate a configure_scan request.
+
+        :param configuration: the configuration of for the scan.
+        :raises ValidationError: if there an issue validating the request.
+            The error message contains the details.
+        """
+        self._logger.debug(f"Validating configure_scan for '{self._client_id}': {configuration}")
+        scan_configuration = self._get_configure_scan_request(configuration)
+        request = ConfigureScanRequest(
+            scan_configuration=scan_configuration,
+            dry_run=True,
+        )
+        try:
+            self._grpc_client.configure_scan(request)
+        except (InvalidRequestException, ScanConfiguredAlreadyException) as e:
+            self._logger.error(f"gRPC request to {self._client_id} failed validation: {e.message}")
+            raise ValidationError(e.message) from e
+
     def configure_scan(
         self: PstProcessApiGrpc, configuration: Dict[str, Any], task_callback: Callable
     ) -> None:
@@ -403,10 +484,11 @@ class PstProcessApiGrpc(PstProcessApi):
         :param configuration: the configuration of for the scan.
         :param task_callback: callable to connect back to the component manager.
         """
+        self._logger.debug(f"Configuring scan for '{self._client_id}': {configuration}")
         task_callback(status=TaskStatus.IN_PROGRESS)
 
         scan_configuration = self._get_configure_scan_request(configuration)
-        request = ConfigureScanRequest(scan_configuration=scan_configuration)
+        request = ConfigureScanRequest(scan_configuration=scan_configuration, dry_run=False)
         try:
             self._grpc_client.configure_scan(request)
 

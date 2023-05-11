@@ -27,6 +27,7 @@ from ska_pst_lmc.receive.receive_process_api import (
 from ska_pst_lmc.receive.receive_util import calculate_receive_subband_resources
 from ska_pst_lmc.test import TestPstLmcService
 from ska_pst_lmc.util import Callback
+from ska_pst_lmc.util.validation import ValidationError
 
 
 @pytest.fixture
@@ -155,6 +156,132 @@ def test_recv_cm_properties_comes_from_monitor_data(
     assert actual == expected
 
 
+def test_recv_cm_validate_configure_scan(
+    component_manager: PstReceiveComponentManager,
+    configure_scan_request: Dict[str, Any],
+    task_callback: Callable,
+    calculated_receive_subband_resources: dict,
+    recv_data_host: str,
+    subband_udp_ports: List[int],
+) -> None:
+    """Test that validate configuration when valid."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._api.get_env.return_value = {
+        "data_host": recv_data_host,
+        "data_port": subband_udp_ports[0],
+    }
+
+    # override the background processing.
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback
+    )
+
+    component_manager.validate_configure_scan(
+        configuration=configure_scan_request, task_callback=task_callback
+    )
+
+    expected_request = {
+        "common": calculated_receive_subband_resources["common"],
+        "subband": calculated_receive_subband_resources["subbands"][1],
+    }
+
+    api.validate_configure_beam.assert_called_once_with(configuration=expected_request)
+    api.validate_configure_scan.assert_called_once_with(configuration=configure_scan_request)
+
+    calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.COMPLETED, result="Completed"),
+    ]
+    cast(MagicMock, task_callback).assert_has_calls(calls=calls)
+
+
+def test_recv_cm_validate_configure_scan_fails_beam_configuration(
+    component_manager: PstReceiveComponentManager,
+    configure_scan_request: Dict[str, Any],
+    task_callback: Callable,
+    calculated_receive_subband_resources: dict,
+    recv_data_host: str,
+    subband_udp_ports: List[int],
+) -> None:
+    """Test that validate configuration when invalid beam configuration."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._api.get_env.return_value = {
+        "data_host": recv_data_host,
+        "data_port": subband_udp_ports[0],
+    }
+
+    validation_exception = ValidationError("This is not the configuration you're looking for.")
+    api.validate_configure_beam.side_effect = validation_exception
+
+    # override the background processing.
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback
+    )
+
+    component_manager.validate_configure_scan(
+        configuration=configure_scan_request, task_callback=task_callback
+    )
+
+    expected_request = {
+        "common": calculated_receive_subband_resources["common"],
+        "subband": calculated_receive_subband_resources["subbands"][1],
+    }
+
+    api.validate_configure_beam.assert_called_once_with(configuration=expected_request)
+    api.validate_configure_scan.assert_not_called()
+
+    calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, exception=validation_exception),
+    ]
+    cast(MagicMock, task_callback).assert_has_calls(calls=calls)
+
+
+def test_recv_cm_validate_configure_scan_fails_scan_configuration(
+    component_manager: PstReceiveComponentManager,
+    configure_scan_request: Dict[str, Any],
+    task_callback: Callable,
+    calculated_receive_subband_resources: dict,
+    recv_data_host: str,
+    subband_udp_ports: List[int],
+) -> None:
+    """Test that validate configuration when invalid scan configuration."""
+    api = MagicMock()
+    component_manager._api = api
+    component_manager._api.get_env.return_value = {
+        "data_host": recv_data_host,
+        "data_port": subband_udp_ports[0],
+    }
+
+    validation_exception = ValidationError("That's no scan configuration")
+    api.validate_configure_scan.side_effect = validation_exception
+
+    # override the background processing.
+    component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
+        task_callback=task_callback
+    )
+
+    component_manager.validate_configure_scan(
+        configuration=configure_scan_request, task_callback=task_callback
+    )
+
+    expected_request = {
+        "common": calculated_receive_subband_resources["common"],
+        "subband": calculated_receive_subband_resources["subbands"][1],
+    }
+
+    api.validate_configure_beam.assert_called_once_with(configuration=expected_request)
+    api.validate_configure_scan.assert_called_once_with(configuration=configure_scan_request)
+
+    calls = [
+        call(status=TaskStatus.IN_PROGRESS),
+        call(status=TaskStatus.FAILED, exception=validation_exception),
+    ]
+    cast(MagicMock, task_callback).assert_has_calls(calls=calls)
+
+
 def test_recv_cm_configure_beam(
     component_manager: PstReceiveComponentManager,
     configure_beam_request: Dict[str, Any],
@@ -177,14 +304,14 @@ def test_recv_cm_configure_beam(
         task_callback=task_callback
     )
 
-    component_manager.configure_beam(resources=configure_beam_request, task_callback=task_callback)
+    component_manager.configure_beam(configuration=configure_beam_request, task_callback=task_callback)
 
     expected_request = {
         "common": calculated_receive_subband_resources["common"],
         "subband": calculated_receive_subband_resources["subbands"][1],
     }
 
-    api.configure_beam.assert_called_once_with(resources=expected_request, task_callback=task_callback)
+    api.configure_beam.assert_called_once_with(configuration=expected_request, task_callback=task_callback)
     assert component_manager.subband_beam_configuration == calculated_receive_subband_resources
     cast(MagicMock, property_callback).assert_called_once_with(
         "subbandBeamConfiguration", json.dumps(calculated_receive_subband_resources)

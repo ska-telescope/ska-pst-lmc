@@ -52,7 +52,7 @@ class _ThreadingCallback:
     def is_complete(
         self: _ThreadingCallback, *args: Any, status: Optional[TaskStatus] = None, **kwargs: Any
     ) -> bool:
-        return status is not None and status == TaskStatus.COMPLETED
+        return status is not None and status in [TaskStatus.COMPLETED, TaskStatus.FAILED]
 
     def wait(self: _ThreadingCallback, timeout: Optional[float] = None) -> None:
         self.callback_event.wait(timeout=timeout)
@@ -271,7 +271,7 @@ def configure_scan_request(
     }
 
     if telescope_facility == TelescopeFacilityEnum.Low:
-        del request["frequency_band"]
+        request["frequency_band"] = "low"
 
     return request
 
@@ -949,3 +949,15 @@ def calc_expected_beam_channel_block_configuration(recv_subband_config: Dict[str
             for subband_id in range(1, num_subband + 1)
         ],
     }
+
+
+@pytest.fixture
+def fail_validate_configure_beam() -> bool:
+    """Fixture used to override simulator to fail validation or not."""
+    return False
+
+
+@pytest.fixture
+def fail_validate_configure_scan() -> bool:
+    """Fixture used to override simulator to fail validation or not."""
+    return False

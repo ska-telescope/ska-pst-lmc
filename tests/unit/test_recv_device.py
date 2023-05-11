@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Any, Dict, Type
+from typing import Any, Dict, Type, cast
 
 import pytest
 import tango
@@ -21,7 +21,7 @@ from ska_tango_base.control_model import AdminMode, HealthState, ObsState, Simul
 from tango import DeviceProxy, DevState
 
 from ska_pst_lmc import PstReceive
-from ska_pst_lmc.receive import PstReceiveComponentManager
+from ska_pst_lmc.receive import PstReceiveComponentManager, PstReceiveProcessApiSimulator
 from tests.conftest import TangoDeviceCommandChecker
 
 
@@ -44,7 +44,12 @@ def device_properties(
 
 
 @pytest.fixture
-def recv_device_class(logger: logging.Logger, monkeypatch: pytest.MonkeyPatch) -> Type[PstReceive]:
+def recv_device_class(
+    logger: logging.Logger,
+    monkeypatch: pytest.MonkeyPatch,
+    fail_validate_configure_beam: bool,
+    fail_validate_configure_scan: bool,
+) -> Type[PstReceive]:
     """Get PstReceive fixture.
 
     This creates a subclass of the PstReceive that overrides the create_component_manager method
@@ -58,7 +63,15 @@ def recv_device_class(logger: logging.Logger, monkeypatch: pytest.MonkeyPatch) -
 
     class _PstReceive(PstReceive):
         def create_component_manager(self: _PstReceive) -> PstReceiveComponentManager:
-            return PstReceiveComponentManager(device_interface=self, logger=logger)
+            cm = PstReceiveComponentManager(device_interface=self, logger=logger)
+            cast(
+                PstReceiveProcessApiSimulator, cm._api
+            ).fail_validate_configure_beam = fail_validate_configure_beam
+            cast(
+                PstReceiveProcessApiSimulator, cm._api
+            ).fail_validate_configure_scan = fail_validate_configure_scan
+
+            return cm
 
     return _PstReceive
 
@@ -116,6 +129,92 @@ class TestPstReceive:
         version_info = device_under_test.GetVersionInfo()
         assert len(version_info) == 1
         assert re.match(version_pattern, version_info[0])
+
+    def test_recv_mgmt_validate_configure_scan(
+        self: TestPstReceive,
+        device_under_test: DeviceProxy,
+        configure_scan_request: Dict[str, Any],
+        tango_device_command_checker: TangoDeviceCommandChecker,
+    ) -> None:
+        """Test the ValidateConfigureScan passes validation."""
+        device_under_test.adminMode = AdminMode.OFFLINE
+        assert device_under_test.healthState == HealthState.UNKNOWN
+
+        device_under_test.adminMode = AdminMode.ONLINE
+        assert device_under_test.healthState == HealthState.OK
+        assert device_under_test.state() == DevState.OFF
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+        )
+        assert device_under_test.state() == DevState.ON
+        resources = json.dumps(configure_scan_request)
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.ValidateConfigureScan(resources),
+        )
+
+    @pytest.mark.parametrize("fail_validate_configure_beam", [True])
+    def test_recv_mgmt_validate_configure_scan_fails_beam_configuration_validation(
+        self: TestPstReceive,
+        device_under_test: DeviceProxy,
+        configure_scan_request: Dict[str, Any],
+        tango_device_command_checker: TangoDeviceCommandChecker,
+    ) -> None:
+        """Test the ValidateConfigureScan when beam configuration fails validation."""
+        device_under_test.adminMode = AdminMode.OFFLINE
+        assert device_under_test.healthState == HealthState.UNKNOWN
+
+        device_under_test.adminMode = AdminMode.ONLINE
+        assert device_under_test.healthState == HealthState.OK
+        assert device_under_test.state() == DevState.OFF
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+        )
+        assert device_under_test.state() == DevState.ON
+        resources = json.dumps(configure_scan_request)
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.ValidateConfigureScan(resources),
+            expected_command_result="Simulated validation error for configure beam.",
+            expected_command_status_events=[
+                TaskStatus.QUEUED,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.FAILED,
+            ],
+        )
+
+    @pytest.mark.parametrize("fail_validate_configure_scan", [True])
+    def test_recv_mgmt_validate_configure_scan_fails_scan_configuration_validation(
+        self: TestPstReceive,
+        device_under_test: DeviceProxy,
+        configure_scan_request: Dict[str, Any],
+        tango_device_command_checker: TangoDeviceCommandChecker,
+    ) -> None:
+        """Test the ValidateConfigureScan when scan configuration fails validation."""
+        device_under_test.adminMode = AdminMode.OFFLINE
+        assert device_under_test.healthState == HealthState.UNKNOWN
+
+        device_under_test.adminMode = AdminMode.ONLINE
+        assert device_under_test.healthState == HealthState.OK
+        assert device_under_test.state() == DevState.OFF
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.On(), expected_obs_state_events=[ObsState.EMPTY]
+        )
+        assert device_under_test.state() == DevState.ON
+        resources = json.dumps(configure_scan_request)
+
+        tango_device_command_checker.assert_command(
+            lambda: device_under_test.ValidateConfigureScan(resources),
+            expected_command_result="Simulated validation error for configure scan.",
+            expected_command_status_events=[
+                TaskStatus.QUEUED,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.FAILED,
+            ],
+        )
 
     def test_recv_mgmt_configure_then_scan_then_stop(
         self: TestPstReceive,

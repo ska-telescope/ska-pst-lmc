@@ -61,7 +61,7 @@ def devices_info() -> List[dict]:
                 {
                     "name": "test/dsp/1",
                     "properties": {
-                        "monitoring_polling_rate": 100,
+                        "initial_monitoring_polling_rate": 100,
                     },
                 }
             ],
@@ -72,7 +72,7 @@ def devices_info() -> List[dict]:
                 {
                     "name": "test/recv/1",
                     "properties": {
-                        "monitoring_polling_rate": 100,
+                        "initial_monitoring_polling_rate": 100,
                     },
                 }
             ],
@@ -83,7 +83,7 @@ def devices_info() -> List[dict]:
                 {
                     "name": "test/smrb/1",
                     "properties": {
-                        "monitoring_polling_rate": 100,
+                        "initial_monitoring_polling_rate": 100,
                     },
                 }
             ],
@@ -348,6 +348,29 @@ class TestPstBeam:
         self.scan(scan)
         self.end_scan()
         self.goto_idle()
+        self.off()
+        self.offline()
+
+    def test_beam_mgmt_configure_when_validation_error(
+        self: TestPstBeam,
+        csp_configure_scan_request: Dict[str, Any],
+        scan_id: int,
+    ) -> None:
+        """Test state model of PstBeam can configure, scan and stop."""
+        # need to go through state mode
+        self.assert_health_state(HealthState.UNKNOWN)
+
+        self.online()
+        self.on()
+
+        csp_configure_scan_request["pst"]["scan"]["source"] = "invalid source"
+        configuration = json.dumps(csp_configure_scan_request)
+
+        ([result], [msg]) = self.beam_proxy.ConfigureScan(configuration)
+
+        assert result == ResultCode.FAILED
+        assert msg == "Simulated validation error due to invalid source"
+
         self.off()
         self.offline()
 
