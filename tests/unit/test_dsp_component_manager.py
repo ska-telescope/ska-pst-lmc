@@ -27,11 +27,18 @@ from ska_pst_lmc.util.validation import ValidationError
 
 
 @pytest.fixture
+def mock_disk_monitor_task() -> MagicMock:
+    """Get a mock to use for testing against disk monitoring."""
+    return MagicMock()
+
+
+@pytest.fixture
 def component_manager(
     device_interface: MagicMock,
     simulation_mode: SimulationMode,
     logger: logging.Logger,
     api: PstDspProcessApi,
+    mock_disk_monitor_task: MagicMock,
     monkeypatch: pytest.MonkeyPatch,
 ) -> PstDspComponentManager:
     """Create instance of a component manager."""
@@ -47,12 +54,19 @@ def component_manager(
 
     monkeypatch.setattr(PstDspComponentManager, "submit_task", submit_task)
 
-    return PstDspComponentManager(
+    cm = PstDspComponentManager(
         device_interface=cast(PstApiDeviceInterface[DspDiskMonitorData], device_interface),
         simulation_mode=simulation_mode,
         logger=logger,
         api=api,
     )
+
+    def _task_generator(*args: Any, **kwargs: Any) -> None:
+        cm._disk_monitor_task = mock_disk_monitor_task
+
+    monkeypatch.setattr(PstDspComponentManager, "_create_disk_monitor_task", _task_generator)
+
+    return cm
 
 
 @pytest.fixture
@@ -103,6 +117,7 @@ def calculated_dsp_subband_resources(beam_id: int, configure_beam_request: Dict[
 
 def test_dsp_cm_start_communicating_calls_connect_on_api(
     component_manager: PstDspComponentManager,
+    mock_disk_monitor_task: MagicMock,
 ) -> None:
     """Assert start/stop communicating calls API."""
     api = MagicMock()
@@ -111,9 +126,12 @@ def test_dsp_cm_start_communicating_calls_connect_on_api(
     component_manager.start_communicating()
     api.connect.assert_called_once()
     api.disconnect.assert_not_called()
+    assert component_manager._disk_monitor_task is not None
+    cast(MagicMock, mock_disk_monitor_task.start_monitoring).assert_called_once()
 
     component_manager.stop_communicating()
     api.disconnect.assert_called_once()
+    cast(MagicMock, mock_disk_monitor_task.stop_monitoring).assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -178,6 +196,17 @@ def test_dsp_cm_no_change_in_simulation_mode_value_wont_change_communication_sta
 
     update_communication_state = MagicMock(wraps=component_manager._update_communication_state)
     monkeypatch.setattr(component_manager, "_update_communication_state", update_communication_state)
+
+    def _get_env(*args: Any, **kwargs: Any) -> Dict[str, Any]:
+        import shutil
+
+        (disk_capacity, _, available_disk_space) = shutil.disk_usage("/")
+        return {
+            "disk_capacity": disk_capacity,
+            "available_disk_space": available_disk_space,
+        }
+
+    monkeypatch.setattr(PstDspProcessApiGrpc, "get_env", _get_env)
 
     assert component_manager.communication_state == CommunicationStatus.DISABLED
     assert component_manager.simulation_mode == simulation_mode
@@ -528,7 +557,6 @@ def test_dsp_cm_on(
 
     device_interface.handle_component_state_change.assert_called_once_with(power=PowerState.ON)
     device_interface.update_health_state.assert_not_called()
-    _get_disk_stats_from_api.assert_called_once()
 
 
 def test_dsp_cm_on_fails_if_not_communicating(

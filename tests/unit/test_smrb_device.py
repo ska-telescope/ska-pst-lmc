@@ -26,12 +26,6 @@ from tests.conftest import TangoDeviceCommandChecker
 
 
 @pytest.fixture
-def monitoring_polling_rate() -> int:
-    """Fixture to get monitoring polling rate for test."""
-    return 100
-
-
-@pytest.fixture
 def device_properties(
     grpc_endpoint: str,
     monitoring_polling_rate: int,

@@ -65,6 +65,8 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager], PstApiDeviceInterface
 
         :return: a component manager for this device.
         """
+        self._monitoring_polling_rate = self.initial_monitoring_polling_rate
+
         return PstDspComponentManager(
             device_interface=self,
             simulation_mode=SimulationMode.TRUE,
@@ -81,6 +83,8 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager], PstApiDeviceInterface
         init_device method to be released.  This method is called by the device
         destructor and by the device Init command.
         """
+        self.component_manager.stop_disk_stats_monitoring()
+        super().delete_device()
 
     def handle_monitor_data_update(self: PstDsp, monitor_data: DspDiskMonitorData) -> None:
         """Handle monitoring data.
