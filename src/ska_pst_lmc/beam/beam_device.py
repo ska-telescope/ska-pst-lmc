@@ -98,6 +98,9 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
             "seqNumberSyncErrorPacketRate",
             "dataRecordRate",
             "dataRecorded",
+            "diskCapacity",
+            "diskUsedBytes",
+            "diskUsedPercentage",
             "availableDiskSpace",
             "expectedDataRecordRate",
             "availableRecordingTime",
@@ -226,6 +229,58 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
     # ----------
     # Attributes
     # ----------
+
+    @attribute(
+        dtype=int,
+        unit="Bytes",
+        standard_unit="Bytes",
+        display_unit="B",
+        doc="Total capacity of the disk that DSP is writing to.",
+    )
+    def diskCapacity(self: PstBeam) -> int:
+        """Total capacity of the disk that DSP is writing to.
+
+        :returns: total capacity of the disk that DSP is writing to, in bytes.
+        :rtype: int
+        """
+        return self.component_manager.disk_capacity
+
+    @attribute(
+        dtype=int,
+        unit="Bytes",
+        standard_unit="Bytes",
+        display_unit="B",
+        doc="Used space on the disk that DSP is writing to.",
+    )
+    def diskUsedBytes(self: PstBeam) -> int:
+        """Get sed space on the disk that DSP is writing to.
+
+        This is `diskCapacity - availableDiskSpace`.
+
+        :returns: use space on the disk that DSP is writing to, in bytes.
+        :rtype: int
+        """
+        return self.component_manager.disk_used_bytes
+
+    @attribute(
+        dtype=float,
+        unit="Percentage",
+        display_unit="%",
+        max_value=100,
+        min_value=0,
+        max_alarm=99,
+        max_warning=95,
+        doc="Used space on the disk that DSP is writing to.",
+    )
+    def diskUsedPercentage(self: PstBeam) -> float:
+        """Get used space on the disk that DSP is writing to.
+
+        This is `100.0 * (diskCapacity - availableDiskSpace)/availableDiskSpace`.
+
+        :returns: use space on the disk that DSP is writing to, in bytes.
+        :rtype: float
+        """
+        return self.component_manager.disk_used_percentage
 
     @attribute(
         dtype=int,
