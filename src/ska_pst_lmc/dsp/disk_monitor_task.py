@@ -64,14 +64,10 @@ class DiskMonitorTask:
 
         try:
             self.stop_monitoring(timeout=2 * self.monitoring_polling_rate / 1000.0)
-            self.logger.info("Stopping ThreadPoolExecutor")
             self._executor.shutdown(wait=True, cancel_futures=True)
-            self.logger.info("ThreadPoolExecutor has shut down.")
 
-            self.logger.info("Getting future result.")
             if self._monitoring_fut is not None:
                 self._monitoring_fut.result(timeout=1.0)
-            self.logger.info("Got future result.")
             self._set_state(MonitoringState.SHUTDOWN)
         except Exception:
             self.logger.exception("Error in shutting down monitor.", exc_info=True)
@@ -92,11 +88,10 @@ class DiskMonitorTask:
                 return
 
             elif self._state in [MonitoringState.STARTING, MonitoringState.MONITORING]:
-                self.logger.info("Notifying monitoring should stop.")
                 self._stop_monitoring_evt.set()
                 self._set_state(MonitoringState.STOPPING)
             else:
-                self.logger.info("Already Stopping disk monitoring task.")
+                self.logger.debug("Already Stopping disk monitoring task.")
 
         with self._monitoring_condvar:
             self._monitoring_condvar.wait_for(

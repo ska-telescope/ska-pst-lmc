@@ -98,7 +98,7 @@ def test_disk_monitor_if_already_monitoring(
     mock_stats_action: MagicMock,
     monitoring_polling_rate: int,
 ) -> None:
-    """Test if alreading in a monitoring state that new background process not starts to monitor."""
+    """Test if alreading in a monitoring state that new background process doesn't start to monitor."""
     disk_monitor._state = MonitoringState.MONITORING
 
     disk_monitor.start_monitoring()

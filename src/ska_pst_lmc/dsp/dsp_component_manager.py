@@ -88,7 +88,7 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
         )
 
     def stop_disk_stats_monitoring(self: PstDspComponentManager) -> None:
-        """Stop monitoring of disk usaged."""
+        """Stop monitoring of disk usage."""
         if self._disk_monitor_task is not None:
             self._disk_monitor_task.shutdown()
             self._disk_monitor_task = None
@@ -125,7 +125,7 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
         self._disk_monitor_task.start_monitoring()  # type: ignore
 
     def _disconnect_from_api(self: PstDspComponentManager) -> None:
-        """Establish connection to API component."""
+        """Disconnect from API component."""
         if self._disk_monitor_task is not None:
             self._disk_monitor_task.stop_monitoring(timeout=1.0)
             self._disk_monitor_task = None

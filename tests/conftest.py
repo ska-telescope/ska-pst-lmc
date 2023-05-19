@@ -909,7 +909,7 @@ def telescope_facility() -> TelescopeFacilityEnum:
 
 @pytest.fixture(scope="session")
 def monitoring_polling_rate() -> int:
-    """Fixture to get monitoring polling rate for test."""
+    """Fixture to get monitoring polling rate for test in milliseconds."""
     return 100
 
 

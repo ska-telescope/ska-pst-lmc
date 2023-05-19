@@ -253,11 +253,11 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Used space on the disk that DSP is writing to.",
     )
     def diskUsedBytes(self: PstBeam) -> int:
-        """Get sed space on the disk that DSP is writing to.
+        """Get used space on the disk that DSP is writing to.
 
         This is `diskCapacity - availableDiskSpace`.
 
-        :returns: use space on the disk that DSP is writing to, in bytes.
+        :returns: used space on the disk that DSP is writing to, in bytes.
         :rtype: int
         """
         return self.component_manager.disk_used_bytes
@@ -277,7 +277,7 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
 
         This is `100.0 * (diskCapacity - availableDiskSpace)/availableDiskSpace`.
 
-        :returns: use space on the disk that DSP is writing to, in bytes.
+        :returns: used space on the disk that DSP is writing to as a percentage.
         :rtype: float
         """
         return self.component_manager.disk_used_percentage
