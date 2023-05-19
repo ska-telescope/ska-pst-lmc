@@ -5,7 +5,6 @@ import collections
 import json
 import logging
 import queue
-import sys
 import threading
 from concurrent import futures
 from random import randint
@@ -171,7 +170,6 @@ def default_device_propertry_config() -> Dict[str, Dict[str, Any]]:
         "test/dsp/1": {
             "dataRecordRate": 0.0,
             "dataRecorded": 0,
-            "availableDiskSpace": sys.maxsize,
             "availableRecordingTime": DEFAULT_RECORDING_TIME,
         },
         "test/smrb/1": {
@@ -525,6 +523,9 @@ def beam_attribute_names() -> List[str]:
         "seqNumberSyncErrorPacketRate",
         "dataRecordRate",
         "dataRecorded",
+        "diskCapacity",
+        "diskUsedBytes",
+        "diskUsedPercentage",
         "availableDiskSpace",
         "availableRecordingTime",
         "ringBufferUtilisation",
@@ -906,6 +907,12 @@ def telescope_facility() -> TelescopeFacilityEnum:
     return TelescopeFacilityEnum.Low
 
 
+@pytest.fixture(scope="session")
+def monitoring_polling_rate() -> int:
+    """Fixture to get monitoring polling rate for test in milliseconds."""
+    return 100
+
+
 @pytest.fixture
 def device_interface(
     device_name: str,
@@ -916,6 +923,7 @@ def device_interface(
     monitor_data_callback: Callable,
     property_callback: Callable,
     telescope_facility: TelescopeFacilityEnum,
+    monitoring_polling_rate: int,
 ) -> MagicMock:
     """Create device interface fixture to mock a Tango device."""
     device_interface = MagicMock()
@@ -927,6 +935,7 @@ def device_interface(
     device_interface.handle_attribute_value_update = property_callback
     device_interface.beam_id = beam_id
     device_interface.facility = telescope_facility
+    device_interface.monitoring_polling_rate = monitoring_polling_rate
 
     return device_interface
 

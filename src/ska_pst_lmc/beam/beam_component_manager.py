@@ -12,6 +12,7 @@ from __future__ import annotations
 import functools
 import json
 import logging
+import sys
 import threading
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -186,6 +187,11 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         self.channel_block_configuration = {}
         self.config_id = ""
         self.scan_id = 0
+
+        # expose disk
+        self.disk_capacity = sys.maxsize
+        self.disk_used_bytes = 0
+        self.disk_used_percentage = 0.0
 
     @property
     def channel_block_configuration(self: PstBeamComponentManager) -> Dict[str, Any]:
@@ -455,6 +461,39 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         self._property_callback("data_recorded", data_recorded)
 
     @property
+    def disk_capacity(self: PstBeamComponentManager) -> int:
+        """Get size, in bytes, for the disk used for recording scan data."""
+        return self._disk_capacity
+
+    @disk_capacity.setter
+    def disk_capacity(self: PstBeamComponentManager, disk_capacity: int) -> None:
+        """Set size, in bytes, for the disk used for recording scan data."""
+        self._disk_capacity = disk_capacity
+        self._property_callback("disk_capacity", disk_capacity)
+
+    @property
+    def disk_used_bytes(self: PstBeamComponentManager) -> int:
+        """Get the current amount, in bytes, of disk used used."""
+        return self._disk_used_bytes
+
+    @disk_used_bytes.setter
+    def disk_used_bytes(self: PstBeamComponentManager, disk_used_bytes: int) -> None:
+        """Set the current amount, in bytes, of disk used."""
+        self._disk_used_bytes = disk_used_bytes
+        self._property_callback("disk_used_bytes", disk_used_bytes)
+
+    @property
+    def disk_used_percentage(self: PstBeamComponentManager) -> float:
+        """Get the percentage of used disk space for recording of scan data."""
+        return self._disk_used_percentage
+
+    @disk_used_percentage.setter
+    def disk_used_percentage(self: PstBeamComponentManager, disk_used_percentage: float) -> None:
+        """Set the percent of used disk space for recording of scan data."""
+        self._disk_used_percentage = disk_used_percentage
+        self._property_callback("disk_used_percentage", disk_used_percentage)
+
+    @property
     def available_disk_space(self: PstBeamComponentManager) -> int:
         """Get available bytes for disk to be written to during scan."""
         return self._available_disk_space
@@ -601,6 +640,9 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
                 "data_recorded",
                 "available_disk_space",
                 "available_recording_time",
+                "disk_capacity",
+                "disk_used_bytes",
+                "disk_used_percentage",
                 "obs_state",
             ],
             self._smrb_device: [

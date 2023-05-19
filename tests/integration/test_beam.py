@@ -100,7 +100,7 @@ class TestPstBeam:
         return {
             attr: getattr(self.beam_proxy, attr)
             for attr in self._beam_attribute_names
-            if attr != "availableDiskSpace"
+            if attr not in ["availableDiskSpace", "diskCapacity", "diskUsedPercentage", "diskUsedBytes"]
         }
 
     def assert_attribute_values(

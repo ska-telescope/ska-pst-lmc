@@ -52,7 +52,7 @@ def server_configuration(devices_info: List[dict]) -> dict:
 
 
 @pytest.fixture(scope="class")
-def devices_info() -> List[dict]:
+def devices_info(monitoring_polling_rate: int) -> List[dict]:
     """Get device configuration for tests."""
     return [
         {
@@ -61,7 +61,7 @@ def devices_info() -> List[dict]:
                 {
                     "name": "test/dsp/1",
                     "properties": {
-                        "initial_monitoring_polling_rate": 100,
+                        "initial_monitoring_polling_rate": monitoring_polling_rate,
                     },
                 }
             ],
@@ -72,7 +72,7 @@ def devices_info() -> List[dict]:
                 {
                     "name": "test/recv/1",
                     "properties": {
-                        "initial_monitoring_polling_rate": 100,
+                        "initial_monitoring_polling_rate": monitoring_polling_rate,
                     },
                 }
             ],
@@ -83,7 +83,7 @@ def devices_info() -> List[dict]:
                 {
                     "name": "test/smrb/1",
                     "properties": {
-                        "initial_monitoring_polling_rate": 100,
+                        "initial_monitoring_polling_rate": monitoring_polling_rate,
                     },
                 }
             ],
@@ -145,7 +145,7 @@ class TestPstBeam:
         return {
             attr: getattr(self.beam_proxy, attr)
             for attr in self._beam_attribute_names
-            if attr != "availableDiskSpace"
+            if attr not in ["availableDiskSpace", "diskCapacity", "diskUsedPercentage", "diskUsedBytes"]
         }
 
     @backoff.on_exception(
@@ -410,7 +410,6 @@ class TestPstBeam:
         self.off()
         self.offline()
 
-    @pytest.mark.forked
     def test_beam_mgmt_scan_monitoring_values(
         self: TestPstBeam,
         csp_configure_scan_request: Dict[str, Any],
@@ -471,7 +470,6 @@ class TestPstBeam:
         for v in attribute_event_validators:
             v.assert_values()
 
-    @pytest.mark.forked
     def test_beam_mgmt_resubscribes_to_device_events(
         self: TestPstBeam,
         csp_configure_scan_request: Dict[str, Any],
@@ -530,7 +528,6 @@ class TestPstBeam:
 
         assert init_attr_values == self.current_attribute_values()
 
-    @pytest.mark.forked
     def test_beam_mgmt_ends_in_fault_state_when_subordinate_device_ends_up_in_fault_state(
         self: TestPstBeam,
         change_event_callbacks: MockTangoEventCallbackGroup,

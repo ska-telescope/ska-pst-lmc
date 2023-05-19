@@ -10,10 +10,8 @@
 from __future__ import annotations
 
 import logging
-import threading
 from typing import Any, Callable, Dict, List, Optional
 
-from ska_tango_base.base import check_communicating
 from ska_tango_base.control_model import PowerState, SimulationMode
 from ska_tango_base.executor import TaskStatus
 
@@ -23,10 +21,11 @@ from ska_pst_lmc.component import (
     PstApiDeviceInterface,
     TaskResponse,
 )
+from ska_pst_lmc.dsp.disk_monitor_task import DiskMonitorTask
 from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData, DspDiskMonitorDataStore
 from ska_pst_lmc.dsp.dsp_process_api import PstDspProcessApi, PstDspProcessApiGrpc, PstDspProcessApiSimulator
 from ska_pst_lmc.dsp.dsp_util import calculate_dsp_subband_resources
-from ska_pst_lmc.util.callback import Callback, callback_safely, wrap_callback
+from ska_pst_lmc.util.callback import Callback, wrap_callback
 
 __all__ = ["PstDspComponentManager"]
 
@@ -77,6 +76,8 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
             monitor_data_callback=device_interface.handle_monitor_data_update,
         )
 
+        self._disk_monitor_task: DiskMonitorTask | None = None
+
         super().__init__(
             device_interface=device_interface,
             api=api,
@@ -85,6 +86,12 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
             fault=None,
             **kwargs,
         )
+
+    def stop_disk_stats_monitoring(self: PstDspComponentManager) -> None:
+        """Stop monitoring of disk usage."""
+        if self._disk_monitor_task is not None:
+            self._disk_monitor_task.shutdown()
+            self._disk_monitor_task = None
 
     def _update_api(self: PstDspComponentManager) -> None:
         """Update instance of API based on simulation mode."""
@@ -100,6 +107,30 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
                 logger=self.logger,
                 component_state_callback=self._push_component_state_update,
             )
+
+    def _create_disk_monitor_task(self: PstDspComponentManager) -> None:
+        """Create a instance of a DiskMonitorTask."""
+        self._disk_monitor_task = DiskMonitorTask(
+            stats_action=self._get_disk_stats_from_api,
+            logger=self.logger,
+            monitoring_polling_rate=self.monitoring_polling_rate,
+        )
+
+    def _connect_to_api(self: PstDspComponentManager) -> None:
+        """Establish connection to API component."""
+        super()._connect_to_api()
+        if self._disk_monitor_task is None:
+            self._create_disk_monitor_task()
+
+        self._disk_monitor_task.start_monitoring()  # type: ignore
+
+    def _disconnect_from_api(self: PstDspComponentManager) -> None:
+        """Disconnect from API component."""
+        if self._disk_monitor_task is not None:
+            self._disk_monitor_task.stop_monitoring(timeout=1.0)
+            self._disk_monitor_task = None
+
+        super()._disconnect_from_api()
 
     @property
     def _monitor_data(self: PstDspComponentManager) -> DspDiskMonitorData:
@@ -173,31 +204,6 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
                 f"Failure to get disk stats from API. environment_values={environment_values}", exc_info=True
             )
             raise
-
-    @check_communicating
-    def on(self: PstDspComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """
-        Turn the component on.
-
-        :param task_callback: callback to be called when the status of
-            the command changes
-        """
-
-        def _task(
-            *args: Any,
-            task_callback: Callback = None,
-            task_abort_event: Optional[threading.Event] = None,
-            **kwargs: Any,
-        ) -> None:
-            callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)
-            self._push_component_state_update(power=PowerState.ON)
-            callback_safely(task_callback, status=TaskStatus.COMPLETED, result="Completed")
-            # need to submit this as a background task, so clients of On know
-            # that we're in the right state so they can subscribe to events
-            # and get correct values.
-            self.submit_task(self._get_disk_stats_from_api)
-
-        return self.submit_task(_task, task_callback=task_callback)
 
     def validate_configure_scan(
         self: PstDspComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
