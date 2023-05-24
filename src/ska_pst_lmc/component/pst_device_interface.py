@@ -80,7 +80,7 @@ class PstDeviceInterface:
 T = TypeVar("T")
 
 
-class PstApiDeviceInterface(Generic[T], PstDeviceInterface):
+class PstApiDeviceInterface(PstDeviceInterface, Generic[T]):
     """A generic `PstDeviceInterface` used by API based device components.
 
     This interface is used by devices like SMRB.MGMT, RECV.MGMT, etc that

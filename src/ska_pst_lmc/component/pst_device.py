@@ -14,11 +14,11 @@ import json
 from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, TypeVar, cast
 
 import tango
+from ska_csp_lmc_base import CspSubElementObsDevice
 from ska_tango_base.base import BaseComponentManager
 from ska_tango_base.base.base_device import DevVarLongStringArrayType
 from ska_tango_base.commands import ResultCode, SubmittedSlowCommand
 from ska_tango_base.control_model import CommunicationStatus, HealthState, ObsState, SimulationMode
-from ska_tango_base.csp import CspSubElementObsDevice
 from ska_tango_base.faults import StateModelError
 from ska_tango_base.obs import ObsStateModel
 from tango import DebugIt
@@ -26,7 +26,7 @@ from tango.server import attribute, command, device_property
 
 from ska_pst_lmc.component.component_manager import PstComponentManager
 from ska_pst_lmc.component.obs_state_model import PstObsStateMachine
-from ska_pst_lmc.component.pst_device_interface import PstDeviceInterface
+from ska_pst_lmc.component.pst_device_interface import PstApiDeviceInterface
 from ska_pst_lmc.util import TelescopeFacilityEnum
 
 __all__ = [
@@ -64,7 +64,7 @@ def as_device_attribute_name(attr_name: str) -> str:
     return head + "".join(x.title() for x in tail)
 
 
-class PstBaseDevice(Generic[T], CspSubElementObsDevice, PstDeviceInterface):
+class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
     """Base class for all the TANGO devices in PST.LMC.
 
     This extends from :py:class:`CspSubElementObsDevice` but is also
@@ -338,7 +338,10 @@ class PstBaseDevice(Generic[T], CspSubElementObsDevice, PstDeviceInterface):
         return [[result_code], [message]]
 
 
-class PstBaseProcessDevice(Generic[T], PstBaseDevice[T]):
+U = TypeVar("U")
+
+
+class PstBaseProcessDevice(PstBaseDevice[T], PstApiDeviceInterface[U], Generic[T, U]):
     """Base class for all the TANGO devices that manager an external process.
 
     This extends from :py:class:`PstBaseDevice` but exposes the ConfigureBeam
