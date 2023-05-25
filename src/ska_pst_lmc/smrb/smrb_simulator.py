@@ -149,3 +149,6 @@ class PstSmrbSimulator:
             self._update()
 
         return self._data_store._subband_data
+    
+    def set_log_level(self: PstSmrbSimulator) -> None:
+        """Set SMRB LogLevel"""

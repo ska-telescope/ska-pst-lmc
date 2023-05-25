@@ -17,7 +17,7 @@ import threading
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ska_tango_base.base import check_communicating
-from ska_tango_base.control_model import AdminMode, CommunicationStatus, HealthState, ObsState, PowerState
+from ska_tango_base.control_model import AdminMode, CommunicationStatus, HealthState, LoggingLevel, ObsState, PowerState
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.beam.beam_device_interface import PstBeamDeviceInterface
@@ -1062,3 +1062,9 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
+
+    def set_log_level(self: PstBeamComponentManager, log_level: LoggingLevel) -> None:
+        """Set LoggingLevel of all the sub-devices."""
+        self.log_level = log_level
+        for remote_device in self._remote_devices:
+            remote_device.loggingLevel = log_level

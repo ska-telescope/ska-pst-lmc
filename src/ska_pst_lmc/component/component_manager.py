@@ -15,7 +15,7 @@ from threading import Event
 from typing import Any, Callable, Dict, Generic, Optional, Tuple, TypeVar, cast
 
 from ska_tango_base.base import check_communicating
-from ska_tango_base.control_model import CommunicationStatus, HealthState, PowerState, SimulationMode
+from ska_tango_base.control_model import CommunicationStatus, HealthState, LoggingLevel, PowerState, SimulationMode
 from ska_tango_base.csp.obs import CspObsComponentManager
 from ska_tango_base.executor import TaskExecutorComponentManager, TaskStatus
 
@@ -23,6 +23,8 @@ from ska_pst_lmc.component.process_api import PstProcessApi
 from ska_pst_lmc.component.pst_device_interface import PstApiDeviceInterface, PstDeviceInterface
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 from ska_pst_lmc.util.callback import Callback, callback_safely, wrap_callback
+
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import LogLevel
 
 __all__ = [
     "PstApiComponentManager",
@@ -92,6 +94,14 @@ class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager
         self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
         self._scan_id = 0
         self._config_id = ""
+        """log_level_map enables the translation from the Tango LogLevel into the gRPC LogLevel"""
+        self.log_level_map = {
+            LoggingLevel.INFO: LogLevel.INFO,
+            LoggingLevel.DEBUG: LogLevel.DEBUG,
+            LoggingLevel.FATAL: LogLevel.CRITICAL,
+            LoggingLevel.WARNING: LogLevel.WARNING,
+            LoggingLevel.OFF: LogLevel.INFO
+        }
         super().__init__(
             logger=logger,
             communication_state_callback=device_interface.handle_communication_state_change,
@@ -429,6 +439,11 @@ class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager
         raise NotImplementedError("PstComponentManager is abstract class")
 
 
+    def set_log_level(self: PstComponentManager) -> None:
+        """Set LogLevel."""
+        raise NotImplementedError("PstComponentManager is abstract class")
+
+
 T = TypeVar("T")
 Api = TypeVar("Api", bound=PstProcessApi)
 
@@ -664,3 +679,8 @@ class PstApiComponentManager(Generic[T, Api], PstComponentManager[PstApiDeviceIn
             task(task_callback=task_callback)
 
         return self.submit_task(_task, task_callback=task_callback)
+
+    def set_core_log_level(self: PstApiComponentManager, log_level: LoggingLevel) -> None:
+        """Set the LogLevel of the service."""
+        
+        self._api.set_log_level(log_level=self.log_level_map[log_level])

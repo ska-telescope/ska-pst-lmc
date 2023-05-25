@@ -184,3 +184,6 @@ class PstReceiveSimulator:
             self._update()
 
         return self._subband_data
+
+    def set_log_level(self: PstReceiveSimulator) -> None:
+        """Set RECV LogLevel"""

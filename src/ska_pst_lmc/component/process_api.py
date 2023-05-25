@@ -23,9 +23,11 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     BeamConfiguration,
     ConfigureBeamRequest,
     ConfigureScanRequest,
+    LogLevel,
     MonitorData,
     ScanConfiguration,
     StartScanRequest,
+    SetLogLevelRequest,
 )
 from ska_tango_base.commands import TaskStatus
 
@@ -180,6 +182,9 @@ class PstProcessApi:
         """Get the environment properties for the service."""
         raise NotImplementedError("PstProcessApi is abstract class")
 
+    def set_log_level(self: PstProcessApi, log_level: LogLevel) -> None:
+        """Set the LogLevel of the service."""
+        raise NotImplementedError("PstProcessApi is abstract class")
 
 class PstProcessApiSimulator(PstProcessApi):
     """Abstract class for the Simulated API of the PST.LMC processes like RECV, SMRB, etc."""
@@ -195,6 +200,7 @@ class PstProcessApiSimulator(PstProcessApi):
         self._scanning = False
         self.fail_validate_configure_beam = False
         self.fail_validate_configure_scan = False
+        self._log_level = LogLevel.INFO
         super().__init__(logger=logger, component_state_callback=component_state_callback, **kwargs)
 
     def _should_be_monitoring(self: PstProcessApiSimulator) -> bool:
@@ -298,6 +304,9 @@ class PstProcessApiSimulator(PstProcessApi):
         """Stop the monitoring background thread by setting event."""
         self._monitor_abort_event.set()
 
+    def set_log_level(self: PstProcessApiSimulator, log_level=LogLevel) -> None:
+        """Set LogLevel."""
+        self._log_level = LogLevel
 
 class PstProcessApiGrpc(PstProcessApi):
     """Helper class to be used by subclasses of `PstProcessApi` that use gRPC.
@@ -629,6 +638,20 @@ class PstProcessApiGrpc(PstProcessApi):
     def get_env(self: PstProcessApiGrpc) -> Dict[str, Any]:
         """Get the environment properties from the remote gRPC service."""
         return self._grpc_client.get_env()
+    
+    def set_log_level(self: PstProcessApiGrpc, log_level: LogLevel) -> None:
+        """Set the LogLevel of the remote gRPC service."""
+        try:
+            request = SetLogLevelRequest(log_level=log_level)
+            self._grpc_client.set_log_level(request=request)
+        except BaseGrpcException:
+            self._logger.warn(
+                f"Error in trying to update remote service '{self._client_id}' LogLevel to {log_level}.", exc_info=True
+            )
+
+    def get_log_level(self: PstProcessApiGrpc) -> LogLevel:
+        """Get the LogLevel of the remote gRPC service."""
+        return self._grpc_client.get_log_level()
 
     def _stop_monitoring(self: PstProcessApiGrpc) -> None:
         # ensure we have a lock
