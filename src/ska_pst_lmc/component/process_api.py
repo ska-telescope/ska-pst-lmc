@@ -23,6 +23,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     BeamConfiguration,
     ConfigureBeamRequest,
     ConfigureScanRequest,
+    GetLogLevelRequest,
     LogLevel,
     MonitorData,
     ScanConfiguration,
@@ -654,7 +655,8 @@ class PstProcessApiGrpc(PstProcessApi):
 
     def get_log_level(self: PstProcessApiGrpc) -> LogLevel:
         """Get the LogLevel of the remote gRPC service."""
-        return self._grpc_client.get_log_level()
+        request = GetLogLevelRequest()
+        return self._grpc_client.get_log_level(request)
 
     def _stop_monitoring(self: PstProcessApiGrpc) -> None:
         # ensure we have a lock
