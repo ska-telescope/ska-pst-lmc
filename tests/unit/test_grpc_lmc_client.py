@@ -216,6 +216,7 @@ def test_grpc_client_set_log_level(
     mock_servicer_context: MagicMock,
     log_level: LogLevel,
 ) -> None:
+    """Tests calling set_log_level on remote service."""
     response = SetLogLevelResponse()
     mock_servicer_context.set_log_level = MagicMock(return_value=response)
     log_level_request = SetLogLevelRequest(log_level=log_level)

@@ -14,7 +14,6 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Union, cast
 from unittest.mock import ANY, MagicMock, call
 
 import pytest
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import LogLevel
 from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import (
     AdminMode,
@@ -936,7 +935,6 @@ def test_beam_cm_set_log_level(
     log_level: LoggingLevel,
 ) -> None:
     """Test that updates the LogLevel of the PstBeamComponentManager."""
-
     component_manager.set_log_level(log_level=log_level)
     assert smrb_device_proxy.loggingLevel == log_level
     assert recv_device_proxy.loggingLevel == log_level

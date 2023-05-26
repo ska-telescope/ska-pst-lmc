@@ -686,5 +686,4 @@ class PstApiComponentManager(Generic[T, Api], PstComponentManager[PstApiDeviceIn
 
     def set_core_log_level(self: PstApiComponentManager, log_level: LoggingLevel) -> None:
         """Set the LogLevel of the service."""
-
         self._api.set_log_level(log_level=self.log_level_map[log_level])

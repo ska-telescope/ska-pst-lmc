@@ -28,7 +28,6 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GetBeamConfigurationResponse,
     GetEnvironmentRequest,
     GetLogLevelRequest,
-    GetLogLevelResponse,
     GetScanConfigurationRequest,
     GetScanConfigurationResponse,
     GetStateRequest,

@@ -20,7 +20,6 @@ from ska_tango_base.commands import ResultCode, SubmittedSlowCommand
 from ska_tango_base.control_model import (
     CommunicationStatus,
     HealthState,
-    LoggingLevel,
     ObsState,
     SimulationMode,
 )

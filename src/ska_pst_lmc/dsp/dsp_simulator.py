@@ -215,4 +215,4 @@ class PstDspSimulator:
         return self._data_store._subband_data
 
     def set_log_level(self: PstDspSimulator) -> None:
-        """Set DSP LogLevel"""
+        """Set DSP LogLevel."""
