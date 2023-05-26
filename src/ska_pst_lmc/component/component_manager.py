@@ -14,8 +14,15 @@ import logging
 from threading import Event
 from typing import Any, Callable, Dict, Generic, Optional, Tuple, TypeVar, cast
 
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import LogLevel
 from ska_tango_base.base import check_communicating
-from ska_tango_base.control_model import CommunicationStatus, HealthState, LoggingLevel, PowerState, SimulationMode
+from ska_tango_base.control_model import (
+    CommunicationStatus,
+    HealthState,
+    LoggingLevel,
+    PowerState,
+    SimulationMode,
+)
 from ska_tango_base.csp.obs import CspObsComponentManager
 from ska_tango_base.executor import TaskExecutorComponentManager, TaskStatus
 
@@ -23,8 +30,6 @@ from ska_pst_lmc.component.process_api import PstProcessApi
 from ska_pst_lmc.component.pst_device_interface import PstApiDeviceInterface, PstDeviceInterface
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 from ska_pst_lmc.util.callback import Callback, callback_safely, wrap_callback
-
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import LogLevel
 
 __all__ = [
     "PstApiComponentManager",
@@ -100,7 +105,7 @@ class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager
             LoggingLevel.DEBUG: LogLevel.DEBUG,
             LoggingLevel.FATAL: LogLevel.CRITICAL,
             LoggingLevel.WARNING: LogLevel.WARNING,
-            LoggingLevel.OFF: LogLevel.INFO
+            LoggingLevel.OFF: LogLevel.INFO,
         }
         super().__init__(
             logger=logger,
@@ -438,7 +443,6 @@ class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager
         """
         raise NotImplementedError("PstComponentManager is abstract class")
 
-
     def set_log_level(self: PstComponentManager) -> None:
         """Set LogLevel."""
         raise NotImplementedError("PstComponentManager is abstract class")
@@ -682,5 +686,5 @@ class PstApiComponentManager(Generic[T, Api], PstComponentManager[PstApiDeviceIn
 
     def set_core_log_level(self: PstApiComponentManager, log_level: LoggingLevel) -> None:
         """Set the LogLevel of the service."""
-        
+
         self._api.set_log_level(log_level=self.log_level_map[log_level])

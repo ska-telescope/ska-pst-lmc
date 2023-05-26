@@ -25,9 +25,16 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GetStateResponse,
     GoToFaultRequest,
     GoToFaultResponse,
+    LogLevel,
 )
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ObsState as GrpcObsState
-from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ScanConfiguration, SmrbBeamConfiguration, SmrbScanConfiguration
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
+    ScanConfiguration,
+    SetLogLevelRequest,
+    SetLogLevelResponse,
+    SmrbBeamConfiguration,
+    SmrbScanConfiguration,
+)
 from ska_tango_base.control_model import ObsState
 
 from ska_pst_lmc.component.grpc_lmc_client import (
@@ -199,3 +206,19 @@ def test_grpc_client_get_env_throws_exception(
 
     with pytest.raises(UnknownGrpcException):
         grpc_client.get_env()
+
+
+@pytest.mark.parametrize(
+    "log_level", [LogLevel.INFO, LogLevel.DEBUG, LogLevel.CRITICAL, LogLevel.WARNING, LogLevel.INFO]
+)
+def test_grpc_client_set_log_level(
+    grpc_client: PstGrpcLmcClient,
+    mock_servicer_context: MagicMock,
+    log_level: LogLevel,
+) -> None:
+    response = SetLogLevelResponse()
+    mock_servicer_context.set_log_level = MagicMock(return_value=response)
+    log_level_request = SetLogLevelRequest(log_level=log_level)
+    grpc_client.set_log_level(request=log_level_request)
+    mock_servicer_context.set_log_level.assert_called_once_with(log_level_request)
+    mock_servicer_context.reset_mock()

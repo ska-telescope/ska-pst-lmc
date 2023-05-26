@@ -17,7 +17,14 @@ import threading
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ska_tango_base.base import check_communicating
-from ska_tango_base.control_model import AdminMode, CommunicationStatus, HealthState, LoggingLevel, ObsState, PowerState
+from ska_tango_base.control_model import (
+    AdminMode,
+    CommunicationStatus,
+    HealthState,
+    LoggingLevel,
+    ObsState,
+    PowerState,
+)
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.beam.beam_device_interface import PstBeamDeviceInterface

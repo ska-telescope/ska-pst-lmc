@@ -14,11 +14,13 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Union, cast
 from unittest.mock import ANY, MagicMock, call
 
 import pytest
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import LogLevel
 from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import (
     AdminMode,
     CommunicationStatus,
     HealthState,
+    LoggingLevel,
     ObsState,
     PowerState,
     SimulationMode,
@@ -920,3 +922,22 @@ def test_beam_cm_puts_subordinate_devices_in_state_to_do_obsreset(
 
     calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
     task_callback.assert_has_calls(calls)
+
+
+@pytest.mark.parametrize(
+    "log_level",
+    [LoggingLevel.INFO, LoggingLevel.DEBUG, LoggingLevel.FATAL, LoggingLevel.WARNING, LoggingLevel.OFF],
+)
+def test_beam_cm_set_log_level(
+    component_manager: PstBeamComponentManager,
+    smrb_device_proxy: PstDeviceProxy,
+    recv_device_proxy: PstDeviceProxy,
+    dsp_device_proxy: PstDeviceProxy,
+    log_level: LoggingLevel,
+) -> None:
+    """Test that updates the LogLevel of the PstBeamComponentManager."""
+
+    component_manager.set_log_level(log_level=log_level)
+    assert smrb_device_proxy.loggingLevel == log_level
+    assert recv_device_proxy.loggingLevel == log_level
+    assert dsp_device_proxy.loggingLevel == log_level

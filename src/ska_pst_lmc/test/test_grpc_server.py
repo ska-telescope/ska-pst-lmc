@@ -286,7 +286,7 @@ class TestMockServicer(PstLmcServiceServicer):
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
-    
+
     def set_log_level(
         self: TestMockServicer, request: SetLogLevelRequest, context: ServicerContext
     ) -> SetLogLevelResponse:
@@ -297,7 +297,7 @@ class TestMockServicer(PstLmcServiceServicer):
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
-    
+
     def get_log_level(
         self: TestMockServicer, request: GetLogLevelRequest, context: ServicerContext
     ) -> GetLogLevelResponse:
@@ -308,7 +308,6 @@ class TestMockServicer(PstLmcServiceServicer):
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
-
 
 
 class TestPstLmcService:

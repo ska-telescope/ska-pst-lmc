@@ -39,11 +39,14 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GetEnvironmentResponse,
     GoToFaultRequest,
     GoToFaultResponse,
+    LogLevel,
     MonitorData,
     MonitorResponse,
     ResetRequest,
     ResetResponse,
     ScanConfiguration,
+    SetLogLevelRequest,
+    SetLogLevelResponse,
     StartScanRequest,
     StartScanResponse,
     StopScanRequest,
@@ -917,3 +920,20 @@ def test_dsp_grpc_api_get_env(
     expected = {"available_disk_space": available_disk_space, "disk_capacity": disk_capacity}
 
     assert expected == actual
+
+
+@pytest.mark.parametrize(
+    "log_level", [LogLevel.INFO, LogLevel.DEBUG, LogLevel.CRITICAL, LogLevel.WARNING, LogLevel.INFO]
+)
+def test_dsp_grpc_api_set_log_level(
+    grpc_api: PstDspProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    log_level: LogLevel,
+) -> None:
+    """Test the set_core_log_level on gRPC API."""
+    response = SetLogLevelResponse()
+    mock_servicer_context.set_log_level = MagicMock(return_value=response)
+    log_level_request = SetLogLevelRequest(log_level=log_level)
+    grpc_api.set_log_level(log_level=log_level)
+    mock_servicer_context.set_log_level.assert_called_once_with(log_level_request)
+    mock_servicer_context.reset_mock()

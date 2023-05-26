@@ -26,8 +26,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     LogLevel,
     MonitorData,
     ScanConfiguration,
-    StartScanRequest,
     SetLogLevelRequest,
+    StartScanRequest,
 )
 from ska_tango_base.commands import TaskStatus
 
@@ -186,6 +186,7 @@ class PstProcessApi:
         """Set the LogLevel of the service."""
         raise NotImplementedError("PstProcessApi is abstract class")
 
+
 class PstProcessApiSimulator(PstProcessApi):
     """Abstract class for the Simulated API of the PST.LMC processes like RECV, SMRB, etc."""
 
@@ -307,6 +308,7 @@ class PstProcessApiSimulator(PstProcessApi):
     def set_log_level(self: PstProcessApiSimulator, log_level=LogLevel) -> None:
         """Set LogLevel."""
         self._log_level = LogLevel
+
 
 class PstProcessApiGrpc(PstProcessApi):
     """Helper class to be used by subclasses of `PstProcessApi` that use gRPC.
@@ -638,7 +640,7 @@ class PstProcessApiGrpc(PstProcessApi):
     def get_env(self: PstProcessApiGrpc) -> Dict[str, Any]:
         """Get the environment properties from the remote gRPC service."""
         return self._grpc_client.get_env()
-    
+
     def set_log_level(self: PstProcessApiGrpc, log_level: LogLevel) -> None:
         """Set the LogLevel of the remote gRPC service."""
         try:
@@ -646,7 +648,8 @@ class PstProcessApiGrpc(PstProcessApi):
             self._grpc_client.set_log_level(request=request)
         except BaseGrpcException:
             self._logger.warn(
-                f"Error in trying to update remote service '{self._client_id}' LogLevel to {log_level}.", exc_info=True
+                f"Error in trying to update remote service '{self._client_id}' LogLevel to {log_level}.",
+                exc_info=True,
             )
 
     def get_log_level(self: PstProcessApiGrpc) -> LogLevel:

@@ -432,7 +432,7 @@ class PstGrpcLmcClient:
             return True
         except grpc.RpcError as e:
             _handle_grpc_error(e)
-    
+
     def get_log_level(self: PstGrpcLmcClient, request: GetLogLevelRequest) -> LogLevel:
         """Set the LogLevel of the remote gRPC service.
 
