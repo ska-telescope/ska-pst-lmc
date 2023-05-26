@@ -18,6 +18,7 @@ from unittest.mock import MagicMock, call
 
 import pytest
 from ska_tango_base.commands import TaskStatus
+from ska_tango_base.control_model import LoggingLevel
 
 from ska_pst_lmc.dsp.dsp_process_api import PstDspProcessApiSimulator
 from ska_pst_lmc.dsp.dsp_simulator import PstDspSimulator
@@ -325,3 +326,21 @@ def test_dsp_simulator_api_get_env(
     actual = simulation_api.get_env()
 
     assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "log_level",
+    [
+        LoggingLevel.INFO,
+        LoggingLevel.DEBUG,
+        LoggingLevel.FATAL,
+        LoggingLevel.WARNING,
+        LoggingLevel.OFF,
+    ],
+)
+def test_dsp_simulator_api_set_log_level(
+    simulation_api: PstDspProcessApiSimulator, log_level: LoggingLevel
+) -> None:
+    """Test the set_log_level on simulator API."""
+    simulation_api.set_log_level(log_level=log_level)
+    assert simulation_api.loggingLevel == log_level

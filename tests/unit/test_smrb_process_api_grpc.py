@@ -35,11 +35,14 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ErrorCode,
     GoToFaultRequest,
     GoToFaultResponse,
+    LogLevel,
     MonitorData,
     MonitorResponse,
     ResetRequest,
     ResetResponse,
     ScanConfiguration,
+    SetLogLevelRequest,
+    SetLogLevelResponse,
     SmrbBeamConfiguration,
     SmrbMonitorData,
     SmrbScanConfiguration,
@@ -50,6 +53,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     StopScanResponse,
 )
 from ska_tango_base.commands import TaskStatus
+from ska_tango_base.control_model import LoggingLevel
 
 from ska_pst_lmc.smrb.smrb_model import SmrbSubbandMonitorData
 from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApiGrpc
@@ -880,3 +884,28 @@ def test_smrb_grpc_go_to_fault(
 
     mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
     component_state_callback.assert_called_once_with(obsfault=True)
+
+
+@pytest.mark.parametrize(
+    "tango_log_level,grpc_log_level",
+    [
+        (LoggingLevel.INFO, LogLevel.INFO),
+        (LoggingLevel.DEBUG, LogLevel.DEBUG),
+        (LoggingLevel.FATAL, LogLevel.CRITICAL),
+        (LoggingLevel.WARNING, LogLevel.WARNING),
+        (LoggingLevel.OFF, LogLevel.INFO),
+    ],
+)
+def test_dsp_grpc_api_set_log_level(
+    grpc_api: PstSmrbProcessApiGrpc,
+    mock_servicer_context: MagicMock,
+    tango_log_level: LoggingLevel,
+    grpc_log_level: LogLevel,
+) -> None:
+    """Test the set_core_log_level on gRPC API."""
+    response = SetLogLevelResponse()
+    mock_servicer_context.set_log_level = MagicMock(return_value=response)
+    log_level_request = SetLogLevelRequest(log_level=grpc_log_level)
+    grpc_api.set_log_level(log_level=tango_log_level)
+    mock_servicer_context.set_log_level.assert_called_once_with(log_level_request)
+    mock_servicer_context.reset_mock()

@@ -18,6 +18,7 @@ from unittest.mock import MagicMock, call
 
 import pytest
 from ska_tango_base.commands import TaskStatus
+from ska_tango_base.control_model import LoggingLevel
 
 from ska_pst_lmc.smrb.smrb_process_api import PstSmrbProcessApiSimulator
 from ska_pst_lmc.smrb.smrb_simulator import PstSmrbSimulator
@@ -310,3 +311,21 @@ def test_smrb_simulator_api_go_to_fault_if_monitoring_event_is_not_set(
     component_state_callback.assert_called_once_with(obsfault=True)
 
     assert simulation_api._monitor_abort_event.is_set(), "Expected the monitoring event to be set"
+
+
+@pytest.mark.parametrize(
+    "log_level",
+    [
+        LoggingLevel.INFO,
+        LoggingLevel.DEBUG,
+        LoggingLevel.FATAL,
+        LoggingLevel.WARNING,
+        LoggingLevel.OFF,
+    ],
+)
+def test_smrb_simulator_api_set_log_level(
+    simulation_api: PstSmrbProcessApiSimulator, log_level: LoggingLevel
+) -> None:
+    """Test the set_log_level on simulator API."""
+    simulation_api.set_log_level(log_level=log_level)
+    assert simulation_api.loggingLevel == log_level

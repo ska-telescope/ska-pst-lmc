@@ -16,6 +16,7 @@ from unittest.mock import MagicMock, call
 
 import pytest
 from ska_tango_base.commands import TaskStatus
+from ska_tango_base.control_model import LoggingLevel
 
 from ska_pst_lmc import PstReceiveSimulator
 from ska_pst_lmc.receive.receive_process_api import PstReceiveProcessApiSimulator
@@ -353,3 +354,21 @@ def test_recv_simulator_api_get_env(
     expected = {"data_host": "127.0.0.1", "data_port": 32080}
 
     assert output == expected
+
+
+@pytest.mark.parametrize(
+    "log_level",
+    [
+        LoggingLevel.INFO,
+        LoggingLevel.DEBUG,
+        LoggingLevel.FATAL,
+        LoggingLevel.WARNING,
+        LoggingLevel.OFF,
+    ],
+)
+def test_recv_simulator_api_set_log_level(
+    simulation_api: PstReceiveProcessApiSimulator, log_level: LoggingLevel
+) -> None:
+    """Test the set_log_level on simulator API."""
+    simulation_api.set_log_level(log_level=log_level)
+    assert simulation_api.loggingLevel == log_level

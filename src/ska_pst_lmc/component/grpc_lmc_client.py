@@ -422,8 +422,9 @@ class PstGrpcLmcClient:
     def set_log_level(self: PstGrpcLmcClient, request: SetLogLevelRequest) -> None:
         """Set the LogLevel of the remote gRPC service.
 
+        :param request: The request containing LogLevel to be set on the remote gRPC service.
         :return: None.
-        :rtype: None
+        :rtype: LogLevel
         """
         self._logger.debug(f"Calling set_log_level for '{self._client_id}'.")
         try:
@@ -434,10 +435,9 @@ class PstGrpcLmcClient:
     def get_log_level(self: PstGrpcLmcClient, request: GetLogLevelRequest) -> LogLevel:
         """Set the LogLevel of the remote gRPC service.
 
-        :return: None.
-        :rtype: None
+        :return: LogLevel.
         """
-        self._logger.debug(f"Calling set_log_level for '{self._client_id}'.")
+        self._logger.debug(f"Calling get_log_level for '{self._client_id}'.")
         try:
             response = self._service.get_log_level(request=request)
             return response

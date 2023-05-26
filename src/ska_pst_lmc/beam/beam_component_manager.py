@@ -1072,6 +1072,5 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
     def set_log_level(self: PstBeamComponentManager, log_level: LoggingLevel) -> None:
         """Set LoggingLevel of all the sub-devices."""
-        self.log_level = log_level
         for remote_device in self._remote_devices:
             remote_device.loggingLevel = log_level

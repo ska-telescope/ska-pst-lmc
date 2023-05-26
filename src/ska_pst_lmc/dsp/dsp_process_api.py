@@ -22,6 +22,7 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import BeamConfiguration, DspDiskBeamConf
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import DspDiskMonitorData as DspDiskMonitorDataProtobuf
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import DspDiskScanConfiguration, MonitorData, ScanConfiguration
 from ska_tango_base.commands import TaskStatus
+from ska_tango_base.control_model import LoggingLevel
 
 from ska_pst_lmc.component.process_api import PstProcessApiGrpc, PstProcessApiSimulator
 from ska_pst_lmc.dsp.dsp_model import DspDiskMonitorData, DspDiskSubbandMonitorData
@@ -204,6 +205,10 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
             "disk_capacity": disk_capacity,
             "available_disk_space": available_disk_space,
         }
+
+    def set_log_level(self: PstDspProcessApiSimulator, log_level: LoggingLevel) -> None:
+        """Set log_level of DSP.CORE."""
+        self.loggingLevel = log_level
 
 
 class PstDspProcessApiGrpc(PstProcessApiGrpc, PstDspProcessApi):
