@@ -443,7 +443,7 @@ class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager
         """
         raise NotImplementedError("PstComponentManager is abstract class")
 
-    def set_log_level(self: PstComponentManager) -> None:
+    def set_log_level(self: PstComponentManager, log_level: LoggingLevel) -> None:
         """Set LogLevel."""
         raise NotImplementedError("PstComponentManager is abstract class")
 

@@ -202,7 +202,6 @@ class PstProcessApiSimulator(PstProcessApi):
         self._scanning = False
         self.fail_validate_configure_beam = False
         self.fail_validate_configure_scan = False
-        self._log_level = LogLevel.INFO
         super().__init__(logger=logger, component_state_callback=component_state_callback, **kwargs)
 
     def _should_be_monitoring(self: PstProcessApiSimulator) -> bool:
@@ -306,9 +305,8 @@ class PstProcessApiSimulator(PstProcessApi):
         """Stop the monitoring background thread by setting event."""
         self._monitor_abort_event.set()
 
-    def set_log_level(self: PstProcessApiSimulator, log_level=LogLevel) -> None:
+    def set_log_level(self: PstProcessApiSimulator, log_level: LogLevel) -> None:
         """Set LogLevel."""
-        self._log_level = LogLevel
 
 
 class PstProcessApiGrpc(PstProcessApi):

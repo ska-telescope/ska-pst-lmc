@@ -428,7 +428,6 @@ class PstGrpcLmcClient:
         self._logger.debug(f"Calling set_log_level for '{self._client_id}'.")
         try:
             self._service.set_log_level(request=request)
-            return True
         except grpc.RpcError as e:
             _handle_grpc_error(e)
 
