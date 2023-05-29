@@ -659,7 +659,11 @@ class PstProcessApiGrpc(PstProcessApi):
         return self._grpc_client.get_env()
 
     def set_log_level(self: PstProcessApiGrpc, log_level: LoggingLevel) -> None:
-        """Set the LogLevel of the remote gRPC service."""
+        """Set the LogLevel of the remote gRPC service.
+
+        :param log_level: The required Tango LoggingLevel.
+        :returns: None.
+        """
         try:
             self._grpc_client.set_log_level(request=SetLogLevelRequest(log_level=log_level_map[log_level]))
         except BaseGrpcException:
