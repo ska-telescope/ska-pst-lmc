@@ -1071,6 +1071,10 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         )
 
     def set_log_level(self: PstBeamComponentManager, log_level: LoggingLevel) -> None:
-        """Set LoggingLevel of all the sub-devices."""
+        """Set LoggingLevel of all the sub-devices.
+
+        :param log_level: The required Tango LoggingLevel
+        :returns: None.
+        """
         for remote_device in self._remote_devices:
             remote_device.loggingLevel = log_level

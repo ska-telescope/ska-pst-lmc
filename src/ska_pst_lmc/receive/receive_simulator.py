@@ -12,8 +12,6 @@ from __future__ import annotations
 from random import randint, random
 from typing import Any, Dict, Optional
 
-from ska_tango_base.control_model import LoggingLevel
-
 from ska_pst_lmc.receive.receive_model import ReceiveData
 
 
@@ -186,6 +184,3 @@ class PstReceiveSimulator:
             self._update()
 
         return self._subband_data
-
-    def set_log_level(self: PstReceiveSimulator, log_level: LoggingLevel) -> None:
-        """Set log_level of the RECV service."""

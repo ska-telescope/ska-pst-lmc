@@ -28,7 +28,6 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ScanConfiguration,
 )
 from ska_tango_base.commands import TaskStatus
-from ska_tango_base.control_model import LoggingLevel
 
 from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc, PstProcessApiSimulator
 from ska_pst_lmc.receive.receive_model import ReceiveData
@@ -224,10 +223,6 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
             "data_host": "127.0.0.1",
             "data_port": 32080,
         }
-
-    def set_log_level(self: PstReceiveProcessApiSimulator, log_level: LoggingLevel) -> None:
-        """Set log_level of the RECV.CORE."""
-        self.loggingLevel = log_level
 
 
 class PstReceiveProcessApiGrpc(PstProcessApiGrpc, PstReceiveProcessApi):

@@ -25,7 +25,6 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     SmrbScanConfiguration,
 )
 from ska_tango_base.commands import TaskStatus
-from ska_tango_base.control_model import LoggingLevel
 
 from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc, PstProcessApiSimulator
 from ska_pst_lmc.smrb.smrb_model import SmrbMonitorData, SmrbSubbandMonitorData
@@ -200,10 +199,6 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
             yield self._simulator.get_subband_data()
             self._logger.debug(f"Sleeping {polling_rate}ms")
             time.sleep(polling_rate / 1000.0)
-
-    def set_log_level(self: PstSmrbProcessApiSimulator, log_level: LoggingLevel) -> None:
-        """Set log_level of SMRB.CORE."""
-        self.loggingLevel = log_level
 
 
 class PstSmrbProcessApiGrpc(PstProcessApiGrpc, PstSmrbProcessApi):

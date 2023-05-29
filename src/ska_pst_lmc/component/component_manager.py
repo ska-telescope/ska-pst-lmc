@@ -436,7 +436,11 @@ class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager
         raise NotImplementedError("PstComponentManager is abstract class")
 
     def set_log_level(self: PstComponentManager, log_level: LoggingLevel) -> None:
-        """Set LoggingLevel."""
+        """Set LoggingLevel.
+
+        :param log_level: The required Tango LoggingLevel
+        :returns: None.
+        """
         raise NotImplementedError("PstComponentManager is abstract class")
 
 

@@ -193,7 +193,11 @@ class PstProcessApi:
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def set_log_level(self: PstProcessApi, log_level: LoggingLevel) -> None:
-        """Set the LogLevel of the service."""
+        """Set the LogLevel of the service.
+
+        :param log_level: The required Tango LoggingLevel
+        :returns: None.
+        """
         raise NotImplementedError("PstProcessApi is abstract class")
 
 
@@ -315,7 +319,12 @@ class PstProcessApiSimulator(PstProcessApi):
         self._monitor_abort_event.set()
 
     def set_log_level(self: PstProcessApiSimulator, log_level: LoggingLevel) -> None:
-        """Set LogLevel."""
+        """Set simulator LoggingLevel of the PST.LMC processes like RECV, SMRB, etc.
+
+        :param log_level: The required Tango LoggingLevel
+        :returns: None.
+        """
+        self.logging_level = log_level
 
 
 class PstProcessApiGrpc(PstProcessApi):
@@ -652,8 +661,7 @@ class PstProcessApiGrpc(PstProcessApi):
     def set_log_level(self: PstProcessApiGrpc, log_level: LoggingLevel) -> None:
         """Set the LogLevel of the remote gRPC service."""
         try:
-            request = SetLogLevelRequest(log_level=log_level_map[log_level])
-            self._grpc_client.set_log_level(request=request)
+            self._grpc_client.set_log_level(request=SetLogLevelRequest(log_level=log_level_map[log_level]))
         except BaseGrpcException:
             self._logger.warning(
                 f"Error in trying to update remote service '{self._client_id}' LogLevel to {log_level}.",

@@ -328,4 +328,4 @@ def test_smrb_simulator_api_set_log_level(
 ) -> None:
     """Test the set_log_level on simulator API."""
     simulation_api.set_log_level(log_level=log_level)
-    assert simulation_api.loggingLevel == log_level
+    assert simulation_api.logging_level == log_level
