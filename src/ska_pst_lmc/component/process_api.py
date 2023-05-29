@@ -23,11 +23,15 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     BeamConfiguration,
     ConfigureBeamRequest,
     ConfigureScanRequest,
+    GetLogLevelRequest,
+    LogLevel,
     MonitorData,
     ScanConfiguration,
+    SetLogLevelRequest,
     StartScanRequest,
 )
 from ska_tango_base.commands import TaskStatus
+from ska_tango_base.control_model import LoggingLevel
 
 from ska_pst_lmc.component.grpc_lmc_client import (
     AlreadyScanningException,
@@ -43,6 +47,14 @@ from ska_pst_lmc.component.grpc_lmc_client import (
 from ska_pst_lmc.util import ValidationError
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor, background_task
 from ska_pst_lmc.util.timeout_iterator import TimeoutIterator
+
+log_level_map = {
+    LoggingLevel.INFO: LogLevel.INFO,
+    LoggingLevel.DEBUG: LogLevel.DEBUG,
+    LoggingLevel.FATAL: LogLevel.CRITICAL,
+    LoggingLevel.WARNING: LogLevel.WARNING,
+    LoggingLevel.OFF: LogLevel.INFO,
+}
 
 
 class PstProcessApi:
@@ -180,6 +192,14 @@ class PstProcessApi:
         """Get the environment properties for the service."""
         raise NotImplementedError("PstProcessApi is abstract class")
 
+    def set_log_level(self: PstProcessApi, log_level: LoggingLevel) -> None:
+        """Set the LogLevel of the service.
+
+        :param log_level: The required Tango LoggingLevel
+        :returns: None.
+        """
+        raise NotImplementedError("PstProcessApi is abstract class")
+
 
 class PstProcessApiSimulator(PstProcessApi):
     """Abstract class for the Simulated API of the PST.LMC processes like RECV, SMRB, etc."""
@@ -297,6 +317,14 @@ class PstProcessApiSimulator(PstProcessApi):
     def stop_monitoring(self: PstProcessApiSimulator) -> None:
         """Stop the monitoring background thread by setting event."""
         self._monitor_abort_event.set()
+
+    def set_log_level(self: PstProcessApiSimulator, log_level: LoggingLevel) -> None:
+        """Set simulator LoggingLevel of the PST.LMC processes like RECV, SMRB, etc.
+
+        :param log_level: The required Tango LoggingLevel
+        :returns: None.
+        """
+        self.logging_level = log_level
 
 
 class PstProcessApiGrpc(PstProcessApi):
@@ -629,6 +657,24 @@ class PstProcessApiGrpc(PstProcessApi):
     def get_env(self: PstProcessApiGrpc) -> Dict[str, Any]:
         """Get the environment properties from the remote gRPC service."""
         return self._grpc_client.get_env()
+
+    def set_log_level(self: PstProcessApiGrpc, log_level: LoggingLevel) -> None:
+        """Set the LogLevel of the remote gRPC service.
+
+        :param log_level: The required Tango LoggingLevel.
+        :returns: None.
+        """
+        try:
+            self._grpc_client.set_log_level(request=SetLogLevelRequest(log_level=log_level_map[log_level]))
+        except BaseGrpcException:
+            self._logger.warning(
+                f"Error in trying to update remote service '{self._client_id}' LogLevel to {log_level}.",
+                exc_info=True,
+            )
+
+    def get_log_level(self: PstProcessApiGrpc) -> LoggingLevel:
+        """Get the LogLevel of the remote gRPC service."""
+        return self._grpc_client.get_log_level(GetLogLevelRequest())
 
     def _stop_monitoring(self: PstProcessApiGrpc) -> None:
         # ensure we have a lock

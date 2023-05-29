@@ -26,5 +26,7 @@
     "remoteUser": "tango",
     "remoteEnv": {
         "PATH": "/home/tango/.local/bin:${containerEnv:PATH}",
+        "PYTHONPATH": "/workspaces/ska-pst-lmc/src:/app/generated",
+        "SHELL": "/bin/bash"
     }
 }

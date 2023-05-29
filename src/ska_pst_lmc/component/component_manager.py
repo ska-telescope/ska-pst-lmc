@@ -15,7 +15,13 @@ from threading import Event
 from typing import Any, Callable, Dict, Generic, Optional, Tuple, TypeVar, cast
 
 from ska_tango_base.base import check_communicating
-from ska_tango_base.control_model import CommunicationStatus, HealthState, PowerState, SimulationMode
+from ska_tango_base.control_model import (
+    CommunicationStatus,
+    HealthState,
+    LoggingLevel,
+    PowerState,
+    SimulationMode,
+)
 from ska_tango_base.csp.obs import CspObsComponentManager
 from ska_tango_base.executor import TaskExecutorComponentManager, TaskStatus
 
@@ -92,6 +98,7 @@ class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager
         self._background_task_processor = BackgroundTaskProcessor(default_logger=logger)
         self._scan_id = 0
         self._config_id = ""
+
         super().__init__(
             logger=logger,
             communication_state_callback=device_interface.handle_communication_state_change,
@@ -428,6 +435,14 @@ class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager
         """
         raise NotImplementedError("PstComponentManager is abstract class")
 
+    def set_log_level(self: PstComponentManager, log_level: LoggingLevel) -> None:
+        """Set LoggingLevel.
+
+        :param log_level: The required Tango LoggingLevel
+        :returns: None.
+        """
+        raise NotImplementedError("PstComponentManager is abstract class")
+
 
 T = TypeVar("T")
 Api = TypeVar("Api", bound=PstProcessApi)
@@ -664,3 +679,7 @@ class PstApiComponentManager(Generic[T, Api], PstComponentManager[PstApiDeviceIn
             task(task_callback=task_callback)
 
         return self.submit_task(_task, task_callback=task_callback)
+
+    def set_core_log_level(self: PstApiComponentManager, log_level: LoggingLevel) -> None:
+        """Set the LoggingLevel of the service."""
+        self._api.set_log_level(log_level=log_level)

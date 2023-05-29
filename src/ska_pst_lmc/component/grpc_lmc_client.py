@@ -27,14 +27,17 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GetBeamConfigurationRequest,
     GetBeamConfigurationResponse,
     GetEnvironmentRequest,
+    GetLogLevelRequest,
     GetScanConfigurationRequest,
     GetScanConfigurationResponse,
     GetStateRequest,
     GetStateResponse,
     GoToFaultRequest,
+    LogLevel,
     MonitorRequest,
     MonitorResponse,
     ResetRequest,
+    SetLogLevelRequest,
     StartScanRequest,
     Status,
     StopScanRequest,
@@ -413,5 +416,30 @@ class PstGrpcLmcClient:
                         f"received timeout during monitoring for '{self._client_id}' before abort event set."
                     )
 
+        except grpc.RpcError as e:
+            _handle_grpc_error(e)
+
+    def set_log_level(self: PstGrpcLmcClient, request: SetLogLevelRequest) -> None:
+        """Set the LogLevel of the remote gRPC service.
+
+        :param request: The request containing LogLevel to be set on the remote gRPC service.
+        :returns: None.
+        """
+        self._logger.debug(f"Calling set_log_level for '{self._client_id}'.")
+        try:
+            self._service.set_log_level(request=request)
+        except grpc.RpcError as e:
+            _handle_grpc_error(e)
+
+    def get_log_level(self: PstGrpcLmcClient, request: GetLogLevelRequest) -> LogLevel:
+        """Get the LogLevel of the remote gRPC service.
+
+        :returns: The current LogLevel of the remote gRPC service.
+        :rtype: LogLevel
+        """
+        self._logger.debug(f"Calling get_log_level for '{self._client_id}'.")
+        try:
+            response = self._service.get_log_level(request=request)
+            return response
         except grpc.RpcError as e:
             _handle_grpc_error(e)

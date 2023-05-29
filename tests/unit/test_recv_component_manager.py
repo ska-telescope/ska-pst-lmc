@@ -13,7 +13,13 @@ from unittest.mock import ANY, MagicMock, call
 
 import pytest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import ConnectionRequest, ConnectionResponse
-from ska_tango_base.control_model import CommunicationStatus, HealthState, PowerState, SimulationMode
+from ska_tango_base.control_model import (
+    CommunicationStatus,
+    HealthState,
+    LoggingLevel,
+    PowerState,
+    SimulationMode,
+)
 from ska_tango_base.executor import TaskStatus
 
 from ska_pst_lmc.component import MonitorDataHandler, PstApiDeviceInterface
@@ -665,3 +671,25 @@ def test_recv_cm_stop_communicating(
         health_state=HealthState.UNKNOWN
     )
     assert component_manager._communication_state == CommunicationStatus.DISABLED
+
+
+@pytest.mark.parametrize(
+    "log_level",
+    [
+        LoggingLevel.INFO,
+        LoggingLevel.DEBUG,
+        LoggingLevel.FATAL,
+        LoggingLevel.WARNING,
+        LoggingLevel.OFF,
+    ],
+)
+def test_recv_cm_set_log_level(
+    component_manager: PstReceiveComponentManager,
+    log_level: LoggingLevel,
+) -> None:
+    """Test RECV component manager when set_log_level is updated."""
+    api = MagicMock()
+    component_manager._api = api
+
+    component_manager.set_core_log_level(log_level=log_level)
+    api.set_log_level.assert_called_once_with(log_level=log_level)

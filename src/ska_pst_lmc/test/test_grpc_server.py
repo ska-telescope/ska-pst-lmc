@@ -35,6 +35,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     GetBeamConfigurationResponse,
     GetEnvironmentRequest,
     GetEnvironmentResponse,
+    GetLogLevelRequest,
+    GetLogLevelResponse,
     GetScanConfigurationRequest,
     GetScanConfigurationResponse,
     GetStateRequest,
@@ -45,6 +47,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     MonitorResponse,
     ResetRequest,
     ResetResponse,
+    SetLogLevelRequest,
+    SetLogLevelResponse,
     StartScanRequest,
     StartScanResponse,
     Status,
@@ -279,6 +283,28 @@ class TestMockServicer(PstLmcServiceServicer):
         self._logger.debug("get_env")
         try:
             return self._context.get_env(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
+
+    def set_log_level(
+        self: TestMockServicer, request: SetLogLevelRequest, context: ServicerContext
+    ) -> SetLogLevelResponse:
+        """Set Log Level."""
+        self._logger.debug("set_log_level")
+        try:
+            return self._context.set_log_level(request)
+        except TestMockException as e:
+            context.abort_with_status(e.as_grpc_status())
+            assert False, "Unreachable"
+
+    def get_log_level(
+        self: TestMockServicer, request: GetLogLevelRequest, context: ServicerContext
+    ) -> GetLogLevelResponse:
+        """Get Log Level."""
+        self._logger.debug("get_log_level")
+        try:
+            return self._context.get_log_level(request)
         except TestMockException as e:
             context.abort_with_status(e.as_grpc_status())
             assert False, "Unreachable"
