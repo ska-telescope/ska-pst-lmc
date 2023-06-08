@@ -927,7 +927,7 @@ def test_beam_cm_puts_subordinate_devices_in_state_to_do_obsreset(
     "log_level",
     [LoggingLevel.INFO, LoggingLevel.DEBUG, LoggingLevel.FATAL, LoggingLevel.WARNING, LoggingLevel.OFF],
 )
-def test_beam_cm_set_log_level(
+def test_beam_cm_set_logging_level(
     component_manager: PstBeamComponentManager,
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
@@ -935,7 +935,7 @@ def test_beam_cm_set_log_level(
     log_level: LoggingLevel,
 ) -> None:
     """Test that updates the LogLevel of the PstBeamComponentManager."""
-    component_manager.set_log_level(log_level=log_level)
+    component_manager.set_logging_level(log_level=log_level)
     assert smrb_device_proxy.loggingLevel == log_level
     assert recv_device_proxy.loggingLevel == log_level
     assert dsp_device_proxy.loggingLevel == log_level

@@ -17,7 +17,7 @@ from typing import Any, Callable, Dict, List, Optional
 import backoff
 import pytest
 from ska_tango_base.commands import ResultCode
-from ska_tango_base.control_model import AdminMode, HealthState, ObsState
+from ska_tango_base.control_model import AdminMode, HealthState, LoggingLevel, ObsState
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DeviceProxy, DevState
 from tango.test_context import MultiDeviceTestContext
@@ -174,6 +174,20 @@ class TestPstBeam:
         assert self.recv_proxy.healthState == health_state
         assert self.smrb_proxy.healthState == health_state
         assert self.dsp_proxy.healthState == health_state
+
+    def assert_logging_level(self: TestPstBeam, logging_level: LoggingLevel) -> None:
+        """Assert the logging level of devices."""
+
+        def _assert(device: DeviceProxy) -> None:
+            curr_logging_level = LoggingLevel(device.loggingLevel)
+            assert (
+                logging_level == curr_logging_level
+            ), f"Expected {device}.loggingLevel to be {logging_level.name} was {curr_logging_level.name}"
+
+        _assert(self.beam_proxy)
+        _assert(self.dsp_proxy)
+        _assert(self.recv_proxy)
+        _assert(self.smrb_proxy)
 
     @backoff.on_exception(
         backoff.expo,
@@ -557,3 +571,9 @@ class TestPstBeam:
 
         assert self.beam_proxy.healthFailureMessage == fault_msg
         assert self.beam_proxy.healthState == HealthState.FAILED
+
+    def test_beam_mgmt_sets_logging_level_on_suboridinate_devices(self: TestPstBeam) -> None:
+        """Test that BEAM.MGMT will update logging level on subordinate devices."""
+        for logging_level in LoggingLevel:
+            self.beam_proxy.loggingLevel = logging_level
+            self.assert_logging_level(logging_level)

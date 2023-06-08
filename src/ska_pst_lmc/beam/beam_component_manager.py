@@ -1070,7 +1070,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             completion_callback=_completion_callback,
         )
 
-    def set_log_level(self: PstBeamComponentManager, log_level: LoggingLevel) -> None:
+    def set_logging_level(self: PstBeamComponentManager, log_level: LoggingLevel) -> None:
         """Set LoggingLevel of all the sub-devices.
 
         :param log_level: The required Tango LoggingLevel
