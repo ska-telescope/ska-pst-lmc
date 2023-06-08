@@ -626,7 +626,7 @@ def test_smrb_cm_stop_communicating(
         LoggingLevel.OFF,
     ],
 )
-def test_smrb_cm_set_log_level(
+def test_smrb_cm_set_logging_level(
     component_manager: PstSmrbComponentManager,
     log_level: LoggingLevel,
 ) -> None:
@@ -634,5 +634,5 @@ def test_smrb_cm_set_log_level(
     api = MagicMock()
     component_manager._api = api
 
-    component_manager.set_core_log_level(log_level=log_level)
+    component_manager.set_logging_level(log_level=log_level)
     api.set_log_level.assert_called_once_with(log_level=log_level)

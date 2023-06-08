@@ -902,7 +902,7 @@ def test_dsp_grpc_api_set_log_level(
     tango_log_level: LoggingLevel,
     grpc_log_level: LogLevel,
 ) -> None:
-    """Test the set_core_log_level on gRPC API."""
+    """Test the set_logging_level on gRPC API."""
     response = SetLogLevelResponse()
     mock_servicer_context.set_log_level = MagicMock(return_value=response)
     log_level_request = SetLogLevelRequest(log_level=grpc_log_level)
