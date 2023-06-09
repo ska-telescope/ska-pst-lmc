@@ -26,7 +26,7 @@ from ska_pst_lmc.receive.receive_model import ReceiveData
 __all__ = ["PstReceive", "main"]
 
 
-class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager]):
+class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
     """A software TANGO device for managing the RECV component of the PST.LMC system."""
 
     # -----------------
