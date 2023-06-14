@@ -21,6 +21,7 @@ six="^1.15.0"
 protobuf = "^3"
 grpcio = "^1.47.0"
 ska-csp-lmc-base = "^0.1.0"
+pytango = "9.3.3"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.1.0"

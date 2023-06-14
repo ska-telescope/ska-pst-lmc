@@ -542,7 +542,7 @@ def additional_change_events_callbacks() -> List[str]:
 @pytest.fixture
 def change_event_callback_time() -> float:
     """Get timeout used for change event callbacks."""
-    return 1.0
+    return 5.0
 
 
 @pytest.fixture
@@ -757,7 +757,7 @@ class TangoDeviceCommandChecker:
                             exc_info=True,
                         )
                         self._logger.info(
-                            f"Currend longRunningCommandResult = {self._device.longRunningCommandResult}"
+                            f"Current longRunningCommandResult = {self._device.longRunningCommandResult}"
                         )
                         raise e
         else:

@@ -704,12 +704,25 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         :param task_callback: callback to be called when the status of
             the command changes
         """
+        import time
 
+        starttime = time.time()
         def _completion_callback(task_callback: Callable) -> None:
-            self.logger.debug("All the 'On' commands have completed.")
-            self._push_component_state_update(power=PowerState.ON)
-            self._subscribe_change_events()
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+            try:
+                self.logger.debug("All the 'On' commands have completed.")
+                self._subscribe_change_events()
+                self._push_component_state_update(power=PowerState.ON)
+                self.logger.debug("About to call task_callback as complete")
+                before = time.time()
+                task_callback(status=TaskStatus.COMPLETED, result="Completed")
+                now = time.time()
+                self.logger.debug(f"Task callback took {(now - before):.3f}s")
+            except Exception as e:
+                self.logger.exception("Error occured when dealing with turning on BEAM", exc_info=True)
+                task_callback(status=TaskStatus.FAILED, exception=e)
+            finally:
+                now = time.time()
+                self.logger.info(f"Took {(now - starttime):.3f}s to complete.")
 
         return self._submit_remote_job(
             job=DeviceCommandTask(
@@ -729,18 +742,25 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         :param task_callback: callback to be called when the status of
             the command changes
         """
+        from tango import DevState
 
         def _completion_callback(task_callback: Callable) -> None:
-            self.logger.debug("All the 'Off' commands have completed.")
-            self._push_component_state_update(power=PowerState.OFF)
-            task_callback(status=TaskStatus.COMPLETED, result="Completed")
+            try:
+                self.logger.debug("All the 'Off' commands have completed.")
+                self._push_component_state_update(power=PowerState.OFF)
+                task_callback(status=TaskStatus.COMPLETED, result="Completed")
+            except Exception as e:
+                self.logger.exception("Error occured when dealing with turning off BEAM", exc_info=True)
+                task_callback(status=TaskStatus.FAILED, exception=e)
 
         # need to unsubscribe from monitoring events.
         self._unsubscribe_change_events()
 
+        devices = [d for d in self._remote_devices if d.state() != DevState.OFF]
+
         return self._submit_remote_job(
             job=DeviceCommandTask(
-                devices=self._remote_devices,
+                devices=devices,
                 action=lambda d: d.Off(),
                 command_name="Off",
             ),

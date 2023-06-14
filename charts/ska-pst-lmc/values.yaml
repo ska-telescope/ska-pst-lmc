@@ -85,6 +85,7 @@ resources:
 deviceServers:
   # controller has only one instance
   low-pst-beam:
+    legacy_compatibility: true
     instances: ["01"]
     file: "data/beam.yaml"
 
