@@ -542,7 +542,7 @@ def additional_change_events_callbacks() -> List[str]:
 @pytest.fixture
 def change_event_callback_time() -> float:
     """Get timeout used for change event callbacks."""
-    return 5.0
+    return 1.0
 
 
 @pytest.fixture
