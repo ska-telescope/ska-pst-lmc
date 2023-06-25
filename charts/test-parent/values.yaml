@@ -9,20 +9,20 @@ global:
       enabled: false
 
 ska-tango-base:
-  # vnc:
-  #   enabled: false
-  # tangorest:
-  #   enabled: false
-  # ingress:
-  #   enabled: false
+  vnc:
+    enabled: false
+  tangorest:
+    enabled: false
+  ingress:
+    enabled: false
   tangodb:
     use_pv: false
   itango:
     enabled: true
     image:
       tag: 9.3.13
-  # jive:
-  #   enabled: false
+  jive:
+    enabled: false
   databaseds:
     component: databaseds
     image:
