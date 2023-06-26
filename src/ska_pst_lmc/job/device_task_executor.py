@@ -142,6 +142,9 @@ class DeviceCommandTaskExecutor:
                 ([result_code], [msg_or_command_id]) = action(device)
                 self._logger.debug(f"Response from {command_str} is: ({result_code}, {msg_or_command_id})")
 
+                # this shouldn't fail
+                result_code = ResultCode(int(result_code))
+
                 # the task didn't start straight away, could have been rejected or failed.
                 # The Abort() command is a weird one as the return code is STARTED not QUEUED
                 if result_code not in [ResultCode.QUEUED, ResultCode.OK, ResultCode.STARTED]:

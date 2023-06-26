@@ -19,10 +19,18 @@ ska-tango-base:
     use_pv: false
   itango:
     enabled: true
+    image:
+      tag: 9.3.13
   jive:
     enabled: false
+  databaseds:
+    component: databaseds
+    image:
+      tag: 9.3.13
+
   deviceServers:
     tangotest:
+      legacy_compatibility: true
       livenessProbe:
         initialDelaySeconds: 0
         periodSeconds: 10
@@ -42,6 +50,7 @@ ska-pst-lmc:
     registry: registry.gitlab.com/ska-telescope/pst/ska-pst-lmc
   deviceServers:
     low-pst-beam:
+      legacy_compatibility: true
       instances: ["01"]
       polling: 600
   smrb:

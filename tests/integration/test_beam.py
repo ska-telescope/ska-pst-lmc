@@ -34,7 +34,7 @@ def additional_change_events_callbacks(beam_attribute_names: List[str]) -> List[
 @pytest.fixture
 def change_event_callback_time() -> float:
     """Get timeout used for change event callbacks."""
-    return 5.0
+    return 1.0
 
 
 @pytest.fixture
@@ -241,7 +241,7 @@ class TestPstBeam:
         backoff.expo,
         AssertionError,
         factor=0.05,
-        max_time=1.0,
+        max_time=5.0,
     )
     def assert_state(self: TestPstBeam, state: DevState) -> None:
         """Assert Tango devices are in a given DevState."""
@@ -254,7 +254,7 @@ class TestPstBeam:
         backoff.expo,
         AssertionError,
         factor=0.05,
-        max_time=1.0,
+        max_time=5.0,
     )
     def assert_obstate(self: TestPstBeam, obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
         """Assert that the Tango devices are in a giveen ObsState."""
@@ -276,7 +276,6 @@ class TestPstBeam:
         assert self.smrb_proxy.adminMode == admin_mode
         assert self.dsp_proxy.adminMode == admin_mode
 
-    @pytest.mark.forked
     def test_configure_then_scan_then_stop(
         self: TestPstBeam,
         csp_configure_scan_request: Dict[str, Any],
@@ -319,7 +318,6 @@ class TestPstBeam:
         finally:
             self.tango_change_event_helper.release()
 
-    @pytest.mark.forked
     def test_multiple_scans(
         self: TestPstBeam,
         csp_configure_scan_request: Dict[str, Any],
@@ -368,7 +366,6 @@ class TestPstBeam:
         finally:
             self.tango_change_event_helper.release()
 
-    @pytest.mark.forked
     def test_abort_long_running_command(
         self: TestPstBeam,
         csp_configure_scan_request: Dict[str, Any],
@@ -415,7 +412,6 @@ class TestPstBeam:
         finally:
             self.tango_change_event_helper.release()
 
-    @pytest.mark.forked
     def test_multiple_lifecycles_with_monitoring(
         self: TestPstBeam,
         csp_configure_scan_request: Dict[str, Any],

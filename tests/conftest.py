@@ -757,7 +757,7 @@ class TangoDeviceCommandChecker:
                             exc_info=True,
                         )
                         self._logger.info(
-                            f"Currend longRunningCommandResult = {self._device.longRunningCommandResult}"
+                            f"Current longRunningCommandResult = {self._device.longRunningCommandResult}"
                         )
                         raise e
         else:

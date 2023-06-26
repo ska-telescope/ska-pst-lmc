@@ -9,7 +9,7 @@ enabled: true
 image:
   registry: artefact.skao.int
   image: ska-pst-lmc
-  tag: 0.5.4
+  tag: 0.6.0
   pullPolicy: IfNotPresent
 
 system: SW-infrastructure
@@ -85,6 +85,7 @@ resources:
 deviceServers:
   # controller has only one instance
   low-pst-beam:
+    legacy_compatibility: true
     instances: ["01"]
     file: "data/beam.yaml"
 

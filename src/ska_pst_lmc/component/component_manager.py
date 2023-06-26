@@ -14,6 +14,7 @@ import logging
 from threading import Event
 from typing import Any, Callable, Dict, Generic, Optional, Tuple, TypeVar, cast
 
+from ska_csp_lmc_base import CspObsComponentManager
 from ska_tango_base.base import check_communicating
 from ska_tango_base.control_model import (
     CommunicationStatus,
@@ -22,7 +23,6 @@ from ska_tango_base.control_model import (
     PowerState,
     SimulationMode,
 )
-from ska_tango_base.csp.obs import CspObsComponentManager
 from ska_tango_base.executor import TaskExecutorComponentManager, TaskStatus
 
 from ska_pst_lmc.component.process_api import PstProcessApi
@@ -42,7 +42,7 @@ TaskResponse = Tuple[TaskStatus, str]
 DeviceInterface = TypeVar("DeviceInterface", bound=PstDeviceInterface)
 
 
-class PstComponentManager(Generic[DeviceInterface], TaskExecutorComponentManager, CspObsComponentManager):
+class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, Generic[DeviceInterface]):
     """
     Base Component Manager for the PST.LMC. subsystem.
 
@@ -448,7 +448,7 @@ T = TypeVar("T")
 Api = TypeVar("Api", bound=PstProcessApi)
 
 
-class PstApiComponentManager(Generic[T, Api], PstComponentManager[PstApiDeviceInterface[T]]):
+class PstApiComponentManager(PstComponentManager[PstApiDeviceInterface[T]], Generic[T, Api]):
     """
     A base component Manager for the PST.LMC. that uses an API.
 
