@@ -11,6 +11,7 @@ from random import randint
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, cast
 from unittest.mock import MagicMock
 
+import backoff
 import grpc
 import pytest
 import tango
@@ -694,6 +695,7 @@ class TangoDeviceCommandChecker:
             TaskStatus.COMPLETED,
         ],
         expected_obs_state_events: List[ObsState] = [],
+        timeout: float = 5.0,
     ) -> None:
         """Assert that the command has the correct result and events.
 
@@ -714,11 +716,8 @@ class TangoDeviceCommandChecker:
         :param expected_obs_state_events: the expected events of the ObsState
             model. The default is an empty list, meaning no events expected.
         """
-        current_lrc_status = self._device.longRunningCommandStatus
+        current_lrc_status: tuple = self._device.longRunningCommandStatus
         current_obs_state = self._device.obsState
-
-        if current_lrc_status is None:
-            current_lrc_status = ()
 
         self._logger.info(f"Current longRunningCommandStatus = {current_lrc_status}")
 
@@ -727,39 +726,39 @@ class TangoDeviceCommandChecker:
 
         if expected_command_status_events:
             for expected_command_status in expected_command_status_events:
-                while True:
-                    expected_lrc_status = (
-                        *current_lrc_status,
-                        command_id,
-                        expected_command_status.name,
-                    )
-                    self._logger.info(f"Expecting longRunningCommandStatus = {expected_lrc_status}")
-                    try:
-                        self.change_event_callbacks["longRunningCommandStatus"].assert_change_event(
-                            expected_lrc_status
-                        )
-                        break
-                    except Exception as e:
-                        # it is possible that the first command has been popped
-                        self._logger.info(
-                            f"No change event for longRunningCommandStatus = {expected_lrc_status}"
-                        )
-                        if len(current_lrc_status) >= 2:
-                            current_lrc_status = current_lrc_status[2:]
-                            self._logger.info(
-                                "Removed first 2 items from current_long_running_command_status"
-                            )
-                            continue
 
-                        current_lrc_status = self._device.longRunningCommandStatus
-                        self._logger.exception(
-                            f"Unable to assert longRunningCommandStatus. Current value: {current_lrc_status}",
-                            exc_info=True,
-                        )
-                        self._logger.info(
-                            f"Current longRunningCommandResult = {self._device.longRunningCommandResult}"
-                        )
-                        raise e
+                @backoff.on_exception(
+                    backoff.constant,
+                    exception=AssertionError,
+                    interval=1.0,
+                    max_time=timeout,
+                )
+                def _assert() -> None:
+                    # want to get current status, this can include previous commands
+                    current_lrc_status = self._device.longRunningCommandStatus
+                    if current_lrc_status is None:
+                        current_lrc_status = ()
+
+                    # check if we have the current command id in the LRC status
+                    command_id_idx = current_lrc_status.index(command_id)
+                    if command_id_idx >= 0:
+                        # assert that we can index 1 past current command. This should
+                        # as the current_lrc_status is a tuple of (command_1_id, command_1_status, ...)
+                        assert command_id_idx + 1 < len(
+                            current_lrc_status
+                        ), f"expected {command_id_idx + 1} to be less than {len(current_lrc_status)}"
+                        expected_lrc_status_list = list(current_lrc_status)
+                        expected_lrc_status_list[command_id_idx + 1] = expected_command_status.name
+                        expected_lrc_status = tuple(expected_lrc_status_list)
+                    else:
+                        # assume our command goes at the end
+                        expected_lrc_status = (*current_lrc_status, command_id, expected_command_status.name)
+
+                    self.change_event_callbacks["longRunningCommandStatus"].assert_change_event(
+                        expected_lrc_status
+                    )
+
+                _assert()
         else:
             self.change_event_callbacks["longRunningCommandStatus"].assert_not_called()
 

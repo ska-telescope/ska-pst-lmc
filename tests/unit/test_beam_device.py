@@ -288,7 +288,10 @@ class TestPstBeam:
     def on(self: TestPstBeam) -> None:
         """Turn on Tango device."""
         self.tango_device_command_checker.assert_command(
-            lambda: self.beam_proxy.On(), expected_obs_state_events=[ObsState.IDLE]
+            lambda: self.beam_proxy.On(),
+            expected_obs_state_events=[ObsState.IDLE],
+            # in PyTango this can take a while 9.4.x
+            timeout=15.0,
         )
         self.assert_state(DevState.ON)
 
@@ -569,8 +572,17 @@ class TestPstBeam:
         change_event_callbacks["obsState"].assert_change_event(ObsState.FAULT)
         change_event_callbacks["healthState"].assert_change_event(HealthState.FAILED)
 
-        assert self.beam_proxy.healthFailureMessage == fault_msg
-        assert self.beam_proxy.healthState == HealthState.FAILED
+        @backoff.on_exception(
+            backoff.expo,
+            AssertionError,
+            factor=0.05,
+            max_time=1.0,
+        )
+        def _assert_fault() -> None:
+            assert self.beam_proxy.healthFailureMessage == fault_msg
+            assert self.beam_proxy.healthState == HealthState.FAILED
+
+        _assert_fault()
 
     def test_beam_mgmt_sets_logging_level_on_suboridinate_devices(self: TestPstBeam) -> None:
         """Test that BEAM.MGMT will update logging level on subordinate devices."""
