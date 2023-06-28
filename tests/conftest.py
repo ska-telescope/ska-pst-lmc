@@ -1,4 +1,12 @@
+# -*- coding: utf-8 -*-
+#
+# This file is part of the SKA PST LMC project
+#
+# Distributed under the terms of the BSD 3-clause new license.
+# See LICENSE for more info.
+
 """This module defines elements of the pytest test harness shared by all tests."""
+
 from __future__ import annotations
 
 import collections
@@ -31,6 +39,7 @@ from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcServic
 from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 from ska_pst_lmc.util.callback import Callback
+from tests.utils import LongRunningCommandTracker
 
 
 class _ThreadingCallback:
@@ -554,10 +563,10 @@ def change_event_callbacks_factory(
     def _factory() -> MockTangoEventCallbackGroup:
         return MockTangoEventCallbackGroup(
             "longRunningCommandProgress",
-            "longRunningCommandStatus",
             "longRunningCommandResult",
             "obsState",
             "healthState",
+            "healthFailureMessage",
             *additional_change_events_callbacks,
             timeout=change_event_callback_time,
         )
@@ -662,6 +671,10 @@ class TangoDeviceCommandChecker:
     ) -> None:
         """Initialise command checker."""
         self._device = device = tango_change_event_helper.device_under_test
+        self._lrc_tracker = LongRunningCommandTracker(
+            device=device,
+            logger=logger,
+        )
 
         def _subscribe(property: str) -> None:
             value = getattr(device, property)
@@ -674,7 +687,6 @@ class TangoDeviceCommandChecker:
 
         _subscribe("longRunningCommandProgress")
         _subscribe("longRunningCommandResult")
-        _subscribe("longRunningCommandStatus")
         _subscribe("obsState")
         _subscribe("healthState")
 
@@ -694,6 +706,7 @@ class TangoDeviceCommandChecker:
             TaskStatus.COMPLETED,
         ],
         expected_obs_state_events: List[ObsState] = [],
+        timeout: float = 5.0,
     ) -> None:
         """Assert that the command has the correct result and events.
 
@@ -714,54 +727,16 @@ class TangoDeviceCommandChecker:
         :param expected_obs_state_events: the expected events of the ObsState
             model. The default is an empty list, meaning no events expected.
         """
-        current_lrc_status = self._device.longRunningCommandStatus
         current_obs_state = self._device.obsState
-
-        if current_lrc_status is None:
-            current_lrc_status = ()
-
-        self._logger.info(f"Current longRunningCommandStatus = {current_lrc_status}")
 
         [[result], [command_id]] = command()
         assert result == expected_result_code
 
-        if expected_command_status_events:
-            for expected_command_status in expected_command_status_events:
-                while True:
-                    expected_lrc_status = (
-                        *current_lrc_status,
-                        command_id,
-                        expected_command_status.name,
-                    )
-                    self._logger.info(f"Expecting longRunningCommandStatus = {expected_lrc_status}")
-                    try:
-                        self.change_event_callbacks["longRunningCommandStatus"].assert_change_event(
-                            expected_lrc_status
-                        )
-                        break
-                    except Exception as e:
-                        # it is possible that the first command has been popped
-                        self._logger.info(
-                            f"No change event for longRunningCommandStatus = {expected_lrc_status}"
-                        )
-                        if len(current_lrc_status) >= 2:
-                            current_lrc_status = current_lrc_status[2:]
-                            self._logger.info(
-                                "Removed first 2 items from current_long_running_command_status"
-                            )
-                            continue
-
-                        current_lrc_status = self._device.longRunningCommandStatus
-                        self._logger.exception(
-                            f"Unable to assert longRunningCommandStatus. Current value: {current_lrc_status}",
-                            exc_info=True,
-                        )
-                        self._logger.info(
-                            f"Current longRunningCommandResult = {self._device.longRunningCommandResult}"
-                        )
-                        raise e
-        else:
-            self.change_event_callbacks["longRunningCommandStatus"].assert_not_called()
+        if len(expected_command_status_events) > 0:
+            self._lrc_tracker.wait_for_command_to_complete(command_id=command_id, timeout=timeout)
+            self._lrc_tracker.assert_command_status_events(
+                command_id=command_id, expected_command_status_events=expected_command_status_events
+            )
 
         if expected_command_result is not None:
             self.change_event_callbacks["longRunningCommandResult"].assert_change_event(

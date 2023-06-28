@@ -5,4 +5,8 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE.txt for more info.
 
-"""This subpackage contains integration tests of the ska-pst-lmc project."""
+"""This subpackage contains utility code for tests."""
+
+__all__ = ["LongRunningCommandTracker"]
+
+from .long_running_command_tracker import LongRunningCommandTracker
