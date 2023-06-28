@@ -16,7 +16,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 import backoff
 import pytest
-import tango
 from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import AdminMode, HealthState, LoggingLevel, ObsState
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
@@ -162,23 +161,25 @@ class TestPstBeam:
         assert self.smrb_proxy.adminMode == admin_mode
         assert self.dsp_proxy.adminMode == admin_mode
 
+    @backoff.on_exception(
+        backoff.expo,
+        AssertionError,
+        factor=0.05,
+        max_time=1.0,
+    )
     def assert_state(self: TestPstBeam, state: DevState) -> None:
         """Assert device state of devices."""
+        assert self.beam_proxy.state() == state
+        assert self.recv_proxy.state() == state
+        assert self.smrb_proxy.state() == state
+        assert self.dsp_proxy.state() == state
 
-        @backoff.on_exception(
-            backoff.expo,
-            AssertionError,
-            factor=0.05,
-            max_time=1.0,
-        )
-        def _assert(device: tango.DeviceProxy) -> None:
-            assert device.state() == state
-
-        _assert(self.beam_proxy)
-        _assert(self.recv_proxy)
-        _assert(self.smrb_proxy)
-        _assert(self.dsp_proxy)
-
+    @backoff.on_exception(
+        backoff.expo,
+        AssertionError,
+        factor=0.05,
+        max_time=1.0,
+    )
     def assert_health_state(self: TestPstBeam, health_state: HealthState) -> None:
         """Assert health state of devices."""
         assert self.beam_proxy.healthState == health_state
@@ -189,6 +190,12 @@ class TestPstBeam:
     def assert_logging_level(self: TestPstBeam, logging_level: LoggingLevel) -> None:
         """Assert the logging level of devices."""
 
+        @backoff.on_exception(
+            backoff.expo,
+            AssertionError,
+            factor=0.05,
+            max_time=1.0,
+        )
         def _assert(device: DeviceProxy) -> None:
             curr_logging_level = LoggingLevel(device.loggingLevel)
             assert (
