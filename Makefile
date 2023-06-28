@@ -1,5 +1,5 @@
 #
-# Project makefile for a SAT.LMC project.
+# Project makefile for a PST LMC project.
 
 PROJECT = ska-pst-lmc
 
