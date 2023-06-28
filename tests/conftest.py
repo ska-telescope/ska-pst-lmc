@@ -1,4 +1,12 @@
+# -*- coding: utf-8 -*-
+#
+# This file is part of the SKA PST LMC project
+#
+# Distributed under the terms of the BSD 3-clause new license.
+# See LICENSE for more info.
+
 """This module defines elements of the pytest test harness shared by all tests."""
+
 from __future__ import annotations
 
 import collections
@@ -11,7 +19,6 @@ from random import randint
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, cast
 from unittest.mock import MagicMock
 
-import backoff
 import grpc
 import pytest
 import tango
@@ -32,6 +39,7 @@ from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcServic
 from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 from ska_pst_lmc.util.callback import Callback
+from tests.utils import LongRunningCommandTracker
 
 
 class _ThreadingCallback:
@@ -555,10 +563,10 @@ def change_event_callbacks_factory(
     def _factory() -> MockTangoEventCallbackGroup:
         return MockTangoEventCallbackGroup(
             "longRunningCommandProgress",
-            "longRunningCommandStatus",
             "longRunningCommandResult",
             "obsState",
             "healthState",
+            "healthFailureMessage",
             *additional_change_events_callbacks,
             timeout=change_event_callback_time,
         )
@@ -663,6 +671,10 @@ class TangoDeviceCommandChecker:
     ) -> None:
         """Initialise command checker."""
         self._device = device = tango_change_event_helper.device_under_test
+        self._lrc_tracker = LongRunningCommandTracker(
+            device=device,
+            logger=logger,
+        )
 
         def _subscribe(property: str) -> None:
             value = getattr(device, property)
@@ -675,7 +687,6 @@ class TangoDeviceCommandChecker:
 
         _subscribe("longRunningCommandProgress")
         _subscribe("longRunningCommandResult")
-        _subscribe("longRunningCommandStatus")
         _subscribe("obsState")
         _subscribe("healthState")
 
@@ -716,51 +727,16 @@ class TangoDeviceCommandChecker:
         :param expected_obs_state_events: the expected events of the ObsState
             model. The default is an empty list, meaning no events expected.
         """
-        current_lrc_status: tuple = self._device.longRunningCommandStatus
         current_obs_state = self._device.obsState
-
-        self._logger.info(f"Current longRunningCommandStatus = {current_lrc_status}")
 
         [[result], [command_id]] = command()
         assert result == expected_result_code
 
-        if expected_command_status_events:
-            for expected_command_status in expected_command_status_events:
-
-                @backoff.on_exception(
-                    backoff.constant,
-                    exception=AssertionError,
-                    interval=1.0,
-                    max_time=timeout,
-                )
-                def _assert() -> None:
-                    # want to get current status, this can include previous commands
-                    current_lrc_status = self._device.longRunningCommandStatus
-                    if current_lrc_status is None:
-                        current_lrc_status = ()
-
-                    # check if we have the current command id in the LRC status
-                    command_id_idx = current_lrc_status.index(command_id)
-                    if command_id_idx >= 0:
-                        # assert that we can index 1 past current command. This should
-                        # as the current_lrc_status is a tuple of (command_1_id, command_1_status, ...)
-                        assert command_id_idx + 1 < len(
-                            current_lrc_status
-                        ), f"expected {command_id_idx + 1} to be less than {len(current_lrc_status)}"
-                        expected_lrc_status_list = list(current_lrc_status)
-                        expected_lrc_status_list[command_id_idx + 1] = expected_command_status.name
-                        expected_lrc_status = tuple(expected_lrc_status_list)
-                    else:
-                        # assume our command goes at the end
-                        expected_lrc_status = (*current_lrc_status, command_id, expected_command_status.name)
-
-                    self.change_event_callbacks["longRunningCommandStatus"].assert_change_event(
-                        expected_lrc_status
-                    )
-
-                _assert()
-        else:
-            self.change_event_callbacks["longRunningCommandStatus"].assert_not_called()
+        if len(expected_command_status_events) > 0:
+            self._lrc_tracker.wait_for_command_to_complete(command_id=command_id, timeout=timeout)
+            self._lrc_tracker.assert_command_status_events(
+                command_id=command_id, expected_command_status_events=expected_command_status_events
+            )
 
         if expected_command_result is not None:
             self.change_event_callbacks["longRunningCommandResult"].assert_change_event(
