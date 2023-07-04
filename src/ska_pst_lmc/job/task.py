@@ -4,8 +4,8 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
-"""Module for handling tasks and the task context for background jobs.
+"""
+Module for handling tasks and the task context for background jobs.
 
 This module provides for 3 types of tasks: :py:class:`SequentialTask`,
 :py:class:`ParallelTask`, and :py:class:`DeviceCommandTask`. A job
@@ -35,7 +35,8 @@ from ska_pst_lmc.util.callback import Callback
 
 @dataclass
 class NoopTask:
-    """A class as a placeholder for a no-op task.
+    """
+    A class as a placeholder for a no-op task.
 
     This is useful when nothing is meant to happen but
     makes it easier for defining a the overall job
@@ -47,14 +48,13 @@ class NoopTask:
 
 @dataclass
 class LambdaTask:
-    """A class whose operation is to call a lambda.
+    """
+    A class whose operation is to call a lambda.
 
-    The lamdba doesn't take any parameters. Any capturing of
-    variables must be done at the call site of the construction
-    of this task.
+    The lamdba doesn't take any parameters. Any capturing of variables must be done at the call site of the
+    construction of this task.
 
-    This allows a task to call something like a task_callback
-    to perform an update.
+    This allows a task to call something like a task_callback to perform an update.
     """
 
     action: Callable[[], None]
@@ -62,11 +62,11 @@ class LambdaTask:
 
 @dataclass
 class SequentialTask:
-    """A class used to handle sequential tasks.
+    """
+    A class used to handle sequential tasks.
 
-    Instances of this class take a list of tasks that will all
-    be run in sequentially. This job is not complete until the
-    last job is complete.
+    Instances of this class take a list of tasks that will all be run in sequentially. This job is not
+    complete until the last job is complete.
 
     :param tasks: a list of subtasks to be performed sequentially
     :type tasks: List[Task]
@@ -77,11 +77,11 @@ class SequentialTask:
 
 @dataclass
 class ParallelTask:
-    """A class used to handle tasks that can be run in parallel.
+    """
+    A class used to handle tasks that can be run in parallel.
 
-    Instances of this class take a list of tasks that can be all
-    run in parallel. This job is not complete until all the task
-    are complete.
+    Instances of this class take a list of tasks that can be all run in parallel. This job is not complete
+    until all the task are complete.
 
     :param tasks: a list of subtasks to be performed concurrently
     :type tasks: List[Task]
@@ -92,7 +92,8 @@ class ParallelTask:
 
 @dataclass
 class DeviceCommandTask:
-    """A class used to handle a command to be executed on remote devices.
+    """
+    A class used to handle a command to be executed on remote devices.
 
     Instances of this class take a list of devices and an action to
     be performed on a remote device. If more than one device is used this
@@ -120,7 +121,8 @@ Task = Union[SequentialTask, ParallelTask, DeviceCommandTask, NoopTask, LambdaTa
 
 @dataclass(kw_only=True)
 class TaskContext:
-    """A class used to track a task when a job is running.
+    """
+    A class used to track a task when a job is running.
 
     This is the base class for all other types of `TaskContext`. This
     class it used by the job/task executors to keep track of a task
@@ -152,7 +154,8 @@ class TaskContext:
     exception: Optional[Exception] = None
 
     def signal_complete(self: TaskContext, result: Optional[Any] = None) -> None:
-        """Signal that the task has completed successfully.
+        """
+        Signal that the task has completed successfully.
 
         Calling this will mark the task as completed and if any parent task is
         waiting on the `evt` to be set will be notified.
@@ -164,7 +167,8 @@ class TaskContext:
         self.evt.set()
 
     def signal_failed(self: TaskContext, exception: Exception) -> None:
-        """Signal that the task has failed.
+        """
+        Signal that the task has failed.
 
         Calling this will mark the task as failed and if any parent task is
         waiting on the `evt` to be set will be notified.
@@ -177,7 +181,8 @@ class TaskContext:
         self.evt.set()
 
     def signal_failed_from_str(self: TaskContext, msg: str) -> None:
-        """Signal that the task has failed.
+        """
+        Signal that the task has failed.
 
         This takes an error message an raises a `RuntimeError` and then
         calls the `signal_failed` method. This is used by remote device proxies
@@ -193,7 +198,8 @@ class TaskContext:
 
     @property
     def failed(self: TaskContext) -> bool:
-        """Check if task has failed or not.
+        """
+        Check if task has failed or not.
 
         :return: returns True if the context is storing an exception.
         :rtype: bool
@@ -202,10 +208,10 @@ class TaskContext:
 
     @property
     def completed(self: TaskContext) -> bool:
-        """Check if the task has completed.
+        """
+        Check if the task has completed.
 
-        If the task context has failed or there is a result then this
-        method will return true.
+        If the task context has failed or there is a result then this method will return true.
 
         :return: if the task has completed
         :rtype: bool
@@ -215,7 +221,8 @@ class TaskContext:
 
 @dataclass(kw_only=True)
 class ParallelTaskContext(TaskContext):
-    """A task context class that tracks subtasks for a parallel task.
+    """
+    A task context class that tracks subtasks for a parallel task.
 
     This extends from :py:class:`TaskContext` to allow storing of
     task contexts of the subtasks.
@@ -233,7 +240,8 @@ class ParallelTaskContext(TaskContext):
 
 @dataclass(kw_only=True)
 class DeviceCommandTaskContext(TaskContext):
-    """A task context class that is used for Tango Device Proxy command tasks.
+    """
+    A task context class that is used for Tango Device Proxy command tasks.
 
     This extends from :py:class:`TaskContext` to allow storing of
     task contexts of remote device proxy command tasks.
@@ -253,7 +261,8 @@ class DeviceCommandTaskContext(TaskContext):
 
 @dataclass(kw_only=True)
 class JobContext(TaskContext):
-    """A task context class that is used to track the whole submitted job.
+    """
+    A task context class that is used to track the whole submitted job.
 
     This is used by the job executor to track the overall job. The task
     executor will either throw the exception stored in parent class or

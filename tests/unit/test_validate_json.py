@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module contains the pytest tests for the validate method."""
 
 from typing import Any, Dict, Optional
@@ -18,7 +17,8 @@ from ska_pst_lmc.util import Strictness, validate
 
 
 def is_valid_combination(version: str, scan: Optional[str]) -> bool:
-    """Check if version and scan paramters are valid combinations.
+    """
+    Check if version and scan paramters are valid combinations.
 
     :param version: version number for the CSP configuration.
     :type version: str
@@ -58,10 +58,11 @@ def is_valid_combination(version: str, scan: Optional[str]) -> bool:
     ],
 )
 def test_only_version_2_3_or_above_accepted(version: str, valid: bool, scan: str) -> None:
-    """Test that only version 2.3 of CSP schema is valid.
+    """
+    Test that only version 2.3 of CSP schema is valid.
 
-    Parameterised test that checks different combinations of version and scan valid
-    to assert that only version 2.3 above and PST scans are valid.
+    Parameterised test that checks different combinations of version and scan valid to assert that only
+    version 2.3 above and PST scans are valid.
 
     :param version: version number for the CSP configuration.
     :type version: str

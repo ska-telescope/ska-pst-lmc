@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Test to the RECV Tango device for PST.LMC."""
 
 from __future__ import annotations
@@ -44,10 +43,11 @@ def recv_device_class(
     fail_validate_configure_beam: bool,
     fail_validate_configure_scan: bool,
 ) -> Type[PstReceive]:
-    """Get PstReceive fixture.
+    """
+    Get PstReceive fixture.
 
-    This creates a subclass of the PstReceive that overrides the create_component_manager method
-    to use the component_manager fixture.
+    This creates a subclass of the PstReceive that overrides the create_component_manager method to use the
+    component_manager fixture.
     """
 
     def _update_api(*args: Any, **kwargs: Any) -> None:
@@ -83,14 +83,11 @@ class TestPstReceive:
         """
         Specify device configuration, including properties and memorized attributes.
 
-        This implementation provides a concrete subclass of
-        SKABaseDevice, and a memorized value for adminMode.
+        This implementation provides a concrete subclass of SKABaseDevice, and a memorized value for
+        adminMode.
 
-        :param device_properties: fixture that returns device properties
-            of the device under test
-
-        :return: specification of how the device under test should be
-            configured
+        :param device_properties: fixture that returns device properties of the device under test
+        :return: specification of how the device under test should be configured
         """
         return {
             "device": recv_device_class,

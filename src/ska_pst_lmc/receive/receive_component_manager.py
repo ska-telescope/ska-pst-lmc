@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module provides an implementation of the RECV PST component manager."""
 
 from __future__ import annotations
@@ -40,18 +39,15 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
         api: Optional[PstReceiveProcessApi] = None,
         **kwargs: Any,
     ):
-        """Initialise instance of the component manager.
+        """
+        Initialise instance of the component manager.
 
-        :param simulation_mode: enum to track if component should be
-            in simulation mode or not.
+        :param simulation_mode: enum to track if component should be in simulation mode or not.
         :param logger: a logger for this object to use
-        :param communication_status_changed_callback: callback to be
-            called when the status of the communications channel between
-            the component manager and its component changes
-        :param component_fault_callback: callback to be called when the
-            component faults (or stops faulting)
-        :param network_interface: the network interface for the RECV subband
-            to listen to.
+        :param communication_status_changed_callback: callback to be called when the status of the
+            communications channel between the component manager and its component changes
+        :param component_fault_callback: callback to be called when the component faults (or stops faulting)
+        :param network_interface: the network interface for the RECV subband to listen to.
         :param udp_port: the UDP port for RECV subband to listen to.
         :param api: optional API instance, used to override during testing.
         """
@@ -100,7 +96,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def data_receive_rate(self: PstReceiveComponentManager) -> float:
-        """Get the current data receive rate from the CBF interface.
+        """
+        Get the current data receive rate from the CBF interface.
 
         :returns: current data receive rate from the CBF interface in Gb/s.
         :rtype: float
@@ -109,7 +106,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def data_received(self: PstReceiveComponentManager) -> int:
-        """Get the total amount of data received from CBF interface for current scan.
+        """
+        Get the total amount of data received from CBF interface for current scan.
 
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
@@ -118,7 +116,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def data_drop_rate(self: PstReceiveComponentManager) -> float:
-        """Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
+        """
+        Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
 
         :returns: current rate of CBF ingest data being dropped or lost in MB/s.
         :rtype: float
@@ -127,7 +126,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def data_dropped(self: PstReceiveComponentManager) -> int:
-        """Get the total number of bytes dropped in the current scan.
+        """
+        Get the total number of bytes dropped in the current scan.
 
         :returns: total number of bytes dropped in the current scan in Bytes.
         :rtype: int
@@ -136,7 +136,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def misordered_packets(self: PstReceiveComponentManager) -> int:
-        """Get the total number of packets received out of order in the current scan.
+        """
+        Get the total number of packets received out of order in the current scan.
 
         :returns: total number of packets received out of order in the current scan.
         :rtype: int
@@ -145,7 +146,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def misordered_packet_rate(self: PstReceiveComponentManager) -> float:
-        """Get the rate of packets that are received out of order in packets/sec.
+        """
+        Get the rate of packets that are received out of order in packets/sec.
 
         :returns: the rate of packets that are received out of order in packets/sec.
         :rtype: float
@@ -154,12 +156,12 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def malformed_packets(self: PstReceiveComponentManager) -> int:
-        """Get the total number of packets marked as malformed for the current scan.
+        """
+        Get the total number of packets marked as malformed for the current scan.
 
-        Malformed packets are valid UDP packets, but where contents of
-        the UDP payload does not conform to the specification in the
-        CBF/PST ICD. Examples of malformation include: bad magic-word
-        field, invalid meta-data, incorrect packet size.
+        Malformed packets are valid UDP packets, but where contents of the UDP payload does not conform to the
+        specification in the CBF/PST ICD. Examples of malformation include: bad magic-word field, invalid
+        meta-data, incorrect packet size.
 
         :return: total number of packets marked as malformed for the current scan.
         :rtype: int
@@ -168,7 +170,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def malformed_packet_rate(self: PstReceiveComponentManager) -> float:
-        """Get the current rate of malformed packets in packets/sec.
+        """
+        Get the current rate of malformed packets in packets/sec.
 
         :return: the current rate of malformed packets in packets/seconds.
         :rtype: float
@@ -177,12 +180,12 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def misdirected_packets(self: PstReceiveComponentManager) -> int:
-        """Get the total of misdirected packets received during current scan.
+        """
+        Get the total of misdirected packets received during current scan.
 
-        Total number of (valid) UDP packets that were unexpectedly received.
-        Misdirection could be due to wrong ScanID, Beam ID, Network Interface
-        or UDP port. Receiving misdirected packets is a sign that there is
-        something wrong with the upstream configuration for the scan.
+        Total number of (valid) UDP packets that were unexpectedly received. Misdirection could be due to
+        wrong ScanID, Beam ID, Network Interface or UDP port. Receiving misdirected packets is a sign that
+        there is something wrong with the upstream configuration for the scan.
 
         :return: the total of misdirected packets received during current scan.
         :rtype: int
@@ -191,7 +194,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def misdirected_packet_rate(self: PstReceiveComponentManager) -> float:
-        """Get the current rate of misdirected packets in packets/sec.
+        """
+        Get the current rate of misdirected packets in packets/sec.
 
         :return: the current rate of misdirected packets in packets/seconds.
         :rtype: float
@@ -200,7 +204,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def checksum_failure_packets(self: PstReceiveComponentManager) -> int:
-        """Get the total number of packets with a checksum failure in current scan.
+        """
+        Get the total number of packets with a checksum failure in current scan.
 
         Total number of packets with a UDP, IP header or CRC checksum failure.
 
@@ -211,7 +216,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def checksum_failure_packet_rate(self: PstReceiveComponentManager) -> float:
-        """Get the current rate of packets with a checksum failure in packets/sec.
+        """
+        Get the current rate of packets with a checksum failure in packets/sec.
 
         :return: the current rate of packets with a checksum failure in packets/seconds.
         :rtype: float
@@ -220,10 +226,11 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def timestamp_sync_error_packets(self: PstReceiveComponentManager) -> int:
-        """Get the total number of packets with a timestamp sync error for current scan.
+        """
+        Get the total number of packets with a timestamp sync error for current scan.
 
-        The number of packets received where the timestamp has become
-        desynchronised with the packet sequence number * sampling interval
+        The number of packets received where the timestamp has become desynchronised with the packet sequence
+        number * sampling interval
 
         :return: the total number of packets with a timestamp sync error for current scan.
         :rtype: int
@@ -232,20 +239,21 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def timestamp_sync_error_packet_rate(self: PstReceiveComponentManager) -> float:
-        """Get the current rate of packets marked as having a timestamp sync error in packets/sec.
+        """
+        Get the current rate of packets marked as having a timestamp sync error in packets/sec.
 
-        :return: the current rate of packets marked as having a timestamp sync error
-            in packets/seconds.
+        :return: the current rate of packets marked as having a timestamp sync error in packets/seconds.
         :rtype: float
         """
         return self._monitor_data.timestamp_sync_error_packet_rate
 
     @property
     def seq_number_sync_error_packets(self: PstReceiveComponentManager) -> int:
-        """Get total number of packets with a sequence number sync error for current scan.
+        """
+        Get total number of packets with a sequence number sync error for current scan.
 
-        The number of packets received where the packet sequence number has
-        become desynchronised with the data rate and elapsed time.
+        The number of packets received where the packet sequence number has become desynchronised with the
+        data rate and elapsed time.
 
         :return: total number of packets with a sequence number sync error for current scan.
         :rtype: int
@@ -254,10 +262,10 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def seq_number_sync_error_packet_rate(self: PstReceiveComponentManager) -> float:
-        """Get current rate of packets marked as having a sequence number sync error in packets/sec.
+        """
+        Get current rate of packets marked as having a sequence number sync error in packets/sec.
 
-        :return: current rate of packets marked as having a sequence number sync error
-            in packets/seconds.
+        :return: current rate of packets marked as having a sequence number sync error in packets/seconds.
         :rtype: float
         """
         return self._monitor_data.seq_number_sync_error_packet_rate
@@ -273,7 +281,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def data_host(self: PstReceiveComponentManager) -> str:
-        """Get data host used for receiving data during a scan.
+        """
+        Get data host used for receiving data during a scan.
 
         :return: the data host used for receiving data during a scan.
         :rtype: str
@@ -285,7 +294,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def subband_udp_ports(self: PstReceiveComponentManager) -> List[int]:
-        """Get data ports used by all the subbands for receiving data during a scan.
+        """
+        Get data ports used by all the subbands for receiving data during a scan.
 
         :return: the data host used for receiving data during a scan.
         :rtype: str
@@ -297,7 +307,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
 
     @property
     def subband_beam_configuration(self: PstReceiveComponentManager) -> Dict[str, Any]:
-        """Get the current subband beam configuration.
+        """
+        Get the current subband beam configuration.
 
         This is the current subband beam configuration that is calculated during the
         `configure_beam`.
@@ -320,11 +331,11 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
         """
         Validate a ConfigureScan request sent from CSP.LMC to for the RECV sub-component.
 
-        If this command fails it will ensure then a call to either ConfigureBeam or ConfigureScan
-        would have failed leaving the BEAM in an invalid state.
+        If this command fails it will ensure then a call to either ConfigureBeam or ConfigureScan would have
+        failed leaving the BEAM in an invalid state.
 
-        :param configuration: configuration that would be used when the configure_beam and
-            configure_scan methods are called.
+        :param configuration: configuration that would be used when the configure_beam and configure_scan
+            methods are called.
         :type configuration: Dict[str, Any]
         :param task_callback: callback for background processing to update device status.
         :type task_callback: Callback
@@ -391,7 +402,8 @@ class PstReceiveComponentManager(PstApiComponentManager[ReceiveData, PstReceiveP
         )
 
     def deconfigure_beam(self: PstReceiveComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Deconfigure the RECV component's beam configuration.
+        """
+        Deconfigure the RECV component's beam configuration.
 
         :param task_callback: callback for background processing to update device status.
         :type task_callback: Callback

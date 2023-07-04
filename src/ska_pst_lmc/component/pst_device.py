@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for the base Tango device used in PST.LMC."""
 
 from __future__ import annotations
@@ -41,22 +40,23 @@ __all__ = [
 ]
 
 T = TypeVar("T", bound=PstComponentManager)
-"""Create a generic type for the component manager.
+"""
+Create a generic type for the component manager.
 
-Doing this allows us to cast the component manager used
-in the base to have the correct type and allow for tools
-like `mypy <http://mypy-lang.org/>`_ to check if there are
+Doing this allows us to cast the component manager used in the base to have the correct type and allow for
+tools like
+`mypy <http://mypy-lang.org/>`_
+to check if there are
 errors.
 """
 
 
 def as_device_attribute_name(attr_name: str) -> str:
-    """Convert attribute name to a TANGO device attribute name.
+    """
+    Convert attribute name to a TANGO device attribute name.
 
-    Device attribute names should be in lower camel case
-    (i.e. availableDiskSpace) not Python's snake case
-    (i.e. available_disk_space).  This is a utility method that
-    makes the conversion easier.
+    Device attribute names should be in lower camel case (i.e. availableDiskSpace) not Python's snake case
+    (i.e. available_disk_space).  This is a utility method that makes the conversion easier.
 
     :param attr_name: the attribute name to convert from snake case.
     :type attr_name: str
@@ -71,7 +71,8 @@ def as_device_attribute_name(attr_name: str) -> str:
 
 
 class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
-    """Base class for all the TANGO devices in PST.LMC.
+    """
+    Base class for all the TANGO devices in PST.LMC.
 
     This extends from :py:class:`CspSubElementObsDevice` but is also
     generic in the type of the component manager.
@@ -98,7 +99,8 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
     # ---------------
 
     def init_device(self: PstBaseDevice) -> None:
-        """Initialise the attributes and properties of the PstReceive.
+        """
+        Initialise the attributes and properties of the PstReceive.
 
         This overrides the :py:class:`SKABaseDevice`.
         """
@@ -130,11 +132,11 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
         """Execute call before any TANGO command is executed."""
 
     def delete_device(self: PstBaseDevice) -> None:
-        """Delete resources allocated in init_device.
+        """
+        Delete resources allocated in init_device.
 
-        This method allows for any memory or other resources allocated in the
-        init_device method to be released.  This method is called by the device
-        destructor and by the device Init command.
+        This method allows for any memory or other resources allocated in the init_device method to be
+        released.  This method is called by the device destructor and by the device Init command.
         """
 
     def create_component_manager(self: PstBaseDevice) -> T:
@@ -148,7 +150,8 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
         )
 
     def handle_component_state_change(self: PstBaseDevice, *args: Any, **kwargs: Any) -> None:
-        """Handle change in this device's state.
+        """
+        Handle change in this device's state.
 
         This overrides the :py:class:`PstDeviceInterface` and calls `_component_state_changed` on
         this class.
@@ -158,14 +161,16 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
     def handle_communication_state_change(
         self: PstBaseDevice, communication_state: CommunicationStatus
     ) -> None:
-        """Handle a change in device's communication state.
+        """
+        Handle a change in device's communication state.
 
         This just calls the `SKABaseDevice._communication_state_changed` method
         """
         self._communication_state_changed(communication_state=communication_state)
 
     def handle_attribute_value_update(self: PstBaseDevice, attribute_name: str, value: Any) -> None:
-        """Handle update of a device attribute value.
+        """
+        Handle update of a device attribute value.
 
         :param attribute_name: the name of the attribute to update.
         :type attribute_name: str
@@ -203,7 +208,8 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
 
     @property  # type: ignore[override]
     def component_manager(self: PstBaseDevice) -> T:  # type: ignore[override]
-        """Get component manager.
+        """
+        Get component manager.
 
         Overrides the super class property of component_manager to be typesafe.
 
@@ -222,10 +228,11 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
 
     @property
     def device_name(self: PstBaseDevice) -> str:
-        """Get the name of the device.
+        """
+        Get the name of the device.
 
-        This is the relative device name (e.g. low_psi/beam/01) and
-        not the FQDN which can include the Tango DB in a URL.
+        This is the relative device name (e.g. low_psi/beam/01) and not the FQDN which can include the Tango
+        DB in a URL.
         """
         return self.get_name()
 
@@ -242,7 +249,8 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
         self.update_health_state(health_state=HealthState.FAILED)
 
     def update_health_state(self: PstBaseDevice, health_state: HealthState) -> None:
-        """Update the health state of the device.
+        """
+        Update the health state of the device.
 
         This delegates to the base class `_update_health_state`
         """
@@ -275,7 +283,8 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
     # -----------
 
     class ConfigureScanCommand(CspSubElementObsDevice.ConfigureScanCommand):
-        """A class for the PstBaseDevice's ConfigureScan command.
+        """
+        A class for the PstBaseDevice's ConfigureScan command.
 
         This class overrides the CspSubElementObsDevice.ConfigureScanCommand's
         `validate_input` method to no assert the `id` field.
@@ -353,10 +362,10 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
     )
     @DebugIt()
     def GoToFault(self: PstBaseDevice, argin: str) -> Any:
-        """Put the device and sub-devices and services into a FAULT state.
+        """
+        Put the device and sub-devices and services into a FAULT state.
 
-        This is implemented as a long running command as a service may take some
-        time to respond.
+        This is implemented as a long running command as a service may take some time to respond.
 
         :return: A tuple containing a result code and the unique ID of the command
         :rtype: ([ResultCode], [str])
@@ -370,7 +379,8 @@ U = TypeVar("U")
 
 
 class PstBaseProcessDevice(PstBaseDevice[T], PstApiDeviceInterface[U], Generic[T, U]):
-    """Base class for all the TANGO devices that manager an external process.
+    """
+    Base class for all the TANGO devices that manager an external process.
 
     This extends from :py:class:`PstBaseDevice` but exposes the ConfigureBeam
     method. This allows for setting up the beam related configuration that
@@ -482,9 +492,8 @@ class PstBaseProcessDevice(PstBaseDevice[T], PstApiDeviceInterface[U], Generic[T
             """
             Stateless hook for device initialisation.
 
-            :return: A tuple containing a return code and a string
-                message indicating status. The message is for
-                information purpose only.
+            :return: A tuple containing a return code and a string message indicating status. The message is
+                  for information purpose only.
             :rtype: (ResultCode, str)
             """
             super().do()
@@ -529,9 +538,8 @@ class PstBaseProcessDevice(PstBaseDevice[T], PstApiDeviceInterface[U], Generic[T
 
         :param argin: JSON formatted string with the scan configuration.
         :type argin: str
-
-        :return: A tuple containing a return code and a string message indicating status.
-            The message is for information purpose only.
+        :return: A tuple containing a return code and a string message indicating status. The message is for
+            information purpose only.
         :rtype: (ResultCode, str)
         """
         handler = self.get_command_object("ValidateConfigureScan")
@@ -573,9 +581,8 @@ class PstBaseProcessDevice(PstBaseDevice[T], PstApiDeviceInterface[U], Generic[T
 
         :param argin: JSON formatted string with the scan configuration.
         :type argin: str
-
-        :return: A tuple containing a return code and a string message indicating status.
-            The message is for information purpose only.
+        :return: A tuple containing a return code and a string message indicating status. The message is for
+            information purpose only.
         :rtype: (ResultCode, str)
         """
         handler = self.get_command_object("ConfigureBeam")
@@ -612,8 +619,8 @@ class PstBaseProcessDevice(PstBaseDevice[T], PstApiDeviceInterface[U], Generic[T
         """
         Deconfigure the beam for process device.
 
-        :return: A tuple containing a return code and a string message indicating status.
-            The message is for information purpose only.
+        :return: A tuple containing a return code and a string message indicating status. The message is for
+            information purpose only.
         :rtype: (ResultCode, str)
         """
         handler = self.get_command_object("DeconfigureBeam")
@@ -649,8 +656,8 @@ class PstBaseProcessDevice(PstBaseDevice[T], PstApiDeviceInterface[U], Generic[T
         """
         Deconfigure the scan for process device.
 
-        :return: A tuple containing a return code and a string message indicating status.
-            The message is for information purpose only.
+        :return: A tuple containing a return code and a string message indicating status. The message is for
+            information purpose only.
         :rtype: (ResultCode, str)
         """
         handler = self.get_command_object("DeconfigureScan")

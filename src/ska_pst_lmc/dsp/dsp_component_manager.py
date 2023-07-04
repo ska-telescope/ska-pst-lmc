@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module provides an implementation of the DSP PST component manager."""
 
 from __future__ import annotations
@@ -43,22 +42,18 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
         api: Optional[PstDspProcessApi] = None,
         **kwargs: Any,
     ):
-        """Initialise instance of the component manager.
+        """
+        Initialise instance of the component manager.
 
-        :param device_name: the FQDN of the current device. This
-            is used within the gRPC process to identify who is
-            doing the calling.
+        :param device_name: the FQDN of the current device. This is used within the gRPC process to identify
+            who is doing the calling.
         :param process_api_endpoint: the endpoint of the gRPC process.
         :param logger: a logger for this object is to use.
-        :param monitor_data_callback: the callback that monitoring data
-            should call when data has been received. This should be
-            used by the Tango device to be notified when data has been
-            updated.
-        :param communication_state_callback: callback to be
-            called when the status of the communications channel between
-            the component manager and its component changes.
-        :param component_state_callback: callback to be called when the
-            component state changes.
+        :param monitor_data_callback: the callback that monitoring data should call when data has been
+            received. This should be used by the Tango device to be notified when data has been updated.
+        :param communication_state_callback: callback to be called when the status of the communications
+            channel between the component manager and its component changes.
+        :param component_state_callback: callback to be called when the component state changes.
         """
         logger.debug(
             f"Setting up DSP component manager with device_name='{device_interface.device_name}'"
@@ -183,7 +178,8 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
         return self._monitor_data.subband_data_record_rate
 
     def _get_disk_stats_from_api(self: PstDspComponentManager, *args: Any, **kwargs: Any) -> None:
-        """Update the disk usage details calling API.
+        """
+        Update the disk usage details calling API.
 
         This gets the `disk_capacity` and `available_disk_space` from the API via
         calling the :py:meth:`ProcessApi.get_env` method.
@@ -211,11 +207,11 @@ class PstDspComponentManager(PstApiComponentManager[DspDiskMonitorData, PstDspPr
         """
         Validate a ConfigureScan request sent from CSP.LMC to the DSP sub-component.
 
-        This asserts the request can be converted to DSP resources and then calls the
-        process API to perform the validation.
+        This asserts the request can be converted to DSP resources and then calls the process API to perform
+        the validation.
 
-        :param configuration: configuration that would be used when the configure_beam and
-            configure_scan methods are called.
+        :param configuration: configuration that would be used when the configure_beam and configure_scan
+            methods are called.
         :type configuration: Dict[str, Any]
         :param task_callback: callback for background processing to update device status.
         :type task_callback: Callback

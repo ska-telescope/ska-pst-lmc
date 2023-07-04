@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Test to the BEAM Tango device for PST.LMC."""
 
 from __future__ import annotations

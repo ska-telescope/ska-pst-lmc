@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for providing the gRPC LMC client to external processes."""
 
 from __future__ import annotations
@@ -60,22 +59,21 @@ class BaseGrpcException(Exception):
 
 
 class AlreadyScanningException(BaseGrpcException):
-    """Exception for when the process is already scanning.
+    """
+    Exception for when the process is already scanning.
 
-    Raised when the server is already scanning and is in the
-    SCANNING ObsState state. If this exception is raised
-    it is likely due to a mismatch in the state model of the
-    LMC and the server, which could be the case if a command
-    line interface has interacted with the server directly.
+    Raised when the server is already scanning and is in the SCANNING ObsState state. If this exception is
+    raised it is likely due to a mismatch in the state model of the LMC and the server, which could be the
+    case if a command line interface has interacted with the server directly.
 
-    The LMC can recover from this as it should only be raised
-    when the scan command is called. The LMC should log this
-    happened but can safely go into SCANNING state.
+    The LMC can recover from this as it should only be raised when the scan command is called. The LMC should
+    log this happened but can safely go into SCANNING state.
     """
 
 
 class NotScanningException(BaseGrpcException):
-    """Exception for when tyring to end scan but component is not scanning.
+    """
+    Exception for when tyring to end scan but component is not scanning.
 
     Raised when the server is not in a scanning state but received an
     end scan command. Just like :py:class:`AlreadyScanningException`
@@ -86,53 +84,55 @@ class NotScanningException(BaseGrpcException):
 
 
 class ResourcesAlreadyAssignedException(BaseGrpcException):
-    """Exception for when resources were already assigned.
+    """
+    Exception for when resources were already assigned.
 
-    Raised when the server is already in an assigned resources state
-    and the request should not have been called.
+    Raised when the server is already in an assigned resources state and the request should not have been
+    called.
     """
 
 
 class ResourcesNotAssignedException(BaseGrpcException):
-    """Exception for when resources have not been assigned.
+    """
+    Exception for when resources have not been assigned.
 
-    Raised when the server does not have any resources assigned. This
-    request should not have been called.
+    Raised when the server does not have any resources assigned. This request should not have been called.
     """
 
 
 class ScanConfiguredAlreadyException(BaseGrpcException):
-    """Exception for when scan has already been configured.
+    """
+    Exception for when scan has already been configured.
 
-    Raised when the server is in a READY state and is already configured
-    for scan. This request should have not been made.
+    Raised when the server is in a READY state and is already configured for scan. This request should have
+    not been made.
     """
 
 
 class NotConfiguredForScanException(BaseGrpcException):
-    """Exception for when server has no scan configuration.
+    """
+    Exception for when server has no scan configuration.
 
-    Raised when the server does not have a scan configuration but
-    as request to deconfigure, scan, or get scan configuration
-    was made but no configuration existed.
+    Raised when the server does not have a scan configuration but as request to deconfigure, scan, or get scan
+    configuration was made but no configuration existed.
     """
 
 
 class InvalidRequestException(BaseGrpcException):
-    """Exception with the actual request parameters.
+    """
+    Exception with the actual request parameters.
 
-    This is raised when the server validates the request and request is
-    not correct, such as the assign resources message has a protobuf
-    Oneof field for resources and the incorrect one was applied.
+    This is raised when the server validates the request and request is not correct, such as the assign
+    resources message has a protobuf Oneof field for resources and the incorrect one was applied.
     """
 
 
 class ServerError(BaseGrpcException):
-    """Exception when an exception on the server side happens.
+    """
+    Exception when an exception on the server side happens.
 
-    The server raised an exception during the processing of the request
-    and the logs of the server should be checked. The client is not
-    expected to handle this exception.
+    The server raised an exception during the processing of the request and the logs of the server should be
+    checked. The client is not expected to handle this exception.
     """
 
     def __init__(self: ServerError, error_code: int, message: str) -> None:
@@ -142,10 +142,10 @@ class ServerError(BaseGrpcException):
 
 
 class UnknownGrpcException(BaseGrpcException):
-    """An unknown gRPC exception.
+    """
+    An unknown gRPC exception.
 
-    This error occurs due to gRPC itself. The client is not
-    expected to handle this request.
+    This error occurs due to gRPC itself. The client is not expected to handle this request.
     """
 
     def __init__(self: UnknownGrpcException, error_code: int, message: str) -> None:
@@ -189,7 +189,8 @@ def _handle_grpc_error(error: grpc.RpcError) -> NoReturn:
 
 
 class PstGrpcLmcClient:
-    """The client API that connects to a remote gRPC service.
+    """
+    The client API that connects to a remote gRPC service.
 
     This client is a wrapper around the :py:class:`PstLmcServiceStub`
     that is generated from the gRPC/Protobuf bindings.
@@ -211,7 +212,8 @@ class PstGrpcLmcClient:
         logger: Optional[logging.Logger],
         **kwargs: Any,
     ) -> None:
-        """Initialise gRPC client.
+        """
+        Initialise gRPC client.
 
         :param client_id: the ID of the client.
         :param endpoint: the endpoint of the service that this client is to communicate with.
@@ -225,7 +227,8 @@ class PstGrpcLmcClient:
         self._service = PstLmcServiceStub(channel=self._channel)
 
     def connect(self: PstGrpcLmcClient) -> bool:
-        """Connect client to the remote server.
+        """
+        Connect client to the remote server.
 
         This is used to let the server know that a client has connected.
         """
@@ -326,7 +329,8 @@ class PstGrpcLmcClient:
             _handle_grpc_error(e)
 
     def get_env(self: PstGrpcLmcClient) -> Dict[str, Any]:
-        """Get the enviroment values from the remote gRPC service.
+        """
+        Get the enviroment values from the remote gRPC service.
 
         This will map the Protobuf `EnvVal` objects to the appropriate
         Python types.
@@ -354,14 +358,13 @@ class PstGrpcLmcClient:
             _handle_grpc_error(e)
 
     def abort(self: PstGrpcLmcClient) -> None:
-        """Abort scanning.
+        """
+        Abort scanning.
 
-        This method is to be used by the LMC device that needs to abort
-        a long running action, in particular scan. The ObsState model
-        allows for this to be called if in IDLE (resources assigned),
-        CONFIGURING (configuring a scan), READY (configured for a scan but
-        not scanning), SCANNING (a scan is running), or RESETTING (is
-        trying to reset from ABORTED/FAULT state).
+        This method is to be used by the LMC device that needs to abort a long running action, in particular
+        scan. The ObsState model allows for this to be called if in IDLE (resources assigned), CONFIGURING
+        (configuring a scan), READY (configured for a scan but not scanning), SCANNING (a scan is running), or
+        RESETTING (is trying to reset from ABORTED/FAULT state).
 
         After this call the state of the service should be ABORTED.
         """
@@ -372,11 +375,11 @@ class PstGrpcLmcClient:
             _handle_grpc_error(e)
 
     def reset(self: PstGrpcLmcClient) -> None:
-        """Reset service.
+        """
+        Reset service.
 
-        This method is to be used by the LMC device that is currently in an
-        ABORTED or FAULT state to reset the service. After this call the
-        state of the service should be in IDLE (resources assigned and not
+        This method is to be used by the LMC device that is currently in an ABORTED or FAULT state to reset
+        the service. After this call the state of the service should be in IDLE (resources assigned and not
         configured for a scan).
         """
         try:
@@ -389,7 +392,8 @@ class PstGrpcLmcClient:
         abort_event: Event,
         polling_rate: int = 5000,
     ) -> Generator[MonitorResponse, None, None]:
-        """Call monitor on reqmore gRPC service.
+        """
+        Call monitor on reqmore gRPC service.
 
         :param abort_event: a :py:class:`threading.Event` that can be
             used to signal to stop monitoring.
@@ -420,7 +424,8 @@ class PstGrpcLmcClient:
             _handle_grpc_error(e)
 
     def set_log_level(self: PstGrpcLmcClient, request: SetLogLevelRequest) -> None:
-        """Set the LogLevel of the remote gRPC service.
+        """
+        Set the LogLevel of the remote gRPC service.
 
         :param request: The request containing LogLevel to be set on the remote gRPC service.
         :returns: None.
@@ -432,7 +437,8 @@ class PstGrpcLmcClient:
             _handle_grpc_error(e)
 
     def get_log_level(self: PstGrpcLmcClient, request: GetLogLevelRequest) -> LogLevel:
-        """Get the LogLevel of the remote gRPC service.
+        """
+        Get the LogLevel of the remote gRPC service.
 
         :returns: The current LogLevel of the remote gRPC service.
         :rtype: LogLevel

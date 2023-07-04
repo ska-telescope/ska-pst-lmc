@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for providing the Simulated RECV capability for the Pulsar Timing Sub-element."""
 
 from __future__ import annotations
@@ -62,12 +61,12 @@ def generate_random_update() -> ReceiveData:
 
 
 class PstReceiveSimulator:
-    """Simulator for the RECV process of the PST.LMC sub-system.
+    """
+    Simulator for the RECV process of the PST.LMC sub-system.
 
-    This is used to generate random data and simulate what happens during
-    the RECV process. Current implementation has this internally with
-    the TANGO device but future improvements will have this as a separate
-    process and the TANGO will connect via an API.
+    This is used to generate random data and simulate what happens during the RECV process. Current
+    implementation has this internally with the TANGO device but future improvements will have this as a
+    separate process and the TANGO will connect via an API.
     """
 
     _subband_data: Dict[int, ReceiveData]
@@ -102,7 +101,8 @@ class PstReceiveSimulator:
         self._scan = False
 
     def start_scan(self: PstReceiveSimulator, args: dict) -> None:
-        """Simulate start scanning.
+        """
+        Simulate start scanning.
 
         :param: the scan arguments.
         """

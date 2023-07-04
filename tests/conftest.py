@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module defines elements of the pytest test harness shared by all tests."""
 
 from __future__ import annotations
@@ -580,8 +579,7 @@ def change_event_callbacks(
     """
     Return a dictionary of Tango device change event callbacks with asynchrony support.
 
-    :return: a collections.defaultdict that returns change event
-        callbacks by name.
+    :return: a collections.defaultdict that returns change event callbacks by name.
     """
     return change_event_callbacks_factory()
 
@@ -596,9 +594,8 @@ def tango_change_event_helper(
     Return a helper to simplify subscription to the device under test with a callback.
 
     :param device_under_test: a proxy to the device under test
-    :param change_event_callbacks: dictionary of callbacks with
-        asynchrony support, specifically for receiving Tango device
-        change events.
+    :param change_event_callbacks: dictionary of callbacks with asynchrony support, specifically for receiving
+        Tango device change events.
     """
     return TangoChangeEventHelper(
         device_under_test=device_under_test,
@@ -647,11 +644,11 @@ def background_task_processor(
     stub_background_processing: bool,
     monkeypatch: pytest.MonkeyPatch,
 ) -> BackgroundTaskProcessor:
-    """Fixture to create background task processor.
+    """
+    Fixture to create background task processor.
 
-    This can be used in synchronous or background processing if
-    a stub_background_processing returns True or False, the default
-    is to always stub.
+    This can be used in synchronous or background processing if a stub_background_processing returns True or
+    False, the default is to always stub.
     """
     processor = BackgroundTaskProcessor(default_logger=logger)
 

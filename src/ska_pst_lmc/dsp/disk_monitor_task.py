@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module provides a utility class to handle monitoring of disk space."""
 
 from __future__ import annotations
@@ -52,10 +51,10 @@ class DiskMonitorTask:
         self.shutdown()
 
     def shutdown(self: DiskMonitorTask) -> None:
-        """Shutdown disk monitor safely.
+        """
+        Shutdown disk monitor safely.
 
-        This will first stop monitoring and then shut down the background
-        ThreadPoolExecutor.
+        This will first stop monitoring and then shut down the background ThreadPoolExecutor.
         """
         self.logger.debug("Shutting down monitoring task")
         if self._state == MonitoringState.SHUTDOWN:
@@ -107,10 +106,10 @@ class DiskMonitorTask:
             self.logger.exception("Error in waiting for result of monitoring background task.", exc_info=True)
 
     def start_monitoring(self: DiskMonitorTask) -> None:
-        """Start monitoring of disk.
+        """
+        Start monitoring of disk.
 
-        This will launch a background process that periodically polls the API to get the
-        current disk stats.
+        This will launch a background process that periodically polls the API to get the current disk stats.
         """
         self.logger.info(f"Starting disk monitoring. Polling rate is {self.monitoring_polling_rate}ms")
         with self._monitoring_condvar:
@@ -142,10 +141,10 @@ class DiskMonitorTask:
             self._monitoring_condvar.notify_all()
 
     def _monitor_background(self: DiskMonitorTask) -> None:
-        """Run monitoring in background.
+        """
+        Run monitoring in background.
 
-        This should have been launched be the ThreadPoolExecutor rather than
-        being called directly.
+        This should have been launched be the ThreadPoolExecutor rather than being called directly.
         """
 
         def _should_stop_monitoring() -> bool:

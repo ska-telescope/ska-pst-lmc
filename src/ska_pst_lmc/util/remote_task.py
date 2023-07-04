@@ -4,9 +4,8 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
-
-"""This module handles tasks that need to be called on device proxies.
+"""
+This module handles tasks that need to be called on device proxies.
 
 Since commands on device proxies may be slow, long running commands, this
 module provies classes that can submit and track remote tasks.
@@ -46,7 +45,8 @@ __all__ = [
 
 
 class RemoteTask:
-    """Class to handle calling long run tasks on remote devices.
+    """
+    Class to handle calling long run tasks on remote devices.
 
     This class takes instances of a device proxy and function/action
     to call when this task is called. It also takes a task_callback
@@ -72,12 +72,12 @@ class RemoteTask:
         action: RemoteAction,
         task_callback: Callable,
     ):
-        """Initialise the task.
+        """
+        Initialise the task.
 
         :param device: the device proxy that the task is for.
         :param action: the action to perfom when called.
-        :param task_callback: the callback to use when the task needs
-            to update it's progress or status.
+        :param task_callback: the callback to use when the task needs to update it's progress or status.
         """
         # should only be able to subscribe to the long running stuff once.
         self.device = device
@@ -94,16 +94,17 @@ class RemoteTask:
         )
 
     def __del__(self: RemoteTask) -> None:
-        """Cleam up remote task.
+        """
+        Cleam up remote task.
 
-        This makes sure it unsubscribes from events on the attributes
-        of the remote device.
+        This makes sure it unsubscribes from events on the attributes of the remote device.
         """
         self._status_subscription.unsubscribe()
         self._progress_subscription.unsubscribe()
 
     def __call__(self: RemoteTask, *arg: Any, **kwargs: Any) -> TaskResponse:
-        """Execute the task.
+        """
+        Execute the task.
 
         This executes the action on the remote device.
         """
@@ -131,7 +132,8 @@ class RemoteTask:
         return self.status, details
 
     def _progress_callback(self: RemoteTask, progress_values: List[str]) -> None:
-        """Handle change to progress value of long running command.
+        """
+        Handle change to progress value of long running command.
 
         When the `longRunningCommandProgress` attribute value changes for the
         remote command, this method is called. It tries to find the value
@@ -148,7 +150,8 @@ class RemoteTask:
                 self.task_callback(progress=progress)
 
     def _status_callback(self: RemoteTask, status_values: List[str]) -> None:
-        """Handle change to status value of long running command.
+        """
+        Handle change to status value of long running command.
 
         When the `longRunningCommandStatus` attribute value changes for the
         remote command, this method is called. It tries to find the value
@@ -168,7 +171,8 @@ class RemoteTask:
 
 
 class AggregateRemoteTask:
-    """Class for aggregation of multiple remote tasks.
+    """
+    Class for aggregation of multiple remote tasks.
 
     This class is used to submit multiple remotes tasks that can occur in
     parallel.
@@ -198,12 +202,11 @@ class AggregateRemoteTask:
         background: bool = True,
         logger: Optional[logging.Logger] = None,
     ) -> None:
-        """Initialise aggregate task.
+        """
+        Initialise aggregate task.
 
-        :param task_callback: the callback to use when the task needs
-            to update it's progress or status.
-        :param background: whether to submit the task in the background or not.
-            The default value is True.
+        :param task_callback: the callback to use when the task needs to update it's progress or status.
+        :param background: whether to submit the task in the background or not. The default value is True.
         :param logger: the logger to use for logging from this task.
         """
         self.tasks = list()
@@ -229,7 +232,8 @@ class AggregateRemoteTask:
     def add_remote_task(
         self: AggregateRemoteTask, device: PstDeviceProxy, action: RemoteAction
     ) -> RemoteTask:
-        """Add a remote task to be executed when this task executes.
+        """
+        Add a remote task to be executed when this task executes.
 
         This can only be called while the task hasn't been already started.
 
@@ -244,11 +248,12 @@ class AggregateRemoteTask:
         return task
 
     def _execute_task(self: AggregateRemoteTask) -> None:
-        """Execute the task.
+        """
+        Execute the task.
 
-        This will submit all the remote tasks to run in parallel, i.e. that we don't need
-        the first task to complete before even calling the 2nd. However, calling this method
-        will make sure that this task runs to completion.
+        This will submit all the remote tasks to run in parallel, i.e. that we don't need the first task to
+        complete before even calling the 2nd. However, calling this method will make sure that this task runs
+        to completion.
         """
         with self._lock:
             # want to lock so we don't have updates before all the commands are submitted
@@ -265,7 +270,8 @@ class AggregateRemoteTask:
         self._run_to_completion()
 
     def _run_to_completion(self: AggregateRemoteTask, timeout: float = 120.0, sleep: float = 0.1) -> None:
-        """Run current task to completion.
+        """
+        Run current task to completion.
 
         This method will poll to see the current state is in a completed state.
         If the state is in a completed state it will exit, else this will sleep
@@ -287,7 +293,8 @@ class AggregateRemoteTask:
             elapsed += sleep
 
     def _remote_task_updated(self: AggregateRemoteTask, **kwargs: Any) -> None:
-        """Handle remote task has been updated.
+        """
+        Handle remote task has been updated.
 
         This is called when any of the tasks call it's task_progress but
         it will check all the progress and status values of all tasks to

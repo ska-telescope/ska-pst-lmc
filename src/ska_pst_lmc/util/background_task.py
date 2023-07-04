@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module is to abstract background task processes."""
 
 from __future__ import annotations
@@ -63,7 +62,8 @@ def background_task(func: Wrapped) -> Wrapped:
 
 
 class BackgroundTaskProcessor:
-    """Class used for submitting and reaping of background tasks.
+    """
+    Class used for submitting and reaping of background tasks.
 
     This class is used to abstract away needing to hold and monitor
     :py:class:`BackgrounTask` objects. This class submits a background
@@ -71,10 +71,10 @@ class BackgroundTaskProcessor:
     """
 
     def __init__(self: BackgroundTaskProcessor, default_logger: logging.Logger):
-        """Initialise processor.
+        """
+        Initialise processor.
 
-        :param default_logger: the logger that the tasks should use if
-            one is not provided.
+        :param default_logger: the logger that the tasks should use if one is not provided.
         :type default_logger: logging.Logger
         """
         # need a queue
@@ -90,7 +90,8 @@ class BackgroundTaskProcessor:
         self._reaper.run()
 
     def __del__(self: BackgroundTaskProcessor) -> None:
-        """Destructor for processor.
+        """
+        Destructor for processor.
 
         Stops all the background tasks.
         """
@@ -104,21 +105,16 @@ class BackgroundTaskProcessor:
         logger: Optional[logging.Logger] = None,
         frequency: Optional[float] = None,
     ) -> BackgroundTask:
-        """Submit a background task to run.
+        """
+        Submit a background task to run.
 
-        This will submit a background task, whether it is a one
-        shot task or a periodic task. It can take an optional
-        logger, or the default logger used by the processor is used,
-        and an optional frequency.
+        This will submit a background task, whether it is a one shot task or a periodic task. It can take an
+        optional logger, or the default logger used by the processor is used, and an optional frequency.
 
-        :param task: the callable function to run, this must wrap
-            its own callbacks if needed.
-        :param logger: an optional logger to use, else the default logger
-            is used.
-        :param frequency: an optional parameter for background task to
-            run at a given frequency.
-        :returns: the task that was submit if there is a need for
-            external monitoring.
+        :param task: the callable function to run, this must wrap its own callbacks if needed.
+        :param logger: an optional logger to use, else the default logger is used.
+        :param frequency: an optional parameter for background task to run at a given frequency.
+        :returns: the task that was submit if there is a need for external monitoring.
         :rtype: BackgroundTask
         """
         task: BackgroundTask = BackgroundTask(
@@ -142,12 +138,14 @@ class RunState(IntEnum):
     """Enum to represent run state of :py:class:`BackgroundTask`."""
 
     STOPPED = (1,)
-    """Background task is stopped and not running.
+    """
+    Background task is stopped and not running.
 
     This is the default state when the task is created.
     """
     STARTING = (2,)
-    """The state the task is put into when the task is started.
+    """
+    The state the task is put into when the task is started.
 
     This is an intermediate state. When the method :meth:`BackgroundTask.run`
     is called the task goes into a STARTING state. If the task starts successfully
@@ -155,13 +153,15 @@ class RunState(IntEnum):
     """
 
     RUNNING = (3,)
-    """The state to indicate that the task is running.
+    """
+    The state to indicate that the task is running.
 
     This state represents that the task is running successfully.
     """
 
     STOPPING = (4,)
-    """The state the task is put into when asked to stop.
+    """
+    The state the task is put into when asked to stop.
 
     This is an intermediate state, used to avoid calling stop mulitple times.
     When the method :meth:`BackgroundTask.stop` is called the task will
@@ -169,23 +169,25 @@ class RunState(IntEnum):
     """
 
     ERRORED = (5,)
-    """The state to represent that the task has errored.
+    """
+    The state to represent that the task has errored.
 
     The task can go into this state while starting, running or stopping.
     """
 
     def running(self: RunState) -> bool:
-        """Check if in a state that represents a running state.
+        """
+        Check if in a state that represents a running state.
 
-        If the state is STARTING or RUNNING then this is considered as
-        running state.
+        If the state is STARTING or RUNNING then this is considered as running state.
 
         :returns: is in a running state
         """
         return self in [RunState.STARTING, RunState.RUNNING]
 
     def errored(self: RunState) -> bool:
-        """Check if in an errored state.
+        """
+        Check if in an errored state.
 
         This only happens if the state is ERRORED.
 
@@ -195,20 +197,17 @@ class RunState(IntEnum):
 
 
 class BackgroundTask:
-    """BackgroundTask.
+    """
+    BackgroundTask.
 
-    This class is used for background task processing. Rather
-    than code being littered with creating background threads
-    or asyncio code, this class is used to provide the functionality
-    to start/stop the process.
+    This class is used for background task processing. Rather than code being littered with creating
+    background threads or asyncio code, this class is used to provide the functionality to start/stop the
+    process.
 
-    The task has to be explicitly started. However, if this task
-    is deleted by the Python runtime it will stop the background
-    processing. It is, however, advised to that a user explicitly
-    stops the task.
+    The task has to be explicitly started. However, if this task is deleted by the Python runtime it will stop
+    the background processing. It is, however, advised to that a user explicitly stops the task.
 
-    This task does waiting/looping and the provided action is
-    not expected to do any waiting.
+    This task does waiting/looping and the provided action is not expected to do any waiting.
     """
 
     _state: RunState
@@ -225,15 +224,14 @@ class BackgroundTask:
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Initialise background task.
+        """
+        Initialise background task.
 
-        :param action_fn: action to call during background process. If
-            the frequency is set then this is a per loop callback, else
-            this action will be called once.
+        :param action_fn: action to call during background process. If the frequency is set then this is a per
+            loop callback, else this action will be called once.
         :param logger: logger to be used by the task object.
-        :param frequency: how often to execute the action. If None (the default)
-            then action is only called once, else this task will attempt
-            to sleep for 1/frequency seconds.
+        :param frequency: how often to execute the action. If None (the default) then action is only called
+            once, else this task will attempt to sleep for 1/frequency seconds.
         :param daemon: run task in a background daemone thread (default is True)
         """
         self._action_fn = action_fn
@@ -247,7 +245,8 @@ class BackgroundTask:
         self._completed = False
 
     def __del__(self: BackgroundTask) -> None:
-        """Deconstruct object.
+        """
+        Deconstruct object.
 
         Stops any background thread if processing.
         """
@@ -257,7 +256,8 @@ class BackgroundTask:
             self._join()
 
     def _set_state(self: BackgroundTask, state: RunState) -> None:
-        """Set run state of background task.
+        """
+        Set run state of background task.
 
         :param state: state to set task to.
         """
@@ -287,10 +287,10 @@ class BackgroundTask:
             self._thread = None
 
     def run(self: BackgroundTask) -> None:
-        """Run the background task.
+        """
+        Run the background task.
 
-        If the task is already in a running state then this task will exit
-        immediately.
+        If the task is already in a running state then this task will exit immediately.
         """
         assert not self._completed, "Task has already completed, cannot run it again."
 
@@ -317,7 +317,8 @@ class BackgroundTask:
             return self._state.errored()
 
     def exception(self: BackgroundTask) -> Optional[Exception]:
-        """Return the exception raised during background processing.
+        """
+        Return the exception raised during background processing.
 
         If no exception has been raised then None is returned.
 
@@ -347,7 +348,8 @@ class BackgroundTask:
             self._thread = None
 
     def stop(self: BackgroundTask) -> None:
-        """Stop the background task.
+        """
+        Stop the background task.
 
         If the task is not in a running state this will exit immediately.
         """

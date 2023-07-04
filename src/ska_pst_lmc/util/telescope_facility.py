@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module containing enum that presents the different telescope facilities (i.e. Mid vs Low)."""
 
 import enum

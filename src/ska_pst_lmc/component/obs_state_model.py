@@ -4,8 +4,8 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
-"""This module provides the PST overrides of the ObsStateModel.
+"""
+This module provides the PST overrides of the ObsStateModel.
 
 There is known tech debt in PST in regards to the fact that it
 was initially developed using a sub-array model and not an
@@ -64,7 +64,6 @@ class PstObsStateMachine(Machine):
 
     .. uml:: obs_state_machine.puml
       :caption: Diagram of the PST subdevice state machine
-
     """
 
     def __init__(
@@ -77,8 +76,8 @@ class PstObsStateMachine(Machine):
 
         :param callback: A callback to be called when the state changes
         :type callback: callable
-        :param extra_kwargs: Additional keywords arguments to pass to
-            super class initialiser (useful for graphing)
+        :param extra_kwargs: Additional keywords arguments to pass to super class initialiser (useful for
+            graphing)
         """
         self._callback = callback
 

@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module provides an purely abstract view the BEAM.MGMT Device."""
 
 from __future__ import annotations
@@ -13,7 +12,8 @@ from ska_pst_lmc.component import PstDeviceInterface
 
 
 class PstBeamDeviceInterface(PstDeviceInterface):
-    """A purely abstract class that that represents a BEAM.MGMT Device.
+    """
+    A purely abstract class that that represents a BEAM.MGMT Device.
 
     This is implemented by `PstBeam` and used by the `PstBeamComponentManager`
     which needs a limited view of the Tango device but without having full
@@ -36,7 +36,8 @@ class PstBeamDeviceInterface(PstDeviceInterface):
         raise NotImplementedError("PstBeamDeviceInterface is abstract")
 
     def handle_subdevice_fault(self: PstBeamDeviceInterface, device_fqdn: str, fault_msg: str) -> None:
-        """Handle a fault raised from a subordinate device.
+        """
+        Handle a fault raised from a subordinate device.
 
         :param device_fqdn: the fully-qualified domain name of the subordinate device.
         :type device_fqdn: str

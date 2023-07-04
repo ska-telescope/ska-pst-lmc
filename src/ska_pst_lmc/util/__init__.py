@@ -4,8 +4,8 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
-"""This module covers common utility classes and functions of PST.LMC.
+"""
+This module covers common utility classes and functions of PST.LMC.
 
 Functionality provided within this module is:
 

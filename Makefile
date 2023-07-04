@@ -6,14 +6,19 @@ PROJECT = ska-pst-lmc
 HELM_CHARTS_TO_PUBLISH = ska-pst-lmc
 
 # E203 and W503 conflict with black
-PYTHON_SWITCHES_FOR_FLAKE8 = --extend-ignore=BLK,T --enable=DAR104 --ignore=E203,FS003,W503,N802 --max-complexity=10 \
-    --max-line-length=110 --rst-roles=py:attr,py:class,py:const,py:exc,py:func,py:meth,py:mod \
-		--rst-directives deprecated,uml --exclude=src/ska_pst_lmc_proto
-PYTHON_SWITCHES_FOR_BLACK = --line-length=110 --force-exclude=src/ska_pst_lmc_proto
-PYTHON_SWITCHES_FOR_ISORT = --skip-glob="*/__init__.py" -w=110 --py 39 --thirdparty=ska_pst_lmc_proto
 PYTHON_TEST_FILE = tests
-PYTHON_LINT_TARGET = src tests  ## Paths containing python to be formatted and linted
+## Paths containing python to be formatted and linted
+PYTHON_LINT_TARGET = src/ tests/
+PYTHON_LINE_LENGTH = 110
+
+PYTHON_SWITCHES_FOR_FLAKE8 = --extend-ignore=BLK,T --enable=DAR104 --ignore=E203,FS003,W503,N802 --max-complexity=10 \
+    --rst-roles=py:attr,py:class,py:const,py:exc,py:func,py:meth,py:mod \
+		--rst-directives deprecated,uml --exclude=src/ska_pst_lmc_proto
+PYTHON_SWITCHES_FOR_BLACK = --force-exclude=src/ska_pst_lmc_proto
+PYTHON_SWITCHES_FOR_ISORT = --skip-glob="*/__init__.py" --py 39 --thirdparty=ska_pst_lmc_proto
 PYTHON_SWITCHES_FOR_PYLINT = --disable=W,C,R --ignored-modules="ska_pst_lmc_proto"
+PYTHON_SWITCHES_FOR_AUTOFLAKE ?= --in-place --remove-unused-variables --remove-all-unused-imports --recursive --ignore-init-module-imports
+
 DOCS_SOURCEDIR=./docs/src
 PYTHON_VARS_AFTER_PYTEST = --cov-config=$(PWD)/.coveragerc
 
@@ -86,13 +91,19 @@ OCI_BUILD_ADDITIONAL_ARGS = --build-arg BUILD_IMAGE=$(SKA_PST_PYTHON_BUILDER_IMA
 .DEFAULT_GOAL := help
 
 # Add this for typehints & static type checking
+mypy:
+	$(PYTHON_RUNNER) mypy --config-file mypy.ini $(PYTHON_LINT_TARGET)
+
+flake8:
+	$(PYTHON_RUNNER) flake8 --show-source --statistics $(PYTHON_SWITCHES_FOR_FLAKE8) $(PYTHON_LINT_TARGET)
+
 python-post-format:
-	$(PYTHON_RUNNER) docformatter -r -i --wrap-summaries 88 --wrap-descriptions 72 --pre-summary-newline src/ tests/
+	$(PYTHON_RUNNER) autoflake $(PYTHON_SWITCHES_FOR_AUTOFLAKE) $(PYTHON_LINT_TARGET)
+	$(PYTHON_RUNNER) docformatter -r -i --wrap-summaries $(PYTHON_LINE_LENGTH) --wrap-descriptions $(PYTHON_LINE_LENGTH) --pre-summary-newline $(PYTHON_LINT_TARGET)
 
-python-post-lint:
-	$(PYTHON_RUNNER) mypy --config-file mypy.ini src/ tests/
+python-post-lint: mypy
 
-.PHONY: python-post-format python-post-lint
+.PHONY: python-post-format, notebook-format, notebook-post-format, python-post-lint, mypy, flake8
 
 local-oci-scan:
 	docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $(strip $(OCI_IMAGE)):$(VERSION)

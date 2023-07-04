@@ -4,8 +4,8 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
-"""Module for providing the API to be communicate with the RECV process.
+"""
+Module for providing the API to be communicate with the RECV process.
 
 The :py:class:`PstReceiveProcessApiSimulator` is used in testing or
 simulation mode, while the :py:class:`PstReceiveProcessApiGrpc` is used
@@ -47,7 +47,8 @@ GIGABITS_PER_BYTE = 8 / 1e9
 
 
 class PstReceiveProcessApi(PstProcessApi):
-    """Abstract class for the API of the RECV process.
+    """
+    Abstract class for the API of the RECV process.
 
     This extends from :py:class:`PstProcessApi` but
     provides the specific method of getting the monitoring
@@ -64,11 +65,12 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         component_state_callback: Callable,
         simulator: Optional[PstReceiveSimulator] = None,
     ) -> None:
-        """Initialise the API.
+        """
+        Initialise the API.
 
         :param logger: the logger to use for the API.
-        :param component_state_callback: this allows the API to call back to the
-            component manager / TANGO device to deal with state model changes.
+        :param component_state_callback: this allows the API to call back to the component manager / TANGO
+            device to deal with state model changes.
         :param simulator: the simulator instance to use in the API.
         """
         self._simulator = simulator or PstReceiveSimulator()
@@ -81,7 +83,8 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
     def configure_beam(
         self: PstReceiveProcessApiSimulator, configuration: Dict[str, Any], task_callback: Callable
     ) -> None:
-        """Configure beam for the service.
+        """
+        Configure beam for the service.
 
         :param configuration: dictionary of parameters to be configured and their requested values.
         :param task_callback: callable to connect back to the component manager.
@@ -96,7 +99,8 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def deconfigure_beam(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
-        """Deconfigure the beam.
+        """
+        Deconfigure the beam.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -110,7 +114,8 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
     def configure_scan(
         self: PstReceiveProcessApiSimulator, configuration: Dict[str, Any], task_callback: Callable
     ) -> None:
-        """Configure a scan.
+        """
+        Configure a scan.
 
         :param configuration: the configuration of for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -126,7 +131,8 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def deconfigure_scan(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
-        """Deconfigure a scan.
+        """
+        Deconfigure a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -143,7 +149,8 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
     def start_scan(
         self: PstReceiveProcessApiSimulator, args: Dict[str, Any], task_callback: Callable
     ) -> None:
-        """Start scanning.
+        """
+        Start scanning.
 
         :param args: arguments for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -159,7 +166,8 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def stop_scan(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
-        """End a scan.
+        """
+        End a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -176,7 +184,8 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
 
     @background_task
     def abort(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
-        """Abort a scan.
+        """
+        Abort a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -190,7 +199,8 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def reset(self: PstReceiveProcessApiSimulator, task_callback: Callable) -> None:
-        """Reset a scan.
+        """
+        Reset a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -212,7 +222,8 @@ class PstReceiveProcessApiSimulator(PstProcessApiSimulator, PstReceiveProcessApi
             time.sleep(polling_rate / 1000.0)
 
     def get_env(self: PstReceiveProcessApiSimulator) -> Dict[str, Any]:
-        """Get simulated environment values for RECV.CORE.
+        """
+        Get simulated environment values for RECV.CORE.
 
         This returns the following:
 

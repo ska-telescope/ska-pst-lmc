@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for implementing a test implementations of the gRPC LMC service."""
 
 from __future__ import annotations
@@ -104,10 +103,10 @@ class TestMockException(Exception):
 
 
 class TestMockServicer(PstLmcServiceServicer):
-    """Test Servicer that acts on the requests sent to the test server.
+    """
+    Test Servicer that acts on the requests sent to the test server.
 
-    This is meant to be used within testing frameworks to allow asserting
-    that the API is called.
+    This is meant to be used within testing frameworks to allow asserting that the API is called.
     """
 
     # Disable PyTest thinking class is test suite class
@@ -118,14 +117,13 @@ class TestMockServicer(PstLmcServiceServicer):
         context: Any,
         logger: logging.Logger,
     ) -> None:
-        """Initialise the test mock servicer.
+        """
+        Initialise the test mock servicer.
 
-        All requests will be delegated to the context parameter which
-        should be a mock that can then be used to assert calls and
-        can return results when called.
+        All requests will be delegated to the context parameter which should be a mock that can then be used
+        to assert calls and can return results when called.
 
-        :param context: this should be any object that can be used
-            to assert or create errors (i.e. a mock).
+        :param context: this should be any object that can be used to assert or create errors (i.e. a mock).
         """
         self._context = context
         self._logger = logger
@@ -311,7 +309,8 @@ class TestMockServicer(PstLmcServiceServicer):
 
 
 class TestPstLmcService:
-    """The service class for testing the gRPC LMC service.
+    """
+    The service class for testing the gRPC LMC service.
 
     This class is designed to be used in unit testing but having instances
     of the :py:class:`TestMockServicer` passed in as a parameter or can be
@@ -329,7 +328,8 @@ class TestPstLmcService:
         logger: Optional[logging.Logger] = None,
         **kwargs: Any,
     ) -> None:
-        """Initialise the service.
+        """
+        Initialise the service.
 
         This uses a `futures.ThreadPoolExecutor` to create a gRPC server that
         exposes an API by the servicer instance that is provided.  The service
@@ -370,14 +370,15 @@ class TestPstLmcService:
             self._logger.error("Unknown exception has happened while serving.", exc_info=True)
 
     def serve(self: TestPstLmcService, started_callback: Optional[Callable] = None) -> None:
-        """Start the gRPC server to serve requests.
+        """
+        Start the gRPC server to serve requests.
 
-        This method should be called synchronously as this method will set up the gRPC in
-        a background thread itself.  If the client wants to be notified when the background
-        thread is serving then a started_callback should be passed.
+        This method should be called synchronously as this method will set up the gRPC in a background thread
+        itself.  If the client wants to be notified when the background thread is serving then a
+        started_callback should be passed.
 
-        :param started_callback: a callback that will be called when the background thread
-            is running, defaults to None.
+        :param started_callback: a callback that will be called when the background thread is running,
+            defaults to None.
         :type started_callback: Optional[Callable], optional
         """
         t = threading.Thread(target=self._serve, args=(started_callback,))

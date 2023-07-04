@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module provides an implementation of the SMRB PST component manager."""
 
 from __future__ import annotations
@@ -45,22 +44,18 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
         api: Optional[PstSmrbProcessApi] = None,
         **kwargs: Any,
     ):
-        """Initialise instance of the component manager.
+        """
+        Initialise instance of the component manager.
 
-        :param device_name: the FQDN of the current device. This
-            is used within the gRPC process to identify who is
-            doing the calling.
+        :param device_name: the FQDN of the current device. This is used within the gRPC process to identify
+            who is doing the calling.
         :param process_api_endpoint: the endpoint of the gRPC process.
         :param logger: a logger for this object is to use.
-        :param monitor_data_callback: the callback that monitoring data
-            should call when data has been received. This should be
-            used by the Tango device to be notified when data has been
-            updated.
-        :param communication_state_callback: callback to be
-            called when the status of the communications channel between
-            the component manager and its component changes.
-        :param component_state_callback: callback to be called when the
-            component state changes.
+        :param monitor_data_callback: the callback that monitoring data should call when data has been
+            received. This should be used by the Tango device to be notified when data has been updated.
+        :param communication_state_callback: callback to be called when the status of the communications
+            channel between the component manager and its component changes.
+        :param component_state_callback: callback to be called when the component state changes.
         """
         logger.debug(
             f"Setting up SMRB component manager with device_name='{device_interface.device_name}'"
@@ -88,7 +83,8 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
 
     @property
     def ring_buffer_utilisation(self: PstSmrbComponentManager) -> float:
-        """Get the percentage of the ring buffer elements that are full of data.
+        """
+        Get the percentage of the ring buffer elements that are full of data.
 
         :returns: the percentage of the ring buffer elements that are full of data.
         :rtype: float
@@ -97,7 +93,8 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
 
     @property
     def ring_buffer_size(self: PstSmrbComponentManager) -> int:
-        """Get the capacity of the ring buffer, in bytes.
+        """
+        Get the capacity of the ring buffer, in bytes.
 
         :returns: the capacity of the ring buffer, in bytes.
         :rtype: int
@@ -106,7 +103,8 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
 
     @property
     def number_subbands(self: PstSmrbComponentManager) -> int:
-        """Get the number of sub-bands.
+        """
+        Get the number of sub-bands.
 
         :returns: the number of sub-bands.
         :rtype: int
@@ -115,7 +113,8 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
 
     @property
     def ring_buffer_read(self: PstSmrbComponentManager) -> int:
-        """Get the amount of data, in bytes, that has been read.
+        """
+        Get the amount of data, in bytes, that has been read.
 
         :returns: the amount of data that has been read.
         :rtype: int
@@ -124,7 +123,8 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
 
     @property
     def ring_buffer_written(self: PstSmrbComponentManager) -> int:
-        """Get the amount of data, in bytes, that has been written.
+        """
+        Get the amount of data, in bytes, that has been written.
 
         :returns: the amount of data that has been written.
         :rtype: int
@@ -133,7 +133,8 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
 
     @property
     def subband_ring_buffer_utilisations(self: PstSmrbComponentManager) -> List[float]:
-        """Get the percentage of full ring buffer elements for each sub-band.
+        """
+        Get the percentage of full ring buffer elements for each sub-band.
 
         :returns: the percentage of full ring buffer elements for each sub-band.
         :rtype: List[float]
@@ -142,7 +143,8 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
 
     @property
     def subband_ring_buffer_sizes(self: PstSmrbComponentManager) -> List[int]:
-        """Get the capacity of ring buffers for each sub-band.
+        """
+        Get the capacity of ring buffers for each sub-band.
 
         :returns: the capacity of ring buffers, in bytes, for each sub-band.
         :rtype: List[int]
@@ -151,7 +153,8 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
 
     @property
     def subband_ring_buffer_read(self: PstSmrbComponentManager) -> List[int]:
-        """Get the capacity of ring buffers for each sub-band.
+        """
+        Get the capacity of ring buffers for each sub-band.
 
         :returns: the capacity of ring buffers, in bytes, for each sub-band.
         :rtype: List[int]
@@ -160,7 +163,8 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
 
     @property
     def subband_ring_buffer_written(self: PstSmrbComponentManager) -> List[int]:
-        """Get the capacity of ring buffers for each sub-band.
+        """
+        Get the capacity of ring buffers for each sub-band.
 
         :returns: the capacity of ring buffers, in bytes, for each sub-band.
         :rtype: List[int]
@@ -193,11 +197,11 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
         """
         Validate a ConfigureScan request sent from CSP.LMC to the SMRB sub-component.
 
-        This asserts the request can be converted to SMRB resources and then calls the
-        process API to perform the validation.
+        This asserts the request can be converted to SMRB resources and then calls the process API to perform
+        the validation.
 
-        :param configuration: configuration that would be used when the configure_beam and
-            configure_scan methods are called.
+        :param configuration: configuration that would be used when the configure_beam and configure_scan
+            methods are called.
         :type configuration: Dict[str, Any]
         :param task_callback: callback for background processing to update device status.
         :type task_callback: Callback

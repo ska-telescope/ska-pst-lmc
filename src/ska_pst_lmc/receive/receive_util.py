@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for providing utility methods of RECV."""
 
 __all__ = [
@@ -24,7 +23,8 @@ NUM_DIMENSIONS = 2
 """While PST can handle real and complex data, SKA is using only complex."""
 
 DEFAULT_COORD_MODE = "J2000"
-"""Default coordinate mode.
+"""
+Default coordinate mode.
 
 Currently only J2000 is supported but in future other modes coulde be supported.
 """
@@ -33,7 +33,8 @@ DEFAULT_EQUINOX = 2000.0
 """Default equinox for equitorial/J2000 coordinate mode."""
 
 DEFAULT_TRACKING_MODE = "TRACK"
-"""Default tracking mode.
+"""
+Default tracking mode.
 
 Currently only TRACK is supported but other modes could be supported in the future.
 """
@@ -49,13 +50,12 @@ def get_udp_format(frequency_band: Optional[str] = None, **kwargs: Any) -> str:
 def generate_recv_scan_request(
     request_params: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """Map the LMC configure request to what is needed by RECV.CORE.
+    """
+    Map the LMC configure request to what is needed by RECV.CORE.
 
-    This is a common method to map a CSP JSON configure scan request
-    to the appropriate RECV.CORE parameters.
+    This is a common method to map a CSP JSON configure scan request to the appropriate RECV.CORE parameters.
 
-    :param request_params: a dictionary of request parameters that is
-        used to configure PST for a scan.
+    :param request_params: a dictionary of request parameters that is used to configure PST for a scan.
     :returns: the RECV.CORE parameters to be used in the gRPC request.
     """
     result = {
@@ -83,7 +83,8 @@ def generate_recv_scan_request(
 def calculate_receive_packet_resources(
     request_params: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """Calculate RECV packet values.
+    """
+    Calculate RECV packet values.
 
     This method has been refactored out of `calculate_receive_common_resources`
     the common did 2 things: a) calculate receive packet specific values, and b)
@@ -127,7 +128,8 @@ def calculate_receive_common_resources(
     beam_id: int,
     request_params: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """Calculate the RECV common resources.
+    """
+    Calculate the RECV common resources.
 
     This method has been refactored out of `calculate_receive_subband_resources`
     as there are parameters that are calculated that can be reused in other
@@ -169,7 +171,8 @@ def calculate_receive_subband_resources(
     subband_udp_ports: List[int],
     **kwargs: Any,
 ) -> Dict[str, Any]:
-    """Calculate the RECV resources for all subbands from request.
+    """
+    Calculate the RECV resources for all subbands from request.
 
     This is a common method to map a CSP JSON request to the appropriate
     RECV.CORE parameters. It is also used to calculate the specific subband
@@ -205,7 +208,6 @@ def calculate_receive_subband_resources(
                     }
                 }
             }
-
     """
     try:
         nchan = request_params["num_frequency_channels"]

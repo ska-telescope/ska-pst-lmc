@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module contains tests for the RECV utility methods."""
 
 from typing import Any, Dict, List
@@ -155,11 +154,11 @@ def test_recv_util_calc_tsamp(
     recv_data_host: str,
     subband_udp_ports: List[int],
 ) -> None:
-    """Test calculations for tsamp.
+    """
+    Test calculations for tsamp.
 
-    Test input values are based on the different telescopes bandwidths.
-    Values for these parameterised tests come from the example RECV config
-    files in the ska-pst-recv repository.
+    Test input values are based on the different telescopes bandwidths. Values for these parameterised tests
+    come from the example RECV config files in the ska-pst-recv repository.
     """
     configure_beam_request["total_bandwidth"] = bandwidth_mhz * 1e6
     configure_beam_request["num_frequency_channels"] = num_frequency_channels
@@ -199,11 +198,11 @@ def test_recv_util_calc_bytes_per_seconds(
     recv_data_host: str,
     subband_udp_ports: List[int],
 ) -> None:
-    """Test calculations for bytes_per_seconds.
+    """
+    Test calculations for bytes_per_seconds.
 
-    Test input values are based on the different telescopes bandwidths.
-    Values for these parameterised tests come from the example RECV config
-    files in the ska-pst-recv repository.
+    Test input values are based on the different telescopes bandwidths. Values for these parameterised tests
+    come from the example RECV config files in the ska-pst-recv repository.
     """
     configure_beam_request["total_bandwidth"] = bandwidth_mhz * 1_000_000
     configure_beam_request["num_frequency_channels"] = num_frequency_channels

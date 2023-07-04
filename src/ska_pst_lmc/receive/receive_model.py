@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for providing common model classes within the RECV.MGMT component."""
 
 from __future__ import annotations
@@ -16,7 +15,8 @@ from ska_pst_lmc.component.monitor_data_handler import MonitorDataStore
 
 @dataclass
 class ReceiveData:
-    """A data class to transfer current RECV data between the process and the component manager.
+    """
+    A data class to transfer current RECV data between the process and the component manager.
 
     :ivar data_received: amount of data received during current scan, in bytes.
     :vartype data_received: int
@@ -77,14 +77,16 @@ class ReceiveData:
 
 
 class ReceiveDataStore(MonitorDataStore[ReceiveData, ReceiveData]):
-    """A data store for Receive subband monitoring data.
+    """
+    A data store for Receive subband monitoring data.
 
     This data store will aggregate the separate data
     """
 
     @property
     def monitor_data(self: ReceiveDataStore) -> ReceiveData:
-        """Return the current calculated monitoring data.
+        """
+        Return the current calculated monitoring data.
 
         This aggregates all the individual subband data values into one
         :py:class:`ReceiveData` instance.

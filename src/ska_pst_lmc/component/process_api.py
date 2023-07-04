@@ -4,13 +4,12 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
+"""
+Module for providing the base abstract API for the PST.LMC processes.
 
-"""Module for providing the base abstract API for the PST.LMC processes.
-
-This API is not a part of the component manager, as the component manager
-is also concerned with callbacks to the TANGO device and has state model
-management. This API is expected to be used to call to an external process
-or be simulated.
+This API is not a part of the component manager, as the component manager is also concerned with callbacks to
+the TANGO device and has state model management. This API is expected to be used to call to an external
+process or be simulated.
 """
 
 from __future__ import annotations
@@ -65,12 +64,13 @@ class PstProcessApi:
         logger: logging.Logger,
         component_state_callback: Callable,
     ) -> None:
-        """Initialise the API.
+        """
+        Initialise the API.
 
         :param simulator: the simulator instance to use in the API.
         :param logger: the logger to use for the API.
-        :param component_state_callback: this allows the API to call back to the
-            component manager / TANGO device to deal with state model changes.
+        :param component_state_callback: this allows the API to call back to the component manager / TANGO
+            device to deal with state model changes.
         """
         self._logger = logger
         self._component_state_callback = component_state_callback
@@ -84,16 +84,18 @@ class PstProcessApi:
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def validate_configure_beam(self: PstProcessApi, configuration: Dict[str, Any]) -> None:
-        """Validate a configure beam for service.
+        """
+        Validate a configure beam for service.
 
         :param configuration: Dictionary of resources to allocate.
-        :raises ValidationError: if there an issue validating the request.
-            The error message contains the details.
+        :raises ValidationError: if there an issue validating the request. The error message contains the
+            details.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def configure_beam(self: PstProcessApi, configuration: Dict[str, Any], task_callback: Callable) -> None:
-        """Configure beam for service.
+        """
+        Configure beam for service.
 
         :param configuration: Dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
@@ -101,23 +103,26 @@ class PstProcessApi:
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def deconfigure_beam(self: PstProcessApi, task_callback: Callable) -> None:
-        """Deconfigure beam to release all resources.
+        """
+        Deconfigure beam to release all resources.
 
         :param task_callback: callable to connect back to the component manager.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def validate_configure_scan(self: PstProcessApi, configuration: Dict[str, Any]) -> None:
-        """Validate a configure_scan request.
+        """
+        Validate a configure_scan request.
 
         :param configuration: the scan configuration for the device.
-        :raises ValidationError: if there an issue validating the request.
-            The error message contains the details.
+        :raises ValidationError: if there an issue validating the request. The error message contains the
+            details.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def configure_scan(self: PstProcessApi, configuration: Dict[str, Any], task_callback: Callable) -> None:
-        """Configure a scan.
+        """
+        Configure a scan.
 
         :param configuration: the scan configuration for the device.
         :param task_callback: callable to connect back to the component manager.
@@ -125,14 +130,16 @@ class PstProcessApi:
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def deconfigure_scan(self: PstProcessApi, task_callback: Callable) -> None:
-        """Deconfigure a scan.
+        """
+        Deconfigure a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def start_scan(self: PstProcessApi, args: Dict[str, Any], task_callback: Callable) -> None:
-        """Start a scan.
+        """
+        Start a scan.
 
         :param args: arguments for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -140,28 +147,32 @@ class PstProcessApi:
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def stop_scan(self: PstProcessApi, task_callback: Callable) -> None:
-        """Stop a scan.
+        """
+        Stop a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def abort(self: PstProcessApi, task_callback: Callable) -> None:
-        """Abort a scan.
+        """
+        Abort a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def reset(self: PstProcessApi, task_callback: Callable) -> None:
-        """Reset the component.
+        """
+        Reset the component.
 
         :param task_callback: callable to connect back to the component manager.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def go_to_fault(self: PstProcessApi) -> None:
-        """Set remote service in a FAULT state.
+        """
+        Set remote service in a FAULT state.
 
         This doesn't take a callback as we want a synchronous call.
         """
@@ -174,7 +185,8 @@ class PstProcessApi:
         polling_rate: int = 5000,
         monitor_abort_event: Optional[threading.Event] = None,
     ) -> None:
-        """Monitor data of remote service.
+        """
+        Monitor data of remote service.
 
         This needs to be implemented as a background task
 
@@ -193,7 +205,8 @@ class PstProcessApi:
         raise NotImplementedError("PstProcessApi is abstract class")
 
     def set_log_level(self: PstProcessApi, log_level: LoggingLevel) -> None:
-        """Set the LogLevel of the service.
+        """
+        Set the LogLevel of the service.
 
         :param log_level: The required Tango LoggingLevel
         :returns: None.
@@ -249,7 +262,8 @@ class PstProcessApiSimulator(PstProcessApi):
     def _simulated_monitor_data_generator(
         self: PstProcessApiSimulator, polling_rate: int
     ) -> Generator[Dict[int, Any], None, None]:
-        """Create a generator of simulated monitoring data.
+        """
+        Create a generator of simulated monitoring data.
 
         This is an abstract method.  Subclasses need to implement this.
 
@@ -258,7 +272,8 @@ class PstProcessApiSimulator(PstProcessApi):
         raise NotImplementedError("PstProcessApiSimulator is abstract class")
 
     def go_to_fault(self: PstProcessApiSimulator) -> None:
-        """Set simulator into a FAULT state.
+        """
+        Set simulator into a FAULT state.
 
         If simulator is scanning then stop scanning.
         """
@@ -276,7 +291,8 @@ class PstProcessApiSimulator(PstProcessApi):
         polling_rate: int = 5000,
         monitor_abort_event: Optional[threading.Event] = None,
     ) -> None:
-        """Monitor data of remote service.
+        """
+        Monitor data of remote service.
 
         This needs to be implemented as a background task
 
@@ -319,7 +335,8 @@ class PstProcessApiSimulator(PstProcessApi):
         self._monitor_abort_event.set()
 
     def set_log_level(self: PstProcessApiSimulator, log_level: LoggingLevel) -> None:
-        """Set simulator LoggingLevel of the PST.LMC processes like RECV, SMRB, etc.
+        """
+        Set simulator LoggingLevel of the PST.LMC processes like RECV, SMRB, etc.
 
         :param log_level: The required Tango LoggingLevel
         :returns: None.
@@ -349,7 +366,8 @@ class PstProcessApiGrpc(PstProcessApi):
         component_state_callback: Callable,
         background_task_processor: Optional[BackgroundTaskProcessor] = None,
     ) -> None:
-        """Initialise the API.
+        """
+        Initialise the API.
 
         :param client_id: the identification of the client, this should be based
             off the FQDN of the MGMT device.
@@ -377,7 +395,8 @@ class PstProcessApiGrpc(PstProcessApi):
         super().__init__(logger=logger, component_state_callback=component_state_callback)
 
     def connect(self: PstProcessApiGrpc) -> None:
-        """Connect to the external process.
+        """
+        Connect to the external process.
 
         Connects to the remote gRPC service. It also establishes a
         """
@@ -385,7 +404,8 @@ class PstProcessApiGrpc(PstProcessApi):
         self._connected = self._grpc_client.connect()
 
     def disconnect(self: PstProcessApiGrpc) -> None:
-        """Disconnect from the external process.
+        """
+        Disconnect from the external process.
 
         This will ensure any monitoring background task has stopped.
         """
@@ -434,7 +454,8 @@ class PstProcessApiGrpc(PstProcessApi):
     def configure_beam(
         self: PstProcessApiGrpc, configuration: Dict[str, Any], task_callback: Callable
     ) -> None:
-        """Configure the beam with the resources definted in configuration.
+        """
+        Configure the beam with the resources definted in configuration.
 
         :param configuration: Dictionary of resources to allocate.
         :param task_callback: callable to connect back to the component manager.
@@ -460,7 +481,8 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def deconfigure_beam(self: PstProcessApiGrpc, task_callback: Callable) -> None:
-        """Deconfigure the beam, releasing all resources.
+        """
+        Deconfigure the beam, releasing all resources.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -483,11 +505,12 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def validate_configure_scan(self: PstProcessApiGrpc, configuration: Dict[str, Any]) -> None:
-        """Validate a configure_scan request.
+        """
+        Validate a configure_scan request.
 
         :param configuration: the configuration of for the scan.
-        :raises ValidationError: if there an issue validating the request.
-            The error message contains the details.
+        :raises ValidationError: if there an issue validating the request. The error message contains the
+            details.
         """
         self._logger.debug(f"Validating configure_scan for '{self._client_id}': {configuration}")
         scan_configuration = self._get_configure_scan_request(configuration)
@@ -504,10 +527,11 @@ class PstProcessApiGrpc(PstProcessApi):
     def configure_scan(
         self: PstProcessApiGrpc, configuration: Dict[str, Any], task_callback: Callable
     ) -> None:
-        """Configure a scan.
+        """
+        Configure a scan.
 
-        For SMRB this is a no-op command. There is nothing on the server that would be
-        performed and executing this will do nothing.
+        For SMRB this is a no-op command. There is nothing on the server that would be performed and executing
+        this will do nothing.
 
         :param configuration: the configuration of for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -533,7 +557,8 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def deconfigure_scan(self: PstProcessApiGrpc, task_callback: Callable) -> None:
-        """Deconfigure a scan.
+        """
+        Deconfigure a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -560,7 +585,8 @@ class PstProcessApiGrpc(PstProcessApi):
         args: Dict[str, Any],
         task_callback: Callable,
     ) -> None:
-        """Start scanning.
+        """
+        Start scanning.
 
         :param args: arguments for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -582,11 +608,11 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def stop_scan(self: PstProcessApiGrpc, task_callback: Callable) -> None:
-        """End a scan.
+        """
+        End a scan.
 
-        This will call out to the remote service to end a scan.  It will also
-        stop monitoring as monitoring is only valid if the service is in a
-        scan.
+        This will call out to the remote service to end a scan.  It will also stop monitoring as monitoring is
+        only valid if the service is in a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -607,7 +633,8 @@ class PstProcessApiGrpc(PstProcessApi):
 
     @background_task
     def abort(self: PstProcessApiGrpc, task_callback: Callable) -> None:
-        """Abort a scan.
+        """
+        Abort a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -625,7 +652,8 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def reset(self: PstProcessApiGrpc, task_callback: Callable) -> None:
-        """Reset service.
+        """
+        Reset service.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -641,10 +669,10 @@ class PstProcessApiGrpc(PstProcessApi):
             task_callback(status=TaskStatus.FAILED, result=e.message, exception=e)
 
     def go_to_fault(self: PstProcessApiGrpc) -> None:
-        """Put remote service into FAULT state.
+        """
+        Put remote service into FAULT state.
 
-        This is used to put the remote service into a FAULT state to match
-        the status of the LMC component.
+        This is used to put the remote service into a FAULT state to match the status of the LMC component.
         """
         try:
             self._component_state_callback(obsfault=True)
@@ -659,7 +687,8 @@ class PstProcessApiGrpc(PstProcessApi):
         return self._grpc_client.get_env()
 
     def set_log_level(self: PstProcessApiGrpc, log_level: LoggingLevel) -> None:
-        """Set the LogLevel of the remote gRPC service.
+        """
+        Set the LogLevel of the remote gRPC service.
 
         :param log_level: The required Tango LoggingLevel.
         :returns: None.
@@ -701,7 +730,8 @@ class PstProcessApiGrpc(PstProcessApi):
         polling_rate: int = 5000,
         monitor_abort_event: Optional[threading.Event] = None,
     ) -> None:
-        """Monitor data of remote service.
+        """
+        Monitor data of remote service.
 
         :param subband_monitor_data_callback: callback to use when there is an
             update of the sub-band monitor data.

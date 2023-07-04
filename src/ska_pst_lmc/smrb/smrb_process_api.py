@@ -4,8 +4,8 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
-"""Module for providing the API to be communicate with the SMRB process.
+"""
+Module for providing the API to be communicate with the SMRB process.
 
 The :py:class:`PstSmrbProcessApiSimulator` is used in testing or
 simulation.)
@@ -39,7 +39,8 @@ __all__ = [
 
 
 class PstSmrbProcessApi(PstProcessApi):
-    """Abstract class for the API of the SMRB process.
+    """
+    Abstract class for the API of the SMRB process.
 
     This extends from :py:class:`PstProcessApi` but
     provides the specific method of getting the monitoring
@@ -56,11 +57,12 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         component_state_callback: Callable,
         simulator: Optional[PstSmrbSimulator] = None,
     ) -> None:
-        """Initialise the API.
+        """
+        Initialise the API.
 
         :param logger: the logger to use for the API.
-        :param component_state_callback: this allows the API to call back to the
-            component manager / TANGO device to deal with state model changes.
+        :param component_state_callback: this allows the API to call back to the component manager / TANGO
+            device to deal with state model changes.
         :param simulator: the simulator instance to use in the API.
         """
         self._simulator = simulator or PstSmrbSimulator()
@@ -72,7 +74,8 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
     def configure_beam(
         self: PstSmrbProcessApiSimulator, configuration: dict, task_callback: Callable
     ) -> None:
-        """Configure beam resources.
+        """
+        Configure beam resources.
 
         :param configuration: dictionary of parameters to be configured and their requested values.
         :param task_callback: callable to connect back to the component manager.
@@ -86,7 +89,8 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def deconfigure_beam(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
-        """Deconfigure the beam.
+        """
+        Deconfigure the beam.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -100,7 +104,8 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
     def configure_scan(
         self: PstSmrbProcessApiSimulator, configuration: dict, task_callback: Callable
     ) -> None:
-        """Configure a scan.
+        """
+        Configure a scan.
 
         :param configuration: the configuration of for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -116,7 +121,8 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def deconfigure_scan(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
-        """Deconfigure a scan.
+        """
+        Deconfigure a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -133,7 +139,8 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def start_scan(self: PstSmrbProcessApiSimulator, args: dict, task_callback: Callable) -> None:
-        """Start scanning.
+        """
+        Start scanning.
 
         :param args: arguments for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -148,7 +155,8 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def stop_scan(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
-        """End a scan.
+        """
+        End a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -164,7 +172,8 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def abort(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
-        """Abort a scan.
+        """
+        Abort a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -178,7 +187,8 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def reset(self: PstSmrbProcessApiSimulator, task_callback: Callable) -> None:
-        """Reset service when in ABORTED / FAULT state.
+        """
+        Reset service when in ABORTED / FAULT state.
 
         :param task_callback: callable to connect back to the component manager.
         """

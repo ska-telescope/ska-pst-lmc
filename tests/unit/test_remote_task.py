@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module contains the pytest tests for the remote tasks."""
 
 import time
@@ -21,7 +20,8 @@ from ska_pst_lmc.util.remote_task import AggregateRemoteTask, RemoteTask
 
 @pytest.fixture
 def device_proxy() -> PstDeviceProxy:
-    """Generate a device proxy fixture.
+    """
+    Generate a device proxy fixture.
 
     This is a MagicMock class.
     """
@@ -44,10 +44,11 @@ def test_calling_task_action(
     state: TaskStatus,
     progress: Optional[int],
 ) -> None:
-    """Test calling the task action.
+    """
+    Test calling the task action.
 
-    Checks to see that the return state is mapped correctly
-    based on the result code of calling the action on the device.
+    Checks to see that the return state is mapped correctly based on the result code of calling the action on
+    the device.
 
     :param device_proxy: the device under test.
     :param result_code: the result code of calling the device action.
@@ -92,11 +93,11 @@ def test_status_change_subscription(
     status_values: List[str],
     callback_called: bool,
 ) -> None:
-    """Test status change event subscription.
+    """
+    Test status change event subscription.
 
-    Checks to see if the status change happens via event subscription.
-    Only changes for the current command will cause an update. If the
-    command id not in the response this currently will ignore the result.
+    Checks to see if the status change happens via event subscription. Only changes for the current command
+    will cause an update. If the command id not in the response this currently will ignore the result.
 
     :param device_proxy: the device under test.
     :param command_id: the command id for long running command.
@@ -147,11 +148,11 @@ def test_progress_change_subscription(
     progress_values: List[str],
     callback_called: bool,
 ) -> None:
-    """Test progress change event subscription.
+    """
+    Test progress change event subscription.
 
-    Checks to see if the progress change happens via event subscription.
-    Only changes for the current command will cause an update. If the
-    command id not in the response this currently will ignore the result.
+    Checks to see if the progress change happens via event subscription. Only changes for the current command
+    will cause an update. If the command id not in the response this currently will ignore the result.
 
     :param device_proxy: the device under test.
     :param command_id: the command id for long running command.
@@ -204,10 +205,10 @@ def test_aggregate_remote_task_updated(
     status: TaskStatus,
     progress: int,
 ) -> None:
-    """Test AggregateRemoteTask calls the callback when remote tasks are updated.
+    """
+    Test AggregateRemoteTask calls the callback when remote tasks are updated.
 
-    This checks the the calculated progress and status is a combination of the
-    individual tasks.
+    This checks the the calculated progress and status is a combination of the individual tasks.
 
     :param device_proxy: the device under test.
     :param task_1_status: status of first task.
