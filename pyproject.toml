@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ska-pst-lmc"
-version = "0.6.0"
+version = "0.6.1"
 description = "PST-LMC Tango device package"
 authors = ["Team PST"]
 license = "BSD-3-Clause"
