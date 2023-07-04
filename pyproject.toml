@@ -55,11 +55,17 @@ protobuf-init = "^0.1.0"
 ipython = "^8.4.0"
 gitchangelog = "^3.0.4"
 ska-tango-testing = "^0.4.1"
+
+[tool.poetry.group.docs.dependencies]
 sphinx = "5.1.1"
 sphinx-rtd-theme = "1.0.0"
-recommonmark = "0.7.1"
-markupsafe = "<2.1.0"
 sphinxcontrib-plantuml = "0.25"
+sphinx-autodoc-typehints = "1.19.1"
+docutils = "<0.18"
+transitions = "^0.9.0"
+typing-extensions = "^4.7.0"
+recommonmark = "^0.7.1"
+markupsafe = "<2.1.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
