@@ -17,13 +17,13 @@ from typing import Any, Dict, Type, cast
 import numpy as np
 import pytest
 import tango
+from ska_pst_testutils.tango import TangoDeviceCommandChecker
 from ska_tango_base.commands import ResultCode, TaskStatus
 from ska_tango_base.control_model import AdminMode, HealthState, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
 
 from ska_pst_lmc.dsp.dsp_component_manager import PstDspComponentManager, PstDspProcessApiSimulator
 from ska_pst_lmc.dsp.dsp_device import PstDsp
-from tests.conftest import TangoDeviceCommandChecker
 
 
 @pytest.fixture

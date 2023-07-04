@@ -16,13 +16,13 @@ from typing import Any, Dict, List, Optional
 
 import backoff
 import pytest
+from ska_pst_testutils.tango import TangoChangeEventHelper, TangoDeviceCommandChecker
 from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DevState
 
 from ska_pst_lmc import DeviceProxyFactory
-from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker
 
 
 @pytest.fixture

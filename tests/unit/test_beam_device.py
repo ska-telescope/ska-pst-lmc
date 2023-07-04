@@ -16,6 +16,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import backoff
 import pytest
+from ska_pst_testutils.tango import TangoChangeEventHelper, TangoDeviceCommandChecker
 from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import AdminMode, HealthState, LoggingLevel, ObsState
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
@@ -23,7 +24,7 @@ from tango import DeviceProxy, DevState
 from tango.test_context import MultiDeviceTestContext
 
 from ska_pst_lmc import PstBeam, PstDsp, PstReceive, PstSmrb
-from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker, _AttributeEventValidator
+from tests.conftest import _AttributeEventValidator
 
 
 @pytest.fixture

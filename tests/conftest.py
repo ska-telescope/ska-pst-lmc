@@ -24,8 +24,8 @@ import pytest
 import tango
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import StartScanRequest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2_grpc import PstLmcServiceServicer, add_PstLmcServiceServicer_to_server
-from ska_tango_base.commands import ResultCode
-from ska_tango_base.control_model import CommunicationStatus, ObsState, SimulationMode
+from ska_pst_testutils.tango import TangoChangeEventHelper, TangoDeviceCommandChecker
+from ska_tango_base.control_model import CommunicationStatus, SimulationMode
 from ska_tango_base.executor import TaskStatus
 from ska_tango_testing.mock import MockCallable
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
@@ -39,7 +39,6 @@ from ska_pst_lmc.test.test_grpc_server import TestMockServicer, TestPstLmcServic
 from ska_pst_lmc.util import TelescopeFacilityEnum
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
 from ska_pst_lmc.util.callback import Callback
-from tests.utils import LongRunningCommandTracker
 
 
 class _ThreadingCallback:
@@ -587,52 +586,6 @@ def change_event_callbacks(
     return change_event_callbacks_factory()
 
 
-class TangoChangeEventHelper:
-    """Internal testing class used for handling change events."""
-
-    def __init__(
-        self: TangoChangeEventHelper,
-        device_under_test: DeviceProxy,
-        change_event_callbacks: MockTangoEventCallbackGroup,
-        logger: logging.Logger,
-    ) -> None:
-        """Initialise change event helper."""
-        self.device_under_test = device_under_test
-        self.change_event_callbacks = change_event_callbacks
-        self.subscriptions: Dict[str, int] = {}
-        self.logger = logger
-
-    def __del__(self: TangoChangeEventHelper) -> None:
-        """Free resources held."""
-        self.release()
-
-    def subscribe(self: TangoChangeEventHelper, attribute_name: str) -> None:
-        """Subscribe to change events of an attribute.
-
-        This returns a :py:class:`MockChangeEventCallback` that can
-        then be used to verify changes.
-        """
-
-        def _handle_evt(*args: Any, **kwargs: Any) -> None:
-            self.logger.debug(f"Event recevied with: args={args}, kwargs={kwargs}")
-            self.change_event_callbacks[attribute_name](*args, **kwargs)
-
-        subscription_id = self.device_under_test.subscribe_event(
-            attribute_name,
-            tango.EventType.CHANGE_EVENT,
-            _handle_evt,
-        )
-        self.logger.debug(f"Subscribed to events of '{attribute_name}'. subscription_id = {subscription_id}")
-        self.subscriptions[attribute_name] = subscription_id
-
-    def release(self: TangoChangeEventHelper) -> None:
-        """Release any subscriptions that are held."""
-        for (name, subscription_id) in self.subscriptions.items():
-            self.logger.debug(f"Unsubscribing to '{name}' with subscription_id = {subscription_id}")
-            self.device_under_test.unsubscribe_event(subscription_id)
-        self.subscriptions.clear()
-
-
 @pytest.fixture()
 def tango_change_event_helper(
     device_under_test: DeviceProxy,
@@ -652,104 +605,6 @@ def tango_change_event_helper(
         change_event_callbacks=change_event_callbacks,
         logger=logger,
     )
-
-
-class TangoDeviceCommandChecker:
-    """A convinence class used to help check a Tango Device command.
-
-    This class can be used to check that a command executed on a
-    :py:class:`DeviceProxy` fires the correct change events
-    for task status, the completion state, and any changes through
-    the :py:class:`ObsState`.
-    """
-
-    def __init__(
-        self: TangoDeviceCommandChecker,
-        tango_change_event_helper: TangoChangeEventHelper,
-        change_event_callbacks: MockTangoEventCallbackGroup,
-        logger: logging.Logger,
-    ) -> None:
-        """Initialise command checker."""
-        self._device = device = tango_change_event_helper.device_under_test
-        self._lrc_tracker = LongRunningCommandTracker(
-            device=device,
-            logger=logger,
-        )
-
-        def _subscribe(property: str) -> None:
-            value = getattr(device, property)
-            tango_change_event_helper.subscribe(property)
-            try:
-                # ignore the first event. This should be able to clear out the events
-                change_event_callbacks[property].assert_change_event(value)
-            except Exception:
-                logger.warning(f"Asserting {device}.{property} to be {value} failed.", exc_info=True)
-
-        _subscribe("longRunningCommandProgress")
-        _subscribe("longRunningCommandResult")
-        _subscribe("obsState")
-        _subscribe("healthState")
-
-        self.change_event_callbacks = change_event_callbacks
-        self._logger = logger
-        self._tango_change_event_helper = tango_change_event_helper
-        self._command_states: Dict[str, str] = {}
-
-    def assert_command(  # noqa: C901 - override checking of complexity for this test
-        self: TangoDeviceCommandChecker,
-        command: Callable,
-        expected_result_code: ResultCode = ResultCode.QUEUED,
-        expected_command_result: Optional[str] = '"Completed"',
-        expected_command_status_events: List[TaskStatus] = [
-            TaskStatus.QUEUED,
-            TaskStatus.IN_PROGRESS,
-            TaskStatus.COMPLETED,
-        ],
-        expected_obs_state_events: List[ObsState] = [],
-        timeout: float = 5.0,
-    ) -> None:
-        """Assert that the command has the correct result and events.
-
-        This method has sensible defaults of the expected result code,
-        the overall result, and the status events that the command
-        goes through, and by default asserts that the ObsState model
-        doesn't change.
-
-        :param command: a callable on the device proxy.
-        :param expected_result_code: the expected result code returned
-            from the call. The default is ResultCode.QUEUED.
-        :param expected_command_result: the expected command result
-            when the command completes. The default is "Completed".
-        :param expected_command_status_events: a list of expected
-            status events of the command, these should be in the
-            order the events happen. Default expected events are:
-            [TaskStatus.QUEUED, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED]
-        :param expected_obs_state_events: the expected events of the ObsState
-            model. The default is an empty list, meaning no events expected.
-        """
-        current_obs_state = self._device.obsState
-
-        [[result], [command_id]] = command()
-        assert result == expected_result_code
-
-        if len(expected_command_status_events) > 0:
-            self._lrc_tracker.wait_for_command_to_complete(command_id=command_id, timeout=timeout)
-            self._lrc_tracker.assert_command_status_events(
-                command_id=command_id, expected_command_status_events=expected_command_status_events
-            )
-
-        if expected_command_result is not None:
-            self.change_event_callbacks["longRunningCommandResult"].assert_change_event(
-                (command_id, expected_command_result),
-            )
-
-        if expected_obs_state_events and [current_obs_state] != expected_obs_state_events:
-            for expected_obs_state in expected_obs_state_events:
-                self._logger.debug(f"Checking next obsState event is {expected_obs_state.name}")
-                self.change_event_callbacks["obsState"].assert_change_event(expected_obs_state.value)
-        else:
-            self._logger.debug("Checking obsState does not change.")
-            self.change_event_callbacks["obsState"].assert_not_called()
 
 
 @pytest.fixture
