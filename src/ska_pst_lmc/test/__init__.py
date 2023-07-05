@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE.txt for more info.
-
 """This subpackage with test TANGO device as client."""
 
 __all__ = [

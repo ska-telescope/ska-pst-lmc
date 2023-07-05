@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This is used to wrap an iterator with a timeout."""
 
 from __future__ import annotations
@@ -21,11 +20,11 @@ NO_TIMEOUT = 0.0
 
 
 class TimeoutIterator(Iterable[T]):
-    """An iterator that can timeout.
+    """
+    An iterator that can timeout.
 
-    The implementation of this uses a background thread to get the items
-    and put them on a queue, while the next functionality of this will
-    block
+    The implementation of this uses a background thread to get the items and put them on a queue, while the
+    next functionality of this will block
     """
 
     def __init__(
@@ -49,7 +48,8 @@ class TimeoutIterator(Iterable[T]):
         self._thread.start()
 
     def __del__(self: TimeoutIterator) -> None:
-        """Tear down iterator.
+        """
+        Tear down iterator.
 
         This makes sure that the background thread is notified to abort.
         """

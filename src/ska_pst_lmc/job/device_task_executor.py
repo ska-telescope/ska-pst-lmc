@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for handling long running device proxy tasks."""
 
 from __future__ import annotations
@@ -24,7 +23,8 @@ _logger = logging.getLogger(__name__)
 
 
 class DeviceCommandTaskExecutor:
-    """Class to handle executing and tracking commands on device proxies.
+    """
+    Class to handle executing and tracking commands on device proxies.
 
     This class uses a queue to receive task commands, while a background
     thread receives these messages and then executes the commands.
@@ -49,7 +49,8 @@ class DeviceCommandTaskExecutor:
         task_queue: queue.Queue,
         logger: Optional[logging.Logger],
     ) -> None:
-        """Initialise the executor.
+        """
+        Initialise the executor.
 
         :param task_queue: the queue used to submit tasks to,
             This should be shared by the `TaskExecutor` which is the producer
@@ -104,7 +105,8 @@ class DeviceCommandTaskExecutor:
             )
 
     def _process_queue(self: DeviceCommandTaskExecutor) -> None:
-        """Process messages off task queue.
+        """
+        Process messages off task queue.
 
         This method uses an infinite loop to read messages off the
         task queue. Once a message is received it will call the
@@ -123,7 +125,8 @@ class DeviceCommandTaskExecutor:
                 continue
 
     def _handle_task(self: DeviceCommandTaskExecutor, task_context: DeviceCommandTaskContext) -> None:
-        """Handle task request that has been received.
+        """
+        Handle task request that has been received.
 
         This will ensure that the device has a subscription to the `longRunningCommandResult`
         property on the device. After that it will execute the action and recording the `command_id`
@@ -175,7 +178,8 @@ class DeviceCommandTaskExecutor:
                 task_context.signal_failed(e)
 
     def _handle_subscription_event(self: DeviceCommandTaskExecutor, event: Tuple[str, str]) -> None:
-        """Handle a subscription event.
+        """
+        Handle a subscription event.
 
         For the `longRunningCommandResult` this returns a tuple of `(command_id, msg)`. The `command_id`
         is used by this method to see if there is a task that needs to be notified that it has completed.

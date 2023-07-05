@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for handling long running jobs."""
 
 from __future__ import annotations
@@ -34,7 +33,8 @@ _logger = logging.getLogger(__name__)
 
 
 class TaskExecutor:
-    """An executor class that handles requests for tasks.
+    """
+    An executor class that handles requests for tasks.
 
     Jobs are submitted to instances of this class via the :py:meth:`submit_job`
     method or to the global instance of this task executor `GLOBAL_JOB_EXECUTOR`
@@ -53,7 +53,8 @@ class TaskExecutor:
         max_parallel_workers: int = 4,
         logger: Optional[logging.Logger] = None,
     ) -> None:
-        """Initialise task executor.
+        """
+        Initialise task executor.
 
         :param job_queue: queue used for main processing of jobs, defaults to None
         :type job_queue: queue.Queue, optional
@@ -131,7 +132,8 @@ class TaskExecutor:
         self._device_task_executor.stop()
 
     def submit_job(self: TaskExecutor, job: Task, callback: Callback = None) -> None:
-        """Submit a job to be executed.
+        """
+        Submit a job to be executed.
 
         This is the main method that clients should use to submit jobs to be
         executed. This will wrap into a `TaskContext` and put it on the main
@@ -146,7 +148,8 @@ class TaskExecutor:
         self._submit_job(JobContext(task=job, success_callback=callback))
 
     def _submit_job(self: TaskExecutor, task_context: JobContext) -> None:
-        """Submit a root task context to the main execution queue.
+        """
+        Submit a root task context to the main execution queue.
 
         :param task_context: the job context object to submit.
         :type task_context: JobContext
@@ -163,10 +166,11 @@ class TaskExecutor:
             callback_safely(task_context.success_callback, result=task_context.result)
 
     def _process_main_queue(self: TaskExecutor) -> None:
-        """Process messages on the main queue.
+        """
+        Process messages on the main queue.
 
-        This method is perfomed in the background by a thread. It will run in
-        and infinite loop until the instance of this class is destroyed.
+        This method is perfomed in the background by a thread. It will run in and infinite loop until the
+        instance of this class is destroyed.
         """
         try:
             while not self._stop.is_set():
@@ -180,10 +184,11 @@ class TaskExecutor:
             self._logger.exception("Error processing main queue", exc_info=True)
 
     def _process_sequential_queue(self: TaskExecutor) -> None:
-        """Process messages on the sequential queue.
+        """
+        Process messages on the sequential queue.
 
-        This method is perfomed in the background by a thread. It will run in
-        and infinite loop until the instance of this class is destroyed.
+        This method is perfomed in the background by a thread. It will run in and infinite loop until the
+        instance of this class is destroyed.
         """
         try:
             while not self._stop.is_set():
@@ -202,10 +207,11 @@ class TaskExecutor:
             self._logger.exception("Error processing sequential queue", exc_info=True)
 
     def _process_parallel_queue(self: TaskExecutor) -> None:
-        """Process messages on the parallel task queue.
+        """
+        Process messages on the parallel task queue.
 
-        This method is perfomed in the background by a thread. It will run in
-        and infinite loop until the instance of this class is destroyed.
+        This method is perfomed in the background by a thread. It will run in and infinite loop until the
+        instance of this class is destroyed.
 
         The threads running this are different to the main queue thread.
         """
@@ -221,7 +227,8 @@ class TaskExecutor:
             self._logger.exception("Error during processing parallel queue", exc_info=True)
 
     def _handle_sequential_task(self: TaskExecutor, task_context: TaskContext) -> None:
-        """Handle a sequential task request.
+        """
+        Handle a sequential task request.
 
         The `task_context` passed to this method has a `task` of type `SequentialTask`. This
         will process the sequential task by submitting each of the individual subtasks
@@ -264,7 +271,8 @@ class TaskExecutor:
             task_context.signal_complete()
 
     def _handle_parallel_task(self: TaskExecutor, task_context: TaskContext) -> None:
-        """Handle a parallel task.
+        """
+        Handle a parallel task.
 
         This method will process a `ParallelTask` by submitting each individual subtasks on to
         the internal parallel task queue. The overall task is not considered complete until all
@@ -315,7 +323,8 @@ class TaskExecutor:
             task_context.signal_complete()
 
     def _handle_parallel_subtask(self: TaskExecutor, task_context: TaskContext) -> None:
-        """Handle a parallel subtask.
+        """
+        Handle a parallel subtask.
 
         This converts the `task_context` into a `TaskContext` and calls the :py:meth:`_handle_task`
         method to be processed, this doesn't happen on the main thread so it won't block.
@@ -363,7 +372,8 @@ class TaskExecutor:
                 parent_task_context.signal_complete()
 
     def _handle_device_command_task(self: TaskExecutor, task_context: TaskContext) -> None:
-        """Handle a device command task.
+        """
+        Handle a device command task.
 
         This method handles a `DeviceCommandTask`, if there is just one device this sent to a
         :py:class:`DeviceCommandTaskExecutor` via a queue. If ther are multiple devices this is
@@ -418,7 +428,8 @@ class TaskExecutor:
             task_context.signal_complete(result=child_task_context.result)
 
     def _handle_noop_task(self: TaskExecutor, task_context: TaskContext) -> None:
-        """Handle a no-op task.
+        """
+        Handle a no-op task.
 
         This just calls the signal complete on the task context.
         """
@@ -426,7 +437,8 @@ class TaskExecutor:
         task_context.signal_complete()
 
     def _handle_lambda_task(self: TaskExecutor, task_context: TaskContext) -> None:
-        """Handle a LambdaTask.
+        """
+        Handle a LambdaTask.
 
         This just calls the action on the task. If successfull it will signal the
         task context as complete.  Errors are allowed to return as this will be
@@ -438,10 +450,11 @@ class TaskExecutor:
         task_context.signal_complete()
 
     def _route_task(self: TaskExecutor, task_context: TaskContext) -> None:
-        """Route a task to correct handler method.
+        """
+        Route a task to correct handler method.
 
-        This is an internal method that is used by the background threads to
-        route the tasks to the correct handler method.
+        This is an internal method that is used by the background threads to route the tasks to the correct
+        handler method.
 
         :param task_context: the context of the task to run.
         :type task_context: TaskContext

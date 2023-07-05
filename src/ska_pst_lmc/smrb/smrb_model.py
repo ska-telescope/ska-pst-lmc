@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for providing common model classes within the SMRB.MGMT component."""
 
 from __future__ import annotations
@@ -17,7 +16,8 @@ from ska_pst_lmc.component import MonitorDataStore
 
 @dataclass
 class SmrbMonitorData:
-    """A data class for transfer current SMRB data between the process and the component manager.
+    """
+    A data class for transfer current SMRB data between the process and the component manager.
 
     :ivar ring_buffer_utilisation: current utilisation of the overall ring buffer.
     :vartype ring_buffer_utilisation: float
@@ -52,7 +52,8 @@ class SmrbMonitorData:
 
 @dataclass
 class SmrbSubbandMonitorData:
-    """A data class used for a specific SMRB subband.
+    """
+    A data class used for a specific SMRB subband.
 
     :ivar buffer_size: total size of the ring buffer, including header size.
     :vartype buffer_size: int
@@ -74,7 +75,8 @@ class SmrbSubbandMonitorData:
 
     @property
     def utilisation(self: SmrbSubbandMonitorData) -> float:
-        """Return the current utilisation of the subband ring buffer.
+        """
+        Return the current utilisation of the subband ring buffer.
 
         This is full/num_of_buffers as a percentage.
         """
@@ -82,10 +84,11 @@ class SmrbSubbandMonitorData:
 
     @property
     def utilised_bytes(self: SmrbSubbandMonitorData) -> float:
-        """Return the number of utilised bytes.
+        """
+        Return the number of utilised bytes.
 
-        This is utiltisation (as float not percentage) * buffer_size.
-        Which is equivalent to full/num_of_buffers * buffer_size.
+        This is utiltisation (as float not percentage) * buffer_size. Which is equivalent to
+        full/num_of_buffers * buffer_size.
         """
         return self.full / self.num_of_buffers * self.buffer_size
 
@@ -95,7 +98,8 @@ class SmrbMonitorDataStore(MonitorDataStore[SmrbSubbandMonitorData, SmrbMonitorD
 
     @property
     def monitor_data(self: SmrbMonitorDataStore) -> SmrbMonitorData:
-        """Calculate the aggregate SMRB monitor data.
+        """
+        Calculate the aggregate SMRB monitor data.
 
         This step includes rolling up each of the individual sub-band data
         items to be able to calculate the overall utilisation

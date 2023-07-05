@@ -4,12 +4,11 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
+"""
+This module provides configuration for the different frequency bands.
 
-"""This module provides configuration for the different frequency bands.
-
-The configuration in here is used by the SMRB and RECV utils to ensure
-that the ring buffers as set up correctly and that the header record
-by RECV.CORE will have the correct udp_format.
+The configuration in here is used by the SMRB and RECV utils to ensure that the ring buffers as set up
+correctly and that the header record by RECV.CORE will have the correct udp_format.
 """
 
 __all__ = ["get_frequency_band_config"]
@@ -70,7 +69,8 @@ MID_BAND_CONFIG = {
 
 
 def get_frequency_band_config(frequency_band: Optional[str] = None, **kwargs: Any) -> Dict[str, Any]:
-    """Get the configuration specific for a frequency band.
+    """
+    Get the configuration specific for a frequency band.
 
     This will return the configuration that is specific to a frequency band.
     The standard for SKA is that if the frequency_band is only set or is "low"

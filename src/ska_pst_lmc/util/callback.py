@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module provides types and handlers for callbacks."""
 
 from typing import Any, Callable, Optional
@@ -17,7 +16,8 @@ Callback = Optional[Callable[..., Any]]
 
 
 def wrap_callback(callback: Callback) -> Callable[..., Any]:
-    """Wrap call back that can take args.
+    """
+    Wrap call back that can take args.
 
     This method converts an optional callback back to
     a callable by returning a partial function that
@@ -33,7 +33,8 @@ def wrap_callback(callback: Callback) -> Callable[..., Any]:
 
 
 def callback_safely(callback: Callback, *args: Any, **kwargs: Any) -> Any:
-    """Call callback safely.
+    """
+    Call callback safely.
 
     As a callback could be None this method ensures that it is only called
     when it is not None.  This removes the need for all the code littered with.
@@ -48,7 +49,6 @@ def callback_safely(callback: Callback, *args: Any, **kwargs: Any) -> Any:
     .. code-block:: python
 
         callback_safely(callback, *args, **kwargs)
-
     """
     if callback is not None:
         return callback(*args, **kwargs)

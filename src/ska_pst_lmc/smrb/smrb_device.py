@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for providing the SMRB capability for the Pulsar Timing Sub-element."""
 
 from __future__ import annotations
@@ -27,10 +26,10 @@ __all__ = ["PstSmrb", "main"]
 
 
 class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager, SmrbMonitorData]):
-    """A software TANGO device for managing the SMRB component of the PST.LMC subsystem.
+    """
+    A software TANGO device for managing the SMRB component of the PST.LMC subsystem.
 
-    This TANGO device is used to manage the Shared Memory Ring Buffer (SMRB) for the
-    PST.LMC subsystem.
+    This TANGO device is used to manage the Shared Memory Ring Buffer (SMRB) for the PST.LMC subsystem.
     """
 
     # -----------------
@@ -43,7 +42,8 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager, SmrbMonitorData]):
     # ---------------
 
     def init_device(self: PstSmrb) -> None:
-        """Initialise the attributes and properties of the PstSmrb.
+        """
+        Initialise the attributes and properties of the PstSmrb.
 
         This overrides the :py:class:`CspSubElementSubarray`.
         """
@@ -75,15 +75,16 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager, SmrbMonitorData]):
         """Execute call before any TANGO command is executed."""
 
     def delete_device(self: PstSmrb) -> None:
-        """Delete resources allocated in init_device.
+        """
+        Delete resources allocated in init_device.
 
-        This method allows for any memory or other resources allocated in the
-        init_device method to be released.  This method is called by the device
-        destructor and by the device Init command.
+        This method allows for any memory or other resources allocated in the init_device method to be
+        released.  This method is called by the device destructor and by the device Init command.
         """
 
     def handle_monitor_data_update(self: PstSmrb, monitor_data: SmrbMonitorData) -> None:
-        """Handle monitoring data.
+        """
+        Handle monitoring data.
 
         :param monitor_data: the latest monitoring data that has been reported.
         :type monitor_data: SmrbMonitorData
@@ -107,7 +108,8 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager, SmrbMonitorData]):
         doc="Percentage of the ring buffer elements that are full of data",
     )
     def ringBufferUtilisation(self: PstSmrb) -> float:
-        """Get the percentage of the ring buffer elements that are full of data.
+        """
+        Get the percentage of the ring buffer elements that are full of data.
 
         :returns: the percentage of the ring buffer elements that are full of data.
         :rtype: float
@@ -123,7 +125,8 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager, SmrbMonitorData]):
         doc="Capacity of ring buffer in bytes",
     )
     def ringBufferSize(self: PstSmrb) -> int:
-        """Get the capacity of the ring buffer, in bytes.
+        """
+        Get the capacity of the ring buffer, in bytes.
 
         :returns: the capacity of the ring buffer, in bytes.
         :rtype: int
@@ -139,7 +142,8 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager, SmrbMonitorData]):
         doc="Amount of data read from the ring buffer",
     )
     def ringBufferRead(self: PstSmrb) -> int:
-        """Get the amount of data read from the ring buffer, in bytes.
+        """
+        Get the amount of data read from the ring buffer, in bytes.
 
         :returns: the amount of data read from then ring buffer, in bytes.
         :rtype: int
@@ -155,7 +159,8 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager, SmrbMonitorData]):
         doc="Amount of data written to ring buffer",
     )
     def ringBufferWritten(self: PstSmrb) -> int:
-        """Get the amount of data written to the ring buffer, in bytes.
+        """
+        Get the amount of data written to the ring buffer, in bytes.
 
         :returns: the amount of data written to the ring buffer, in bytes.
         :rtype: int
@@ -167,7 +172,8 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager, SmrbMonitorData]):
         doc="Number of sub-bands",
     )
     def numberSubbands(self: PstSmrb) -> int:
-        """Get the number of sub-bands.
+        """
+        Get the number of sub-bands.
 
         :returns: the number of sub-bands.
         :rtype: int
@@ -187,7 +193,8 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager, SmrbMonitorData]):
         doc="Percentage of full ring buffer elements for each sub-band",
     )
     def subbandRingBufferUtilisations(self: PstSmrb) -> List[float]:
-        """Get the percentage of full ring buffer elements for each sub-band.
+        """
+        Get the percentage of full ring buffer elements for each sub-band.
 
         :returns: the percentage of full ring buffer elements for each sub-band.
         :rtype: List[float]
@@ -204,7 +211,8 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager, SmrbMonitorData]):
         doc="Capacity of ring buffers, in bytes, for each sub-band",
     )
     def subbandRingBufferSizes(self: PstSmrb) -> List[int]:
-        """Get the capacity of ring buffers for each sub-band.
+        """
+        Get the capacity of ring buffers for each sub-band.
 
         :returns: the capacity of ring buffers, in bytes, for each sub-band.
         :rtype: List[int]
@@ -221,7 +229,8 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager, SmrbMonitorData]):
         doc="Amount of data read, in bytes, for each sub-band",
     )
     def subbandRingBufferRead(self: PstSmrb) -> List[int]:
-        """Get the amount of data read, in bytes, for each sub-band.
+        """
+        Get the amount of data read, in bytes, for each sub-band.
 
         :returns: the amount of data read, in bytes, for each sub-band.
         :rtype: List[int]
@@ -238,7 +247,8 @@ class PstSmrb(PstBaseProcessDevice[PstSmrbComponentManager, SmrbMonitorData]):
         doc="Amount of data written, in bytes, for each sub-band",
     )
     def subbandRingBufferWritten(self: PstSmrb) -> List[int]:
-        """Get the amount of data written, in bytes, for each sub-band.
+        """
+        Get the amount of data written, in bytes, for each sub-band.
 
         :returns: the amount of data written, in bytes, for each sub-band.
         :rtype: List[int]
@@ -273,7 +283,6 @@ def main(args: Optional[list] = None, **kwargs: Any) -> int:
 
     :param args: positional arguments
     :param kwargs: named arguments
-
     :return: exit code
     :rtype: int
     """

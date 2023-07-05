@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module contains pytests for integration tests."""
 
 from __future__ import annotations
@@ -16,13 +15,13 @@ from typing import Any, Dict, List, Optional
 
 import backoff
 import pytest
+from ska_pst_testutils.tango import TangoChangeEventHelper, TangoDeviceCommandChecker
 from ska_tango_base.commands import ResultCode
 from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DevState
 
 from ska_pst_lmc import DeviceProxyFactory
-from tests.conftest import TangoChangeEventHelper, TangoDeviceCommandChecker
 
 
 @pytest.fixture

@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for providing the RECV.MGMT capability for the Pulsar Timing Sub-element."""
 
 from __future__ import annotations
@@ -43,7 +42,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
     # ---------------
 
     def init_device(self: PstReceive) -> None:
-        """Initialise the attributes and properties of the PstReceive.
+        """
+        Initialise the attributes and properties of the PstReceive.
 
         This overrides the :py:class:`SKABaseDevice`.
         """
@@ -81,15 +81,16 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         """Execute call before any TANGO command is executed."""
 
     def delete_device(self: PstReceive) -> None:
-        """Delete resources allocated in init_device.
+        """
+        Delete resources allocated in init_device.
 
-        This method allows for any memory or other resources allocated in the
-        init_device method to be released.  This method is called by the device
-        destructor and by the device Init command.
+        This method allows for any memory or other resources allocated in the init_device method to be
+        released.  This method is called by the device destructor and by the device Init command.
         """
 
     def handle_monitor_data_update(self: PstReceive, monitor_data: ReceiveData) -> None:
-        """Handle monitoring data.
+        """
+        Handle monitoring data.
 
         :param monitor_data: the latest monitoring data that has been reported.
         :type monitor_data: ReceiveData
@@ -111,7 +112,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         doc="Current data receive rate from the CBF interface",
     )
     def dataReceiveRate(self: PstReceive) -> float:
-        """Get the current data receive rate from the CBF interface.
+        """
+        Get the current data receive rate from the CBF interface.
 
         :returns: current data receive rate from the CBF interface in Gb/s.
         :rtype: float
@@ -126,7 +128,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         doc="Total number of bytes received from the CBF in the current scan",
     )
     def dataReceived(self: PstReceive) -> int:
-        """Get the total amount of data received from CBF interface for current scan.
+        """
+        Get the total amount of data received from CBF interface for current scan.
 
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
@@ -148,7 +151,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         doc="Current rate of CBF ingest data being dropped or lost by the receiving process",
     )
     def dataDropRate(self: PstReceive) -> float:
-        """Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
+        """
+        Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
 
         :returns: current rate of CBF ingest data being dropped or lost in B/s.
         :rtype: float
@@ -164,7 +168,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         doc="Total number of bytes dropped in the current scan",
     )
     def dataDropped(self: PstReceive) -> int:
-        """Get the total number of bytes dropped in the current scan.
+        """
+        Get the total number of bytes dropped in the current scan.
 
         :returns: total number of bytes dropped in the current scan.
         :rtype: int
@@ -184,7 +189,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         ),
     )
     def misorderedPackets(self: PstReceive) -> int:
-        """Get the total number of packets received out of order in the current scan.
+        """
+        Get the total number of packets received out of order in the current scan.
 
         :returns: total number of packets received out of order in the current scan.
         :rtype: int
@@ -198,7 +204,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         doc="The current rate of misordered packets.",
     )
     def misorderedPacketRate(self: PstReceive) -> float:
-        """Get the current rate of misordered packets.
+        """
+        Get the current rate of misordered packets.
 
         :returns: the current rate of misordered packets in packets/seconds.
         :rtype: float
@@ -216,7 +223,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         ),
     )
     def malformedPackets(self: PstReceive) -> int:
-        """Get the total number of packets marked as malformed for current scan.
+        """
+        Get the total number of packets marked as malformed for current scan.
 
         :returns: the total number of packets marked as malformed for current scan.
         :rtype: int
@@ -230,7 +238,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         doc="The current rate of malformed packets.",
     )
     def malformedPacketRate(self: PstReceive) -> float:
-        """Get current rate of malformed packets.
+        """
+        Get current rate of malformed packets.
 
         :return: current rate of malformed packets in packets/seconds.
         :rtype: float
@@ -248,7 +257,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         ),
     )
     def misdirectedPackets(self: PstReceive) -> int:
-        """Get the total number of packets as marked as misdirected for current scan.
+        """
+        Get the total number of packets as marked as misdirected for current scan.
 
         :returns: the total number of packets as marked as misdirected for current scan.
         :rtype: int
@@ -262,7 +272,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         doc="The current rate of misdirected packets.",
     )
     def misdirectedPacketRate(self: PstReceive) -> float:
-        """Get the current rate of misdirected packets.
+        """
+        Get the current rate of misdirected packets.
 
         :return: the current rate of misdirected packets in packets/seconds.
         :rtype: float
@@ -275,7 +286,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         doc="Total number of packets with a UDP, IP header or CRC checksum failure.",
     )
     def checksumFailurePackets(self: PstReceive) -> int:
-        """Get the total number of packets with checksum failures for current scan.
+        """
+        Get the total number of packets with checksum failures for current scan.
 
         :return: the total number of packets with checksum failures for current scan.
         :rtype: int
@@ -289,7 +301,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         doc="The current rate of packets with checkesum failures.",
     )
     def checksumFailurePacketRate(self: PstReceive) -> float:
-        """Get the current rate of packets with checkesum failures.
+        """
+        Get the current rate of packets with checkesum failures.
 
         :return: the current rate of packets with checkesum failures in packets/seconds.
         :rtype: float
@@ -305,7 +318,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         ),
     )
     def timestampSyncErrorPackets(self: PstReceive) -> int:
-        """Get the total number of packets with a timestamp sync error for current scan.
+        """
+        Get the total number of packets with a timestamp sync error for current scan.
 
         :return: the total number of packets with a timestamp sync error for current scan.
         :rtype: int
@@ -319,10 +333,10 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         doc="The current rate of packets with a timestamp sync error.",
     )
     def timestampSyncErrorPacketRate(self: PstReceive) -> float:
-        """Get the current rate of packets with a timestamp sync error.
+        """
+        Get the current rate of packets with a timestamp sync error.
 
-        :return: the current rate of packets with a timestamp sync error
-            in packets/seconds.
+        :return: the current rate of packets with a timestamp sync error in packets/seconds.
         :rtype: float
         """
         return self.component_manager.timestamp_sync_error_packet_rate
@@ -336,7 +350,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         ),
     )
     def seqNumberSyncErrorPackets(self: PstReceive) -> int:
-        """Get the total number of packets with a seq num sync error in current scan.
+        """
+        Get the total number of packets with a seq num sync error in current scan.
 
         :return: the total number of packets with a seq num sync error in current scan.
         :rtype: int
@@ -350,10 +365,10 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         doc="The current rate of packets with a sequence number sync error.",
     )
     def seqNumberSyncErrorPacketRate(self: PstReceive) -> float:
-        """Get the current rate of packets with a sequence number sync error.
+        """
+        Get the current rate of packets with a sequence number sync error.
 
-        :return: the current rate of packets with a sequence number sync error
-            in packets/seconds.
+        :return: the current rate of packets with a sequence number sync error in packets/seconds.
         :rtype: float
         """
         return self.component_manager.seq_number_sync_error_packet_rate
@@ -364,10 +379,10 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         doc="The IP address that PST RECV is listening for data.",
     )
     def dataReceiveIpAddress(self: PstReceive) -> str:
-        """Get the data receive IP address.
+        """
+        Get the data receive IP address.
 
-        It is only valid to call this method when the Tango device is turned on
-        and communicating.
+        It is only valid to call this method when the Tango device is turned on and communicating.
         """
         return self.component_manager.data_host
 
@@ -377,7 +392,8 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         doc="Current calculated subband beam configuration.",
     )
     def subbandBeamConfiguration(self: PstReceive) -> str:
-        """Get current subband beam configuration.
+        """
+        Get current subband beam configuration.
 
         Retrieves the current subband configuration that is calculated during
         the `ConfigureBeam` request. When RECV is deconfigured for beam then
@@ -418,7 +434,6 @@ def main(args: Optional[list] = None, **kwargs: Any) -> int:
 
     :param args: positional arguments
     :param kwargs: named arguments
-
     :return: exit code
     :rtype: int
     """

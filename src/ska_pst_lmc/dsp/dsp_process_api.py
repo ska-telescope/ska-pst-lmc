@@ -4,8 +4,8 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
-"""Module for providing the API to be communicate with the DSP process.
+"""
+Module for providing the API to be communicate with the DSP process.
 
 The :py:class:`PstDsprocessApiSimulator` is used in testing or
 simulation mode, while the :py:class:`PstDspProcessApiGrpc` is used
@@ -38,7 +38,8 @@ from ska_pst_lmc.component import PstProcessApi
 
 
 class PstDspProcessApi(PstProcessApi):
-    """Abstract class for the API of the DSP process.
+    """
+    Abstract class for the API of the DSP process.
 
     This extends from :py:class:`PstProcessApi` but
     provides the specific method of getting the monitoring
@@ -55,11 +56,12 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         component_state_callback: Callable,
         simulator: Optional[PstDspSimulator] = None,
     ) -> None:
-        """Initialise the API.
+        """
+        Initialise the API.
 
         :param logger: the logger to use for the API.
-        :param component_state_callback: this allows the API to call back to the
-            component manager / TANGO device to deal with state model changes.
+        :param component_state_callback: this allows the API to call back to the component manager / TANGO
+            device to deal with state model changes.
         :param simulator: the simulator instance to use in the API.
         """
         self._simulator = simulator or PstDspSimulator()
@@ -69,7 +71,8 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         super().__init__(logger=logger, component_state_callback=component_state_callback)
 
     def configure_beam(self: PstDspProcessApiSimulator, configuration: dict, task_callback: Callable) -> None:
-        """Configure the beam.
+        """
+        Configure the beam.
 
         :param configuration: dictionary of parameters to be configured and their requested values
         :param task_callback: callable to connect back to the component manager.
@@ -83,7 +86,8 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def deconfigure_beam(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
-        """Deconfigure the beam.
+        """
+        Deconfigure the beam.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -95,7 +99,8 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def configure_scan(self: PstDspProcessApiSimulator, configuration: dict, task_callback: Callable) -> None:
-        """Configure a scan.
+        """
+        Configure a scan.
 
         :param configuration: the configuration of for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -111,7 +116,8 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def deconfigure_scan(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
-        """Deconfigure a scan.
+        """
+        Deconfigure a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -128,7 +134,8 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def start_scan(self: PstDspProcessApiSimulator, args: dict, task_callback: Callable) -> None:
-        """Start a scan.
+        """
+        Start a scan.
 
         :param args: arguments for the scan.
         :param task_callback: callable to connect back to the component manager.
@@ -143,7 +150,8 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def stop_scan(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
-        """Stop a scan.
+        """
+        Stop a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -159,7 +167,8 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def abort(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
-        """Abort a scan.
+        """
+        Abort a scan.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -173,7 +182,8 @@ class PstDspProcessApiSimulator(PstProcessApiSimulator, PstDspProcessApi):
         task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
     def reset(self: PstDspProcessApiSimulator, task_callback: Callable) -> None:
-        """Reset service when in ABORTED / FAULT state.
+        """
+        Reset service when in ABORTED / FAULT state.
 
         :param task_callback: callable to connect back to the component manager.
         """

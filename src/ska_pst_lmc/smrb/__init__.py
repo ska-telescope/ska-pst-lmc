@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE.txt for more info.
-
 """This subpackage implements SMRB component for PST.LMC."""
 
 __all__ = [

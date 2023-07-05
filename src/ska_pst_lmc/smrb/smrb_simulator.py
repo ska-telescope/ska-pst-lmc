@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for providing the Simulated SMRB capability."""
 
 from __future__ import annotations
@@ -26,15 +25,14 @@ class PstSmrbSimulator:
         subband_num_of_buffers: Optional[List[int]] = None,
         subband_ring_buffer_sizes: Optional[List[int]] = None,
     ) -> None:
-        """Initialise the SMRB simulator.
+        """
+        Initialise the SMRB simulator.
 
         :param num_subbands: number of subbands, if None a random number is used.
         :type num_subbands: int
         :param subband_ring_buffer_sizes: list of sizes of subbands
         :type subband_ring_buffer_sizes: list of ints
-
-        :raises: AssertionError if length of subband sizes not the same as
-            num_subbands.
+        :raises: AssertionError if length of subband sizes not the same as num_subbands.
         """
         configuration: Dict[str, Any] = {}
         if num_subbands is not None:
@@ -53,15 +51,12 @@ class PstSmrbSimulator:
         """
         Simulate configuring a scan.
 
-        Only the "num_subbands" parameter is used by this simulator
-        and the "subband_ring_buffer_sizes" which should be a list
-        the same length as the "num_subbands"
+        Only the "num_subbands" parameter is used by this simulator and the "subband_ring_buffer_sizes" which
+        should be a list the same length as the "num_subbands"
 
         :param configuration: the configuration to be configured
         :type configuration: dict
-
-        :raises: AssertionError if length of subband sizes not the same as
-            num_subbands.
+        :raises: AssertionError if length of subband sizes not the same as num_subbands.
         """
         if "num_subbands" in configuration:
             self.num_subbands = configuration["num_subbands"]
@@ -101,7 +96,8 @@ class PstSmrbSimulator:
         self._scan = False
 
     def start_scan(self: PstSmrbSimulator, args: dict) -> None:
-        """Simulate start scanning.
+        """
+        Simulate start scanning.
 
         :param: the scan arguments.
         """

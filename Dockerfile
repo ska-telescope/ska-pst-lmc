@@ -27,6 +27,7 @@ COPY pyproject.toml poetry.lock* /app/
 # This is needed to run tests
 COPY src/ska_pst_lmc/ /app/src/ska_pst_lmc/
 COPY tests/ /app/tests/
+COPY resources/ska-pst-testutils/ /app/resources/ska-pst-testutils/
 
 RUN mkdir -p /app/tests && \
   poetry config virtualenvs.create false && \
@@ -63,6 +64,6 @@ COPY pyproject.toml poetry.lock* /app/
 COPY --from=buildenv --chown=tango:tango /app/generated/ /app/src
 
 RUN poetry config virtualenvs.create false && \
-  poetry install --without dev
+  poetry install --without dev --without docs
 
 USER tango

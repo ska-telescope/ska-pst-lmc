@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module provides the base Component Manager fror PST.LMC."""
 
 from __future__ import annotations
@@ -70,7 +69,8 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
         simulation_mode: SimulationMode = SimulationMode.TRUE,
         **kwargs: Any,
     ) -> None:
-        """Initialise instance of the component manager.
+        """
+        Initialise instance of the component manager.
 
         :param device_name: the FQDN of the current device. This
             is used within the gRPC process to identify who is
@@ -108,7 +108,8 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
 
     @property
     def beam_id(self: PstComponentManager) -> int:
-        """Return the beam id for the current component.
+        """
+        Return the beam id for the current component.
 
         This value is set during the construction of the component manager,
         and is injected from the `DeviceID` property of the TANGO device.
@@ -159,7 +160,8 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
 
     @property
     def simulation_mode(self: PstComponentManager) -> SimulationMode:
-        """Get value of simulation mode state.
+        """
+        Get value of simulation mode state.
 
         :returns: current simulation mode state.
         """
@@ -167,7 +169,8 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
 
     @simulation_mode.setter
     def simulation_mode(self: PstComponentManager, simulation_mode: SimulationMode) -> None:
-        """Set simulation mode state.
+        """
+        Set simulation mode state.
 
         :param simulation_mode: the new simulation mode value.
         :type simulation_mode: :py:class:`SimulationMode`
@@ -177,10 +180,11 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
             self._simulation_mode_changed()
 
     def _simulation_mode_changed(self: PstComponentManager) -> None:
-        """Handle change of simulation mode.
+        """
+        Handle change of simulation mode.
 
-        Default implementation of this is to do nothing. It is up to the individual devices
-        to handle what it means when the simulation mode changes.
+        Default implementation of this is to do nothing. It is up to the individual devices to handle what it
+        means when the simulation mode changes.
         """
 
     @property
@@ -212,8 +216,7 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
         """
         Turn the component off.
 
-        :param task_callback: callback to be called when the status of
-            the command changes
+        :param task_callback: callback to be called when the status of the command changes
         """
 
         def _task(
@@ -233,8 +236,7 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
         """
         Put the component into low-power standby mode.
 
-        :param task_callback: callback to be called when the status of
-            the command changes
+        :param task_callback: callback to be called when the status of the command changes
         """
 
         def _task(
@@ -254,8 +256,7 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
         """
         Turn the component on.
 
-        :param task_callback: callback to be called when the status of
-            the command changes
+        :param task_callback: callback to be called when the status of the command changes
         """
 
         def _task(
@@ -275,8 +276,7 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
         """
         Reset the component (from fault state).
 
-        :param task_callback: callback to be called when the status of
-            the command changes
+        :param task_callback: callback to be called when the status of the command changes
         """
 
         def _task(
@@ -297,10 +297,9 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
         """
         Validate configure scan request with the specific configuration of the component.
 
-        Note this is for the whole ConfigureScan request for a PST BEAM component, which
-        includes checking both the beam and scan configuration is correct. This is due to
-        the fact that clients of BEAM.MGMT only exposes a ConfigureScan request as it's
-        an Obs device.
+        Note this is for the whole ConfigureScan request for a PST BEAM component, which includes checking
+        both the beam and scan configuration is correct. This is due to the fact that clients of BEAM.MGMT
+        only exposes a ConfigureScan request as it's an Obs device.
 
         :param configuration: configuration for scan.
         :type configuration: Dict[str, Any]
@@ -323,7 +322,8 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
         raise NotImplementedError("PstComponentManager is abstract.")
 
     def deconfigure_beam(self: PstComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Deconfigure the component's beam configuration.
+        """
+        Deconfigure the component's beam configuration.
 
         This will release all the resources associated with the component, including the SMRBs.
 
@@ -346,7 +346,8 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
         raise NotImplementedError("PstComponentManager is abstract.")
 
     def deconfigure(self: PstComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Deconfigure this component for current scan configuration.
+        """
+        Deconfigure this component for current scan configuration.
 
         .. deprecated:: 0.2.2
             Use :meth:`deconfigure_scan`
@@ -357,7 +358,8 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
         return self.deconfigure_scan(task_callback=task_callback)
 
     def deconfigure_scan(self: PstComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Deconfigure this component for current scan configuration.
+        """
+        Deconfigure this component for current scan configuration.
 
         :param task_callback: callback for background processing to update device status.
         :type task_callback: Callback
@@ -365,7 +367,8 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
         raise NotImplementedError("PstComponentManager is abstract.")
 
     def scan(self: PstComponentManager, scan_id: int, task_callback: Callback = None) -> TaskResponse:
-        """Start scanning.
+        """
+        Start scanning.
 
         .. deprecated:: 0.2.2
             Use :meth:`start_scan`
@@ -381,7 +384,8 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
     def start_scan(
         self: PstComponentManager, args: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
-        """Start scanning.
+        """
+        Start scanning.
 
         :param args: scan arguments (i.e start time)
         :type args: Dict[str, Any]
@@ -391,7 +395,8 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
         raise NotImplementedError("PstComponentManager is abstract.")
 
     def end_scan(self: PstComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Stop scanning.
+        """
+        Stop scanning.
 
         .. deprecated:: 0.2.2
             Use :meth:`stop_scan`
@@ -402,7 +407,8 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
         return self.stop_scan(task_callback=task_callback)
 
     def stop_scan(self: PstComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Stop scanning.
+        """
+        Stop scanning.
 
         :param task_callback: callback for background processing to update device status.
         :type task_callback: Callback
@@ -427,16 +433,17 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
     def go_to_fault(
         self: PstComponentManager, fault_msg: str, task_callback: Callback = None
     ) -> TaskResponse:
-        """Set the component into a FAULT state.
+        """
+        Set the component into a FAULT state.
 
-        For BEAM this will make the sub-devices be put into a FAULT state. For
-        API backed component managers it is expected that the service backing that
-        API should be put into a FAULT state.
+        For BEAM this will make the sub-devices be put into a FAULT state. For API backed component managers
+        it is expected that the service backing that API should be put into a FAULT state.
         """
         raise NotImplementedError("PstComponentManager is abstract class")
 
     def set_logging_level(self: PstComponentManager, log_level: LoggingLevel) -> None:
-        """Set LoggingLevel.
+        """
+        Set LoggingLevel.
 
         :param log_level: The required Tango LoggingLevel
         :returns: None.
@@ -473,7 +480,8 @@ class PstApiComponentManager(PstComponentManager[PstApiDeviceInterface[T]], Gene
         logger: logging.Logger,
         **kwargs: Any,
     ) -> None:
-        """Initialise instance of the component manager.
+        """
+        Initialise instance of the component manager.
 
         :param device_name: the FQDN of the current device. This
             is used within the gRPC process to identify who is
@@ -543,7 +551,8 @@ class PstApiComponentManager(PstComponentManager[PstApiDeviceInterface[T]], Gene
             self.start_communicating()
 
     def _update_api(self: PstApiComponentManager) -> None:
-        """Update API used by component manager.
+        """
+        Update API used by component manager.
 
         This is called when there is a change in the simulation mode.
         """
@@ -571,7 +580,8 @@ class PstApiComponentManager(PstComponentManager[PstApiDeviceInterface[T]], Gene
         )
 
     def deconfigure_beam(self: PstApiComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Deconfigure the component's beam configuration.
+        """
+        Deconfigure the component's beam configuration.
 
         This will release all the resources associated with the component, including the SMRBs.
 
@@ -597,7 +607,8 @@ class PstApiComponentManager(PstComponentManager[PstApiDeviceInterface[T]], Gene
         )
 
     def deconfigure_scan(self: PstApiComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Deconfigure this component for current scan configuration.
+        """
+        Deconfigure this component for current scan configuration.
 
         :param task_callback: callback for background processing to update device status.
         :type task_callback: Callback
@@ -607,7 +618,8 @@ class PstApiComponentManager(PstComponentManager[PstApiDeviceInterface[T]], Gene
     def start_scan(
         self: PstApiComponentManager, args: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
-        """Start scanning.
+        """
+        Start scanning.
 
         :param args: scan arguments (i.e start time)
         :type args: Dict[str, Any]
@@ -624,21 +636,21 @@ class PstApiComponentManager(PstComponentManager[PstApiDeviceInterface[T]], Gene
         return self._submit_background_task(self._api.stop_scan, task_callback=task_callback)
 
     def abort(self: PstApiComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Abort current process.
+        """
+        Abort current process.
 
-        The only long lived process for API based devices is that of SCANNING. However,
-        if another system fails this can be used to put all the subsystems into an ABORTED
-        state.
+        The only long lived process for API based devices is that of SCANNING. However, if another system
+        fails this can be used to put all the subsystems into an ABORTED state.
         """
         self._api.abort(task_callback=wrap_callback(task_callback))
         return TaskStatus.IN_PROGRESS, "Aborting"
 
     def obsreset(self: PstApiComponentManager, task_callback: Callback = None) -> TaskResponse:
-        """Reset service.
+        """
+        Reset service.
 
-        This is used to reset a service in ABORTED or FAULT states back to an IDLE state.
-        This will deconfigure a scan if already configured but will keep the assigned
-        resources.
+        This is used to reset a service in ABORTED or FAULT states back to an IDLE state. This will
+        deconfigure a scan if already configured but will keep the assigned resources.
         """
 
         def _task_callback(*args: Any, **kwargs: Any) -> None:

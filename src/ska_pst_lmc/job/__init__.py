@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This is used for handling complex jobs used by the PST.BEAM."""
 
 __all__ = [

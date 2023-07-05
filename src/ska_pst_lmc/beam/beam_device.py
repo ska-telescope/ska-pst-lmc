@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for providing the Beam capability for the Pulsar Timing Sub-element."""
 
 from __future__ import annotations
@@ -29,7 +28,8 @@ __all__ = ["PstBeam", "main"]
 
 
 class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
-    """A logical TANGO device representing a Beam Capability for PST.LMC.
+    """
+    A logical TANGO device representing a Beam Capability for PST.LMC.
 
     **Properties:**
 
@@ -69,7 +69,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
     # ---------------
 
     def init_device(self: PstBeam) -> None:
-        """Initialise the attributes and properties of the PstBeam.
+        """
+        Initialise the attributes and properties of the PstBeam.
 
         This overrides the :py:class:`SKABaseDevice`.
         """
@@ -128,18 +129,19 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         """Execute call before any TANGO command is executed."""
 
     def delete_device(self: PstBeam) -> None:
-        """Delete resources allocated in init_device.
+        """
+        Delete resources allocated in init_device.
 
-        This method allows for any memory or other resources allocated in the
-        init_device method to be released.  This method is called by the device
-        destructor and by the device Init command.
+        This method allows for any memory or other resources allocated in the init_device method to be
+        released.  This method is called by the device destructor and by the device Init command.
         """
         # stop the task executor
         self.component_manager._pst_task_executor.stop()
         super().delete_device()
 
     def handle_attribute_value_update(self: PstBeam, attribute_name: str, value: Any) -> None:
-        """Handle update of a device attribute value.
+        """
+        Handle update of a device attribute value.
 
         :param attribute_name: the name of the attribute to update.
         :type attribute_name: str
@@ -171,7 +173,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         return self.DspFQDN
 
     def handle_subdevice_fault(self: PstBeam, device_fqdn: str, fault_msg: str) -> None:
-        """Handle a fault raised from a subordinate device.
+        """
+        Handle a fault raised from a subordinate device.
 
         :param device_fqdn: the fully-qualified domain name of the subordinate device.
         :type device_fqdn: str
@@ -186,7 +189,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
     # Commands
     # ----------
     class ConfigureScanCommand(PstBaseDevice.ConfigureScanCommand):
-        """A class for the ObsDevice ConfigureScan command.
+        """
+        A class for the ObsDevice ConfigureScan command.
 
         This overrides the `PstBaseDevice` command by ensuring that
         the JSON request sent is a valid CSP JSON request of at least
@@ -196,7 +200,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         def validate_input(
             self: PstBeam.ConfigureScanCommand, argin: str
         ) -> Tuple[Dict[str, Any], ResultCode, str]:
-            """Validate the input request string.
+            """
+            Validate the input request string.
 
             This tries to parse JSON string via the `Configuration.from_json`
             method. That method also tries to validate the CSP JSON.
@@ -238,7 +243,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Total capacity of the disk that DSP is writing to.",
     )
     def diskCapacity(self: PstBeam) -> int:
-        """Total capacity of the disk that DSP is writing to.
+        """
+        Total capacity of the disk that DSP is writing to.
 
         :returns: total capacity of the disk that DSP is writing to, in bytes.
         :rtype: int
@@ -253,7 +259,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Used space on the disk that DSP is writing to.",
     )
     def diskUsedBytes(self: PstBeam) -> int:
-        """Get used space on the disk that DSP is writing to.
+        """
+        Get used space on the disk that DSP is writing to.
 
         This is `diskCapacity - availableDiskSpace`.
 
@@ -273,7 +280,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Used space on the disk that DSP is writing to.",
     )
     def diskUsedPercentage(self: PstBeam) -> float:
-        """Get used space on the disk that DSP is writing to.
+        """
+        Get used space on the disk that DSP is writing to.
 
         This is `100.0 * (diskCapacity - availableDiskSpace)/availableDiskSpace`.
 
@@ -290,7 +298,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Available space on the disk that DSP is writing to.",
     )
     def availableDiskSpace(self: PstBeam) -> int:
-        """Available space on the disk that the PST.BEAM is writing to.
+        """
+        Available space on the disk that the PST.BEAM is writing to.
 
         :returns: available space on the disk that PST.BEAM is writing to, in bytes.
         :rtype: int
@@ -306,7 +315,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Available time, in seconds, for writing available.",
     )
     def availableRecordingTime(self: PstBeam) -> float:
-        """Get available time, in seconds, for writing available.
+        """
+        Get available time, in seconds, for writing available.
 
         :returns: available time, in seconds, for writing available.
         :rtype: float
@@ -324,7 +334,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Current data receive rate from the CBF interface",
     )
     def dataReceiveRate(self: PstBeam) -> float:
-        """Get the current data receive rate from the CBF interface.
+        """
+        Get the current data receive rate from the CBF interface.
 
         :returns: current data receive rate from the CBF interface in Gb/s.
         :rtype: float
@@ -339,7 +350,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Total number of bytes received from the CBF in the current scan",
     )
     def dataReceived(self: PstBeam) -> int:
-        """Get the total amount of data received from CBF interface for current scan.
+        """
+        Get the total amount of data received from CBF interface for current scan.
 
         :returns: total amount of data received from CBF interface for current scan in Bytes
         :rtype: int
@@ -361,7 +373,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Current rate of CBF ingest data being dropped or lost by the receiving process",
     )
     def dataDropRate(self: PstBeam) -> float:
-        """Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
+        """
+        Get the current rate of CBF ingest data being dropped or lost by the receiving proces.
 
         :returns: current rate of CBF ingest data being dropped or lost in Bytes/s.
         :rtype: float
@@ -377,7 +390,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Total number of bytes dropped in the current scan",
     )
     def dataDropped(self: PstBeam) -> int:
-        """Get the total number of bytes dropped in the current scan.
+        """
+        Get the total number of bytes dropped in the current scan.
 
         :returns: total number of bytes dropped in the current scan.
         :rtype: int
@@ -397,7 +411,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         ),
     )
     def misorderedPackets(self: PstBeam) -> int:
-        """Get the total number of packets received out of order in the current scan.
+        """
+        Get the total number of packets received out of order in the current scan.
 
         :returns: total number of packets received out of order in the current scan.
         :rtype: int
@@ -411,7 +426,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="The current rate of misordered packets.",
     )
     def misorderedPacketRate(self: PstBeam) -> float:
-        """Get the current rate of misordered packets.
+        """
+        Get the current rate of misordered packets.
 
         :returns: the current rate of misordered packets in packets/seconds.
         :rtype: float
@@ -429,7 +445,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         ),
     )
     def malformedPackets(self: PstBeam) -> int:
-        """Get the total number of packets marked as malformed for current scan.
+        """
+        Get the total number of packets marked as malformed for current scan.
 
         :returns: the total number of packets marked as malformed for current scan.
         :rtype: int
@@ -443,7 +460,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="The current rate of malformed packets.",
     )
     def malformedPacketRate(self: PstBeam) -> float:
-        """Get current rate of malformed packets.
+        """
+        Get current rate of malformed packets.
 
         :return: current rate of malformed packets in packets/seconds.
         :rtype: float
@@ -461,7 +479,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         ),
     )
     def misdirectedPackets(self: PstBeam) -> int:
-        """Get the total number of packets as marked as misdirected for current scan.
+        """
+        Get the total number of packets as marked as misdirected for current scan.
 
         :returns: the total number of packets as marked as misdirected for current scan.
         :rtype: int
@@ -475,7 +494,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="The current rate of misdirected packets.",
     )
     def misdirectedPacketRate(self: PstBeam) -> float:
-        """Get the current rate of misdirected packets.
+        """
+        Get the current rate of misdirected packets.
 
         :return: the current rate of misdirected packets in packets/seconds.
         :rtype: float
@@ -488,7 +508,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Total number of packets with a UDP, IP header or CRC checksum failure.",
     )
     def checksumFailurePackets(self: PstBeam) -> int:
-        """Get the total number of packets with checksum failures for current scan.
+        """
+        Get the total number of packets with checksum failures for current scan.
 
         :return: the total number of packets with checksum failures for current scan.
         :rtype: int
@@ -502,7 +523,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="The current rate of packets with checkesum failures.",
     )
     def checksumFailurePacketRate(self: PstBeam) -> float:
-        """Get the current rate of packets with checkesum failures.
+        """
+        Get the current rate of packets with checkesum failures.
 
         :return: the current rate of packets with checkesum failures in packets/seconds.
         :rtype: float
@@ -518,7 +540,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         ),
     )
     def timestampSyncErrorPackets(self: PstBeam) -> int:
-        """Get the total number of packets with a timestamp sync error for current scan.
+        """
+        Get the total number of packets with a timestamp sync error for current scan.
 
         :return: the total number of packets with a timestamp sync error for current scan.
         :rtype: int
@@ -532,10 +555,10 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="The current rate of packets with a timestamp sync error.",
     )
     def timestampSyncErrorPacketRate(self: PstBeam) -> float:
-        """Get the current rate of packets with a timestamp sync error.
+        """
+        Get the current rate of packets with a timestamp sync error.
 
-        :return: the current rate of packets with a timestamp sync error
-            in packets/seconds.
+        :return: the current rate of packets with a timestamp sync error in packets/seconds.
         :rtype: float
         """
         return self.component_manager.timestamp_sync_error_packet_rate
@@ -549,7 +572,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         ),
     )
     def seqNumberSyncErrorPackets(self: PstBeam) -> int:
-        """Get the total number of packets with a seq num sync error in current scan.
+        """
+        Get the total number of packets with a seq num sync error in current scan.
 
         :return: the total number of packets with a seq num sync error in current scan.
         :rtype: int
@@ -563,10 +587,10 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="The current rate of packets with a sequence number sync error.",
     )
     def seqNumberSyncErrorPacketRate(self: PstBeam) -> float:
-        """Get the current rate of packets with a sequence number sync error.
+        """
+        Get the current rate of packets with a sequence number sync error.
 
-        :return: the current rate of packets with a sequence number sync error
-            in packets/seconds.
+        :return: the current rate of packets with a sequence number sync error in packets/seconds.
         :rtype: float
         """
         return self.component_manager.seq_number_sync_error_packet_rate
@@ -578,7 +602,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Current rate of writing to the disk.",
     )
     def dataRecordRate(self: PstBeam) -> float:
-        """Get current rate of writing to the disk.
+        """
+        Get current rate of writing to the disk.
 
         :returns: use space on the disk that PST.BEAM is writing to, in bytes.
         :rtype: float
@@ -592,7 +617,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Number of bytes written during scan.",
     )
     def dataRecorded(self: PstBeam) -> int:
-        """Get number of bytes written during scan.
+        """
+        Get number of bytes written during scan.
 
         :returns: number of bytes written during scan.
         :rtype: int
@@ -604,7 +630,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="The channel block configuration based on scan configuration.",
     )
     def channelBlockConfiguration(self: PstBeam) -> str:
-        """Get the channel block configuration.
+        """
+        Get the channel block configuration.
 
         This is a JSON serialised string of the channel block configuration
         that is calculated during the `ConfigureScan` command. This
@@ -658,7 +685,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Percentage of the ring buffer elements that are full of data",
     )
     def ringBufferUtilisation(self: PstBeam) -> float:
-        """Get the percentage of the ring buffer elements that are full of data.
+        """
+        Get the percentage of the ring buffer elements that are full of data.
 
         :returns: the percentage of the ring buffer elements that are full of data.
         :rtype: float
@@ -672,7 +700,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         doc="Expected rate of data to be received by PST Beam component.",
     )
     def expectedDataRecordRate(self: PstBeam) -> float:
-        """Get the expected rate of data to be received by PST Beam component.
+        """
+        Get the expected rate of data to be received by PST Beam component.
 
         :returns: the expected rate of data to be received by PST Beam component.
         :rtype: float
@@ -712,7 +741,6 @@ def main(args: Optional[list] = None, **kwargs: Any) -> int:
 
     :param args: positional arguments
     :param kwargs: named arguments
-
     :return: exit code
     :rtype: int
     """

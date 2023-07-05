@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE.txt for more info.
-
 """This subpackage provides functionality for dealing with bands."""
 
 __all__ = ["get_frequency_band_config"]

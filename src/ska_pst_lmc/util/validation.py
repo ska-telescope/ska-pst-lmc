@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module is used as a utility module for dealing with validation."""
 from __future__ import annotations
 
@@ -30,7 +29,8 @@ class ValidationError(Exception):
 
 
 def _split_interface_version(version: str) -> Tuple[int, int]:
-    """Extract version number from interface URI.
+    """
+    Extract version number from interface URI.
 
     :param version: Version string.
     :returns: (major version, minor version) tuple.
@@ -50,7 +50,8 @@ class Strictness(IntEnum):
 
 
 def pst_schema(version: str, strictness: Strictness = Strictness.Permissive) -> Schema:
-    """Get the PST.LMC schema.
+    """
+    Get the PST.LMC schema.
 
     This is a scaled down schema from the CSP.LMC schema. If we used
     the CSP schema the `subarray` and `cbf` fields would be needed.

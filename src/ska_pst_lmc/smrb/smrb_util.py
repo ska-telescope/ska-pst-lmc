@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for providing utility methods of SMRB."""
 
 __all__ = [
@@ -30,11 +29,11 @@ WEIGHTS_NBITS = 16
 
 
 def generate_data_key(beam_id: int, subband_id: int) -> str:
-    """Generate a data header key.
+    """
+    Generate a data header key.
 
-    The format of this is a string of 4 chars long. The first two
-    chars is the beam_id represented in hexadecimal with left zero
-    padding, the next is subband_id, and finally a suffix of 0.
+    The format of this is a string of 4 chars long. The first two chars is the beam_id represented in
+    hexadecimal with left zero padding, the next is subband_id, and finally a suffix of 0.
 
     :param beam_id: the beam_id that this LMC component is for.
     :param subband_id: the id of the subband to generate the key for.
@@ -44,7 +43,8 @@ def generate_data_key(beam_id: int, subband_id: int) -> str:
 
 
 def generate_weights_key(beam_id: int, subband_id: int) -> str:
-    """Generate a weights header key.
+    """
+    Generate a weights header key.
 
     The format of this is a string of 4 chars long. The first two
     chars is the beam_id represented in hexadecimal with left zero
@@ -61,7 +61,8 @@ def generate_weights_key(beam_id: int, subband_id: int) -> str:
 
 
 def calculate_smrb_subband_resources(beam_id: int, request_params: Dict[str, Any]) -> Dict[int, dict]:
-    """Calculate the ring buffer (RB) resources from request.
+    """
+    Calculate the ring buffer (RB) resources from request.
 
     This is a common method used to calculate the keys, number of buffers, and
     the size of buffers for each subband required for a scan.
@@ -86,7 +87,6 @@ def calculate_smrb_subband_resources(beam_id: int, request_params: Dict[str, Any
                     'wb_bufsz': 8192,
                 }
             }
-
     """
     frequency_band_config = get_frequency_band_config(**request_params)
     packet_nchan = frequency_band_config["packet_nchan"]

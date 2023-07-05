@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module provides an implementation of the BEAM PST component manager."""
 
 from __future__ import annotations
@@ -80,7 +79,8 @@ class _RemoteJob:
 
 
 class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
-    """Component manager for the BEAM component in PST.LMC.
+    """
+    Component manager for the BEAM component in PST.LMC.
 
     Since the BEAM component is a logical device, this component
     manager is used to orchestrate the process devices, such as
@@ -107,20 +107,18 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         logger: logging.Logger,
         **kwargs: Any,
     ) -> None:
-        """Initialise component manager.
+        """
+        Initialise component manager.
 
-        :param smrb_fqdn: the fully qualified device name (FQDN) of the
-            shared memory ring buffer (SMRB) TANGO device.
+        :param smrb_fqdn: the fully qualified device name (FQDN) of the shared memory ring buffer (SMRB) TANGO
+            device.
         :param recv_fqdn: the FQDN of the Receive TANGO device.
         :param dsp_fqdn: the FQDN of the Digital Signal processing (DSP) TANGO device.
-        :param simulation_mode: enum to track if component should be
-            in simulation mode or not.
+        :param simulation_mode: enum to track if component should be in simulation mode or not.
         :param logger: a logger for this object to use
-        :param communication_status_changed_callback: callback to be
-            called when the status of the communications channel between
-            the component manager and its component changes
-        :param component_fault_callback: callback to be called when the
-            component faults (or stops faulting)
+        :param communication_status_changed_callback: callback to be called when the status of the
+            communications channel between the component manager and its component changes
+        :param component_fault_callback: callback to be called when the component faults (or stops faulting)
         """
         self._smrb_device = DeviceProxyFactory.get_device(device_interface.smrb_fqdn)
         self._recv_device = DeviceProxyFactory.get_device(device_interface.recv_fqdn)
@@ -163,8 +161,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         """
         Reset monitored attributes.
 
-        This method resets the values to a sensible default when not in
-        a configured state.
+        This method resets the values to a sensible default when not in a configured state.
         """
         from ska_pst_lmc.dsp.dsp_model import DEFAULT_RECORDING_TIME
 
@@ -214,7 +211,8 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
     def _update_channel_block_configuration(
         self: PstBeamComponentManager, subband_beam_configuration: str
     ) -> None:
-        """Update the channel block configuration.
+        """
+        Update the channel block configuration.
 
         This calculates the new channel block configuration and is only called
         after a successful `ConfigureScan` request. It uses the SMRB util to work
@@ -240,7 +238,6 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
                     },
                 ]
             }
-
         """
         subband_resources = json.loads(subband_beam_configuration)
         if subband_resources:
@@ -421,27 +418,43 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
     @property
     def seq_number_sync_error_packets(self: PstBeamComponentManager) -> int:
-        """Get the total number of packets with seq. number sync error for the current scan."""
+        """
+        Get the total number of packets with seq.
+
+        number sync error for the current scan.
+        """
         return self._seq_number_sync_error_packets
 
     @seq_number_sync_error_packets.setter
     def seq_number_sync_error_packets(
         self: PstBeamComponentManager, seq_number_sync_error_packets: int
     ) -> None:
-        """Set the total number of packets with seq. number sync error for the current scan."""
+        """
+        Set the total number of packets with seq.
+
+        number sync error for the current scan.
+        """
         self._seq_number_sync_error_packets = seq_number_sync_error_packets
         self._property_callback("seq_number_sync_error_packets", seq_number_sync_error_packets)
 
     @property
     def seq_number_sync_error_packet_rate(self: PstBeamComponentManager) -> float:
-        """Get the current rate of packets with seq. number sync error in packets/sec."""
+        """
+        Get the current rate of packets with seq.
+
+        number sync error in packets/sec.
+        """
         return self._seq_number_sync_error_packet_rate
 
     @seq_number_sync_error_packet_rate.setter
     def seq_number_sync_error_packet_rate(
         self: PstBeamComponentManager, seq_number_sync_error_packet_rate: float
     ) -> None:
-        """Set the current rate of packets with seq. number sync error in packets/sec."""
+        """
+        Set the current rate of packets with seq.
+
+        number sync error in packets/sec.
+        """
         self._seq_number_sync_error_packet_rate = seq_number_sync_error_packet_rate
         self._property_callback("seq_number_sync_error_packet_rate", seq_number_sync_error_packet_rate)
 
@@ -547,11 +560,11 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
     def _handle_subdevice_obs_state_event(
         self: PstBeamComponentManager, device: PstDeviceProxy, obs_state: ObsState
     ) -> None:
-        """Handle a change in the a subdevice's obsState.
+        """
+        Handle a change in the a subdevice's obsState.
 
-        Currently this just handles that a subdevice goes into a FAULT state. However,
-        this could be used for knowning when the device has moved out of FAULT or
-        when it has stopped scanning.
+        Currently this just handles that a subdevice goes into a FAULT state. However, this could be used for
+        knowning when the device has moved out of FAULT or when it has stopped scanning.
 
         :param device: the device proxy for the subordinate device.
         :type device: PstDeviceProxy
@@ -565,7 +578,8 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             self._device_interface.handle_subdevice_fault(device_fqdn=device.fqdn, fault_msg=fault_msg)
 
     def _simulation_mode_changed(self: PstBeamComponentManager) -> None:
-        """Set simulation mode state.
+        """
+        Set simulation mode state.
 
         :param simulation_mode: the new simulation mode value.
         :type simulation_mode: :py:class:`SimulationMode`
@@ -590,7 +604,8 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             self._device_interface.update_health_state(health_state=HealthState.UNKNOWN)
 
     def update_admin_mode(self: PstBeamComponentManager, admin_mode: AdminMode) -> None:
-        """Update the admin mode of the remote devices.
+        """
+        Update the admin mode of the remote devices.
 
         The adminMode of the remote devices should only be managed through the BEAM
         device, and this method is called from the :py:class:`PstBeam` device to
@@ -701,8 +716,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         """
         Turn the component on.
 
-        :param task_callback: callback to be called when the status of
-            the command changes
+        :param task_callback: callback to be called when the status of the command changes
         """
 
         def _completion_callback(task_callback: Callable) -> None:
@@ -730,8 +744,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         """
         Turn the component off.
 
-        :param task_callback: callback to be called when the status of
-            the command changes
+        :param task_callback: callback to be called when the status of the command changes
         """
         from tango import DevState
 
@@ -764,8 +777,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         """
         Put the component is standby.
 
-        :param task_callback: callback to be called when the status of
-            the command changes
+        :param task_callback: callback to be called when the status of the command changes
         """
 
         def _completion_callback(task_callback: Callable) -> None:
@@ -788,8 +800,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         """
         Reset the component.
 
-        :param task_callback: callback to be called when the status of
-            the command changes
+        :param task_callback: callback to be called when the status of the command changes
         """
 
         def _completion_callback(task_callback: Callable) -> None:
@@ -1082,7 +1093,8 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         )
 
     def set_logging_level(self: PstBeamComponentManager, log_level: LoggingLevel) -> None:
-        """Set LoggingLevel of all the sub-devices.
+        """
+        Set LoggingLevel of all the sub-devices.
 
         :param log_level: The required Tango LoggingLevel
         :returns: None.

@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Test to the DSP disk monitor task."""
 
 from __future__ import annotations
@@ -137,7 +136,8 @@ def test_disk_monitor_stop_monitoring_when_in_stopped_state(disk_monitor: DiskMo
 
 
 def test_disk_monitor_stop_monitoring_when_in_stopping_state(disk_monitor: DiskMonitorTask) -> None:
-    """Test stop_monitoring if already in a STOPPING state.
+    """
+    Test stop_monitoring if already in a STOPPING state.
 
     This needs to a background thread to update the state to STOPPED.
     """

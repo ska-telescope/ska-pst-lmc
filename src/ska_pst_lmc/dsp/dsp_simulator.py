@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for providing the Simulated DSP capability for PST."""
 
 from __future__ import annotations
@@ -18,7 +17,8 @@ __all__ = ["PstDspSimulator"]
 
 
 class PstDspSimulator:
-    """Simulator for the DSP process of the PST.LMC sub-system.
+    """
+    Simulator for the DSP process of the PST.LMC sub-system.
 
     This is used to generate random data and simulate what for the DSP
     subsystem. This simulator is used for all the subbands. For the
@@ -46,15 +46,15 @@ class PstDspSimulator:
         available_disk_space: Optional[int] = None,
         subband_data_record_rates: Optional[List[float]] = None,
     ) -> None:
-        """Initialise the DSP simulator.
+        """
+        Initialise the DSP simulator.
 
         :param num_subbands: number of subbands, if None a random number is used.
         :type num_subbands: int
-        :param disk_capacity: the max size of the size to simulate, default is
-            is determined from shutil
+        :param disk_capacity: the max size of the size to simulate, default is is determined from shutil
         :type disk_capacity: int
-        :param available_disk_space: initial available space on disk to simulate, default
-            is determined from shutil
+        :param available_disk_space: initial available space on disk to simulate, default is determined from
+            shutil
         :type available_disk_space: int
         :param subband_data_record_rates: the write rates per subband. Default is a random array.
         :type subband_data_record_rates: List[float]
@@ -82,7 +82,8 @@ class PstDspSimulator:
 
     @disk_capacity.setter
     def disk_capacity(self: PstDspSimulator, disk_capacity: int) -> None:
-        """Set simulated disk capacity.
+        """
+        Set simulated disk capacity.
 
         :param disk_capacity: the new disk capacity, in bytes.
         """
@@ -95,7 +96,8 @@ class PstDspSimulator:
 
     @available_disk_space.setter
     def available_disk_space(self: PstDspSimulator, available_disk_space: int) -> None:
-        """Set simulated available bytes left of disk.
+        """
+        Set simulated available bytes left of disk.
 
         :param available_disk_space: the new about of bytes available on the disk.
         """
@@ -153,7 +155,8 @@ class PstDspSimulator:
         self._scan = False
 
     def start_scan(self: PstDspSimulator, args: dict) -> None:
-        """Simulate start scanning.
+        """
+        Simulate start scanning.
 
         :param: the scan arguments.
         """

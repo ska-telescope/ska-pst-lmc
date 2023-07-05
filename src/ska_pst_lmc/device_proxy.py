@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module provides a factory for :py:class:`tango.DeviceProxy` instances.
 
 This code is based off the SKA TANGO Examples class.
@@ -26,10 +25,11 @@ BackoffDetailsType = TypedDict("BackoffDetailsType", {"args": list, "elapsed": f
 
 
 class ChangeEventSubscription:
-    """Class to act as a handle for a change event subscription.
+    """
+    Class to act as a handle for a change event subscription.
 
-    Instances of this class can be used to programmatically unsubscribe from a change
-    event, without having to have access to the device or the subscription id.
+    Instances of this class can be used to programmatically unsubscribe from a change event, without having to
+    have access to the device or the subscription id.
     """
 
     def __init__(
@@ -40,7 +40,8 @@ class ChangeEventSubscription:
         attribute_name: str,
         logger: logging.Logger,
     ) -> None:
-        """Initialise object.
+        """
+        Initialise object.
 
         :param subscription_id: the id of the subscription.
         :param device: the `PstDeviceProxy` for which the subscription belongs to.
@@ -62,11 +63,12 @@ class ChangeEventSubscription:
         self.unsubscribe()
 
     def unsubscribe(self: ChangeEventSubscription) -> None:
-        """Unsubscribe to the change event.
+        """
+        Unsubscribe to the change event.
 
-        Use this to method to unsubscribe to listening to a change event of
-        as device. As this is potentially called from a Python thread this will
-        try to run this within a Tango OmniThread using a background thread.
+        Use this to method to unsubscribe to listening to a change event of as device. As this is potentially
+        called from a Python thread this will try to run this within a Tango OmniThread using a background
+        thread.
         """
         if self._subscribed:
             self._logger.debug(
@@ -108,7 +110,8 @@ class PstDeviceProxy:
         logger: logging.Logger,
         device: DeviceProxy,
     ) -> None:
-        """Initialise device proxy.
+        """
+        Initialise device proxy.
 
         :param fqdn: the fully qualified device-name of the TANGO device that the proxy is for.
         :param logger: the logger to use for logging within this proxy.
@@ -155,7 +158,6 @@ class PstDeviceProxy:
         Used when we receive an event with empty attribute data.
 
         :param attribute_name: the name of the attribute to be read
-
         :return: the attribute value
         """
         return self._device.read_attribute(attribute_name)
@@ -163,7 +165,8 @@ class PstDeviceProxy:
     def subscribe_change_event(
         self: PstDeviceProxy, attribute_name: str, callback: Callable, stateless: bool = False
     ) -> ChangeEventSubscription:
-        """Subscribe to change events.
+        """
+        Subscribe to change events.
 
         This method is used to subscribe to an attribute changed event on the given proxy
             object. This is similar to:
@@ -224,7 +227,8 @@ class PstDeviceProxy:
         return self._subscriptions[attribute_name]
 
     def unsubscribe_change_event(self: PstDeviceProxy, subscription: ChangeEventSubscription) -> None:
-        """Unsubscribe to change events for a given subscription.
+        """
+        Unsubscribe to change events for a given subscription.
 
         This method is used to unsubscribe to an attribute changed event on the given
             proxy object. This is similar to:
@@ -264,7 +268,8 @@ class PstDeviceProxy:
                 del self._subscriptions[attribute_name]
 
     def __setattr__(self: PstDeviceProxy, name: str, value: Any) -> None:
-        """Set attritube.
+        """
+        Set attritube.
 
         :param name: name of attribute to set.
         :param value: the value of the attribute.
@@ -275,7 +280,8 @@ class PstDeviceProxy:
             setattr(self._device, name, value)
 
     def __getattr__(self: PstDeviceProxy, name: str) -> Any:
-        """Get attribute value.
+        """
+        Get attribute value.
 
         :param name: the name of attribute to get.
         :returns: the value of the attribute.
@@ -292,7 +298,8 @@ class PstDeviceProxy:
         return self._device
 
     def __repr__(self: PstDeviceProxy) -> str:
-        """Create a string representation of PstDeviceProxy.
+        """
+        Create a string representation of PstDeviceProxy.
 
         :return: a string representation of a PstDeviceProxy
         :rtype: str
@@ -300,7 +307,8 @@ class PstDeviceProxy:
         return f"PstDeviceProxy(fqdn='{self._fqdn}')"
 
     def is_subscribed_to_events(self: PstDeviceProxy, attribute_name: str) -> bool:
-        """Check if there is an active event subscription for attribute.
+        """
+        Check if there is an active event subscription for attribute.
 
         Checks if there is a `ChangeEventSubscription` for the attribute and if
         it is actively subscribed.

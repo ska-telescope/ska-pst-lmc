@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for providing the DSP capability for the Pulsar Timing Sub-element."""
 
 from __future__ import annotations
@@ -39,7 +38,8 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager, DspDiskMonitorData]):
     # ---------------
 
     def init_device(self: PstDsp) -> None:
-        """Initialise the attributes and properties of the PstDsp.
+        """
+        Initialise the attributes and properties of the PstDsp.
 
         This overrides the :py:class:`SKABaseDevice`.
         """
@@ -77,17 +77,18 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager, DspDiskMonitorData]):
         """Execute call before any TANGO command is executed."""
 
     def delete_device(self: PstDsp) -> None:
-        """Delete resources allocated in init_device.
+        """
+        Delete resources allocated in init_device.
 
-        This method allows for any memory or other resources allocated in the
-        init_device method to be released.  This method is called by the device
-        destructor and by the device Init command.
+        This method allows for any memory or other resources allocated in the init_device method to be
+        released.  This method is called by the device destructor and by the device Init command.
         """
         self.component_manager.stop_disk_stats_monitoring()
         super().delete_device()
 
     def handle_monitor_data_update(self: PstDsp, monitor_data: DspDiskMonitorData) -> None:
-        """Handle monitoring data.
+        """
+        Handle monitoring data.
 
         :param monitor_data: the latest monitoring data that has been reported.
         :type monitor_data: DspDiskMonitorData
@@ -113,7 +114,8 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager, DspDiskMonitorData]):
         doc="Total capacity of the disk that DSP is writing to.",
     )
     def diskCapacity(self: PstDsp) -> int:
-        """Total capacity of the disk that DSP is writing to.
+        """
+        Total capacity of the disk that DSP is writing to.
 
         :returns: total capacity of the disk that DSP is writing to, in bytes.
         :rtype: int
@@ -128,7 +130,8 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager, DspDiskMonitorData]):
         doc="Available space on the disk that DSP is writing to.",
     )
     def availableDiskSpace(self: PstDsp) -> int:
-        """Available space on the disk that DSP is writing to.
+        """
+        Available space on the disk that DSP is writing to.
 
         :returns: available space on the disk that DSP is writing to, in bytes.
         :rtype: int
@@ -143,7 +146,8 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager, DspDiskMonitorData]):
         doc="Used space on the disk that DSP is writing to.",
     )
     def diskUsedBytes(self: PstDsp) -> int:
-        """Get sed space on the disk that DSP is writing to.
+        """
+        Get sed space on the disk that DSP is writing to.
 
         This is `diskCapacity - availableDiskSpace`.
 
@@ -163,7 +167,8 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager, DspDiskMonitorData]):
         doc="Used space on the disk that DSP is writing to.",
     )
     def diskUsedPercentage(self: PstDsp) -> float:
-        """Get used space on the disk that DSP is writing to.
+        """
+        Get used space on the disk that DSP is writing to.
 
         This is `100.0 * (diskCapacity - availableDiskSpace)/availableDiskSpace`.
 
@@ -179,7 +184,8 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager, DspDiskMonitorData]):
         doc="Current rate of writing to the disk.",
     )
     def dataRecordRate(self: PstDsp) -> float:
-        """Get current rate of writing to the disk.
+        """
+        Get current rate of writing to the disk.
 
         :returns: use space on the disk that DSP is writing to, in bytes.
         :rtype: float
@@ -193,7 +199,8 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager, DspDiskMonitorData]):
         doc="Number of bytes written during scan.",
     )
     def dataRecorded(self: PstDsp) -> int:
-        """Get number of bytes written during scan.
+        """
+        Get number of bytes written during scan.
 
         :returns: number of bytes written during scan.
         :rtype: int
@@ -209,7 +216,8 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager, DspDiskMonitorData]):
         doc="Available time, in seconds, for writing available.",
     )
     def availableRecordingTime(self: PstDsp) -> float:
-        """Get current rate of writing to the disk.
+        """
+        Get current rate of writing to the disk.
 
         :returns: use space on the disk that DSP is writing to, in bytes.
         :rtype: float
@@ -224,7 +232,8 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager, DspDiskMonitorData]):
         doc="The bytes per written for each subband",
     )
     def subbandDataRecorded(self: PstDsp) -> List[int]:
-        """Get the bytes per written for each subband.
+        """
+        Get the bytes per written for each subband.
 
         :returns: the bytes per written for each subband.
         :rtype: List[int]
@@ -239,7 +248,8 @@ class PstDsp(PstBaseProcessDevice[PstDspComponentManager, DspDiskMonitorData]):
         doc="The current rate of writing to disk for each subband",
     )
     def subbandDataRecordRate(self: PstDsp) -> List[float]:
-        """Get the current rate of writing to disk for each subband.
+        """
+        Get the current rate of writing to disk for each subband.
 
         :returns: the current rate of writing to disk for each subband.
         :rtype: List[float]
@@ -274,7 +284,6 @@ def main(args: Optional[list] = None, **kwargs: Any) -> int:
 
     :param args: positional arguments
     :param kwargs: named arguments
-
     :return: exit code
     :rtype: int
     """

@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for providing the model data classes for DSP."""
 
 from __future__ import annotations
@@ -22,15 +21,14 @@ DEFAULT_RECORDING_TIME: float = float(60 * 60 * 24 * 365)
 
 @dataclass
 class DspDiskSubbandMonitorData:
-    """A data class to represent a subband monitoring data record.
+    """
+    A data class to represent a subband monitoring data record.
 
-    This class is used to report on a subband specific monitoring data.
-    Each subband will report on the disk capacity and availabile bytes
-    to help with the calculation of available recording time left for
-    the whole beam.
+    This class is used to report on a subband specific monitoring data. Each subband will report on the disk
+    capacity and availabile bytes to help with the calculation of available recording time left for the whole
+    beam.
 
-    :ivar disk_capacity: total amount of bytes for the disk used for DSP
-        processing for the beam.
+    :ivar disk_capacity: total amount of bytes for the disk used for DSP processing for the beam.
     :vartype disk_capacity: int
     :ivar available_disk_space: total currently available bytes of the disk used.
     :vartype available_disk_space: int
@@ -48,30 +46,25 @@ class DspDiskSubbandMonitorData:
 
 @dataclass
 class DspDiskMonitorData:
-    """A data class to represent the DSP monitoring across all subbands.
+    """
+    A data class to represent the DSP monitoring across all subbands.
 
-    This class is used to model the combined subband data for the DSP.
-    Which includes the disk usage and monitoring as well as the
-    current throughput of data.
+    This class is used to model the combined subband data for the DSP. Which includes the disk usage and
+    monitoring as well as the current throughput of data.
 
-    :ivar disk_capacity: size, in bytes, for the disk for DSP processing for
-        this beam.
+    :ivar disk_capacity: size, in bytes, for the disk for DSP processing for this beam.
     :vartype disk_capacity: int
     :ivar available_disk_space: currently available bytes of the disk.
     :vartype available_disk_space: int
-    :ivar data_recorded: total amount of bytes written in current scan across
-        all subbands of the beam.
+    :ivar data_recorded: total amount of bytes written in current scan across all subbands of the beam.
     :vartype data_recorded: int
-    :ivar data_record_rate: total rate of writing to disk across all subbands, in
-        bytes/second.
+    :ivar data_record_rate: total rate of writing to disk across all subbands, in bytes/second.
     :vartype data_record_rate: float
-    :ivar available_recording_time: estimated available recording time left for
-        current scan.
+    :ivar available_recording_time: estimated available recording time left for current scan.
     :vartype available_recording_time: float
     :ivar subband_data_recorded: a list of bytes written, one record per subband.
     :vartype subband_data_recorded: List[int]
-    :ivar subband_data_record_rate: a list of current rate of writing per subband,
-        in bytes/seconds.
+    :ivar subband_data_record_rate: a list of current rate of writing per subband, in bytes/seconds.
     :vartype subband_data_record_rate: List[float]
     """
 
@@ -114,11 +107,11 @@ class DspDiskMonitorDataStore(MonitorDataStore[DspDiskSubbandMonitorData, DspDis
         disk_available_bytes: Optional[int] = None,
         **kwargs: Any,
     ) -> None:
-        """Update disk statistics.
+        """
+        Update disk statistics.
 
-        The available_disk_space and disk_available_bytes parameters are
-        the same property but both are provided to work around an issue
-        that coming from DSP
+        The available_disk_space and disk_available_bytes parameters are the same property but both are
+        provided to work around an issue that coming from DSP
 
         :param disk_capacity: the total disk capacity.
         :type disk_capacity: int
@@ -134,7 +127,8 @@ class DspDiskMonitorDataStore(MonitorDataStore[DspDiskSubbandMonitorData, DspDis
 
     @property
     def monitor_data(self: DspDiskMonitorDataStore) -> DspDiskMonitorData:
-        """Get current monitoring data for DSP.
+        """
+        Get current monitoring data for DSP.
 
         This returns the latest monitoring data calculated from the current
         subband data. If no subband data is available then the response is

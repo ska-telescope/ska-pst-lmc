@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Module for providing utility methods of DSP."""
 
 __all__ = [
@@ -18,7 +17,8 @@ from ska_pst_lmc.smrb.smrb_util import generate_data_key, generate_weights_key
 
 
 def calculate_dsp_subband_resources(beam_id: int, **kwargs: Any) -> Dict[int, dict]:
-    """Calculate the digital signal processing (DSP) resources from request.
+    """
+    Calculate the digital signal processing (DSP) resources from request.
 
     This is a common method to map a CSP JSON request to the appropriate
     DSP parameters. It is also used to calculate the specific subband
@@ -42,7 +42,6 @@ def calculate_dsp_subband_resources(beam_id: int, **kwargs: Any) -> Dict[int, di
                     'weights_key': "a010",
                 }
             }
-
     """
     return {
         1: {

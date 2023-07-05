@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# rather than doing python-lint, this just does python-do-lint and python-post-lint
+# as this allows a developer to add python-format in their PrivateRules.mak
+make python-do-lint python-post-lint
+exit $?

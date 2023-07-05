@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """Test to the DSP Tango device for PST.LMC."""
 
 from __future__ import annotations
@@ -17,13 +16,13 @@ from typing import Any, Dict, Type, cast
 import numpy as np
 import pytest
 import tango
+from ska_pst_testutils.tango import TangoDeviceCommandChecker
 from ska_tango_base.commands import ResultCode, TaskStatus
 from ska_tango_base.control_model import AdminMode, HealthState, ObsState, SimulationMode
 from tango import DeviceProxy, DevState
 
 from ska_pst_lmc.dsp.dsp_component_manager import PstDspComponentManager, PstDspProcessApiSimulator
 from ska_pst_lmc.dsp.dsp_device import PstDsp
-from tests.conftest import TangoDeviceCommandChecker
 
 
 @pytest.fixture
@@ -45,10 +44,11 @@ def dsp_device_class(
     fail_validate_configure_beam: bool,
     fail_validate_configure_scan: bool,
 ) -> Type[PstDsp]:
-    """Get PstDsp fixture.
+    """
+    Get PstDsp fixture.
 
-    This creates a subclass of the PstDsp that overrides the create_component_manager method
-    to use the component_manager fixture.
+    This creates a subclass of the PstDsp that overrides the create_component_manager method to use the
+    component_manager fixture.
     """
 
     def _update_api(*args: Any, **kwargs: Any) -> None:
@@ -84,14 +84,11 @@ class TestPstDsp:
         """
         Specify device configuration, including properties and memorized attributes.
 
-        This implementation provides a concrete subclass of
-        SKABaseDevice, and a memorized value for adminMode.
+        This implementation provides a concrete subclass of SKABaseDevice, and a memorized value for
+        adminMode.
 
-        :param device_properties: fixture that returns device properties
-            of the device under test
-
-        :return: specification of how the device under test should be
-            configured
+        :param device_properties: fixture that returns device properties of the device under test
+        :return: specification of how the device under test should be configured
         """
         return {
             "device": dsp_device_class,

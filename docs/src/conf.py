@@ -152,9 +152,10 @@ html_context = {
     'favicon': 'img/favicon.ico',
     'logo': 'img/logo.png',
     'theme_logo_only' : True,
-    'display_github': True, # Integrate GitHub
-    'github_repo': 'ska-pst-lmc', #Repository name
-    'github_version': 'master',  #Version
+    'display_gitlab': True, # Integrate GitHub
+    'gitlab_user': 'ska-telescope', #Repository name
+    'gitlab_repo': 'ska-pst-lmc', #Repository name
+    'gitlab_version': 'main',  #Version
     'conf_py_path': '/docs/src/', # Path in the checkout to the docs root
 }
 

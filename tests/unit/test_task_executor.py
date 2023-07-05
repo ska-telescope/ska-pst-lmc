@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module contains the pytest tests for the BackgroundTask class."""
 from __future__ import annotations
 
@@ -61,7 +60,8 @@ def _complete_job_side_effect(
     device_command_task_executor: DeviceCommandTaskExecutor,
     result: Any = "Complete",
 ) -> Callable[..., Tuple[List[TaskStatus], List[Optional[str]]]]:
-    """Create a complete job side effect.
+    """
+    Create a complete job side effect.
 
     This is used to stub out completion of remote jobs.
     """
@@ -85,7 +85,8 @@ def _fail_job_side_effect(
     device_command_task_executor: DeviceCommandTaskExecutor,
     failure_message: str,
 ) -> Callable[..., Tuple[List[TaskStatus], List[Optional[str]]]]:
-    """Create a complete job side effect.
+    """
+    Create a complete job side effect.
 
     This is used to stub out completion of remote jobs.
     """

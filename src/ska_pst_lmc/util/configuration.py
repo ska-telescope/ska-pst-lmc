@@ -4,7 +4,6 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-
 """This module is used as a utility module for dealing with configuration."""
 
 from __future__ import annotations
@@ -14,7 +13,8 @@ from typing import Any
 
 
 class Configuration(UserDict[str, Any]):
-    """Configuration.
+    """
+    Configuration.
 
     This class represents a PST-LMC configuration that is
     sent from the CSP. It is a generic object that is
@@ -29,7 +29,8 @@ class Configuration(UserDict[str, Any]):
 
     @staticmethod
     def from_json(json_str: str) -> Configuration:
-        """Create Configuration class from JSON string.
+        """
+        Create Configuration class from JSON string.
 
         Creates an instance of a Configuration class from
         as JSON encoded string. This will also validate that
@@ -52,7 +53,8 @@ class Configuration(UserDict[str, Any]):
         return Configuration(**obj)
 
     def to_json(self: Configuration) -> str:
-        """Serialise the Configuration object to a JSON string.
+        """
+        Serialise the Configuration object to a JSON string.
 
         This is a helper method to serialised the configuration
         object to a JSON string. This is effectively

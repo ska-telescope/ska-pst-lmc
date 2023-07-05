@@ -18,11 +18,11 @@ COPYRIGHT = "Swinburne University of Technology"
 
 
 def get_release_info(clsname: Union[str, None] = None) -> str:
-    """Return a formated release info string.
+    """
+    Return a formated release info string.
 
     :param clsname: optional name of class to add to the info
     :type clsname: string
-
     :return: string
     """
     rmod = sys.modules[__name__]
