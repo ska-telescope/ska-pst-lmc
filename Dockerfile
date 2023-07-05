@@ -64,6 +64,6 @@ COPY pyproject.toml poetry.lock* /app/
 COPY --from=buildenv --chown=tango:tango /app/generated/ /app/src
 
 RUN poetry config virtualenvs.create false && \
-  poetry install --without dev
+  poetry install --without dev --without docs
 
 USER tango
