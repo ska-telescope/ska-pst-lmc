@@ -9,7 +9,7 @@ enabled: true
 image:
   registry: artefact.skao.int
   image: ska-pst-lmc
-  tag: 0.6.1
+  tag: 0.6.2
   pullPolicy: IfNotPresent
 
 system: SW-infrastructure
@@ -43,6 +43,7 @@ loggingLevel: 4 # This is INFO level
 
 beam:
   simulationMode: 1
+  monitor_polling_rate: 5000
 
 smrb:
   simulationMode: 1

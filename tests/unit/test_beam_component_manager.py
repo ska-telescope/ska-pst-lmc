@@ -938,3 +938,20 @@ def test_beam_cm_set_logging_level(
     assert smrb_device_proxy.loggingLevel == log_level
     assert recv_device_proxy.loggingLevel == log_level
     assert dsp_device_proxy.loggingLevel == log_level
+
+
+def test_set_monitoring_polling_rate(
+    component_manager: PstBeamComponentManager,
+    smrb_device_proxy: PstDeviceProxy,
+    recv_device_proxy: PstDeviceProxy,
+    dsp_device_proxy: PstDeviceProxy,
+) -> None:
+    """Test updating monitoring polling rate updates subordinated devices."""
+    import random
+
+    monitoring_polling_rate = random.randint(100, 1000)
+    component_manager.set_monitoring_polling_rate(monitoring_polling_rate)
+    for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]:
+        assert (
+            cast(MagicMock, d).monitoringPollingRate == monitoring_polling_rate
+        ), f"Expected the monitoring polling rate for {d} to have been set to {monitoring_polling_rate}"
