@@ -92,7 +92,7 @@ server:
             - "1"
           - name: "initial_monitoring_polling_rate"
             values:
-            - "{{.Values.recv.monitor_polling_rate}}"
+            - "{{.Values.beam.monitor_polling_rate}}"
           - name: "beam_id"
             values:
             - "1"
