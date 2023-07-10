@@ -1101,3 +1101,8 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         """
         for remote_device in self._remote_devices:
             remote_device.loggingLevel = log_level
+
+    def set_monitoring_polling_rate(self: PstBeamComponentManager, monitor_polling_rate: int) -> None:
+        """Set the monitoring polling rate on the subordinate devices."""
+        for d in self._remote_devices:
+            d.monitoringPollingRate = monitor_polling_rate

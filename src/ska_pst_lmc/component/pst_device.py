@@ -94,6 +94,10 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
         ),
     )
 
+    initial_monitoring_polling_rate = device_property(
+        dtype=int, default_value=5000, doc="Rate at which monitor polling should happen, in milliseconds."
+    )
+
     # ---------------
     # General methods
     # ---------------
@@ -107,6 +111,7 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
         util = tango.Util.instance()
         util.set_serial_model(tango.SerialModel.NO_SYNC)
         super().init_device()
+        self._monitoring_polling_rate = self.initial_monitoring_polling_rate
 
     def init_command_objects(self: PstBaseDevice) -> None:
         """Set up the command objects."""
@@ -386,15 +391,6 @@ class PstBaseProcessDevice(PstBaseDevice[T], PstApiDeviceInterface[U], Generic[T
     method. This allows for setting up the beam related configuration that
     may not change as often as the scan configuration.
     """
-
-    initial_monitoring_polling_rate = device_property(
-        dtype=int, default_value=5000, doc="Rate at which monitor polling should happen, in milliseconds."
-    )
-
-    def init_device(self: PstBaseProcessDevice) -> None:
-        """Initialise the device."""
-        super().init_device()
-        self._monitoring_polling_rate = self.initial_monitoring_polling_rate
 
     # -----------
     # Attributes

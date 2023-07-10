@@ -235,6 +235,26 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
     # Attributes
     # ----------
 
+    @property
+    def monitoring_polling_rate(self: PstBeam) -> int:
+        """Get the monitoring polling rate."""
+        return self._monitoring_polling_rate
+
+    @attribute(
+        dtype=int,
+        label="Monitoring polling rate",
+        doc=("Rate at which data from CORE apps is monitored during a scan in milliseconds."),
+    )
+    def monitoringPollingRate(self: PstBeam) -> int:
+        """Get the current monitoring polling rate, in milliseconds."""
+        return self._monitoring_polling_rate
+
+    @monitoringPollingRate.write  # type: ignore[no-redef]
+    def monitoringPollingRate(self: PstBeam, monitoring_polling_rate: int) -> None:
+        """Update the monitoring polling rate."""
+        self._monitoring_polling_rate = monitoring_polling_rate
+        self.component_manager.set_monitoring_polling_rate(monitoring_polling_rate)
+
     @attribute(
         dtype=int,
         unit="Bytes",
