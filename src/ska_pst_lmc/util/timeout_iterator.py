@@ -69,7 +69,10 @@ class TimeoutIterator(Iterable[T]):
         if self._first:
             import time
 
-            time.sleep(self._expected_rate)
+            # the polling streaming may require up to 2 polling intervals
+            # to have produced any polling data. This should avoid
+            # the initial polling aborting due to timeout.
+            time.sleep(2.0 * self._expected_rate)
             self._first = False
 
         try:
