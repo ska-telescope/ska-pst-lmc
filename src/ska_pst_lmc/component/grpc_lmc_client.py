@@ -401,10 +401,13 @@ class PstGrpcLmcClient:
             should poll. The default value is 5000ms (i.e. 5 seconds).
         """
         self._logger.debug(f"Calling monitor for '{self._client_id}'.")
+        # have timeout set to max of 5s or 2 time the polling interval
+        timeout = max(5.0, 2.0 * polling_rate / 1000.0)
         try:
+            monitor_stream = self._service.monitor(MonitorRequest(polling_rate=polling_rate))
             self._monitor_stream = TimeoutIterator(
-                iterator=self._service.monitor(MonitorRequest(polling_rate=polling_rate)),
-                timeout=2.0 * polling_rate / 1000.0,  # convert to seconds and double
+                iterator=monitor_stream,
+                timeout=timeout,
                 abort_event=abort_event,
                 expected_rate=polling_rate / 1000.0,
             )
