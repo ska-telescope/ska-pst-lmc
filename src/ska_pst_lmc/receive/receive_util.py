@@ -72,6 +72,7 @@ def generate_recv_scan_request(
         "stt_crd2": request_params["coordinates"]["dec"],
         "trk_mode": DEFAULT_TRACKING_MODE,
         "scanlen_max": int(request_params["max_scan_length"]),
+        "execution_block_id": request_params["eb_id"],
     }
 
     if "test_vector_id" in request_params:

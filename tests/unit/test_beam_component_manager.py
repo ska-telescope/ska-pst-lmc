@@ -613,7 +613,12 @@ def test_beam_cm_configure_scan_sets_expected_data_record_rate(
 
     task_callback = _ThreadingCallback()
 
-    dsp_scan_request = generate_dsp_scan_request(csp_configure_scan_request["pst"]["scan"])
+    request = {
+        **csp_configure_scan_request["common"],
+        **csp_configure_scan_request["pst"]["scan"],
+    }
+
+    dsp_scan_request = generate_dsp_scan_request(request)
 
     assert component_manager.expected_data_record_rate == 0.0
 

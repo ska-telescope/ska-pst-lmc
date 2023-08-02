@@ -56,4 +56,8 @@ def generate_dsp_scan_request(request_params: Dict[str, Any]) -> Dict[str, Any]:
     bytes_per_second = recv_packet_resources["bytes_per_second"]
     scanlen_max = request_params.get("max_scan_length", 0.0)
 
-    return {"bytes_per_second": bytes_per_second, "scanlen_max": scanlen_max}
+    return {
+        "bytes_per_second": bytes_per_second,
+        "scanlen_max": scanlen_max,
+        "execution_block_id": request_params["eb_id"],
+    }

@@ -13,6 +13,7 @@ import json
 import logging
 import sys
 import threading
+from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ska_tango_base.base import check_communicating
@@ -818,9 +819,13 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             completion_callback=_completion_callback,
         )
 
-    def _as_pst_configure_scan_request_str(
-        self: PstBeamComponentManager, configuration: Dict[str, Any]
-    ) -> str:
+    def _generate_execution_block_id(self: PstBeamComponentManager) -> str:
+        """Generate a unique execution block id."""
+        now = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+        return f"eb-m001-{now}"
+
+    def _as_pst_configure_scan_request(self: PstBeamComponentManager, configuration: Dict[str, Any]) -> dict:
         """Convert configure scan request into a PST request string."""
         common_configure = configuration["common"]
         pst_configuration = configuration["pst"]["scan"]
@@ -829,17 +834,19 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             # force using a low Frequency Band if the facility is SKALow
             common_configure["frequency_band"] = "low"
 
-        request = {
+        if "eb_id" not in common_configure:
+            common_configure["eb_id"] = self._generate_execution_block_id()
+
+        return {
             **common_configure,
             **pst_configuration,
         }
-        return json.dumps(request)
 
     def validate_configure_scan(
         self: PstBeamComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
         """Validate the configure scan request."""
-        request_str = self._as_pst_configure_scan_request_str(configuration)
+        request_str = json.dumps(self._as_pst_configure_scan_request(configuration))
 
         validation_task = DeviceCommandTask(
             devices=[self._dsp_device, self._recv_device, self._smrb_device],
@@ -866,8 +873,8 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         # we only care about PST and common parts of the JSON
         # when sending to subordinated devices. Merge these into on configuration
         # request
-        pst_configuration = configuration["pst"]["scan"]
-        request_str = self._as_pst_configure_scan_request_str(configuration=configuration)
+        pst_configuration = self._as_pst_configure_scan_request(configuration=configuration)
+        request_str = json.dumps(pst_configuration)
 
         def _completion_callback(task_callback: Callable) -> None:
             from ska_pst_lmc.dsp.dsp_util import generate_dsp_scan_request
