@@ -1,5 +1,5 @@
-FROM registry.gitlab.com/ska-telescope/pst/ska-pst-common/ska-pst-common-builder:0.8.7 AS pstbuilder
-FROM registry.gitlab.com/ska-telescope/pst/ska-pst-common/ska-pst-common-proto:0.8.7 as proto
+FROM registry.gitlab.com/ska-telescope/pst/ska-pst-common/ska-pst-common-builder:0.9.1 AS pstbuilder
+FROM registry.gitlab.com/ska-telescope/pst/ska-pst-common/ska-pst-common-proto:0.9.1 as proto
 FROM artefact.skao.int/ska-tango-images-pytango-builder:9.3.32 AS buildenv
 
 WORKDIR /app
