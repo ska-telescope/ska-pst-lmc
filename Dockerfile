@@ -66,4 +66,8 @@ COPY --from=buildenv --chown=tango:tango /app/generated/ /app/src
 RUN poetry config virtualenvs.create false && \
   poetry install --without dev --without docs
 
+# Temp work around until release of ska-telmodel and not using a git dependency.
+# This is so the k8s-test passes
+RUN apt update && apt install -y git
+
 USER tango
