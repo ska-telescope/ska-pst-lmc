@@ -1434,10 +1434,8 @@ schema = "^0.7.5"
 toolz = "^0.12.0"
 
 [package.source]
-type = "git"
-url = "https://gitlab.com/ska-telescope/ska-telmodel.git"
-reference = "HEAD"
-resolved_reference = "c57ed18b52b844ad5d757151a57ba957e4f8d639"
+type = "directory"
+url = "resources/ska-telmodel"
 
 [[package]]
 name = "snowballstemmer"
@@ -1717,7 +1715,7 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "aadf548f45d956f112e4929e48216563418dc00e5a2756a167bd16a135ce4f18"
+content-hash = "f2dd79948f9022ec6286f71bcaf0595baf9a4f9dd217695e8a0caca069bfaa5d"
 
 [metadata.files]
 alabaster = [
