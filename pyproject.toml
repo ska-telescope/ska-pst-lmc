@@ -14,7 +14,7 @@ url = 'https://artefact.skao.int/repository/pypi-internal/simple'
 python = "^3.10"
 numpy = "^1.23.0"
 ska-tango-base = "^0.17.0"
-ska-telmodel = { git = "https://gitlab.com/ska-telescope/ska-telmodel.git", branch="at3-468-add-execution-block-id-to-csp-common" }
+ska-telmodel = { git = "https://gitlab.com/ska-telescope/ska-telmodel.git" }
 readerwriterlock = "^1.0.9"
 backoff = "^2.0.1"
 six="^1.15.0"

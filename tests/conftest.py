@@ -12,6 +12,8 @@ import collections
 import json
 import logging
 import queue
+import random
+import string
 import threading
 from concurrent import futures
 from datetime import datetime
@@ -210,10 +212,12 @@ def device_command_task_executor(task_executor: TaskExecutor) -> DeviceCommandTa
 @pytest.fixture
 def eb_id() -> str:
     """Return a valid execution block id for test config."""
-    now = datetime.now().strftime("%Y%m%d-%H%M%S")
-    value = randint(100, 999)
+    rand_char = random.choice(string.ascii_lowercase)
+    rand1 = random.randint(0, 999)
+    rand2 = random.randint(0, 99999)
+    today_str = datetime.today().strftime("%Y%m%d")
 
-    return f"eb-m{value}-{now}"
+    return f"eb-{rand_char}{rand1:03d}-{today_str}-{rand2:05d}"
 
 
 @pytest.fixture

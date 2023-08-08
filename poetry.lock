@@ -1436,8 +1436,8 @@ toolz = "^0.12.0"
 [package.source]
 type = "git"
 url = "https://gitlab.com/ska-telescope/ska-telmodel.git"
-reference = "at3-468-add-execution-block-id-to-csp-common"
-resolved_reference = "6961070243bb8a02eda4dcd3fb9868bceffe9a90"
+reference = "HEAD"
+resolved_reference = "c57ed18b52b844ad5d757151a57ba957e4f8d639"
 
 [[package]]
 name = "snowballstemmer"
@@ -1717,7 +1717,7 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "9298391643b3adcdc99a1e2cb4cd08a71d67373f014dd9dbaa8e09fd86c494d9"
+content-hash = "aadf548f45d956f112e4929e48216563418dc00e5a2756a167bd16a135ce4f18"
 
 [metadata.files]
 alabaster = [
