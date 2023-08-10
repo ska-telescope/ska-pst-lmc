@@ -2393,6 +2393,7 @@ pytango = "9.3.3"
 readerwriterlock = "^1.0.9"
 ska-tango-base = "^0.17.0"
 ska-tango-testing = "^0.4.1"
+ska-telmodel = "^1.8.1"
 
 [package.source]
 type = "directory"
@@ -2902,4 +2903,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "b08547f734712207a84a32e009535e67cedcc0e2ed211a7cfcfd85fe7db9df14"
+content-hash = "d2c69cd2407493eb0d5717940c00838bba5adb45e89ccb3b0c16db235dee0ec6"
