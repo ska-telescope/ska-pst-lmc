@@ -127,6 +127,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         self._remote_devices = [self._smrb_device, self._recv_device, self._dsp_device]
         self._subscribed = False
         self._pst_task_executor = TaskExecutor(logger=logger)
+        self._curr_scan_config: dict | None = None
         self._pst_task_executor.start()
 
         super().__init__(
@@ -821,9 +822,8 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
     def _generate_execution_block_id(self: PstBeamComponentManager) -> str:
         """Generate a unique execution block id."""
-        now = datetime.now().strftime("%Y%m%d-%H%M%S")
-
-        return f"eb-m001-{now}"
+        today = datetime.today().strftime("%Y%m%d")
+        return f"eb-m001-{today}-00000"
 
     def _as_pst_configure_scan_request(self: PstBeamComponentManager, configuration: Dict[str, Any]) -> dict:
         """Convert configure scan request into a PST request string."""
@@ -833,9 +833,6 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         if self._device_interface.facility == TelescopeFacilityEnum.Low:
             # force using a low Frequency Band if the facility is SKALow
             common_configure["frequency_band"] = "low"
-
-        if "eb_id" not in common_configure:
-            common_configure["eb_id"] = self._generate_execution_block_id()
 
         return {
             **common_configure,
@@ -873,6 +870,9 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         # we only care about PST and common parts of the JSON
         # when sending to subordinated devices. Merge these into on configuration
         # request
+        if "eb_id" not in configuration["common"]:
+            configuration["common"]["eb_id"] = self._generate_execution_block_id()
+
         pst_configuration = self._as_pst_configure_scan_request(configuration=configuration)
         request_str = json.dumps(pst_configuration)
 
@@ -884,6 +884,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
             # Update monitored properties
             self.config_id = configuration["common"]["config_id"]
+            self._curr_scan_config = configuration
             dsp_scan_request = generate_dsp_scan_request(pst_configuration)
             self.expected_data_record_rate = dsp_scan_request["bytes_per_second"]
 
@@ -927,6 +928,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
 
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'DeconfigureScan' commands have completed.")
+            self._curr_scan_config = None
             self._push_component_state_update(configured=False)
             self._reset_monitoring_properties()
             task_callback(status=TaskStatus.COMPLETED, result="Completed")

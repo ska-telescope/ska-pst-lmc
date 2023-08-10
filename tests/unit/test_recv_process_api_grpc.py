@@ -410,6 +410,10 @@ def test_recv_grpc_validate_configure_scan(
         scan_configuration=ScanConfiguration(receive=expected_receive_configure_protobuf),
         dry_run=True,
     )
+    assert expected_receive_configure_protobuf.execution_block_id == configure_scan_request["eb_id"], (
+        f"Expected execution_block_id to be {configure_scan_request['eb_id']} "
+        f"but value is {expected_receive_configure_protobuf.execution_block_id}"
+    )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
 
 
