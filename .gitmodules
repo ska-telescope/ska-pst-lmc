@@ -4,6 +4,3 @@
 [submodule "resources/ska-pst-testutils"]
 	path = resources/ska-pst-testutils
 	url = https://gitlab.com/ska-telescope/pst/ska-pst-testutils.git
-[submodule "resources/ska-telmodel"]
-	path = resources/ska-telmodel
-	url = https://gitlab.com/ska-telescope/ska-telmodel.git
