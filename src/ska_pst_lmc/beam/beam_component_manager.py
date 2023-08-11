@@ -13,7 +13,6 @@ import json
 import logging
 import sys
 import threading
-from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ska_tango_base.base import check_communicating
@@ -820,11 +819,6 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             completion_callback=_completion_callback,
         )
 
-    def _generate_execution_block_id(self: PstBeamComponentManager) -> str:
-        """Generate a unique execution block id."""
-        today = datetime.today().strftime("%Y%m%d")
-        return f"eb-m001-{today}-00000"
-
     def _as_pst_configure_scan_request(self: PstBeamComponentManager, configuration: Dict[str, Any]) -> dict:
         """Convert configure scan request into a PST request string."""
         common_configure = configuration["common"]
@@ -843,6 +837,9 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         self: PstBeamComponentManager, configuration: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
         """Validate the configure scan request."""
+        if "eb_id" not in configuration["common"]:
+            return (TaskStatus.FAILED, "expected 'eb_id' to be set in common section of request.")
+
         request_str = json.dumps(self._as_pst_configure_scan_request(configuration))
 
         validation_task = DeviceCommandTask(
@@ -870,9 +867,6 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         # we only care about PST and common parts of the JSON
         # when sending to subordinated devices. Merge these into on configuration
         # request
-        if "eb_id" not in configuration["common"]:
-            configuration["common"]["eb_id"] = self._generate_execution_block_id()
-
         pst_configuration = self._as_pst_configure_scan_request(configuration=configuration)
         request_str = json.dumps(pst_configuration)
 

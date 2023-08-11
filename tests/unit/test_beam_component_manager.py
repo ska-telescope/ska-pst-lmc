@@ -9,7 +9,6 @@
 import json
 import logging
 import sys
-from datetime import datetime
 from typing import Any, Callable, Dict, Generator, List, Optional, Union, cast
 from unittest.mock import ANY, MagicMock, call
 
@@ -963,7 +962,7 @@ def test_set_monitoring_polling_rate(
         ), f"Expected the monitoring polling rate for {d} to have been set to {monitoring_polling_rate}"
 
 
-def test_when_eb_id_is_not_present(
+def test_when_eb_id_is_not_present_fails_validation(
     component_manager: PstBeamComponentManager,
     csp_configure_scan_request: Dict[str, Any],
 ) -> None:
@@ -972,34 +971,8 @@ def test_when_eb_id_is_not_present(
         del csp_configure_scan_request["common"]["eb_id"]
     except KeyError:
         pass
-    today = datetime.today().strftime("%Y%m%d")
-    expected_eb_id = f"eb-m001-{today}-00000"
 
-    task_callback = _ThreadingCallback()
+    (status, msg) = component_manager.validate_configure_scan(configuration=csp_configure_scan_request)
 
-    component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
-
-    [
-        setattr(  # type: ignore
-            d, m, MagicMock(name=f"{d}.{m}", return_value=([ResultCode.OK], ["Completed"]))
-        )
-        for d in component_manager._remote_devices
-        for m in ["ValidateConfigureScan", "ConfigureScan", "ConfigureBeam"]
-    ]
-
-    component_manager.configure_scan(configuration=csp_configure_scan_request, task_callback=task_callback)
-
-    task_callback.wait()
-
-    for m in ["ConfigureScan", "ConfigureBeam"]:
-        for d in component_manager._remote_devices:
-            mock = cast(MagicMock, getattr(d, m))
-            mock.assert_called_once()
-            kall = mock.call_args
-            assert len(kall.args) == 1
-            request = json.loads(kall.args[0])
-            assert "eb_id" in request, f"Expected an 'eb_id' to have been added to configure requests to {d}"
-            assert request["eb_id"] == expected_eb_id, f"Expected {request['eb_id']} to be {expected_eb_id}"
-
-    calls = [call(status=TaskStatus.COMPLETED, result="Completed")]
-    task_callback.assert_has_calls(calls)
+    assert status == TaskStatus.FAILED, "Expected validate_configure_scan return status TaskStatus.FAILED"
+    assert msg == "expected 'eb_id' to be set in common section of request."
