@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ska-pst-lmc"
-version = "0.6.4"
+version = "0.6.3"
 description = "PST-LMC Tango device package"
 authors = ["Team PST"]
 license = "BSD-3-Clause"
@@ -9,12 +9,6 @@ repository = "https://gitlab.com/ska-telescope/pst/ska-pst-lmc.git"
 [[tool.poetry.source]]
 name = 'ska-nexus'
 url = 'https://artefact.skao.int/repository/pypi-internal/simple'
-priority = "primary"
-
-
-[[tool.poetry.source]]
-name = "PyPI"
-priority = "supplemental"
 
 [tool.poetry.dependencies]
 python = "^3.10"
