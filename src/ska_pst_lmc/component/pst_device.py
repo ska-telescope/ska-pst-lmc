@@ -89,8 +89,16 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
         dtype=str,
         default_value="Low",
         doc=(
-            "The SKA facility that this device is being used for. The"
-            "default value is 'Low' and the only valid values is 'Mid' or 'Low'"
+            "The SKA facility that this device is being used for. The "
+            "default value is 'Low' and the only valid values is 'Mid' or 'Low'."
+        ),
+    )
+
+    SubsystemId = device_property(
+        dtype=str,
+        doc=(
+            "The subsystem that PST device is deploy in. This should be "
+            "in the form 'pst-low' or 'pst-mid'."
         ),
     )
 
@@ -245,6 +253,11 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
     def facility(self: PstBaseDevice) -> TelescopeFacilityEnum:
         """Get the facility that this device is being used for."""
         return TelescopeFacilityEnum[self.Facility]
+
+    @property
+    def subsystem_id(self: PstBaseDevice) -> str:
+        """Get the sub-system id where device is deployed."""
+        return self.SubsystemId
 
     def handle_fault(self: PstBaseDevice, fault_msg: str) -> None:
         """Handle putting the device into a fault state."""

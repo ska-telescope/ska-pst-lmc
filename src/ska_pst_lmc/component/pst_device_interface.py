@@ -67,6 +67,11 @@ class PstDeviceInterface:
         """Get the facility that this device is being used for."""
         raise NotImplementedError("PstDeviceInteface is abstract")
 
+    @property
+    def subsystem_id(self: PstDeviceInterface) -> str:
+        """Get the sub-system id where device is deployed."""
+        raise NotImplementedError("PstDeviceInteface is abstract")
+
     def update_health_state(self: PstDeviceInterface, health_state: HealthState) -> None:
         """
         Update the health state of device.

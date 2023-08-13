@@ -8,6 +8,7 @@
 
 import json
 import logging
+import pathlib
 import sys
 from typing import Any, Callable, Dict, Generator, List, Optional, Union, cast
 from unittest.mock import ANY, MagicMock, call
@@ -124,6 +125,23 @@ def patch_submit_job() -> bool:
 
 
 @pytest.fixture
+def expected_output_path(
+    scan_output_dir_pattern: str,
+    eb_id: str,
+    subsystem_id: str,
+    scan_id: int,
+) -> pathlib.Path:
+    """Get expected output path given eb_id, subsystem_id and scan_id."""
+    pattern_values = {"eb_id": eb_id, "subsystem_id": subsystem_id, "scan_id": str(scan_id)}
+
+    output_path = scan_output_dir_pattern
+    for k, v in pattern_values.items():
+        output_path = output_path.replace(f"<{k}>", v)
+
+    return pathlib.Path(output_path)
+
+
+@pytest.fixture
 def device_interface(
     device_name: str,
     beam_id: int,
@@ -134,6 +152,8 @@ def device_interface(
     component_state_callback: Callable,
     property_callback: Callable,
     telescope_facility: TelescopeFacilityEnum,
+    scan_output_dir_pattern: str,
+    subsystem_id: str,
 ) -> PstBeamDeviceInterface:
     """Create device interface fixture to mock the BEAM.MGMT tango device."""
     device_interface = MagicMock()
@@ -146,6 +166,8 @@ def device_interface(
     device_interface.handle_attribute_value_update = property_callback
     device_interface.beam_id = beam_id
     device_interface.facility = telescope_facility
+    device_interface.scan_output_dir_pattern = scan_output_dir_pattern
+    device_interface.subsystem_id = subsystem_id
 
     return cast(PstBeamDeviceInterface, device_interface)
 
@@ -976,3 +998,51 @@ def test_when_eb_id_is_not_present_fails_validation(
 
     assert status == TaskStatus.FAILED, "Expected validate_configure_scan return status TaskStatus.FAILED"
     assert msg == "expected 'eb_id' to be set in common section of request."
+
+
+@pytest.mark.parametrize("telescope_facility", [TelescopeFacilityEnum.Low, TelescopeFacilityEnum.Mid])
+def test_start_scan_writes_scan_config_json_file(
+    component_manager: PstBeamComponentManager,
+    scan_id: int,
+    csp_configure_scan_request: Dict[str, Any],
+    subsystem_id: str,
+    telescope_facility: TelescopeFacilityEnum,
+    expected_output_path: pathlib.Path,
+) -> None:
+    """Assert that the scan configuration is written to the correct output location."""
+    if telescope_facility == TelescopeFacilityEnum.Low:
+        assert subsystem_id == "pst-low", "Expected subsystem_id facet to be 'pst-low'"
+    else:
+        assert subsystem_id == "pst-mid", "Expected subsystem_id facet to be 'pst-mid'"
+
+    task_callback = _ThreadingCallback()
+
+    # stub the scan request of subordinate devices.
+    [
+        setattr(  # type: ignore
+            d, m, MagicMock(name=f"{d}.{m}", return_value=([ResultCode.OK], ["Completed"]))
+        )
+        for d in component_manager._remote_devices
+        for m in ["Scan"]
+    ]
+
+    component_manager._curr_scan_config = csp_configure_scan_request
+    # need to stub out calls to start scan on devices - for now test method directly
+    component_manager.scan(scan_id=scan_id, task_callback=task_callback)
+    # assert that file is written to correct location
+
+    task_callback.wait()
+
+    assert expected_output_path.exists(), f"Expected that {expected_output_path} exists"
+
+    json_path = expected_output_path / "scan_configuration.json"
+    assert json_path.exists(), f"Expected that {json_path} exists"
+
+    with open(json_path, "r") as f:
+        stored_config = json.load(f)
+
+    assert (
+        stored_config == csp_configure_scan_request
+    ), "Expected stored config file to be same as CSP scan request"
+
+    json_path.unlink()

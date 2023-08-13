@@ -35,6 +35,11 @@ class PstBeamDeviceInterface(PstDeviceInterface):
         """Get the fully qualified device name (FQDN) for the DSP.MGMT device of this beam."""
         raise NotImplementedError("PstBeamDeviceInterface is abstract")
 
+    @property
+    def scan_output_dir_pattern(self: PstBeamDeviceInterface) -> str:
+        """Get the pattern for directory used for scan output files."""
+        raise NotImplementedError("PstBeamDeviceInterface is abstract")
+
     def handle_subdevice_fault(self: PstBeamDeviceInterface, device_fqdn: str, fault_msg: str) -> None:
         """
         Handle a fault raised from a subordinate device.

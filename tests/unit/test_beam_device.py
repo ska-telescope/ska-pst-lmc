@@ -52,7 +52,11 @@ def server_configuration(devices_info: List[dict]) -> dict:
 
 
 @pytest.fixture(scope="class")
-def devices_info(monitoring_polling_rate: int) -> List[dict]:
+def devices_info(
+    monitoring_polling_rate: int,
+    scan_output_dir_pattern: str,
+    subsystem_id: str,
+) -> List[dict]:
     """Get device configuration for tests."""
     return [
         {
@@ -62,6 +66,7 @@ def devices_info(monitoring_polling_rate: int) -> List[dict]:
                     "name": "test/dsp/1",
                     "properties": {
                         "initial_monitoring_polling_rate": monitoring_polling_rate,
+                        "SubsystemId": subsystem_id,
                     },
                 }
             ],
@@ -73,6 +78,7 @@ def devices_info(monitoring_polling_rate: int) -> List[dict]:
                     "name": "test/recv/1",
                     "properties": {
                         "initial_monitoring_polling_rate": monitoring_polling_rate,
+                        "SubsystemId": subsystem_id,
                     },
                 }
             ],
@@ -84,6 +90,7 @@ def devices_info(monitoring_polling_rate: int) -> List[dict]:
                     "name": "test/smrb/1",
                     "properties": {
                         "initial_monitoring_polling_rate": monitoring_polling_rate,
+                        "SubsystemId": subsystem_id,
                     },
                 }
             ],
@@ -99,6 +106,8 @@ def devices_info(monitoring_polling_rate: int) -> List[dict]:
                         "SmrbFQDN": "test/smrb/1",
                         "DspFQDN": "test/dsp/1",
                         "SendFQDN": "test/send/1",
+                        "ScanOutputDirPattern": scan_output_dir_pattern,
+                        "SubsystemId": subsystem_id,
                     },
                 }
             ],

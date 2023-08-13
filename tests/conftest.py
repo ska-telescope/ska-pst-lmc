@@ -14,6 +14,7 @@ import logging
 import queue
 import random
 import string
+import tempfile
 import threading
 from concurrent import futures
 from datetime import datetime
@@ -749,6 +750,15 @@ def telescope_facility() -> TelescopeFacilityEnum:
     return TelescopeFacilityEnum.Low
 
 
+@pytest.fixture
+def subsystem_id(telescope_facility: TelescopeFacilityEnum) -> str:
+    """Get the subsystem_id based on the telescope facility the test is for."""
+    if telescope_facility == TelescopeFacilityEnum.Low:
+        return "pst-low"
+    else:
+        return "pst-mid"
+
+
 @pytest.fixture(scope="session")
 def monitoring_polling_rate() -> int:
     """Fixture to get monitoring polling rate for test in milliseconds."""
@@ -812,3 +822,12 @@ def fail_validate_configure_beam() -> bool:
 def fail_validate_configure_scan() -> bool:
     """Fixture used to override simulator to fail validation or not."""
     return False
+
+
+@pytest.fixture(scope="session")
+def scan_output_dir_pattern() -> str:
+    """Get the pattern for the output directory used for scan files."""
+    tmp_dir = tempfile.gettempdir()
+
+    # for unit testing, use /tmp/project as top level dir
+    return f"{tmp_dir}/project/<eb_id>/<subsystem_id>/<scan_id>"

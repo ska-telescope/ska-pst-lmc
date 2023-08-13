@@ -444,8 +444,8 @@ class TaskExecutor:
         task context as complete.  Errors are allowed to return as this will be
         handled in the `_route_task` method.
         """
-        self._logger.info("Calling a LambdaTask!")
         task = cast(LambdaTask, task_context.task)
+        self._logger.debug(f"Calling {task}")
         task.action()
         task_context.signal_complete()
 
