@@ -349,18 +349,14 @@ def test_dsp_grpc_validate_configure_scan(
 
     grpc_api.validate_configure_scan(configure_scan_request)
 
-    expected_scan_configuration = generate_dsp_scan_request(request_params=configure_scan_request)
-    assert (
-        "execution_block_id" in expected_scan_configuration
-    ), "Expected key 'execution_block_id' in scan request"
-    assert expected_scan_configuration["execution_block_id"] == configure_scan_request["eb_id"], (
+    dsp_scan_request = generate_dsp_scan_request(request_params=configure_scan_request)
+    assert "execution_block_id" in dsp_scan_request, "Expected key 'execution_block_id' in scan request"
+    assert dsp_scan_request["execution_block_id"] == configure_scan_request["eb_id"], (
         f"Expected execution_block_id to be {configure_scan_request['eb_id']} "
-        f"but value is {expected_scan_configuration['execution_block_id']}"
+        f"but value is {dsp_scan_request['execution_block_id']}"
     )
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(
-            dsp_disk=DspDiskScanConfiguration(**expected_scan_configuration)
-        ),
+        scan_configuration=ScanConfiguration(dsp_disk=DspDiskScanConfiguration(**dsp_scan_request)),
         dry_run=True,
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
