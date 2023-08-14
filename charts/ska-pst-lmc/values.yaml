@@ -45,7 +45,7 @@ loggingLevel: 4 # This is INFO level
 beam:
   simulationMode: 1
   monitor_polling_rate: 5000
-  scanOutputDirPattern: /project/<eb_id>/<subsystem_id>/<scan_id>
+  scanOutputDirPattern: /mnt/lfs/product/<eb_id>/<subsystem_id>/<scan_id>
 
 smrb:
   simulationMode: 1

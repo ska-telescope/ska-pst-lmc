@@ -829,5 +829,5 @@ def scan_output_dir_pattern() -> str:
     """Get the pattern for the output directory used for scan files."""
     tmp_dir = tempfile.gettempdir()
 
-    # for unit testing, use /tmp/project as top level dir
-    return f"{tmp_dir}/project/<eb_id>/<subsystem_id>/<scan_id>"
+    # for unit testing, use /tmp/product as top level dir
+    return f"{tmp_dir}/product/<eb_id>/<subsystem_id>/<scan_id>"

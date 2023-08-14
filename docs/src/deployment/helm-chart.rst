@@ -45,7 +45,7 @@ The current default Helm chart parameters can be viewed in the ``ska-pst-lmc`` `
     - 1
   * - ``beam.scanOutputDirPattern``
     - The pattern where to write the output scan configuration needed to send to SDP when scan completes
-    - /project/<eb_id>/<subsystem_id>/<scan_id>
+    - /mnt/lsf/product/<eb_id>/<subsystem_id>/<scan_id>
   * - ``smrb.simulationMode``
     - Run SMRB component device in simulation mode
     - 1

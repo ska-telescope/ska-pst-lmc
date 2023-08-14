@@ -66,6 +66,6 @@ COPY --from=buildenv --chown=tango:tango /app/generated/ /app/src
 RUN poetry config virtualenvs.create false && \
   poetry install --without dev --without docs
 
-RUN mkdir -m777 -p /project
+RUN mkdir -m777 -p /mnt/lfs
 
 USER tango
