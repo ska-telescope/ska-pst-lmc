@@ -613,7 +613,12 @@ def test_beam_cm_configure_scan_sets_expected_data_record_rate(
 
     task_callback = _ThreadingCallback()
 
-    dsp_scan_request = generate_dsp_scan_request(csp_configure_scan_request["pst"]["scan"])
+    request = {
+        **csp_configure_scan_request["common"],
+        **csp_configure_scan_request["pst"]["scan"],
+    }
+
+    dsp_scan_request = generate_dsp_scan_request(request)
 
     assert component_manager.expected_data_record_rate == 0.0
 
@@ -955,3 +960,19 @@ def test_set_monitoring_polling_rate(
         assert (
             cast(MagicMock, d).monitoringPollingRate == monitoring_polling_rate
         ), f"Expected the monitoring polling rate for {d} to have been set to {monitoring_polling_rate}"
+
+
+def test_when_eb_id_is_not_present_fails_validation(
+    component_manager: PstBeamComponentManager,
+    csp_configure_scan_request: Dict[str, Any],
+) -> None:
+    """Test that component manager adds an eb_id."""
+    try:
+        del csp_configure_scan_request["common"]["eb_id"]
+    except KeyError:
+        pass
+
+    (status, msg) = component_manager.validate_configure_scan(configuration=csp_configure_scan_request)
+
+    assert status == TaskStatus.FAILED, "Expected validate_configure_scan return status TaskStatus.FAILED"
+    assert msg == "expected 'eb_id' to be set in common section of request."

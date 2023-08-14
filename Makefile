@@ -18,6 +18,7 @@ PYTHON_SWITCHES_FOR_BLACK = --force-exclude=src/ska_pst_lmc_proto
 PYTHON_SWITCHES_FOR_ISORT = --skip-glob="*/__init__.py" --py 39 --thirdparty=ska_pst_lmc_proto
 PYTHON_SWITCHES_FOR_PYLINT = --disable=W,C,R --ignored-modules="ska_pst_lmc_proto"
 PYTHON_SWITCHES_FOR_AUTOFLAKE ?= --in-place --remove-unused-variables --remove-all-unused-imports --recursive --ignore-init-module-imports
+PYTHON_SWITCHES_FOR_DOCFORMATTER ?= -r -i --black --style sphinx --wrap-summaries $(PYTHON_LINE_LENGTH) --wrap-descriptions $(PYTHON_LINE_LENGTH) --pre-summary-newline
 
 DOCS_SOURCEDIR=./docs/src
 PYTHON_VARS_AFTER_PYTEST = --cov-config=$(PWD)/.coveragerc
@@ -72,7 +73,7 @@ SKA_TANGO_PYTANGO_RUNTIME_IMAGE=ska-tango-images-pytango-runtime
 SKA_TANGO_PYTANGO_RUNTIME_TAG=9.3.19
 SKA_PST_PYTHON_RUNTIME_IMAGE=$(SKA_TANGO_PYTANGO_RUNTIME_REGISTRY)/$(SKA_TANGO_PYTANGO_RUNTIME_IMAGE):$(SKA_TANGO_PYTANGO_RUNTIME_TAG)
 
-PST_COMMON_TAG=0.8.7
+PST_COMMON_TAG=0.9.1
 
 PST_OCI_COMMON_BUILDER_REGISTRY=$(PST_DEV_REGISTRY)/ska-pst-common
 PST_OCI_COMMON_BUILDER_IMAGE=ska-pst-common-builder
@@ -99,7 +100,7 @@ flake8:
 
 python-post-format:
 	$(PYTHON_RUNNER) autoflake $(PYTHON_SWITCHES_FOR_AUTOFLAKE) $(PYTHON_LINT_TARGET)
-	$(PYTHON_RUNNER) docformatter -r -i --wrap-summaries $(PYTHON_LINE_LENGTH) --wrap-descriptions $(PYTHON_LINE_LENGTH) --pre-summary-newline $(PYTHON_LINT_TARGET)
+	$(PYTHON_RUNNER) docformatter $(PYTHON_SWITCHES_FOR_DOCFORMATTER) $(PYTHON_LINT_TARGET)
 
 python-post-lint: mypy
 

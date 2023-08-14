@@ -12,8 +12,11 @@ import collections
 import json
 import logging
 import queue
+import random
+import string
 import threading
 from concurrent import futures
+from datetime import datetime
 from random import randint
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, cast
 from unittest.mock import MagicMock
@@ -207,14 +210,26 @@ def device_command_task_executor(task_executor: TaskExecutor) -> DeviceCommandTa
 
 
 @pytest.fixture
-def csp_configure_scan_request() -> Dict[str, Any]:
+def eb_id() -> str:
+    """Return a valid execution block id for test config."""
+    rand_char = random.choice(string.ascii_lowercase)
+    rand1 = random.randint(0, 999)
+    rand2 = random.randint(0, 99999)
+    today_str = datetime.today().strftime("%Y%m%d")
+
+    return f"eb-{rand_char}{rand1:03d}-{today_str}-{rand2:05d}"
+
+
+@pytest.fixture
+def csp_configure_scan_request(eb_id: str) -> Dict[str, Any]:
     """Return valid configure JSON object that CSP would send."""
     return {
-        "interface": "https://schema.skao.int/ska-csp-configure/2.3",
+        "interface": "https://schema.skao.int/ska-csp-configure/2.4",
         "common": {
             "config_id": "sbi-mvp01-20200325-00001-science_A",
             "frequency_band": "1",
             "subarray_id": 1,
+            "eb_id": eb_id,
         },
         "pst": {
             "scan": {

@@ -398,7 +398,6 @@ def test_recv_grpc_validate_configure_scan(
     grpc_api: PstReceiveProcessApiGrpc,
     mock_servicer_context: MagicMock,
     configure_scan_request: Dict[str, Any],
-    expected_receive_configure_protobuf: ReceiveScanConfiguration,
 ) -> None:
     """Test that RECV gRPC validate_configure_scan is called."""
     response = ConfigureScanResponse()
@@ -406,8 +405,15 @@ def test_recv_grpc_validate_configure_scan(
 
     grpc_api.validate_configure_scan(configure_scan_request)
 
+    recv_scan_request = generate_recv_scan_request(request_params=configure_scan_request)
+    assert "execution_block_id" in recv_scan_request, "Expected key 'execution_block_id' in scan request"
+    assert recv_scan_request["execution_block_id"] == configure_scan_request["eb_id"], (
+        f"Expected execution_block_id to be {configure_scan_request['eb_id']} "
+        f"but value is {recv_scan_request['execution_block_id']}"
+    )
+
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(receive=expected_receive_configure_protobuf),
+        scan_configuration=ScanConfiguration(receive=ReceiveScanConfiguration(**recv_scan_request)),
         dry_run=True,
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)

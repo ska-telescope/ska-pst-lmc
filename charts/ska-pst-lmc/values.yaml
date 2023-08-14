@@ -9,7 +9,7 @@ enabled: true
 image:
   registry: artefact.skao.int
   image: ska-pst-lmc
-  tag: 0.6.3
+  tag: 0.6.4
   pullPolicy: IfNotPresent
 
 system: SW-infrastructure
