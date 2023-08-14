@@ -62,6 +62,10 @@ ska-pst-lmc:
   dsp:
     monitor_polling_rate: 500
 
+  beam:
+    # use /tmp in test-parent as the tango user has write permissions
+    scanOutputDirPattern: /tmp/project/<eb_id>/<subsystem_id>/<scan_id>
+
 ska-dashboard-repo:
   enabled: false
 
