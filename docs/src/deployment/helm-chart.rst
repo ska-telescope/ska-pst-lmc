@@ -3,7 +3,7 @@ Helm charts
 ===========
 
 This page summarises the Helm chart parameters that can be used to customise
-the PST.LMC Release and Development deployments. 
+the PST.LMC Release and Development deployments.
 
 Release chart
 -------------
@@ -37,9 +37,15 @@ The current default Helm chart parameters can be viewed in the ``ska-pst-lmc`` `
   * - ``global.ports.dsp.dsp-mgmt.port``
     - Port used by DSP component manager
     - 8080
+  * - ``subsystem_id``
+    - The subsystem used in output path of files sent to DSP. This should be pst-low or pst-mid.
+    - pst-low
   * - ``beam.simulationMode``
     - Run Beam logical device in simulation mode
     - 1
+  * - ``beam.scanOutputDirPattern``
+    - The pattern where to write the output scan configuration needed to send to SDP when scan completes
+    - /project/<eb_id>/<subsystem_id>/<scan_id>
   * - ``smrb.simulationMode``
     - Run SMRB component device in simulation mode
     - 1
@@ -73,13 +79,13 @@ Example of running in normal mode (not simulation mode).
 
     beam:
       simulationMode: 1
-    
+
     smrb:
       simulationMode: 1
-    
+
     recv:
       simulationMode: 1
-    
+
     dsp:
       simulationMode: 1
 
@@ -87,7 +93,7 @@ Development chart
 -----------------
 
 The ``test-parent`` chart deploys the latest build of PST.LMC from ``registry.gitlab.com/ska-telescope/pst/ska-pst-lmc``.
-The current default Helm chart parameters can be viewed in the 
+The current default Helm chart parameters can be viewed in the
 ``values.yaml`` file for
 `test_parent <https://gitlab.com/ska-telescope/pst/ska-pst-lmc/-/blob/main/charts/test-parent/values.yaml>`_.
 
