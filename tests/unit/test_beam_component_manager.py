@@ -370,12 +370,16 @@ def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity
     request_params: Optional[Any],
     remote_commands: Union[str, List[str]],
     component_state_callback_params: Optional[dict],
+    csp_configure_scan_request: Dict[str, Any],
 ) -> None:
     """Assert that actions that need to be delegated to remote devices."""
     if method_name == "obsreset":
         smrb_device_proxy.obsState = ObsState.ABORTED
         recv_device_proxy.obsState = ObsState.ABORTED
         dsp_device_proxy.obsState = ObsState.ABORTED
+    elif method_name == "scan":
+        # ensure we have previous scan config
+        component_manager._curr_scan_config = csp_configure_scan_request
 
     task_callback = _ThreadingCallback()
 
@@ -814,7 +818,9 @@ def test_beam_cm_propagates_subordinate_device_error_messages_on_faults(
     )
 
 
-@pytest.mark.parametrize("telescope_facility", [TelescopeFacilityEnum.Low, TelescopeFacilityEnum.Mid])
+@pytest.mark.parametrize(
+    "telescope_facility", [TelescopeFacilityEnum.Low, TelescopeFacilityEnum.Mid], indirect=True
+)
 def test_beam_cm_updates_frequency_band_to_low_for_skalow(
     component_manager: PstBeamComponentManager,
     csp_configure_scan_request: Dict[str, Any],
@@ -1000,7 +1006,9 @@ def test_when_eb_id_is_not_present_fails_validation(
     assert msg == "expected 'eb_id' to be set in common section of request."
 
 
-@pytest.mark.parametrize("telescope_facility", [TelescopeFacilityEnum.Low, TelescopeFacilityEnum.Mid])
+@pytest.mark.parametrize(
+    "telescope_facility", [TelescopeFacilityEnum.Low, TelescopeFacilityEnum.Mid], indirect=True
+)
 def test_start_scan_writes_scan_config_json_file(
     component_manager: PstBeamComponentManager,
     scan_id: int,

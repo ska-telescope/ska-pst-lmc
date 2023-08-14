@@ -744,13 +744,13 @@ def property_callback() -> MagicMock:
     return MagicMock()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def telescope_facility() -> TelescopeFacilityEnum:
     """Get fixture for simulating which telescope facility to test for."""
     return TelescopeFacilityEnum.Low
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def subsystem_id(telescope_facility: TelescopeFacilityEnum) -> str:
     """Get the subsystem_id based on the telescope facility the test is for."""
     if telescope_facility == TelescopeFacilityEnum.Low:
