@@ -33,6 +33,9 @@ server:
           - name: "LoggingLevelDefault"
             values:
             - "{{.Values.loggingLevel}}"
+          - name: "SubsystemId"
+            values:
+            - "{{.Values.subsystem_id}}"
           attribute_properties:
           - attribute: "simulationMode"
             properties:
@@ -55,6 +58,9 @@ server:
           - name: "LoggingLevelDefault"
             values:
             - "{{.Values.loggingLevel}}"
+          - name: "SubsystemId"
+            values:
+            - "{{.Values.subsystem_id}}"
           attribute_properties:
           - attribute: "simulationMode"
             properties:
@@ -77,6 +83,9 @@ server:
           - name: "LoggingLevelDefault"
             values:
             - "{{.Values.loggingLevel}}"
+          - name: "SubsystemId"
+            values:
+            - "{{.Values.subsystem_id}}"
           attribute_properties:
           - attribute: "simulationMode"
             properties:
@@ -111,6 +120,12 @@ server:
           - name: "LoggingLevelDefault"
             values:
             - "{{.Values.loggingLevel}}"
+          - name: "ScanOutputDirPattern"
+            values:
+            - "{{.Values.beam.scanOutputDirPattern}}"
+          - name: "SubsystemId"
+            values:
+            - "{{.Values.subsystem_id}}"
           attribute_properties:
           - attribute: "simulationMode"
             properties:
