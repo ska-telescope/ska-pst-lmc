@@ -64,6 +64,10 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         dtype=str,
     )
 
+    ScanOutputDirPattern = device_property(
+        dtype=str, doc=("The pattern for directory used for scan output files.")
+    )
+
     # ---------------
     # General methods
     # ---------------
@@ -171,6 +175,11 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
     def dsp_fqdn(self: PstBeam) -> str:
         """Get the fully qualified device name (FQDN) for the DSP.MGMT device of this beam."""
         return self.DspFQDN
+
+    @property
+    def scan_output_dir_pattern(self: PstBeam) -> str:
+        """Get the pattern for directory used for scan output files."""
+        return self.ScanOutputDirPattern
 
     def handle_subdevice_fault(self: PstBeam, device_fqdn: str, fault_msg: str) -> None:
         """

@@ -29,11 +29,13 @@ from ska_pst_lmc.dsp.dsp_device import PstDsp
 def device_properties(
     grpc_endpoint: str,
     monitoring_polling_rate: int,
+    subsystem_id: str,
 ) -> dict:
     """Fixture that returns device_properties to be provided to the device under test."""
     return {
         "process_api_endpoint": grpc_endpoint,
         "initial_monitoring_polling_rate": monitoring_polling_rate,
+        "SubsystemId": subsystem_id,
     }
 
 

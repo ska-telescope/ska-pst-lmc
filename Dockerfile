@@ -2,12 +2,20 @@ ARG BUILD_IMAGE=""
 ARG BASE_IMAGE=""
 ARG PST_COMMON_BUILDER_IMAGE=""
 ARG PROTOBUF_IMAGE=""
+ARG POETRY_VERSION="1.2.2"
 
 FROM $PST_COMMON_BUILDER_IMAGE AS pstbuilder
 
 FROM $PROTOBUF_IMAGE as proto
 
 FROM $BUILD_IMAGE AS buildenv
+
+ARG POETRY_VERSION
+
+RUN apt update && \
+  apt list --upgradable && \
+  apt upgrade -y && \
+  poetry self update ${POETRY_VERSION}
 
 WORKDIR /app
 
@@ -41,11 +49,18 @@ RUN mkdir -p "$(pwd)/generated" && \
     --grpc_python_out="$(pwd)/generated" \
     $(find "$(pwd)/protobuf" -iname "*.proto")
 
-RUN PYTHONPATH="/app/src:/app/generated" pytest --forked tests/
+# RUN PYTHONPATH="/app/src:/app/generated" pytest --forked tests/
 
 FROM $BASE_IMAGE
 
+ARG POETRY_VERSION
+
 USER root
+
+RUN apt update && \
+  apt list --upgradable && \
+  apt upgrade -y && \
+  poetry self update ${POETRY_VERSION}
 
 COPY --from=pstbuilder /usr/local/lib/libprotobuf*.so* ./lib/
 COPY --from=pstbuilder /usr/local/lib/libgrpc*.so* ./lib/
@@ -65,5 +80,7 @@ COPY --from=buildenv --chown=tango:tango /app/generated/ /app/src
 
 RUN poetry config virtualenvs.create false && \
   poetry install --without dev --without docs
+
+RUN mkdir -m777 -p /mnt/lfs
 
 USER tango

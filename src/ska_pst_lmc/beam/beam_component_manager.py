@@ -957,23 +957,63 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         self: PstBeamComponentManager, args: Dict[str, Any], task_callback: Callback = None
     ) -> TaskResponse:
         """Start scanning."""
-        scan_id = args["scan_id"]
+        scan_id = str(args["scan_id"])
 
         def _completion_callback(task_callback: Callable) -> None:
             self.logger.debug("All the 'Scan' commands have completed.")
             self._push_component_state_update(scanning=True)
-            self.scan_id = scan_id
+            self.scan_id = int(scan_id)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
         return self._submit_remote_job(
-            job=DeviceCommandTask(
-                devices=self._remote_devices,
-                action=lambda d: d.Scan(str(scan_id)),
-                command_name="Scan",
+            job=SequentialTask(
+                subtasks=[
+                    LambdaTask(
+                        action=lambda: self._write_scan_config_to_output_dir(scan_id),
+                        name="write_scan_config_to_output_dir",
+                    ),
+                    DeviceCommandTask(
+                        devices=self._remote_devices,
+                        action=lambda d: d.Scan(scan_id),
+                        command_name="Scan",
+                    ),
+                ]
             ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
+
+    def _write_scan_config_to_output_dir(self: PstBeamComponentManager, scan_id: str) -> None:
+        """Write the scan configuration out as JSON."""
+        import pathlib
+
+        self.logger.debug(f"Writing scan configuration for scan {scan_id}")
+
+        # dump current scan configuration as JSON
+        params = {
+            "eb_id": self._curr_scan_config["common"]["eb_id"],  # type: ignore
+            "subsystem_id": self._device_interface.subsystem_id,
+            "scan_id": scan_id,
+        }
+
+        output_dir_str = self._device_interface.scan_output_dir_pattern
+        for k, v in params.items():
+            output_dir_str = output_dir_str.replace(f"<{k}>", v)
+
+        try:
+            output_dir = pathlib.Path(output_dir_str)
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            scan_configuration_path = output_dir / "scan_configuration.json"
+
+            self.logger.info(f"Writing scan configuration for scan {scan_id} to {scan_configuration_path}")
+
+            with open(scan_configuration_path, "w") as f:
+                json.dump(self._curr_scan_config, f)
+
+        except Exception:
+            self.logger.exception("Error in writting output file.", exc_info=True)
+            raise
 
     def stop_scan(self: PstBeamComponentManager, task_callback: Callback = None) -> TaskResponse:
         """Stop scanning."""
@@ -1025,7 +1065,10 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         self._submit_remote_job(
             job=SequentialTask(
                 subtasks=[
-                    LambdaTask(action=lambda: callback_safely(task_callback, status=TaskStatus.IN_PROGRESS)),
+                    LambdaTask(
+                        action=lambda: callback_safely(task_callback, status=TaskStatus.IN_PROGRESS),
+                        name="abort_in_progress",
+                    ),
                     self._abort_task(),
                 ]
             ),

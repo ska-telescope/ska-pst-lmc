@@ -57,7 +57,8 @@ class LambdaTask:
     This allows a task to call something like a task_callback to perform an update.
     """
 
-    action: Callable[[], None]
+    action: Callable[[], None] = field(repr=False)
+    name: str | None = field(default=None)
 
 
 @dataclass

@@ -135,13 +135,19 @@ class TestPstBeam:
 
     def scan(self: TestPstBeam, scan_id: str) -> None:
         """Perform a scan."""
-        self.tango_device_command_checker.assert_command(
-            lambda: self.beam_proxy.Scan(scan_id),
-            expected_obs_state_events=[
-                ObsState.SCANNING,
-            ],
-        )
-        self.assert_obstate(ObsState.SCANNING)
+        try:
+            self.tango_device_command_checker.assert_command(
+                lambda: self.beam_proxy.Scan(scan_id),
+                expected_obs_state_events=[
+                    ObsState.SCANNING,
+                ],
+            )
+            self.assert_obstate(ObsState.SCANNING)
+        except Exception:
+            self.logger.warning(
+                f"Scan command failed. longRunningCommandResult={self.beam_proxy.longRunningCommandResult}"
+            )
+            raise
 
     def end_scan(self: TestPstBeam) -> None:
         """End current scan."""

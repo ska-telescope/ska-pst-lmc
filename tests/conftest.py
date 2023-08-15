@@ -14,6 +14,7 @@ import logging
 import queue
 import random
 import string
+import tempfile
 import threading
 from concurrent import futures
 from datetime import datetime
@@ -743,10 +744,19 @@ def property_callback() -> MagicMock:
     return MagicMock()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def telescope_facility() -> TelescopeFacilityEnum:
     """Get fixture for simulating which telescope facility to test for."""
     return TelescopeFacilityEnum.Low
+
+
+@pytest.fixture(scope="session")
+def subsystem_id(telescope_facility: TelescopeFacilityEnum) -> str:
+    """Get the subsystem_id based on the telescope facility the test is for."""
+    if telescope_facility == TelescopeFacilityEnum.Low:
+        return "pst-low"
+    else:
+        return "pst-mid"
 
 
 @pytest.fixture(scope="session")
@@ -812,3 +822,12 @@ def fail_validate_configure_beam() -> bool:
 def fail_validate_configure_scan() -> bool:
     """Fixture used to override simulator to fail validation or not."""
     return False
+
+
+@pytest.fixture(scope="session")
+def scan_output_dir_pattern() -> str:
+    """Get the pattern for the output directory used for scan files."""
+    tmp_dir = tempfile.gettempdir()
+
+    # for unit testing, use /tmp/product as top level dir
+    return f"{tmp_dir}/product/<eb_id>/<subsystem_id>/<scan_id>"
