@@ -49,7 +49,7 @@ RUN mkdir -p "$(pwd)/generated" && \
     --grpc_python_out="$(pwd)/generated" \
     $(find "$(pwd)/protobuf" -iname "*.proto")
 
-# RUN PYTHONPATH="/app/src:/app/generated" pytest --forked tests/
+RUN PYTHONPATH="/app/src:/app/generated" pytest --forked tests/
 
 FROM $BASE_IMAGE
 
