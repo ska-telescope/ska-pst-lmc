@@ -90,15 +90,15 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
         default_value="Low",
         doc=(
             "The SKA facility that this device is being used for. The "
-            "default value is 'Low' and the only valid values is 'Mid' or 'Low'."
+            "default value is 'Low' and the only valid values are 'Mid' or 'Low'."
         ),
     )
 
     SubsystemId = device_property(
         dtype=str,
         doc=(
-            "The subsystem that PST device is deploy in. This should be "
-            "in the form 'pst-low' or 'pst-mid'."
+            "The subsystem that PST device is deployed in. This should be "
+            "equal to either 'pst-low' or 'pst-mid'."
         ),
     )
 

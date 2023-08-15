@@ -31,11 +31,11 @@ class PstDeviceInterface:
         self: PstDeviceInterface, communication_state: CommunicationStatus
     ) -> None:
         """Handle a change in device's communication state."""
-        raise NotImplementedError("PstDeviceInteface is abstract")
+        raise NotImplementedError("PstDeviceInterface is abstract")
 
     def handle_component_state_change(self: PstDeviceInterface, *args: Any, **kwargs: Any) -> None:
         """Handle a change in the component's state."""
-        raise NotImplementedError("PstDeviceInteface is abstract")
+        raise NotImplementedError("PstDeviceInterface is abstract")
 
     def handle_attribute_value_update(self: PstDeviceInterface, attribute_name: str, value: Any) -> None:
         """
@@ -46,31 +46,31 @@ class PstDeviceInterface:
         :param value: the new value of the attribute to update to.
         :type value: Any
         """
-        raise NotImplementedError("PstDeviceInteface is abstract")
+        raise NotImplementedError("PstDeviceInterface is abstract")
 
     @property
     def beam_id(self: PstDeviceInterface) -> int:
         """Get the beam id for the current device."""
-        raise NotImplementedError("PstDeviceInteface is abstract")
+        raise NotImplementedError("PstDeviceInterface is abstract")
 
     @property
     def device_name(self: PstDeviceInterface) -> str:
         """Get the name of the device."""
-        raise NotImplementedError("PstDeviceInteface is abstract")
+        raise NotImplementedError("PstDeviceInterface is abstract")
 
     def handle_fault(self: PstDeviceInterface, fault_msg: str) -> None:
         """Handle device going into a fault state."""
-        raise NotImplementedError("PstDeviceInteface is abstract")
+        raise NotImplementedError("PstDeviceInterface is abstract")
 
     @property
     def facility(self: PstDeviceInterface) -> TelescopeFacilityEnum:
         """Get the facility that this device is being used for."""
-        raise NotImplementedError("PstDeviceInteface is abstract")
+        raise NotImplementedError("PstDeviceInterface is abstract")
 
     @property
     def subsystem_id(self: PstDeviceInterface) -> str:
         """Get the sub-system id where device is deployed."""
-        raise NotImplementedError("PstDeviceInteface is abstract")
+        raise NotImplementedError("PstDeviceInterface is abstract")
 
     def update_health_state(self: PstDeviceInterface, health_state: HealthState) -> None:
         """
@@ -79,7 +79,7 @@ class PstDeviceInterface:
         :param health_state: the new health state of the Tango device.
         :type health_state: HealthState
         """
-        raise NotImplementedError("PstDeviceInteface is abstract")
+        raise NotImplementedError("PstDeviceInterface is abstract")
 
 
 T = TypeVar("T")
@@ -110,7 +110,7 @@ class PstApiDeviceInterface(PstDeviceInterface, Generic[T]):
         """
         Handle monitoring data.
 
-        This is a generic extension of `PstDeviceInteface` to allow for handling
+        This is a generic extension of `PstDeviceInterface` to allow for handling
         of monitoring data. This is designed so that there is no need to send
         through a monitoring callback to the component manager.
         """
