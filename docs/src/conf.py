@@ -26,10 +26,11 @@ sys.path.insert(0, os.path.abspath("."))
 import sphinx_rtd_theme
 
 autodoc_mock_imports = [
-    "ska_tango_base",
+    "ska_csp_lmc_base",
     "ska_pst_lmc_proto",
-    "schema",
     "ska_telmodel",
+    "ska_tango_base",
+    "schema",
     "grpc",
     "backoff",
     "tango",
