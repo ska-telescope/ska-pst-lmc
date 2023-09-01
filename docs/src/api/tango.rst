@@ -61,7 +61,7 @@ ConfigureScan
 
 The argument of the ConfigureScan command is a JSON string that specifies the type and configuration of the following scans.
 
-Currently, the PST supports `ska-csp-configure` CSP config 2.3.
+Currently, the PST supports `CSP config 2.4 <https://developer.skao.int/projects/ska-telmodel/en/latest/schemas/ska-csp-configure.html>`_.
 
 `Example CSP configuration for PST beam configuration
 <https://developer.skao.int/projects/ska-telmodel/en/latest/schemas/ska-csp-configure.html>`_.
