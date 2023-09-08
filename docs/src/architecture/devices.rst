@@ -10,8 +10,8 @@ Full PST control and monitoring is accessed via the BEAM device.
 Following the SKA Tango device naming convention, access to the Low PST Beam 1 would use the Tango FQDN of ``low-pst/beam/01``.
 
 All PST Tango devices extend from the SKA Tango base 
-`CSP Subelement Obs Device <https://developer.skao.int/projects/ska-tango-base/en/latest/api/csp/obs/obs_device.html>`_ 
-(``ska_tango_base.csp.CspSubElementObsDevice``) 
+`CSP Subelement Obs Device <https://developer.skao.int/projects/ska-csp-lmc-base/en/latest/api/obs/obs_device.html>`_ 
+(``ska_csp_lmc_base.CspSubElementObsDevice``) 
 which in turn extends from the 
 `Obs Device <https://developer.skao.int/projects/ska-tango-base/en/latest/api/obs/obs_device.html>`_ 
 (``ska_tango_base.obs.ObsDevice``) and 
