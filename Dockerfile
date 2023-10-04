@@ -2,7 +2,7 @@ ARG BUILD_IMAGE=""
 ARG BASE_IMAGE=""
 ARG PST_COMMON_BUILDER_IMAGE=""
 ARG PROTOBUF_IMAGE=""
-ARG POETRY_VERSION="1.2.2"
+ARG POETRY_VERSION="1.3.2"
 
 FROM $PST_COMMON_BUILDER_IMAGE AS pstbuilder
 
@@ -12,9 +12,9 @@ FROM $BUILD_IMAGE AS buildenv
 
 ARG POETRY_VERSION
 
-RUN apt update && \
-  apt list --upgradable && \
-  apt upgrade -y && \
+RUN apt-get update && \
+  apt-get -s -V upgrade && \
+  apt-get upgrade -y && \
   poetry self update ${POETRY_VERSION}
 
 WORKDIR /app
@@ -57,9 +57,9 @@ ARG POETRY_VERSION
 
 USER root
 
-RUN apt update && \
-  apt list --upgradable && \
-  apt upgrade -y && \
+RUN apt-get update && \
+  apt-get -s -V upgrade && \
+  apt-get upgrade -y && \
   poetry self update ${POETRY_VERSION}
 
 COPY --from=pstbuilder /usr/local/lib/libprotobuf*.so* ./lib/
