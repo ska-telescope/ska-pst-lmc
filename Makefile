@@ -120,14 +120,14 @@ python-do-generate-code:
 	@echo "PROTOBUF_DIR=$(PROTOBUF_DIR)"
 	@echo "GENERATED_PATH=$(GENERATED_PATH)"
 	@echo
-	@echo "List of protobuf files: $(shell find "$(PROTOBUF_DIR)" -iname "*.proto")"
+	@echo "List of protobuf files: $(shell find -L "$(PROTOBUF_DIR)" -iname "*.proto")"
 	@echo
 	$(PYTHON_RUNNER) python3 -m grpc_tools.protoc --proto_path="$(PROTOBUF_DIR)" \
 			--python_out="$(GENERATED_PATH)" \
 			--init_python_out="$(GENERATED_PATH)" \
 			--init_python_opt=imports=protobuf+grpcio \
 			--grpc_python_out="$(GENERATED_PATH)" \
-			$(shell find "$(PROTOBUF_DIR)" -iname "*.proto")
+			$(shell find -L "$(PROTOBUF_DIR)" -iname "*.proto")
 	@echo
 	@echo "Files generated. $(shell find "$(GENERATED_PATH)" -iname "*.py")"
 

@@ -100,6 +100,7 @@ python-generate-code:
     - k8srunner
   before_script:
     - poetry config virtualenvs.in-project true
+    - poetry config experimental.new-installer false
     - echo "python-generate-code Setting.. poetry config virtualenvs.create $POETRY_CONFIG_VIRTUALENVS_CREATE"
     - poetry config virtualenvs.create $POETRY_CONFIG_VIRTUALENVS_CREATE
     - echo "python-generate-code Installing with poetry"
