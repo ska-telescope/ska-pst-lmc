@@ -154,7 +154,7 @@ local_generate_code:
 
 .PHONY: local_generate_code python-pre-build python-generate-code python-pre-generate-code python-do-generate-code python-post-generate-code
 
-DEV_IMAGE=artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.30
+DEV_IMAGE=artefact.skao.int/ska-tango-images-pytango-builder:9.4.3
 local-dev-env:
 	docker run -ti --rm -v $(PWD):/mnt/$(PROJECT) -w /mnt/$(PROJECT) $(DEV_IMAGE) bash
 

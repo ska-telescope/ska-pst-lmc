@@ -73,7 +73,6 @@ itango:
   image:
     registry: artefact.skao.int
     image: ska-tango-images-tango-itango
-    tag: 9.3.9
     pullPolicy: IfNotPresent
 
 resources:
@@ -88,7 +87,6 @@ resources:
 deviceServers:
   # controller has only one instance
   low-pst-beam:
-    legacy_compatibility: true
     instances: ["01"]
     file: "data/beam.yaml"
 
