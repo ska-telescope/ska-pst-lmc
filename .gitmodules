@@ -4,4 +4,3 @@
 [submodule "resources/ska-pst-testutils"]
 	path = resources/ska-pst-testutils
 	url = https://gitlab.com/ska-telescope/pst/ska-pst-testutils.git
-	branch = at3-558-upgrade-to-tango-9-4-2
