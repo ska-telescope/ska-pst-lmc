@@ -141,6 +141,35 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
             ),
         )
 
+    def _init_logging(self: PstBaseDevice) -> None:
+        """
+        Initialize the logging mechanism, using default properties.
+
+        This extends the _init_logging found in SKABaseDevice to monkeypatch of Tango log streams. This is
+        needed in 9.4.2 as PyTango added a key 'source' that is not part of the Python standard logging
+        framework. This is fix here is sort of a backport from ska-tango-base v0.19.1 but is less verbose.
+
+        When we migrate to ska-tango-base >= 0.19.1 this can be removed.
+        """
+        super()._init_logging()
+
+        def _patch_stream(log_fn: Callable) -> Callable[..., None]:
+            def _log_patch(
+                *args: Any,
+                source: str | None = None,  # pylint: disable=unused-argument
+                **kwargs: Any,
+            ) -> None:
+                log_fn(*args, **kwargs)
+
+            return _log_patch
+
+        self.debug_stream = _patch_stream(self.logger.debug)
+        self.info_stream = _patch_stream(self.logger.info)
+        self.info_stream = _patch_stream(self.logger.info)
+        self.warn_stream = _patch_stream(self.logger.warning)
+        self.error_stream = _patch_stream(self.logger.error)
+        self.fatal_stream = _patch_stream(self.logger.critical)
+
     def always_executed_hook(self: PstBaseDevice) -> None:
         """Execute call before any TANGO command is executed."""
 

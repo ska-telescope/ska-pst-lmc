@@ -2,7 +2,6 @@ name: "beam-{{.Release.Name}}"
 function: ska-pst-lmc-test
 domain: ska-pst-lmc
 instances: ["01"]
-legacy_compatibility: true
 entrypoints:
   - name: "dsp_device.PstDsp"
     path: "/app/src/ska_pst_lmc/dsp/dsp_device.py"

@@ -65,15 +65,15 @@ PST_DEV_REGISTRY=registry.gitlab.com/ska-telescope/pst
 
 SKA_TANGO_PYTANGO_BUILDER_REGISTRY=$(SKA_RELEASE_REGISTRY)
 SKA_TANGO_PYTANGO_BUILDER_IMAGE=ska-tango-images-pytango-builder
-SKA_TANGO_PYTANGO_BUILDER_TAG=9.3.32
+SKA_TANGO_PYTANGO_BUILDER_TAG=9.4.3
 SKA_PST_PYTHON_BUILDER_IMAGE=$(SKA_TANGO_PYTANGO_BUILDER_REGISTRY)/$(SKA_TANGO_PYTANGO_BUILDER_IMAGE):$(SKA_TANGO_PYTANGO_BUILDER_TAG)
 
 SKA_TANGO_PYTANGO_RUNTIME_REGISTRY=$(SKA_RELEASE_REGISTRY)
 SKA_TANGO_PYTANGO_RUNTIME_IMAGE=ska-tango-images-pytango-runtime
-SKA_TANGO_PYTANGO_RUNTIME_TAG=9.3.19
+SKA_TANGO_PYTANGO_RUNTIME_TAG=9.4.3
 SKA_PST_PYTHON_RUNTIME_IMAGE=$(SKA_TANGO_PYTANGO_RUNTIME_REGISTRY)/$(SKA_TANGO_PYTANGO_RUNTIME_IMAGE):$(SKA_TANGO_PYTANGO_RUNTIME_TAG)
 
-PST_COMMON_TAG=0.9.1
+PST_COMMON_TAG=0.10.2
 
 PST_OCI_COMMON_BUILDER_REGISTRY=$(PST_DEV_REGISTRY)/ska-pst-common
 PST_OCI_COMMON_BUILDER_IMAGE=ska-pst-common-builder
@@ -110,8 +110,6 @@ local-oci-scan:
 	docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $(strip $(OCI_IMAGE)):$(VERSION)
 
 python-pre-generate-code:
-	@echo "Installing dev dependencies for Python gRPC/Protobuf code generation."
-	poetry install --with dev
 	@echo "Ensuring generated path $(GENERATED_PATH) exists"
 	mkdir -p $(GENERATED_PATH)
 
@@ -120,14 +118,14 @@ python-do-generate-code:
 	@echo "PROTOBUF_DIR=$(PROTOBUF_DIR)"
 	@echo "GENERATED_PATH=$(GENERATED_PATH)"
 	@echo
-	@echo "List of protobuf files: $(shell find "$(PROTOBUF_DIR)" -iname "*.proto")"
+	@echo "List of protobuf files: $(shell find -L "$(PROTOBUF_DIR)" -iname "*.proto")"
 	@echo
 	$(PYTHON_RUNNER) python3 -m grpc_tools.protoc --proto_path="$(PROTOBUF_DIR)" \
 			--python_out="$(GENERATED_PATH)" \
 			--init_python_out="$(GENERATED_PATH)" \
 			--init_python_opt=imports=protobuf+grpcio \
 			--grpc_python_out="$(GENERATED_PATH)" \
-			$(shell find "$(PROTOBUF_DIR)" -iname "*.proto")
+			$(shell find -L "$(PROTOBUF_DIR)" -iname "*.proto")
 	@echo
 	@echo "Files generated. $(shell find "$(GENERATED_PATH)" -iname "*.py")"
 
@@ -156,7 +154,7 @@ local_generate_code:
 
 .PHONY: local_generate_code python-pre-build python-generate-code python-pre-generate-code python-do-generate-code python-post-generate-code
 
-DEV_IMAGE=artefact.skao.int/ska-tango-images-pytango-builder-alpine:9.3.30
+DEV_IMAGE=artefact.skao.int/ska-tango-images-pytango-builder:9.4.3
 local-dev-env:
 	docker run -ti --rm -v $(PWD):/mnt/$(PROJECT) -w /mnt/$(PROJECT) $(DEV_IMAGE) bash
 

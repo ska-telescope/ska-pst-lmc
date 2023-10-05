@@ -2,7 +2,7 @@ ARG BUILD_IMAGE=""
 ARG BASE_IMAGE=""
 ARG PST_COMMON_BUILDER_IMAGE=""
 ARG PROTOBUF_IMAGE=""
-ARG POETRY_VERSION="1.2.2"
+ARG POETRY_VERSION="1.3.2"
 
 FROM $PST_COMMON_BUILDER_IMAGE AS pstbuilder
 
@@ -12,9 +12,9 @@ FROM $BUILD_IMAGE AS buildenv
 
 ARG POETRY_VERSION
 
-RUN apt update && \
-  apt list --upgradable && \
-  apt upgrade -y && \
+RUN apt-get update && \
+  apt-get -s -V upgrade && \
+  apt-get upgrade -y && \
   poetry self update ${POETRY_VERSION}
 
 WORKDIR /app
@@ -39,7 +39,7 @@ COPY resources/ska-pst-testutils/ /app/resources/ska-pst-testutils/
 
 RUN mkdir -p /app/tests && \
   poetry config virtualenvs.create false && \
-  poetry install --with dev
+  poetry install --only codegen
 
 RUN mkdir -p "$(pwd)/generated" && \
     python3 -m grpc_tools.protoc --proto_path="$(pwd)/protobuf" \
@@ -49,6 +49,10 @@ RUN mkdir -p "$(pwd)/generated" && \
     --grpc_python_out="$(pwd)/generated" \
     $(find "$(pwd)/protobuf" -iname "*.proto")
 
+RUN mkdir -p /app/tests && \
+  poetry config virtualenvs.create false && \
+  poetry install --without codegen
+
 RUN PYTHONPATH="/app/src:/app/generated" pytest --forked tests/
 
 FROM $BASE_IMAGE
@@ -57,9 +61,9 @@ ARG POETRY_VERSION
 
 USER root
 
-RUN apt update && \
-  apt list --upgradable && \
-  apt upgrade -y && \
+RUN apt-get update && \
+  apt-get -s -V upgrade && \
+  apt-get upgrade -y && \
   poetry self update ${POETRY_VERSION}
 
 COPY --from=pstbuilder /usr/local/lib/libprotobuf*.so* ./lib/
@@ -79,7 +83,7 @@ COPY pyproject.toml poetry.lock* /app/
 COPY --from=buildenv --chown=tango:tango /app/generated/ /app/src
 
 RUN poetry config virtualenvs.create false && \
-  poetry install --without dev --without docs
+  poetry install --only main
 
 RUN mkdir -m777 -p /mnt/lfs
 
