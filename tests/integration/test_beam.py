@@ -27,7 +27,7 @@ from ska_pst_lmc import DeviceProxyFactory
 @pytest.fixture
 def additional_change_events_callbacks(beam_attribute_names: List[str]) -> List[str]:
     """Return additional change event callbacks."""
-    return [*beam_attribute_names]
+    return ["longRunningCommandStatus", *beam_attribute_names]
 
 
 @pytest.fixture
@@ -451,10 +451,14 @@ class TestPstBeam:
 
                 self.end_scan()
 
+                # need to wait 2 polling periods - set to being 500ms in test-parent
+                time.sleep(2 * monitor_polling_rate_ms / 1000.0)
+
+                self.goto_idle()
+
                 # ending a scan will stop monitoring
                 prev_attr_values = self.current_attribute_values()
 
-                self.goto_idle()
                 self.off()
 
                 # as monitoring had stopped there should be no update of values
