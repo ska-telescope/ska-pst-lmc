@@ -104,7 +104,7 @@ python-generate-code:
     - echo "python-generate-code Setting.. poetry config virtualenvs.create $POETRY_CONFIG_VIRTUALENVS_CREATE"
     - poetry config virtualenvs.create $POETRY_CONFIG_VIRTUALENVS_CREATE
     - echo "python-generate-code Installing with poetry"
-    - time poetry install --with dev
+    - time poetry install --only codegen
 
   script:
     - make PROTOBUF_DIR="$(pwd)/build/protobuf" GENERATED_PATH="$(pwd)/generated" python-generate-code

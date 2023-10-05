@@ -39,7 +39,7 @@ COPY resources/ska-pst-testutils/ /app/resources/ska-pst-testutils/
 
 RUN mkdir -p /app/tests && \
   poetry config virtualenvs.create false && \
-  poetry install --with dev
+  poetry install --only codegen
 
 RUN mkdir -p "$(pwd)/generated" && \
     python3 -m grpc_tools.protoc --proto_path="$(pwd)/protobuf" \
@@ -48,6 +48,10 @@ RUN mkdir -p "$(pwd)/generated" && \
     --init_python_opt=imports=protobuf+grpcio \
     --grpc_python_out="$(pwd)/generated" \
     $(find "$(pwd)/protobuf" -iname "*.proto")
+
+RUN mkdir -p /app/tests && \
+  poetry config virtualenvs.create false && \
+  poetry install --without codegen
 
 RUN PYTHONPATH="/app/src:/app/generated" pytest --forked tests/
 
@@ -79,7 +83,7 @@ COPY pyproject.toml poetry.lock* /app/
 COPY --from=buildenv --chown=tango:tango /app/generated/ /app/src
 
 RUN poetry config virtualenvs.create false && \
-  poetry install --without dev --without docs
+  poetry install --only main
 
 RUN mkdir -m777 -p /mnt/lfs
 
