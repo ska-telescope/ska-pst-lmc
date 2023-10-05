@@ -110,8 +110,6 @@ local-oci-scan:
 	docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $(strip $(OCI_IMAGE)):$(VERSION)
 
 python-pre-generate-code:
-	@echo "Installing dev dependencies for Python gRPC/Protobuf code generation."
-	poetry install --with dev
 	@echo "Ensuring generated path $(GENERATED_PATH) exists"
 	mkdir -p $(GENERATED_PATH)
 
