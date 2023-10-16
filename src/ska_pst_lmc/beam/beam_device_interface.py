@@ -36,6 +36,11 @@ class PstBeamDeviceInterface(PstDeviceInterface):
         raise NotImplementedError("PstBeamDeviceInterface is abstract")
 
     @property
+    def stat_fqdn(self: PstBeamDeviceInterface) -> str:
+        """Get the fully qualified device name (FQDN) for the STAT.MGMT device of this beam."""
+        raise NotImplementedError("PstBeamDeviceInterface is abstract")
+
+    @property
     def scan_output_dir_pattern(self: PstBeamDeviceInterface) -> str:
         """Get the pattern for directory used for scan output files."""
         raise NotImplementedError("PstBeamDeviceInterface is abstract")

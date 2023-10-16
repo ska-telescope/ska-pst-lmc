@@ -123,7 +123,8 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         self._smrb_device = DeviceProxyFactory.get_device(device_interface.smrb_fqdn)
         self._recv_device = DeviceProxyFactory.get_device(device_interface.recv_fqdn)
         self._dsp_device = DeviceProxyFactory.get_device(device_interface.dsp_fqdn)
-        self._remote_devices = [self._smrb_device, self._recv_device, self._dsp_device]
+        self._stat_device = DeviceProxyFactory.get_device(device_interface.stat_fqdn)
+        self._remote_devices = [self._smrb_device, self._recv_device, self._dsp_device, self._stat_device]
         self._subscribed = False
         self._pst_task_executor = TaskExecutor(logger=logger)
         self._curr_scan_config: dict | None = None
@@ -589,6 +590,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         self._smrb_device.simulationMode = self.simulation_mode
         self._recv_device.simulationMode = self.simulation_mode
         self._dsp_device.simulationMode = self.simulation_mode
+        self._stat_device.simulationMode = self.simulation_mode
 
     def _handle_communication_state_change(
         self: PstBeamComponentManager, communication_state: CommunicationStatus
@@ -615,6 +617,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         self._smrb_device.adminMode = admin_mode
         self._recv_device.adminMode = admin_mode
         self._dsp_device.adminMode = admin_mode
+        self._stat_device.adminMode = admin_mode
 
     def _submit_remote_job(
         self: PstBeamComponentManager,
@@ -670,6 +673,9 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             ],
             self._smrb_device: [
                 "ring_buffer_utilisation",
+                "obs_state",
+            ],
+            self._stat_device: [
                 "obs_state",
             ],
         }
@@ -843,7 +849,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         request_str = json.dumps(self._as_pst_configure_scan_request(configuration))
 
         validation_task = DeviceCommandTask(
-            devices=[self._dsp_device, self._recv_device, self._smrb_device],
+            devices=[self._dsp_device, self._recv_device, self._smrb_device, self._stat_device],
             action=lambda d: d.ValidateConfigureScan(request_str),
             command_name="ValidateConfigureScan",
         )
@@ -895,13 +901,13 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
                     ),
                     # now do configure_beam on DSP and RECV, this can be done in parallel
                     DeviceCommandTask(
-                        devices=[self._dsp_device, self._recv_device],
+                        devices=[self._dsp_device, self._recv_device, self._stat_device],
                         action=lambda d: d.ConfigureBeam(request_str),
                         command_name="ConfigureBeam",
                     ),
                     # now configure scan on SMRB and RECV (smrb is no-op) in parallel
                     DeviceCommandTask(
-                        devices=[self._smrb_device, self._recv_device],
+                        devices=[self._smrb_device, self._recv_device, self._stat_device],
                         action=lambda d: d.ConfigureScan(request_str),
                         command_name="ConfigureScan",
                     ),
@@ -938,7 +944,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
                     ),
                     # need to release the ring buffer clients before deconfiguring SMRB
                     DeviceCommandTask(
-                        devices=[self._dsp_device, self._recv_device],
+                        devices=[self._dsp_device, self._recv_device, self._stat_device],
                         action=lambda d: d.DeconfigureBeam(),
                         command_name="DeconfigureBeam",
                     ),
