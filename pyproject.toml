@@ -23,6 +23,7 @@ ska-csp-lmc-base = "^0.1.0"
 pytango = "9.4.2"
 ska-telmodel = "^1.8.1"
 certifi = "^2023.7.22"
+nptyping = "^2.5.0"
 
 [tool.poetry.group.dev.dependencies]
 autoflake = "^1.4"
