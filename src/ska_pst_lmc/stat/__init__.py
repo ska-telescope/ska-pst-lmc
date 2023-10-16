@@ -7,6 +7,8 @@
 """This subpackage implements STAT component for PST.LMC."""
 
 __all__ = [
+    "PstStat",
+    "PstStatComponentManager",
     "PstStatProcessApi",
     "PstStatProcessApiSimulator",
     "PstStatProcessApiGrpc",
@@ -22,6 +24,8 @@ __all__ = [
 ]
 
 from .stat_model import StatMonitorData, StatMonitorDataStore
+from .stat_component_manager import PstStatComponentManager
+from .stat_device import PstStat
 from .stat_process_api import PstStatProcessApi, PstStatProcessApiSimulator, PstStatProcessApiGrpc
 from .stat_simulator import PstStatSimulator
 from .stat_util import (
