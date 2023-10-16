@@ -8,17 +8,14 @@
 
 from __future__ import annotations
 
-import numpy as np
 import logging
 import threading
 import time
-from random import randint
 from typing import Any, Dict, Generator
 from unittest.mock import ANY, MagicMock, call
 
-from ska_pst_lmc.stat import DEFAULT_NUM_REBIN, DEFAULT_PROCESSING_DELAY_MS, DEFAULT_REQ_FREQ_BINS, DEFAULT_REQ_TIME_BINS
-
 import grpc
+import numpy as np
 import pytest
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     AbortRequest,
@@ -45,19 +42,23 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import (
     ScanConfiguration,
     SetLogLevelRequest,
     SetLogLevelResponse,
-    StatBeamConfiguration,
-    StatMonitorData as StatMonitorDataProto,
-    StatScanConfiguration,
     StartScanRequest,
     StartScanResponse,
-    StopScanRequest,
-    StopScanResponse,
+    StatBeamConfiguration,
 )
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import StatMonitorData as StatMonitorDataProto
+from ska_pst_lmc_proto.ska_pst_lmc_pb2 import StatScanConfiguration, StopScanRequest, StopScanResponse
 from ska_tango_base.commands import TaskStatus
 from ska_tango_base.control_model import LoggingLevel
 
+from ska_pst_lmc.stat import (
+    DEFAULT_NUM_REBIN,
+    DEFAULT_PROCESSING_DELAY_MS,
+    DEFAULT_REQ_FREQ_BINS,
+    DEFAULT_REQ_TIME_BINS,
+)
 from ska_pst_lmc.stat.stat_model import StatMonitorData
-from ska_pst_lmc.stat.stat_process_api import PstStatProcessApiGrpc, POLA_IDX, POLB_IDX, REAL_IDX, IMAG_IDX
+from ska_pst_lmc.stat.stat_process_api import IMAG_IDX, POLA_IDX, POLB_IDX, REAL_IDX, PstStatProcessApiGrpc
 from ska_pst_lmc.stat.stat_util import calculate_stat_subband_resources
 from ska_pst_lmc.test.test_grpc_server import TestMockException, TestPstLmcService
 from ska_pst_lmc.util.background_task import BackgroundTaskProcessor
@@ -344,13 +345,15 @@ def test_stat_grpc_validate_configure_scan_with_defaults(
     grpc_api.validate_configure_scan(configure_scan_request)
 
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(stat=StatScanConfiguration(
-            execution_block_id=eb_id,
-            processing_delay_ms=DEFAULT_PROCESSING_DELAY_MS,
-            req_time_bins=DEFAULT_REQ_TIME_BINS,
-            req_freq_bins=DEFAULT_REQ_FREQ_BINS,
-            num_rebin=DEFAULT_NUM_REBIN,
-        )),
+        scan_configuration=ScanConfiguration(
+            stat=StatScanConfiguration(
+                execution_block_id=eb_id,
+                processing_delay_ms=DEFAULT_PROCESSING_DELAY_MS,
+                req_time_bins=DEFAULT_REQ_TIME_BINS,
+                req_freq_bins=DEFAULT_REQ_FREQ_BINS,
+                num_rebin=DEFAULT_NUM_REBIN,
+            )
+        ),
         dry_run=True,
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
@@ -374,13 +377,15 @@ def test_stat_grpc_validate_configure_scan_with_overriden_values(
     grpc_api.validate_configure_scan(configure_scan_request)
 
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(stat=StatScanConfiguration(
-            execution_block_id=eb_id,
-            processing_delay_ms=configure_scan_request["stat_processing_delay_ms"],
-            req_time_bins=configure_scan_request["stat_req_time_bins"],
-            req_freq_bins=configure_scan_request["stat_req_freq_bins"],
-            num_rebin=configure_scan_request["stat_num_rebin"],
-        )),
+        scan_configuration=ScanConfiguration(
+            stat=StatScanConfiguration(
+                execution_block_id=eb_id,
+                processing_delay_ms=configure_scan_request["stat_processing_delay_ms"],
+                req_time_bins=configure_scan_request["stat_req_time_bins"],
+                req_freq_bins=configure_scan_request["stat_req_freq_bins"],
+                num_rebin=configure_scan_request["stat_num_rebin"],
+            )
+        ),
         dry_run=True,
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
@@ -405,13 +410,15 @@ def test_stat_grpc_validate_configure_scan_throws_invalid_request(
     assert e_info.value.message == "Validate configure scan error."
 
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(stat=StatScanConfiguration(
-            execution_block_id=eb_id,
-            processing_delay_ms=DEFAULT_PROCESSING_DELAY_MS,
-            req_time_bins=DEFAULT_REQ_TIME_BINS,
-            req_freq_bins=DEFAULT_REQ_FREQ_BINS,
-            num_rebin=DEFAULT_NUM_REBIN,
-        )),
+        scan_configuration=ScanConfiguration(
+            stat=StatScanConfiguration(
+                execution_block_id=eb_id,
+                processing_delay_ms=DEFAULT_PROCESSING_DELAY_MS,
+                req_time_bins=DEFAULT_REQ_TIME_BINS,
+                req_freq_bins=DEFAULT_REQ_FREQ_BINS,
+                num_rebin=DEFAULT_NUM_REBIN,
+            )
+        ),
         dry_run=True,
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
@@ -436,14 +443,15 @@ def test_stat_grpc_validate_configure_scan_throws_scan_already_configured(
     assert e_info.value.message == "Already configured for scanning."
 
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(stat=StatScanConfiguration(
-            execution_block_id=eb_id,
-            processing_delay_ms=DEFAULT_PROCESSING_DELAY_MS,
-            req_time_bins=DEFAULT_REQ_TIME_BINS,
-            req_freq_bins=DEFAULT_REQ_FREQ_BINS,
-            num_rebin=DEFAULT_NUM_REBIN,
-
-            )),
+        scan_configuration=ScanConfiguration(
+            stat=StatScanConfiguration(
+                execution_block_id=eb_id,
+                processing_delay_ms=DEFAULT_PROCESSING_DELAY_MS,
+                req_time_bins=DEFAULT_REQ_TIME_BINS,
+                req_freq_bins=DEFAULT_REQ_FREQ_BINS,
+                num_rebin=DEFAULT_NUM_REBIN,
+            )
+        ),
         dry_run=True,
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
@@ -464,14 +472,15 @@ def test_stat_grpc_configure_scan(
     grpc_api.configure_scan(configure_scan_request, task_callback=task_callback)
 
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(stat=StatScanConfiguration(
-            execution_block_id=eb_id,
-            processing_delay_ms=DEFAULT_PROCESSING_DELAY_MS,
-            req_time_bins=DEFAULT_REQ_TIME_BINS,
-            req_freq_bins=DEFAULT_REQ_FREQ_BINS,
-            num_rebin=DEFAULT_NUM_REBIN,
-
-        ))
+        scan_configuration=ScanConfiguration(
+            stat=StatScanConfiguration(
+                execution_block_id=eb_id,
+                processing_delay_ms=DEFAULT_PROCESSING_DELAY_MS,
+                req_time_bins=DEFAULT_REQ_TIME_BINS,
+                req_freq_bins=DEFAULT_REQ_FREQ_BINS,
+                num_rebin=DEFAULT_NUM_REBIN,
+            )
+        )
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
 
@@ -500,14 +509,15 @@ def test_stat_grpc_configure_when_already_configured(
     grpc_api.configure_scan(configure_scan_request, task_callback=task_callback)
 
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(stat=StatScanConfiguration(
-            execution_block_id=eb_id,
-            processing_delay_ms=DEFAULT_PROCESSING_DELAY_MS,
-            req_time_bins=DEFAULT_REQ_TIME_BINS,
-            req_freq_bins=DEFAULT_REQ_FREQ_BINS,
-            num_rebin=DEFAULT_NUM_REBIN,
-
-        ))
+        scan_configuration=ScanConfiguration(
+            stat=StatScanConfiguration(
+                execution_block_id=eb_id,
+                processing_delay_ms=DEFAULT_PROCESSING_DELAY_MS,
+                req_time_bins=DEFAULT_REQ_TIME_BINS,
+                req_freq_bins=DEFAULT_REQ_FREQ_BINS,
+                num_rebin=DEFAULT_NUM_REBIN,
+            )
+        )
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
 
@@ -537,14 +547,15 @@ def test_stat_grpc_configure_when_throws_exception(
     grpc_api.configure_scan(configure_scan_request, task_callback=task_callback)
 
     expected_request = ConfigureScanRequest(
-        scan_configuration=ScanConfiguration(stat=StatScanConfiguration(
-            execution_block_id=eb_id,
-            processing_delay_ms=DEFAULT_PROCESSING_DELAY_MS,
-            req_time_bins=DEFAULT_REQ_TIME_BINS,
-            req_freq_bins=DEFAULT_REQ_FREQ_BINS,
-            num_rebin=DEFAULT_NUM_REBIN,
-
-        ))
+        scan_configuration=ScanConfiguration(
+            stat=StatScanConfiguration(
+                execution_block_id=eb_id,
+                processing_delay_ms=DEFAULT_PROCESSING_DELAY_MS,
+                req_time_bins=DEFAULT_REQ_TIME_BINS,
+                req_freq_bins=DEFAULT_REQ_FREQ_BINS,
+                num_rebin=DEFAULT_NUM_REBIN,
+            )
+        )
     )
     mock_servicer_context.configure_scan.assert_called_once_with(expected_request)
     mock_servicer_context.go_to_fault.assert_called_once_with(GoToFaultRequest())
@@ -889,14 +900,18 @@ def test_stat_grpc_simulated_monitor_calls_callback(
     def response_generator() -> Generator[MonitorResponse, None, None]:
         while True:
             logger.debug("Yielding monitor data")
-            yield MonitorResponse(monitor_data=MonitorData(stat=StatMonitorDataProto(
-                mean_frequency_avg=mean_frequency_avg,
-                mean_frequency_avg_masked=mean_frequency_avg_masked,
-                variance_frequency_avg=variance_frequency_avg,
-                variance_frequency_avg_masked=variance_frequency_avg_masked,
-                num_clipped_samples=num_clipped_samples,
-                num_clipped_samples_masked=num_clipped_samples_masked,
-            )))
+            yield MonitorResponse(
+                monitor_data=MonitorData(
+                    stat=StatMonitorDataProto(
+                        mean_frequency_avg=mean_frequency_avg,
+                        mean_frequency_avg_masked=mean_frequency_avg_masked,
+                        variance_frequency_avg=variance_frequency_avg,
+                        variance_frequency_avg_masked=variance_frequency_avg_masked,
+                        num_clipped_samples=num_clipped_samples,
+                        num_clipped_samples_masked=num_clipped_samples_masked,
+                    )
+                )
+            )
             time.sleep(0.05)
 
     mock_servicer_context.monitor = MagicMock()

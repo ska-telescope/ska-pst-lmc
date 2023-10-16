@@ -264,27 +264,27 @@ class TestPstStat:
         assert device_under_test.realPolAMeanFreqAvg != 0.0
         assert device_under_test.realPolAVarianceFreqAvg > 0.0
         assert device_under_test.realPolANumClippedSamples >= 0
-        assert device_under_test.imagPolAMeanFreqAvg  != 0.0
-        assert device_under_test.imagPolAVarianceFreqAvg  > 0.0
-        assert device_under_test.imagPolANumClippedSamples  >= 0
-        assert device_under_test.realPolAMeanFreqAvgMasked  != 0.0
-        assert device_under_test.realPolAVarianceFreqAvgMasked  > 0.0
+        assert device_under_test.imagPolAMeanFreqAvg != 0.0
+        assert device_under_test.imagPolAVarianceFreqAvg > 0.0
+        assert device_under_test.imagPolANumClippedSamples >= 0
+        assert device_under_test.realPolAMeanFreqAvgMasked != 0.0
+        assert device_under_test.realPolAVarianceFreqAvgMasked > 0.0
         assert device_under_test.realPolANumClippedSamplesMasked >= 0
-        assert device_under_test.imagPolAMeanFreqAvgMasked  != 0.0
-        assert device_under_test.imagPolAVarianceFreqAvgMasked  > 0.0
-        assert device_under_test.imagPolANumClippedSamplesMasked  >= 0
-        assert device_under_test.realPolBMeanFreqAvg  != 0.0
-        assert device_under_test.realPolBVarianceFreqAvg  > 0.0
-        assert device_under_test.realPolBNumClippedSamples  >= 0
-        assert device_under_test.imagPolBMeanFreqAvg  != 0.0
-        assert device_under_test.imagPolBVarianceFreqAvg  > 0.0
-        assert device_under_test.imagPolBNumClippedSamples  >= 0
-        assert device_under_test.realPolBMeanFreqAvgMasked  != 0.0
-        assert device_under_test.realPolBVarianceFreqAvgMasked  > 0.0
+        assert device_under_test.imagPolAMeanFreqAvgMasked != 0.0
+        assert device_under_test.imagPolAVarianceFreqAvgMasked > 0.0
+        assert device_under_test.imagPolANumClippedSamplesMasked >= 0
+        assert device_under_test.realPolBMeanFreqAvg != 0.0
+        assert device_under_test.realPolBVarianceFreqAvg > 0.0
+        assert device_under_test.realPolBNumClippedSamples >= 0
+        assert device_under_test.imagPolBMeanFreqAvg != 0.0
+        assert device_under_test.imagPolBVarianceFreqAvg > 0.0
+        assert device_under_test.imagPolBNumClippedSamples >= 0
+        assert device_under_test.realPolBMeanFreqAvgMasked != 0.0
+        assert device_under_test.realPolBVarianceFreqAvgMasked > 0.0
         assert device_under_test.realPolBNumClippedSamplesMasked >= 0
-        assert device_under_test.imagPolBMeanFreqAvgMasked  != 0.0
-        assert device_under_test.imagPolBVarianceFreqAvgMasked  > 0.0
-        assert device_under_test.imagPolBNumClippedSamplesMasked  >= 0
+        assert device_under_test.imagPolBMeanFreqAvgMasked != 0.0
+        assert device_under_test.imagPolBVarianceFreqAvgMasked > 0.0
+        assert device_under_test.imagPolBNumClippedSamplesMasked >= 0
 
         tango_device_command_checker.assert_command(
             lambda: device_under_test.EndScan(),

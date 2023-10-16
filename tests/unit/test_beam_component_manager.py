@@ -78,6 +78,7 @@ def dsp_device_proxy(dsp_fqdn: str) -> PstDeviceProxy:
     proxy.__repr__ = MagicMock(return_value=f"PstDeviceProxy('{dsp_fqdn}')")  # type: ignore
     return proxy
 
+
 @pytest.fixture
 def stat_fqdn() -> str:
     """Create STAT FQDN fixture."""
@@ -91,6 +92,7 @@ def stat_device_proxy(stat_fqdn: str) -> PstDeviceProxy:
     proxy.fqdn = stat_fqdn
     proxy.__repr__ = MagicMock(return_value=f"PstDeviceProxy('{stat_fqdn}')")  # type: ignore
     return proxy
+
 
 @pytest.fixture
 def device_proxy(

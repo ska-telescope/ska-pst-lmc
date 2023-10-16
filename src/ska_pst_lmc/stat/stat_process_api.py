@@ -28,8 +28,8 @@ from ska_pst_lmc_proto.ska_pst_lmc_pb2 import StatMonitorData as StatMonitorData
 from ska_pst_lmc_proto.ska_pst_lmc_pb2 import StatScanConfiguration
 from ska_tango_base.commands import TaskStatus
 
-from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc, PstProcessApiSimulator
 from ska_pst_lmc.component import SUBBAND_1
+from ska_pst_lmc.component.process_api import PstProcessApi, PstProcessApiGrpc, PstProcessApiSimulator
 from ska_pst_lmc.stat.stat_model import StatMonitorData
 from ska_pst_lmc.stat.stat_simulator import PstStatSimulator
 from ska_pst_lmc.stat.stat_util import generate_stat_scan_request
@@ -246,9 +246,7 @@ class PstStatProcessApiGrpc(PstProcessApiGrpc, PstStatProcessApi):
             np.array(stat_data_proto.variance_frequency_avg).reshape((2, 2)).astype(dtype=np.float32)
         )
         variance_frequency_avg_masked = (
-            np.array(stat_data_proto.variance_frequency_avg_masked)
-            .reshape((2, 2))
-            .astype(dtype=np.float32)
+            np.array(stat_data_proto.variance_frequency_avg_masked).reshape((2, 2)).astype(dtype=np.float32)
         )
         num_clipped_samples = (
             np.array(stat_data_proto.num_clipped_samples).reshape((2, 2)).astype(dtype=np.int32)
