@@ -60,6 +60,10 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
         dtype=str,
     )
 
+    StatFQDN = device_property(
+        dtype=str,
+    )
+
     SendFQDN = device_property(
         dtype=str,
     )
@@ -175,6 +179,11 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
     def dsp_fqdn(self: PstBeam) -> str:
         """Get the fully qualified device name (FQDN) for the DSP.MGMT device of this beam."""
         return self.DspFQDN
+
+    @property
+    def stat_fqdn(self: PstBeam) -> str:
+        """Get the fully qualified device name (FQDN) for the STAT.MGMT device of this beam."""
+        return self.StatFQDN
 
     @property
     def scan_output_dir_pattern(self: PstBeam) -> str:

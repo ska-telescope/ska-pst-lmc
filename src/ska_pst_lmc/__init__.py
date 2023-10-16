@@ -18,6 +18,7 @@ __all__ = [
     "PstSmrb",
     "PstSmrbComponentManager",
     "PstSmrbSimulator",
+    "PstStat",
     "SmrbMonitorData",
     "SmrbMonitorDataStore",
     "SmrbSubbandMonitorData",
@@ -35,3 +36,4 @@ from .smrb import (
     SmrbMonitorDataStore,
     SmrbSubbandMonitorData,
 )
+from .stat import PstStat
