@@ -82,9 +82,9 @@ def generate_stat_scan_request(request_params: Dict[str, Any]) -> Dict[str, Any]
             {
                 "execution_block_id": "eb-m001-20230712-56789",
                 "processing_delay_ms": 5000,
-                "stat_req_time_bins": 1024,
-                "stat_req_freq_bins": 1024,
-                "stat_nrebin": 256,
+                "req_time_bins": 1024,
+                "req_freq_bins": 1024,
+                "num_rebin": 256,
             }
     """
     return {

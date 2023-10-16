@@ -14,6 +14,11 @@ from typing import Callable, Dict, Generic, TypeVar
 S = TypeVar("S")
 T = TypeVar("T")
 
+SUBBAND_1: int = 1
+SUBBAND_2: int = 2
+SUBBAND_3: int = 3
+SUBBAND_4: int = 4
+
 
 class MonitorDataStore(Generic[S, T]):
     """
