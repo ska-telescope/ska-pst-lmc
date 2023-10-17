@@ -98,6 +98,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Real Pol. A Mean",
     )
     def realPolAMeanFreqAvg(self: PstStat) -> float:
         """Get the mean of the real data for pol A, averaged over all channels."""
@@ -105,6 +106,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Real Pol. A Variance",
     )
     def realPolAVarianceFreqAvg(self: PstStat) -> float:
         """Get the variance of the real data for pol A, averaged over all channels."""
@@ -112,6 +114,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=int,
+        label="Real Pol. A Num. Clipped",
     )
     def realPolANumClippedSamples(self: PstStat) -> int:
         """Get the num of clipped samples of the real data for pol A."""
@@ -119,6 +122,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Imaginary Pol. A Mean",
     )
     def imagPolAMeanFreqAvg(self: PstStat) -> float:
         """Get the mean of the imaginary data for pol A, averaged over all channels."""
@@ -126,6 +130,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Imaginary Pol. A Variance",
     )
     def imagPolAVarianceFreqAvg(self: PstStat) -> float:
         """Get the variance of the imaginary data for pol A, averaged over all channels."""
@@ -133,6 +138,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=int,
+        label="Imaginary Pol. A Num. Clipped",
     )
     def imagPolANumClippedSamples(self: PstStat) -> int:
         """Get the num of clipped samples of the imaginary data for pol A."""
@@ -140,6 +146,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Real Pol. A Mean (Masked)",
     )
     def realPolAMeanFreqAvgMasked(self: PstStat) -> float:
         """Get the mean of the real data for pol A, averaged over non-RFI masked channels."""
@@ -147,6 +154,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Real Pol. A Variance (Masked)",
     )
     def realPolAVarianceFreqAvgMasked(self: PstStat) -> float:
         """Get the variance of the real data for pol A, averaged over non-RFI masked channels."""
@@ -154,6 +162,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=int,
+        label="Real Pol. A Num. Clipped (Masked)",
     )
     def realPolANumClippedSamplesMasked(self: PstStat) -> int:
         """Get the num of clipped samples of the real data for pol A in non-RFI masked channels."""
@@ -161,6 +170,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Imaginary Pol. A Mean (Masked)",
     )
     def imagPolAMeanFreqAvgMasked(self: PstStat) -> float:
         """Get the mean of the imaginary data for pol A, averaged over non-RFI masked channels."""
@@ -168,6 +178,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Imaginary Pol. A Variance (Masked)",
     )
     def imagPolAVarianceFreqAvgMasked(self: PstStat) -> float:
         """Get the variance of the imaginary data for pol A, averaged over non-RFI masked channels."""
@@ -175,6 +186,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=int,
+        label="Imaginary Pol. A Num. Clipped (Masked)",
     )
     def imagPolANumClippedSamplesMasked(self: PstStat) -> int:
         """Get the num of clipped samples of the imaginary data for pol A in non-RFI masked channels."""
@@ -182,6 +194,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Real Pol. B Mean",
     )
     def realPolBMeanFreqAvg(self: PstStat) -> float:
         """Get the mean of the real data for pol B, averaged over all channels."""
@@ -189,6 +202,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Real Pol. B Variance",
     )
     def realPolBVarianceFreqAvg(self: PstStat) -> float:
         """Get the variance of the real data for pol B, averaged over all channels."""
@@ -196,6 +210,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=int,
+        label="Real Pol. B Num. Clipped",
     )
     def realPolBNumClippedSamples(self: PstStat) -> int:
         """Get the num of clipped samples of the real data for pol B."""
@@ -203,6 +218,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Imaginary Pol. B Mean",
     )
     def imagPolBMeanFreqAvg(self: PstStat) -> float:
         """Get the mean of the imaginary data for pol B, averaged over all channels."""
@@ -210,6 +226,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Imaginary Pol. B Variance",
     )
     def imagPolBVarianceFreqAvg(self: PstStat) -> float:
         """Get the variance of the imaginary data for pol B, averaged over all channels."""
@@ -217,6 +234,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=int,
+        label="Imaginary Pol. B Num. Clipped",
     )
     def imagPolBNumClippedSamples(self: PstStat) -> int:
         """Get the num of clipped samples of the imaginary data for pol B."""
@@ -224,6 +242,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Real Pol. B Mean (Masked)",
     )
     def realPolBMeanFreqAvgMasked(self: PstStat) -> float:
         """Get the mean of the real data for pol B, averaged over non-RFI masked channels."""
@@ -231,6 +250,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Real Pol. B Variance (Masked)",
     )
     def realPolBVarianceFreqAvgMasked(self: PstStat) -> float:
         """Get the variance of the real data for pol B, averaged over non-RFI masked channels."""
@@ -238,6 +258,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=int,
+        label="Real Pol. B Num. Clipped (Masked)",
     )
     def realPolBNumClippedSamplesMasked(self: PstStat) -> int:
         """Get the num of clipped samples of the real data for pol B in non-RFI masked channels."""
@@ -245,6 +266,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Imaginary Pol. B Mean (Masked)",
     )
     def imagPolBMeanFreqAvgMasked(self: PstStat) -> float:
         """Get the mean of the imaginary data for pol B, averaged over non-RFI masked channels."""
@@ -252,6 +274,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=float,
+        label="Imaginary Pol. B Variance (Masked)",
     )
     def imagPolBVarianceFreqAvgMasked(self: PstStat) -> float:
         """Get the variance of the imaginary data for pol B, averaged over non-RFI masked channels."""
@@ -259,6 +282,7 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
 
     @attribute(
         dtype=int,
+        label="Imaginary Pol. B Num. Clipped (Masked)",
     )
     def imagPolBNumClippedSamplesMasked(self: PstStat) -> int:
         """Get the num of clipped samples of the imaginary data for pol B in non-RFI masked channels."""

@@ -995,7 +995,7 @@ def test_stat_grpc_go_to_fault(
         (LoggingLevel.OFF, LogLevel.INFO),
     ],
 )
-def test_dsp_grpc_api_set_log_level(
+def test_stat_grpc_api_set_log_level(
     grpc_api: PstStatProcessApiGrpc,
     mock_servicer_context: MagicMock,
     tango_log_level: LoggingLevel,

@@ -85,7 +85,7 @@ def api(
 def monitor_data(
     scan_request: Dict[str, Any],
 ) -> StatMonitorData:
-    """Create an an instance of ReceiveData for monitor data."""
+    """Create an an instance of StatMonitorData for monitor data."""
     from ska_pst_lmc.stat.stat_simulator import PstStatSimulator
 
     simulator = PstStatSimulator()
@@ -608,7 +608,7 @@ def test_stat_cm_start_communicating(
     component_manager: PstStatComponentManager,
     device_interface: PstApiDeviceInterface,
 ) -> None:
-    """Test RECV component manager when start_communicating is called."""
+    """Test STAT component manager when start_communicating is called."""
     component_manager._communication_state = CommunicationStatus.DISABLED
     component_manager.start_communicating()
 
@@ -620,7 +620,7 @@ def test_stat_cm_stop_communicating(
     component_manager: PstStatComponentManager,
     device_interface: PstApiDeviceInterface,
 ) -> None:
-    """Test RECV component manager when stop_communicating is called."""
+    """Test STAT component manager when stop_communicating is called."""
     component_manager._communication_state = CommunicationStatus.ESTABLISHED
     component_manager.stop_communicating()
 
