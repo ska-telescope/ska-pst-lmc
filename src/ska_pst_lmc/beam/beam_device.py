@@ -40,6 +40,8 @@ class PstBeam(PstBaseDevice[PstBeamComponentManager], PstBeamDeviceInterface):
             - Type:'DevString'
         DspFQDN
             - Type:'DevString'
+        StatFQDN
+            - Type:'DevString'
         SendFQDN
             - Type:'DevString'
     """

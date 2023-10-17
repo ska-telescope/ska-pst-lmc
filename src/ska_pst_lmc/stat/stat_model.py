@@ -21,74 +21,74 @@ class StatMonitorData:
     :ivar real_pol_a_mean_freq_avg: the mean voltage data across all channels for polarisation A and the I
         component
     :vartype real_pol_a_mean_freq_avg: float
-    :ivar real_pol_a_variance_freq_avg: the variance of voltage data across all channels for polarisation A and
-        the I component
+    :ivar real_pol_a_variance_freq_avg: the variance of voltage data across all channels for polarisation A
+        and the I component
     :vartype real_pol_a_variance_freq_avg: float
-    :ivar real_pol_a_num_clipped_samples: the number of clipped samples across all channels for polarisation A and
-        the I component
+    :ivar real_pol_a_num_clipped_samples: the number of clipped samples across all channels for polarisation
+        A and the I component
     :vartype real_pol_a_num_clipped_samples: int
     :ivar imag_pol_a_mean_freq_avg: the mean voltage data across all channels for polarisation A and the Q
         component
     :vartype imag_pol_a_mean_freq_avg: float
-    :ivar imag_pol_a_variance_freq_avg: the variance of voltage data across all channels for polarisation A and
-        the Q component
+    :ivar imag_pol_a_variance_freq_avg: the variance of voltage data across all channels for polarisation A
+        and the Q component
     :vartype imag_pol_a_variance_freq_avg: float
-    :ivar imag_pol_a_num_clipped_samples: the number of clipped samples across all channels for polarisation A and
-        the Q component
-    :vartype imag_pol_a_num_clipped_samples: int
-    :ivar real_pol_a_mean_freq_avg_masked: the mean voltage data across non-RFI masked channels for polarisation A
-        and the I component
-    :vartype real_pol_a_mean_freq_avg_masked: float
-    :ivar real_pol_a_variance_freq_avg_masked: the variance of voltage data across non-RFI masked channels for
-        polarisation A and the I component
-    :vartype real_pol_a_variance_freq_avg_masked: float
-    :ivar real_pol_a_num_clipped_samples_masked: the number of clipped samples across non-RFI masked channels for
-        polarisation A and the I component
-    :vartype real_pol_a_num_clipped_samples_masked: int
-    :ivar imag_pol_a_mean_freq_avg_masked: the mean voltage data across non-RFI masked channels for polarisation
+    :ivar imag_pol_a_num_clipped_samples: the number of clipped samples across all channels for polarisation
         A and the Q component
+    :vartype imag_pol_a_num_clipped_samples: int
+    :ivar real_pol_a_mean_freq_avg_masked: the mean voltage data across non-RFI masked channels for
+        polarisation A and the I component
+    :vartype real_pol_a_mean_freq_avg_masked: float
+    :ivar real_pol_a_variance_freq_avg_masked: the variance of voltage data across non-RFI masked channels
+        for polarisation A and the I component
+    :vartype real_pol_a_variance_freq_avg_masked: float
+    :ivar real_pol_a_num_clipped_samples_masked: the number of clipped samples across non-RFI masked channels
+        for polarisation A and the I component
+    :vartype real_pol_a_num_clipped_samples_masked: int
+    :ivar imag_pol_a_mean_freq_avg_masked: the mean voltage data across non-RFI masked channels for
+        polarisation A and the Q component
     :vartype imag_pol_a_mean_freq_avg_masked: float
-    :ivar imag_pol_a_variance_freq_avg_masked: the variance of voltage data across non-RFI masked channels for
-        polarisation A and the Q component
+    :ivar imag_pol_a_variance_freq_avg_masked: the variance of voltage data across non-RFI masked channels
+        for polarisation A and the Q component
     :vartype imag_pol_a_variance_freq_avg_masked: float
-    :ivar imag_pol_a_num_clipped_samples_masked: the number of clipped samples across non-RFI masked channels for
-        polarisation A and the Q component
+    :ivar imag_pol_a_num_clipped_samples_masked: the number of clipped samples across non-RFI masked channels
+        for polarisation A and the Q component
     :vartype imag_pol_a_num_clipped_samples_masked: int
     :ivar real_pol_b_mean_freq_avg: the mean voltage data across all channels for polarisation B and the I
         component
     :vartype real_pol_b_mean_freq_avg: float
-    :ivar real_pol_b_variance_freq_avg: the variance of voltage data across all channels for polarisation B and
-        the I component
+    :ivar real_pol_b_variance_freq_avg: the variance of voltage data across all channels for polarisation B
+        and the I component
     :vartype real_pol_b_variance_freq_avg: float
-    :ivar real_pol_b_num_clipped_samples: the number of clipped samples across all channels for polarisation B and
-        the I component
+    :ivar real_pol_b_num_clipped_samples: the number of clipped samples across all channels for polarisation
+        B and the I component
     :vartype real_pol_b_num_clipped_samples: int
     :ivar imag_pol_b_mean_freq_avg: the mean voltage data across all channels for polarisation B and the Q
         component
     :vartype imag_pol_b_mean_freq_avg: float
-    :ivar imag_pol_b_variance_freq_avg: the variance of voltage data across all channels for polarisation B and
-        the Q component
+    :ivar imag_pol_b_variance_freq_avg: the variance of voltage data across all channels for polarisation B
+        and the Q component
     :vartype imag_pol_b_variance_freq_avg: float
-    :ivar imag_pol_b_num_clipped_samples: the number of clipped samples across all channels for polarisation B and
-        the Q component
-    :vartype imag_pol_b_num_clipped_samples: int
-    :ivar real_pol_b_mean_freq_avg_masked: the mean voltage data across non-RFI masked channels for polarisation B
-        and the I component
-    :vartype real_pol_b_mean_freq_avg_masked: float
-    :ivar real_pol_b_variance_freq_avg_masked: the variance of voltage data across non-RFI masked channels for
-        polarisation B and the I component
-    :vartype real_pol_b_variance_freq_avg_masked: float
-    :ivar real_pol_b_num_clipped_samples_masked: the number of clipped samples across non-RFI masked channels for
-        polarisation B and the I component
-    :vartype real_pol_b_num_clipped_samples_masked: int
-    :ivar imag_pol_b_mean_freq_avg_masked: the mean voltage data across non-RFI masked channels for polarisation
+    :ivar imag_pol_b_num_clipped_samples: the number of clipped samples across all channels for polarisation
         B and the Q component
+    :vartype imag_pol_b_num_clipped_samples: int
+    :ivar real_pol_b_mean_freq_avg_masked: the mean voltage data across non-RFI masked channels for
+        polarisation B and the I component
+    :vartype real_pol_b_mean_freq_avg_masked: float
+    :ivar real_pol_b_variance_freq_avg_masked: the variance of voltage data across non-RFI masked channels
+        for polarisation B and the I component
+    :vartype real_pol_b_variance_freq_avg_masked: float
+    :ivar real_pol_b_num_clipped_samples_masked: the number of clipped samples across non-RFI masked channels
+        for polarisation B and the I component
+    :vartype real_pol_b_num_clipped_samples_masked: int
+    :ivar imag_pol_b_mean_freq_avg_masked: the mean voltage data across non-RFI masked channels for
+        polarisation B and the Q component
     :vartype imag_pol_b_mean_freq_avg_masked: float
-    :ivar imag_pol_b_variance_freq_avg_masked: the variance of voltage data across non-RFI masked channels for
-        polarisation B and the Q component
+    :ivar imag_pol_b_variance_freq_avg_masked: the variance of voltage data across non-RFI masked channels
+        for polarisation B and the Q component
     :vartype imag_pol_b_variance_freq_avg_masked: float
-    :ivar imag_pol_b_num_clipped_samples_masked: the number of clipped samples across non-RFI masked channels for
-        polarisation B and the Q component
+    :ivar imag_pol_b_num_clipped_samples_masked: the number of clipped samples across non-RFI masked channels
+        for polarisation B and the Q component
     :vartype imag_pol_b_num_clipped_samples_masked: int
     """
 

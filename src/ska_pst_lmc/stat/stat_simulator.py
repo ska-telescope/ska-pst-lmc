@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 
 import numpy as np
 
@@ -73,12 +73,12 @@ class PstStatSimulator:
             num_clipped_samples = np.count_nonzero(clipped_samples)
             data[clipped_samples] = 3.0 * np.sign(data[clipped_samples])
 
-            mean = np.mean(data, dtype=np.float32)
-            variance = np.var(data, ddof=1, dtype=np.float32)
+            mean = np.mean(data, dtype=float)
+            variance = np.var(data, ddof=1, dtype=float)
 
             return (mean, variance, num_clipped_samples)
 
-        data = {}
+        data: Dict[str, Any] = {}
         for dim in ["real", "imag"]:
             for pol in ["pol_a", "pol_b"]:
                 for suffix in ["", "_masked"]:

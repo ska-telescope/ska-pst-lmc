@@ -78,98 +78,122 @@ class PstStatComponentManager(PstApiComponentManager[StatMonitorData, PstStatPro
 
     @property
     def real_pol_a_mean_freq_avg(self: PstStatComponentManager) -> float:
+        """Get the mean of the real data for pol A, averaged over all channels."""
         return self._monitor_data.real_pol_a_mean_freq_avg
 
     @property
     def real_pol_a_variance_freq_avg(self: PstStatComponentManager) -> float:
+        """Get the variance of the real data for pol A, averaged over all channels."""
         return self._monitor_data.real_pol_a_variance_freq_avg
 
     @property
     def real_pol_a_num_clipped_samples(self: PstStatComponentManager) -> int:
+        """Get the num of clipped samples of the real data for pol A."""
         return self._monitor_data.real_pol_a_num_clipped_samples
 
     @property
     def imag_pol_a_mean_freq_avg(self: PstStatComponentManager) -> float:
+        """Get the mean of the imaginary data for pol A, averaged over all channels."""
         return self._monitor_data.imag_pol_a_mean_freq_avg
 
     @property
     def imag_pol_a_variance_freq_avg(self: PstStatComponentManager) -> float:
+        """Get the variance of the imaginary data for pol A, averaged over all channels."""
         return self._monitor_data.imag_pol_a_variance_freq_avg
 
     @property
     def imag_pol_a_num_clipped_samples(self: PstStatComponentManager) -> int:
+        """Get the num of clipped samples of the imaginary data for pol A."""
         return self._monitor_data.imag_pol_a_num_clipped_samples
 
     @property
     def real_pol_a_mean_freq_avg_masked(self: PstStatComponentManager) -> float:
+        """Get the mean of the real data for pol A, averaged over non-RFI masked channels."""
         return self._monitor_data.real_pol_a_mean_freq_avg_masked
 
     @property
     def real_pol_a_variance_freq_avg_masked(self: PstStatComponentManager) -> float:
+        """Get the variance of the real data for pol A, averaged over non-RFI masked channels."""
         return self._monitor_data.real_pol_a_variance_freq_avg_masked
 
     @property
     def real_pol_a_num_clipped_samples_masked(self: PstStatComponentManager) -> int:
+        """Get the num of clipped samples of the real data for pol A in non-RFI masked channels."""
         return self._monitor_data.real_pol_a_num_clipped_samples_masked
 
     @property
     def imag_pol_a_mean_freq_avg_masked(self: PstStatComponentManager) -> float:
+        """Get the mean of the imaginary data for pol A, averaged over non-RFI masked channels."""
         return self._monitor_data.imag_pol_a_mean_freq_avg_masked
 
     @property
     def imag_pol_a_variance_freq_avg_masked(self: PstStatComponentManager) -> float:
+        """Get the variance of the imaginary data for pol A, averaged over non-RFI masked channels."""
         return self._monitor_data.imag_pol_a_variance_freq_avg_masked
 
     @property
     def imag_pol_a_num_clipped_samples_masked(self: PstStatComponentManager) -> int:
+        """Get the num of clipped samples of the imaginary data for pol A in non-RFI masked channels."""
         return self._monitor_data.imag_pol_a_num_clipped_samples_masked
 
     @property
     def real_pol_b_mean_freq_avg(self: PstStatComponentManager) -> float:
+        """Get the mean of the real data for pol B, averaged over all channels."""
         return self._monitor_data.real_pol_b_mean_freq_avg
 
     @property
     def real_pol_b_variance_freq_avg(self: PstStatComponentManager) -> float:
+        """Get the variance of the real data for pol B, averaged over all channels."""
         return self._monitor_data.real_pol_b_variance_freq_avg
 
     @property
     def real_pol_b_num_clipped_samples(self: PstStatComponentManager) -> int:
+        """Get the num of clipped samples of the real data for pol B."""
         return self._monitor_data.real_pol_b_num_clipped_samples
 
     @property
     def imag_pol_b_mean_freq_avg(self: PstStatComponentManager) -> float:
+        """Get the mean of the imaginary data for pol B, averaged over all channels."""
         return self._monitor_data.imag_pol_b_mean_freq_avg
 
     @property
     def imag_pol_b_variance_freq_avg(self: PstStatComponentManager) -> float:
+        """Get the variance of the imaginary data for pol B, averaged over all channels."""
         return self._monitor_data.imag_pol_b_variance_freq_avg
 
     @property
     def imag_pol_b_num_clipped_samples(self: PstStatComponentManager) -> int:
+        """Get the num of clipped samples of the imaginary data for pol B."""
         return self._monitor_data.imag_pol_b_num_clipped_samples
 
     @property
     def real_pol_b_mean_freq_avg_masked(self: PstStatComponentManager) -> float:
+        """Get the mean of the real data for pol B, averaged over non-RFI masked channels."""
         return self._monitor_data.real_pol_b_mean_freq_avg_masked
 
     @property
     def real_pol_b_variance_freq_avg_masked(self: PstStatComponentManager) -> float:
+        """Get the variance of the real data for pol B, averaged over non-RFI masked channels."""
         return self._monitor_data.real_pol_b_variance_freq_avg_masked
 
     @property
     def real_pol_b_num_clipped_samples_masked(self: PstStatComponentManager) -> int:
+        """Get the num of clipped samples of the real data for pol B in non-RFI masked channels."""
         return self._monitor_data.real_pol_b_num_clipped_samples_masked
 
     @property
     def imag_pol_b_mean_freq_avg_masked(self: PstStatComponentManager) -> float:
+        """Get the mean of the imaginary data for pol B, averaged over non-RFI masked channels."""
         return self._monitor_data.imag_pol_b_mean_freq_avg_masked
 
     @property
     def imag_pol_b_variance_freq_avg_masked(self: PstStatComponentManager) -> float:
+        """Get the variance of the imaginary data for pol B, averaged over non-RFI masked channels."""
         return self._monitor_data.imag_pol_b_variance_freq_avg_masked
 
     @property
     def imag_pol_b_num_clipped_samples_masked(self: PstStatComponentManager) -> int:
+        """Get the num of clipped samples of the imaginary data for pol B in non-RFI masked channels."""
         return self._monitor_data.imag_pol_b_num_clipped_samples_masked
 
     @property

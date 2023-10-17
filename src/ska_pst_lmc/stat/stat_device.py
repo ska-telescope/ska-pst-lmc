@@ -100,144 +100,168 @@ class PstStat(PstBaseProcessDevice[PstStatComponentManager, StatMonitorData]):
         dtype=float,
     )
     def realPolAMeanFreqAvg(self: PstStat) -> float:
+        """Get the mean of the real data for pol A, averaged over all channels."""
         return self.component_manager.real_pol_a_mean_freq_avg
 
     @attribute(
         dtype=float,
     )
     def realPolAVarianceFreqAvg(self: PstStat) -> float:
+        """Get the variance of the real data for pol A, averaged over all channels."""
         return self.component_manager.real_pol_a_variance_freq_avg
 
     @attribute(
         dtype=int,
     )
     def realPolANumClippedSamples(self: PstStat) -> int:
+        """Get the num of clipped samples of the real data for pol A."""
         return self.component_manager.real_pol_a_num_clipped_samples
 
     @attribute(
         dtype=float,
     )
     def imagPolAMeanFreqAvg(self: PstStat) -> float:
+        """Get the mean of the imaginary data for pol A, averaged over all channels."""
         return self.component_manager.imag_pol_a_mean_freq_avg
 
     @attribute(
         dtype=float,
     )
     def imagPolAVarianceFreqAvg(self: PstStat) -> float:
+        """Get the variance of the imaginary data for pol A, averaged over all channels."""
         return self.component_manager.imag_pol_a_variance_freq_avg
 
     @attribute(
         dtype=int,
     )
     def imagPolANumClippedSamples(self: PstStat) -> int:
+        """Get the num of clipped samples of the imaginary data for pol A."""
         return self.component_manager.imag_pol_a_num_clipped_samples
 
     @attribute(
         dtype=float,
     )
     def realPolAMeanFreqAvgMasked(self: PstStat) -> float:
+        """Get the mean of the real data for pol A, averaged over non-RFI masked channels."""
         return self.component_manager.real_pol_a_mean_freq_avg_masked
 
     @attribute(
         dtype=float,
     )
     def realPolAVarianceFreqAvgMasked(self: PstStat) -> float:
+        """Get the variance of the real data for pol A, averaged over non-RFI masked channels."""
         return self.component_manager.real_pol_a_variance_freq_avg_masked
 
     @attribute(
         dtype=int,
     )
     def realPolANumClippedSamplesMasked(self: PstStat) -> int:
+        """Get the num of clipped samples of the real data for pol A in non-RFI masked channels."""
         return self.component_manager.real_pol_a_num_clipped_samples_masked
 
     @attribute(
         dtype=float,
     )
     def imagPolAMeanFreqAvgMasked(self: PstStat) -> float:
+        """Get the mean of the imaginary data for pol A, averaged over non-RFI masked channels."""
         return self.component_manager.imag_pol_a_mean_freq_avg_masked
 
     @attribute(
         dtype=float,
     )
     def imagPolAVarianceFreqAvgMasked(self: PstStat) -> float:
+        """Get the variance of the imaginary data for pol A, averaged over non-RFI masked channels."""
         return self.component_manager.imag_pol_a_variance_freq_avg_masked
 
     @attribute(
         dtype=int,
     )
     def imagPolANumClippedSamplesMasked(self: PstStat) -> int:
+        """Get the num of clipped samples of the imaginary data for pol A in non-RFI masked channels."""
         return self.component_manager.imag_pol_a_num_clipped_samples_masked
 
     @attribute(
         dtype=float,
     )
     def realPolBMeanFreqAvg(self: PstStat) -> float:
+        """Get the mean of the real data for pol B, averaged over all channels."""
         return self.component_manager.real_pol_b_mean_freq_avg
 
     @attribute(
         dtype=float,
     )
     def realPolBVarianceFreqAvg(self: PstStat) -> float:
+        """Get the variance of the real data for pol B, averaged over all channels."""
         return self.component_manager.real_pol_b_variance_freq_avg
 
     @attribute(
         dtype=int,
     )
     def realPolBNumClippedSamples(self: PstStat) -> int:
+        """Get the num of clipped samples of the real data for pol B."""
         return self.component_manager.real_pol_b_num_clipped_samples
 
     @attribute(
         dtype=float,
     )
     def imagPolBMeanFreqAvg(self: PstStat) -> float:
+        """Get the mean of the imaginary data for pol B, averaged over all channels."""
         return self.component_manager.imag_pol_b_mean_freq_avg
 
     @attribute(
         dtype=float,
     )
     def imagPolBVarianceFreqAvg(self: PstStat) -> float:
+        """Get the variance of the imaginary data for pol B, averaged over all channels."""
         return self.component_manager.imag_pol_b_variance_freq_avg
 
     @attribute(
         dtype=int,
     )
     def imagPolBNumClippedSamples(self: PstStat) -> int:
+        """Get the num of clipped samples of the imaginary data for pol B."""
         return self.component_manager.imag_pol_b_num_clipped_samples
 
     @attribute(
         dtype=float,
     )
     def realPolBMeanFreqAvgMasked(self: PstStat) -> float:
+        """Get the mean of the real data for pol B, averaged over non-RFI masked channels."""
         return self.component_manager.real_pol_b_mean_freq_avg_masked
 
     @attribute(
         dtype=float,
     )
     def realPolBVarianceFreqAvgMasked(self: PstStat) -> float:
+        """Get the variance of the real data for pol B, averaged over non-RFI masked channels."""
         return self.component_manager.real_pol_b_variance_freq_avg_masked
 
     @attribute(
         dtype=int,
     )
     def realPolBNumClippedSamplesMasked(self: PstStat) -> int:
+        """Get the num of clipped samples of the real data for pol B in non-RFI masked channels."""
         return self.component_manager.real_pol_b_num_clipped_samples_masked
 
     @attribute(
         dtype=float,
     )
     def imagPolBMeanFreqAvgMasked(self: PstStat) -> float:
+        """Get the mean of the imaginary data for pol B, averaged over non-RFI masked channels."""
         return self.component_manager.imag_pol_b_mean_freq_avg_masked
 
     @attribute(
         dtype=float,
     )
     def imagPolBVarianceFreqAvgMasked(self: PstStat) -> float:
+        """Get the variance of the imaginary data for pol B, averaged over non-RFI masked channels."""
         return self.component_manager.imag_pol_b_variance_freq_avg_masked
 
     @attribute(
         dtype=int,
     )
     def imagPolBNumClippedSamplesMasked(self: PstStat) -> int:
+        """Get the num of clipped samples of the imaginary data for pol B in non-RFI masked channels."""
         return self.component_manager.imag_pol_b_num_clipped_samples_masked
 
     # --------
