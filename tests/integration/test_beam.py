@@ -21,7 +21,7 @@ from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DevState
 
-from ska_pst_lmc import DeviceProxyFactory
+from ska_pst_lmc import DeviceProxyFactory, PstDeviceProxy
 
 
 @pytest.fixture
@@ -92,6 +92,11 @@ class TestPstBeam:
             change_event_callbacks=change_event_callbacks,
             logger=logger,
         )
+
+    @property
+    def device_proxies(self: TestPstBeam) -> List[PstDeviceProxy]:
+        """Get all the device proxies."""
+        return [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy, self.stat_proxy]
 
     def current_attribute_values(self: TestPstBeam) -> Dict[str, Any]:
         """Get current attributate values for BEAM device."""
@@ -255,7 +260,7 @@ class TestPstBeam:
         assert self.recv_proxy.state() == state
         assert self.smrb_proxy.state() == state
         assert self.dsp_proxy.state() == state
-        assert self.stat_proxy.stat() == state
+        assert self.stat_proxy.state() == state
 
     @backoff.on_exception(
         backoff.expo,
@@ -316,7 +321,7 @@ class TestPstBeam:
                 "adminMode",
                 "state()",
             ]:
-                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy, self.stat_proxy]:
+                for d in self.device_proxies:
                     if p == "state()":
                         self.logger.info(f"{d}.{p} = {d.state()}")
                     else:
@@ -364,7 +369,7 @@ class TestPstBeam:
                 "adminMode",
                 "state()",
             ]:
-                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy, self.stat_proxy]:
+                for d in self.device_proxies:
                     if p == "state()":
                         self.logger.info(f"{d}.{p} = {d.state()}")
                     else:
@@ -410,7 +415,7 @@ class TestPstBeam:
                 "adminMode",
                 "state()",
             ]:
-                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy, self.stat_proxy]:
+                for d in self.device_proxies:
                     if p == "state()":
                         self.logger.info(f"{d}.{p} = {d.state()}")
                     else:
@@ -480,7 +485,7 @@ class TestPstBeam:
                 "adminMode",
                 "state()",
             ]:
-                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy, self.stat_proxy]:
+                for d in self.device_proxies:
                     if p == "state()":
                         self.logger.info(f"{d}.{p} = {d.state()}")
                     else:
