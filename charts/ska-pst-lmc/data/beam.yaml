@@ -16,6 +16,31 @@ server:
   instances:
     - name: "01"
       classes:
+      - name: "PstStat"
+        devices:
+        - name: "low-pst/stat/01"
+          properties:
+          - name: "DeviceID"
+            values:
+            - "1"
+          - name: "process_api_endpoint"
+            values:
+            - {{.Release.Name}}-{{.Values.stat.stat_process_api_endpoint}}:{{index .Values.global.ports.stat "stat-mgmt" "port"}}
+          - name: "initial_monitoring_polling_rate"
+            values:
+            - "{{.Values.stat.monitor_polling_rate}}"
+          - name: "LoggingLevelDefault"
+            values:
+            - "{{.Values.loggingLevel}}"
+          - name: "SubsystemId"
+            values:
+            - "{{.Values.subsystem_id}}"
+          attribute_properties:
+          - attribute: "simulationMode"
+            properties:
+            - name: "__value"
+              values:
+              - "{{.Values.dsp.simulationMode}}"
       - name: "PstDsp"
         devices:
         - name: "low-pst/dsp/01"
@@ -113,6 +138,9 @@ server:
           - name: "DspFQDN"
             values:
             - "low-pst/dsp/01"
+          - name: "StatFQDN"
+            values:
+            - "low-pst/stat/01"
           - name: "SendFQDN"
             values:
             - "low-pst/send/01"

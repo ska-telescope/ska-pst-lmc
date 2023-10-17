@@ -56,6 +56,9 @@ ska-pst-lmc:
   dsp:
     monitor_polling_rate: 500
 
+  stat:
+    monitor_polling_rate: 500
+
 ska-dashboard-repo:
   enabled: false
 
