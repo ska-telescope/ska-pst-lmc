@@ -74,6 +74,7 @@ class TestPstBeam:
     ) -> None:
         """Put test class with Tango devices and event checker."""
         self.dsp_proxy = DeviceProxyFactory.get_device("low-pst/dsp/01")
+        self.stat_proxy = DeviceProxyFactory.get_device("low-pst/stat/01")
         self.recv_proxy = DeviceProxyFactory.get_device("low-pst/recv/01")
         self.smrb_proxy = DeviceProxyFactory.get_device("low-pst/smrb/01")
         self.beam_proxy = DeviceProxyFactory.get_device("low-pst/beam/01")
@@ -254,6 +255,7 @@ class TestPstBeam:
         assert self.recv_proxy.state() == state
         assert self.smrb_proxy.state() == state
         assert self.dsp_proxy.state() == state
+        assert self.stat_proxy.stat() == state
 
     @backoff.on_exception(
         backoff.expo,
@@ -267,6 +269,7 @@ class TestPstBeam:
         assert self.recv_proxy.obsState == subObsState or obsState
         assert self.smrb_proxy.obsState == subObsState or obsState
         assert self.dsp_proxy.obsState == subObsState or obsState
+        assert self.stat_proxy.obsState == subObsState or obsState
 
     @backoff.on_exception(
         backoff.expo,
@@ -280,6 +283,7 @@ class TestPstBeam:
         assert self.recv_proxy.adminMode == admin_mode
         assert self.smrb_proxy.adminMode == admin_mode
         assert self.dsp_proxy.adminMode == admin_mode
+        assert self.stat_proxy.adminMode == admin_mode
 
     def test_configure_then_scan_then_stop(
         self: TestPstBeam,
@@ -312,7 +316,7 @@ class TestPstBeam:
                 "adminMode",
                 "state()",
             ]:
-                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy]:
+                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy, self.stat_proxy]:
                     if p == "state()":
                         self.logger.info(f"{d}.{p} = {d.state()}")
                     else:
@@ -360,7 +364,7 @@ class TestPstBeam:
                 "adminMode",
                 "state()",
             ]:
-                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy]:
+                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy, self.stat_proxy]:
                     if p == "state()":
                         self.logger.info(f"{d}.{p} = {d.state()}")
                     else:
@@ -406,7 +410,7 @@ class TestPstBeam:
                 "adminMode",
                 "state()",
             ]:
-                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy]:
+                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy, self.stat_proxy]:
                     if p == "state()":
                         self.logger.info(f"{d}.{p} = {d.state()}")
                     else:
@@ -476,7 +480,7 @@ class TestPstBeam:
                 "adminMode",
                 "state()",
             ]:
-                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy]:
+                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy, self.stat_proxy]:
                     if p == "state()":
                         self.logger.info(f"{d}.{p} = {d.state()}")
                     else:

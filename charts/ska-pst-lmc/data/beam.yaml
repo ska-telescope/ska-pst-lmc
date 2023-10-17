@@ -9,6 +9,8 @@ entrypoints:
     path: "/app/src/ska_pst_lmc/receive/receive_device.py"
   - name: "smrb_device.PstSmrb"
     path: "/app/src/ska_pst_lmc/smrb/smrb_device.py"
+  - name: "stat_device.PstStat"
+    path: "/app/src/ska_pst_lmc/stat/stat_device.py"
   - name: "beam.PstBeam"
     path: "/app/src/ska_pst_lmc/beam/beam_device.py"
 server:
