@@ -1,23 +1,24 @@
 .. _api_tango:
 
-PST.LMC Tango API
+PST.LMC TANGO API
 =================
 
 This page describes the properties, commands, and attributes exposed by
-the Tango interface of each PST.BEAM.
+the TANGO interface of each PST.BEAM.
 
 Properties
 ----------
 
-The following properties are common to all PST Tango devices.
+The following properties are common to all PST TANGO devices.
 
 ========================== ======= ======= ===========
 Property                   Type    Default Description
 ========================== ======= ======= ===========
 facility                   String  Low     Low or Mid (where PST is deployed)
+subsystem_id               String  pst-low pst-low or pst-mid (where PST is deployed)
 ========================== ======= ======= ===========
 
-The following properties are common to SMRB, RECV, and DSP Tango devices.
+The following properties are common to SMRB, RECV, DSP, and STAT TANGO devices.
 
 ========================== ======= ======= ===========
 Property                   Type    Default Description
@@ -26,15 +27,16 @@ process_api_endpoint       String          URL for gRPC service of the core appl
 monitor_polling_rate       Integer 5000    Polling period in milliseconds for querying core application attributes
 ========================== ======= ======= ===========
 
-The following properties are specific to the BEAM Tango device.
+The following properties are specific to the BEAM TANGO device.
 
 ========================== ======= ======= ===========
 Property                   Type    Default Description
 ========================== ======= ======= ===========
-SmrbFQDN                   String          Tango FQDN for SMRB.MGMT
-RecvFQDN                   String          Tango FQDN for RECV.MGMT
-DspFQDN                    String          Tango FQDN for DSP.MGMT
-SendFQDN                   String          Tango FQDN for SEND.MGMT (not currently used)
+SmrbFQDN                   String          FQDN for SMRB.MGMT TANGO Device
+RecvFQDN                   String          FQDN for RECV.MGMT TANGO Device
+DspFQDN                    String          FQDN for DSP.MGMT TANGO Device
+StatFQDN                   String          FQDN for DSP.MGMT TANGO Device
+SendFQDN                   String          FQDN for SEND.MGMT TANGO Device (not currently used)
 ========================== ======= ======= ===========
 
 Commands
@@ -69,7 +71,7 @@ Currently, the PST supports `CSP config 2.4 <https://developer.skao.int/projects
 Attributes
 ----------
 
-In addition to the attributes made visible in the Tango interface by  
+In addition to the attributes made visible in the TANGO interface by
 `SkaObsDevice <https://developer.skao.int/projects/lmc-base-classes/en/latest/SKAObsDevice.html>`_
 and
 `SKABaseDevice <https://developer.skao.int/projects/lmc-base-classes/en/latest/SKABaseDevice.html>`_,
@@ -90,6 +92,37 @@ availableDiskSpace         Integer Current available recording space in bytes
 availableRecordingTime     Float   Current available recording time in seconds
 ringBufferUtilisation      Float   Current fractional utilisation of ring buffer
 ========================== ======= ===========
+
+The following attributes are only available from the STAT.MGMT device
+
+================================ ======== ===========
+Attribute                        Type    Description
+================================ ======== ===========
+realPolAMeanFreqAvg              Float    The mean of the real data for pol A, averaged over all channels.
+realPolAVarianceFreqAvg          Float    The variance of the real data for pol A, averaged over all channels.
+realPolANumClippedSamples        Integer  The num of clipped samples of the real data for pol A.
+imagPolAMeanFreqAvg              Float    The mean of the imaginary data for pol A, averaged over all channels.
+imagPolAVarianceFreqAvg          Float    The variance of the imaginary data for pol A, averaged over all channels.
+imagPolANumClippedSamples        Integer  The num of clipped samples of the imaginary data for pol A.
+realPolAMeanFreqAvgMasked        Float    The mean of the real data for pol A, averaged over non-RFI masked channels.
+realPolAVarianceFreqAvgMasked    Float    The variance of the real data for pol A, averaged over non-RFI masked channels.
+realPolANumClippedSamplesMasked  Integer  The num of clipped samples of the real data for pol A in non-RFI masked channels.
+imagPolAMeanFreqAvgMasked        Float    The mean of the imaginary data for pol A, averaged over non-RFI masked channels.
+imagPolAVarianceFreqAvgMasked    Float    The variance of the imaginary data for pol A, averaged over non-RFI masked channels.
+imagPolANumClippedSamplesMasked  Integer  The num of clipped samples of the imaginary data for pol A in non-RFI masked channels.
+realPolBMeanFreqAvg              Float    The mean of the real data for pol B, averaged over all channels.
+realPolBVarianceFreqAvg          Float    The variance of the real data for pol B, averaged over all channels.
+realPolBNumClippedSamples        Integer  The num of clipped samples of the real data for pol B.
+imagPolBMeanFreqAvg              Float    The mean of the imaginary data for pol B, averaged over all channels.
+imagPolBVarianceFreqAvg          Float    The variance of the imaginary data for pol B, averaged over all channels.
+imagPolBNumClippedSamples        Integer  The num of clipped samples of the imaginary data for pol B.
+realPolBMeanFreqAvgMasked        Float    The mean of the real data for pol B, averaged over non-RFI masked channels.
+realPolBVarianceFreqAvgMasked    Float    The variance of the real data for pol B, averaged over non-RFI masked channels.
+realPolBNumClippedSamplesMasked  Integer  The num of clipped samples of the real data for pol B in non-RFI masked channels.
+imagPolBMeanFreqAvgMasked        Float    The mean of the imaginary data for pol B, averaged over non-RFI masked channels.
+imagPolBVarianceFreqAvgMasked    Float    The variance of the imaginary data for pol B, averaged over non-RFI masked channels.
+imagPolBNumClippedSamplesMasked  Integer  The num of clipped samples of the imaginary data for pol B in non-RFI masked channels.
+================================ ======== ===========
 
 From CspSubElementObsDevice
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

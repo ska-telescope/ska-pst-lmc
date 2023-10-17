@@ -1,8 +1,8 @@
 =================
-SMRB TANGO Device
+STAT TANGO Device
 =================
 
 .. toctree::
 
-.. automodule:: ska_pst_lmc.smrb.smrb_device
+.. automodule:: ska_pst_lmc.stat.stat_device
    :members:

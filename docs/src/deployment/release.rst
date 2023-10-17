@@ -9,7 +9,7 @@
 Release deployment
 ==================
 
-This page describes how to install, interact with, and uninstall 
+This page describes how to install, interact with, and uninstall
 released versions of PST.LMC using helm, kubectl, and the itango console.
 
 Configure environment
@@ -34,7 +34,7 @@ or configured appropriately.
 Deploy PST.LMC
 --------------
 
-Released versions of PST Helm charts are published in the SKAO artefact repository. 
+Released versions of PST Helm charts are published in the SKAO artefact repository.
 To install a released version, first add this chart repository to helm:
 
 .. code-block:: console
@@ -83,7 +83,7 @@ You can check the logs of pods to verify that they are doing okay:
 
     $ kubectl logs <pod_name>
 
-For example, 
+For example,
 
 .. code-block:: console
 

@@ -1,15 +1,15 @@
 .. _architecture_tango:
 
-Tango Devices
+TANGO Devices
 =============
 
-Four PST Tango devices (BEAM, SMRB, RECV, and DSP.*) are deployed in a single Tango Device server.
+Five PST TANGO devices (BEAM, SMRB, RECV, DSP, and STAT.*) are deployed in a single TANGO Device server.
 For AA0.5, each deployment of PST supports a single beam; multiple device servers could be deployed to support multiple beams.
 
 Full PST control and monitoring is accessed via the BEAM device.
-Following the SKA Tango device naming convention, access to the Low PST Beam 1 would use the Tango FQDN of ``low-pst/beam/01``.
+Following the SKA TANGO device naming convention, access to the Low PST Beam 1 would use the TANGO FQDN of ``low-pst/beam/01``.
 
-All PST Tango devices extend from the SKA Tango base
+All PST TANGO devices extend from the SKA TANGO base
 `CSP Subelement Obs Device <https://developer.skao.int/projects/ska-csp-lmc-base/en/latest/api/obs/obs_device.html>`_
 (``ska_csp_lmc_base.CspSubElementObsDevice``)
 which in turn extends from the

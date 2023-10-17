@@ -21,7 +21,7 @@ The current default Helm chart parameters can be viewed in the ``ska-pst-lmc`` `
     - Default
   * - ``global.ports``
     - Port configuration for component devices
-    - ``smrb``, ``recv``, and ``dsp``
+    - ``smrb``, ``recv``, ``dsp``, and ``stat``
   * - ``global.ports.smrb``
     - Port configuration for SMRB component device
     - ``smrb-mgmt``
@@ -36,6 +36,9 @@ The current default Helm chart parameters can be viewed in the ``ska-pst-lmc`` `
     - 8080
   * - ``global.ports.dsp.dsp-mgmt.port``
     - Port used by DSP component manager
+    - 8080
+  * - ``global.ports.stat.stat-mgmt.port``
+    - Port used by STAT component manager
     - 8080
   * - ``subsystem_id``
     - The subsystem used in output path of files sent to DSP. This should be pst-low or pst-mid.
@@ -55,6 +58,9 @@ The current default Helm chart parameters can be viewed in the ``ska-pst-lmc`` `
   * - ``dsp.simulationMode``
     - Run DSP component device in simulation mode
     - 1
+  * - ``stat.simulationMode``
+    - Run DSP component device in simulation mode
+    - 1
 
 Example of changing the ports used for communication between the PST Beam logical device and component device managers.
 
@@ -70,6 +76,9 @@ Example of changing the ports used for communication between the PST Beam logica
                     port:       28081
             dsp:
                 dsp-mgmt:
+                    port:       28082
+            stat:
+                stat-mgmt:
                     port:       28082
 
 
@@ -87,6 +96,9 @@ Example of running in normal mode (not simulation mode).
       simulationMode: 1
 
     dsp:
+      simulationMode: 1
+
+    stat:
       simulationMode: 1
 
 Development chart

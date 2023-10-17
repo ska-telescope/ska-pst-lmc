@@ -1,5 +1,5 @@
 =================
-RECV Tango Device
+RECV TANGO Device
 =================
 
 .. toctree::
