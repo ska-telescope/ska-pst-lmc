@@ -243,19 +243,19 @@ class PstStatProcessApiGrpc(PstProcessApiGrpc, PstStatProcessApi):
         mean_frequency_avg = (
             np.array(stat_data_proto.mean_frequency_avg).reshape((2, 2)).astype(dtype=np.float32)
         )
-        mean_frequency_avg_masked = (
+        mean_frequency_avg_rfi_excised = (
             np.array(stat_data_proto.mean_frequency_avg_masked).reshape((2, 2)).astype(dtype=np.float32)
         )
         variance_frequency_avg = (
             np.array(stat_data_proto.variance_frequency_avg).reshape((2, 2)).astype(dtype=np.float32)
         )
-        variance_frequency_avg_masked = (
+        variance_frequency_avg_rfi_excised = (
             np.array(stat_data_proto.variance_frequency_avg_masked).reshape((2, 2)).astype(dtype=np.float32)
         )
         num_clipped_samples = (
             np.array(stat_data_proto.num_clipped_samples).reshape((2, 2)).astype(dtype=np.int32)
         )
-        num_clipped_samples_masked = (
+        num_clipped_samples_rfi_excised = (
             np.array(stat_data_proto.num_clipped_samples_masked).reshape((2, 2)).astype(dtype=np.int32)
         )
 
@@ -264,34 +264,34 @@ class PstStatProcessApiGrpc(PstProcessApiGrpc, PstStatProcessApi):
             real_pol_a_mean_freq_avg=mean_frequency_avg[POLA_IDX][REAL_IDX],
             real_pol_a_variance_freq_avg=variance_frequency_avg[POLA_IDX][REAL_IDX],
             real_pol_a_num_clipped_samples=num_clipped_samples[POLA_IDX][REAL_IDX],
-            # Pol A + I (masked)
-            real_pol_a_mean_freq_avg_masked=mean_frequency_avg_masked[POLA_IDX][REAL_IDX],
-            real_pol_a_variance_freq_avg_masked=variance_frequency_avg_masked[POLA_IDX][REAL_IDX],
-            real_pol_a_num_clipped_samples_masked=num_clipped_samples_masked[POLA_IDX][REAL_IDX],
+            # Pol A + I (RFI excised)
+            real_pol_a_mean_freq_avg_rfi_excised=mean_frequency_avg_rfi_excised[POLA_IDX][REAL_IDX],
+            real_pol_a_variance_freq_avg_rfi_excised=variance_frequency_avg_rfi_excised[POLA_IDX][REAL_IDX],
+            real_pol_a_num_clipped_samples_rfi_excised=num_clipped_samples_rfi_excised[POLA_IDX][REAL_IDX],
             # Pol A + Q
             imag_pol_a_mean_freq_avg=mean_frequency_avg[POLA_IDX][IMAG_IDX],
             imag_pol_a_variance_freq_avg=variance_frequency_avg[POLA_IDX][IMAG_IDX],
             imag_pol_a_num_clipped_samples=num_clipped_samples[POLA_IDX][IMAG_IDX],
-            # Pol A + Q (masked)
-            imag_pol_a_mean_freq_avg_masked=mean_frequency_avg_masked[POLA_IDX][IMAG_IDX],
-            imag_pol_a_variance_freq_avg_masked=variance_frequency_avg_masked[POLA_IDX][IMAG_IDX],
-            imag_pol_a_num_clipped_samples_masked=num_clipped_samples_masked[POLA_IDX][IMAG_IDX],
+            # Pol A + Q (RFI excised)
+            imag_pol_a_mean_freq_avg_rfi_excised=mean_frequency_avg_rfi_excised[POLA_IDX][IMAG_IDX],
+            imag_pol_a_variance_freq_avg_rfi_excised=variance_frequency_avg_rfi_excised[POLA_IDX][IMAG_IDX],
+            imag_pol_a_num_clipped_samples_rfi_excised=num_clipped_samples_rfi_excised[POLA_IDX][IMAG_IDX],
             # Pol B + I
             real_pol_b_mean_freq_avg=mean_frequency_avg[POLB_IDX][REAL_IDX],
             real_pol_b_variance_freq_avg=variance_frequency_avg[POLB_IDX][REAL_IDX],
             real_pol_b_num_clipped_samples=num_clipped_samples[POLB_IDX][REAL_IDX],
-            # Pol B + I (masked)
-            real_pol_b_mean_freq_avg_masked=mean_frequency_avg_masked[POLB_IDX][REAL_IDX],
-            real_pol_b_variance_freq_avg_masked=variance_frequency_avg_masked[POLB_IDX][REAL_IDX],
-            real_pol_b_num_clipped_samples_masked=num_clipped_samples_masked[POLB_IDX][REAL_IDX],
+            # Pol B + I (RFI excised)
+            real_pol_b_mean_freq_avg_rfi_excised=mean_frequency_avg_rfi_excised[POLB_IDX][REAL_IDX],
+            real_pol_b_variance_freq_avg_rfi_excised=variance_frequency_avg_rfi_excised[POLB_IDX][REAL_IDX],
+            real_pol_b_num_clipped_samples_rfi_excised=num_clipped_samples_rfi_excised[POLB_IDX][REAL_IDX],
             # Pol B + Q
             imag_pol_b_mean_freq_avg=mean_frequency_avg[POLB_IDX][IMAG_IDX],
             imag_pol_b_variance_freq_avg=variance_frequency_avg[POLB_IDX][IMAG_IDX],
             imag_pol_b_num_clipped_samples=num_clipped_samples[POLB_IDX][IMAG_IDX],
-            # Pol B + Q (masked)
-            imag_pol_b_mean_freq_avg_masked=mean_frequency_avg_masked[POLB_IDX][IMAG_IDX],
-            imag_pol_b_variance_freq_avg_masked=variance_frequency_avg_masked[POLB_IDX][IMAG_IDX],
-            imag_pol_b_num_clipped_samples_masked=num_clipped_samples_masked[POLB_IDX][IMAG_IDX],
+            # Pol B + Q (RFI excised)
+            imag_pol_b_mean_freq_avg_rfi_excised=mean_frequency_avg_rfi_excised[POLB_IDX][IMAG_IDX],
+            imag_pol_b_variance_freq_avg_rfi_excised=variance_frequency_avg_rfi_excised[POLB_IDX][IMAG_IDX],
+            imag_pol_b_num_clipped_samples_rfi_excised=num_clipped_samples_rfi_excised[POLB_IDX][IMAG_IDX],
         )
 
         monitor_data_callback(

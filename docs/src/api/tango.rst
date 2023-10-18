@@ -95,34 +95,34 @@ ringBufferUtilisation      Float   Current fractional utilisation of ring buffer
 
 The following attributes are only available from the STAT.MGMT device
 
-================================ ======== ===========
-Attribute                        Type    Description
-================================ ======== ===========
-realPolAMeanFreqAvg              Float    The mean of the real data for pol A, averaged over all channels.
-realPolAVarianceFreqAvg          Float    The variance of the real data for pol A, averaged over all channels.
-realPolANumClippedSamples        Integer  The number of clipped samples of the real data for pol A.
-imagPolAMeanFreqAvg              Float    The mean of the imaginary data for pol A, averaged over all channels.
-imagPolAVarianceFreqAvg          Float    The variance of the imaginary data for pol A, averaged over all channels.
-imagPolANumClippedSamples        Integer  The number of clipped samples of the imaginary data for pol A.
-realPolAMeanFreqAvgMasked        Float    The mean of the real data for pol A, averaged over non-RFI masked channels.
-realPolAVarianceFreqAvgMasked    Float    The variance of the real data for pol A, averaged over non-RFI masked channels.
-realPolANumClippedSamplesMasked  Integer  The number of clipped samples of the real data for pol A in non-RFI masked channels.
-imagPolAMeanFreqAvgMasked        Float    The mean of the imaginary data for pol A, averaged over non-RFI masked channels.
-imagPolAVarianceFreqAvgMasked    Float    The variance of the imaginary data for pol A, averaged over non-RFI masked channels.
-imagPolANumClippedSamplesMasked  Integer  The number of clipped samples of the imaginary data for pol A in non-RFI masked channels.
-realPolBMeanFreqAvg              Float    The mean of the real data for pol B, averaged over all channels.
-realPolBVarianceFreqAvg          Float    The variance of the real data for pol B, averaged over all channels.
-realPolBNumClippedSamples        Integer  The number of clipped samples of the real data for pol B.
-imagPolBMeanFreqAvg              Float    The mean of the imaginary data for pol B, averaged over all channels.
-imagPolBVarianceFreqAvg          Float    The variance of the imaginary data for pol B, averaged over all channels.
-imagPolBNumClippedSamples        Integer  The number of clipped samples of the imaginary data for pol B.
-realPolBMeanFreqAvgMasked        Float    The mean of the real data for pol B, averaged over non-RFI masked channels.
-realPolBVarianceFreqAvgMasked    Float    The variance of the real data for pol B, averaged over non-RFI masked channels.
-realPolBNumClippedSamplesMasked  Integer  The number of clipped samples of the real data for pol B in non-RFI masked channels.
-imagPolBMeanFreqAvgMasked        Float    The mean of the imaginary data for pol B, averaged over non-RFI masked channels.
-imagPolBVarianceFreqAvgMasked    Float    The variance of the imaginary data for pol B, averaged over non-RFI masked channels.
-imagPolBNumClippedSamplesMasked  Integer  The number of clipped samples of the imaginary data for pol B in non-RFI masked channels.
-================================ ======== ===========
+==================================== ======== ===========
+Attribute                            Type     Description
+==================================== ======== ===========
+realPolAMeanFreqAvg                  Float    The mean of the real data for pol A, averaged over all channels.
+realPolAVarianceFreqAvg              Float    The variance of the real data for pol A, averaged over all channels.
+realPolANumClippedSamples            Integer  The number of clipped samples of the real data for pol A.
+imagPolAMeanFreqAvg                  Float    The mean of the imaginary data for pol A, averaged over all channels.
+imagPolAVarianceFreqAvg              Float    The variance of the imaginary data for pol A, averaged over all channels.
+imagPolANumClippedSamples            Integer  The number of clipped samples of the imaginary data for pol A.
+realPolAMeanFreqAvgRfiExcised        Float    The mean of the real data for pol A, averaged over channels without RFI.
+realPolAVarianceFreqAvgRfiExcised    Float    The variance of the real data for pol A, averaged over channels without RFI.
+realPolANumClippedSamplesRfiExcised  Integer  The number of clipped samples of the real data for pol A in channels without RFI.
+imagPolAMeanFreqAvgRfiExcised        Float    The mean of the imaginary data for pol A, averaged over channels without RFI.
+imagPolAVarianceFreqAvgRfiExcised    Float    The variance of the imaginary data for pol A, averaged over channels without RFI.
+imagPolANumClippedSamplesRfiExcised  Integer  The number of clipped samples of the imaginary data for pol A in channels without RFI.
+realPolBMeanFreqAvg                  Float    The mean of the real data for pol B, averaged over all channels.
+realPolBVarianceFreqAvg              Float    The variance of the real data for pol B, averaged over all channels.
+realPolBNumClippedSamples            Integer  The number of clipped samples of the real data for pol B.
+imagPolBMeanFreqAvg                  Float    The mean of the imaginary data for pol B, averaged over all channels.
+imagPolBVarianceFreqAvg              Float    The variance of the imaginary data for pol B, averaged over all channels.
+imagPolBNumClippedSamples            Integer  The number of clipped samples of the imaginary data for pol B.
+realPolBMeanFreqAvgRfiExcised        Float    The mean of the real data for pol B, averaged over channels without RFI.
+realPolBVarianceFreqAvgRfiExcised    Float    The variance of the real data for pol B, averaged over channels without RFI.
+realPolBNumClippedSamplesRfiExcised  Integer  The number of clipped samples of the real data for pol B in channels without RFI.
+imagPolBMeanFreqAvgRfiExcised        Float    The mean of the imaginary data for pol B, averaged over channels without RFI.
+imagPolBVarianceFreqAvgRfiExcised    Float    The variance of the imaginary data for pol B, averaged over channels without RFI.
+imagPolBNumClippedSamplesRfiExcised  Integer  The number of clipped samples of the imaginary data for pol B in channels without RFI.
+==================================== ======== ===========
 
 From CspSubElementObsDevice
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

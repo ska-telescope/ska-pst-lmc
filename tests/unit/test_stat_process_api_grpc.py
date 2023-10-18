@@ -891,11 +891,11 @@ def test_stat_grpc_simulated_monitor_calls_callback(
 ) -> None:
     """Test simulatued monitoring calls subband_monitor_data_callback."""
     mean_frequency_avg = np.random.rand(4).astype(np.float32)
-    mean_frequency_avg_masked = np.random.rand(4).astype(np.float32)
+    mean_frequency_avg_rfi_excised = np.random.rand(4).astype(np.float32)
     variance_frequency_avg = np.random.rand(4).astype(np.float32)
-    variance_frequency_avg_masked = np.random.rand(4).astype(np.float32)
+    variance_frequency_avg_rfi_excised = np.random.rand(4).astype(np.float32)
     num_clipped_samples = np.random.randint(128, size=(4,))
-    num_clipped_samples_masked = np.random.randint(128, size=(4,))
+    num_clipped_samples_rfi_excised = np.random.randint(128, size=(4,))
 
     def response_generator() -> Generator[MonitorResponse, None, None]:
         while True:
@@ -904,11 +904,11 @@ def test_stat_grpc_simulated_monitor_calls_callback(
                 monitor_data=MonitorData(
                     stat=StatMonitorDataProto(
                         mean_frequency_avg=mean_frequency_avg,
-                        mean_frequency_avg_masked=mean_frequency_avg_masked,
+                        mean_frequency_avg_masked=mean_frequency_avg_rfi_excised,
                         variance_frequency_avg=variance_frequency_avg,
-                        variance_frequency_avg_masked=variance_frequency_avg_masked,
+                        variance_frequency_avg_masked=variance_frequency_avg_rfi_excised,
                         num_clipped_samples=num_clipped_samples,
-                        num_clipped_samples_masked=num_clipped_samples_masked,
+                        num_clipped_samples_masked=num_clipped_samples_rfi_excised,
                     )
                 )
             )
@@ -947,24 +947,40 @@ def test_stat_grpc_simulated_monitor_calls_callback(
                 imag_pol_a_mean_freq_avg=mean_frequency_avg[_idx(POLA_IDX, IMAG_IDX)],
                 imag_pol_a_variance_freq_avg=variance_frequency_avg[_idx(POLA_IDX, IMAG_IDX)],
                 imag_pol_a_num_clipped_samples=num_clipped_samples[_idx(POLA_IDX, IMAG_IDX)],
-                real_pol_a_mean_freq_avg_masked=mean_frequency_avg_masked[_idx(POLA_IDX, REAL_IDX)],
-                real_pol_a_variance_freq_avg_masked=variance_frequency_avg_masked[_idx(POLA_IDX, REAL_IDX)],
-                real_pol_a_num_clipped_samples_masked=num_clipped_samples_masked[_idx(POLA_IDX, REAL_IDX)],
-                imag_pol_a_mean_freq_avg_masked=mean_frequency_avg_masked[_idx(POLA_IDX, IMAG_IDX)],
-                imag_pol_a_variance_freq_avg_masked=variance_frequency_avg_masked[_idx(POLA_IDX, IMAG_IDX)],
-                imag_pol_a_num_clipped_samples_masked=num_clipped_samples_masked[_idx(POLA_IDX, IMAG_IDX)],
+                real_pol_a_mean_freq_avg_rfi_excised=mean_frequency_avg_rfi_excised[_idx(POLA_IDX, REAL_IDX)],
+                real_pol_a_variance_freq_avg_rfi_excised=variance_frequency_avg_rfi_excised[
+                    _idx(POLA_IDX, REAL_IDX)
+                ],
+                real_pol_a_num_clipped_samples_rfi_excised=num_clipped_samples_rfi_excised[
+                    _idx(POLA_IDX, REAL_IDX)
+                ],
+                imag_pol_a_mean_freq_avg_rfi_excised=mean_frequency_avg_rfi_excised[_idx(POLA_IDX, IMAG_IDX)],
+                imag_pol_a_variance_freq_avg_rfi_excised=variance_frequency_avg_rfi_excised[
+                    _idx(POLA_IDX, IMAG_IDX)
+                ],
+                imag_pol_a_num_clipped_samples_rfi_excised=num_clipped_samples_rfi_excised[
+                    _idx(POLA_IDX, IMAG_IDX)
+                ],
                 real_pol_b_mean_freq_avg=mean_frequency_avg[_idx(POLB_IDX, REAL_IDX)],
                 real_pol_b_variance_freq_avg=variance_frequency_avg[_idx(POLB_IDX, REAL_IDX)],
                 real_pol_b_num_clipped_samples=num_clipped_samples[_idx(POLB_IDX, REAL_IDX)],
                 imag_pol_b_mean_freq_avg=mean_frequency_avg[_idx(POLB_IDX, IMAG_IDX)],
                 imag_pol_b_variance_freq_avg=variance_frequency_avg[_idx(POLB_IDX, IMAG_IDX)],
                 imag_pol_b_num_clipped_samples=num_clipped_samples[_idx(POLB_IDX, IMAG_IDX)],
-                real_pol_b_mean_freq_avg_masked=mean_frequency_avg_masked[_idx(POLB_IDX, REAL_IDX)],
-                real_pol_b_variance_freq_avg_masked=variance_frequency_avg_masked[_idx(POLB_IDX, REAL_IDX)],
-                real_pol_b_num_clipped_samples_masked=num_clipped_samples_masked[_idx(POLB_IDX, REAL_IDX)],
-                imag_pol_b_mean_freq_avg_masked=mean_frequency_avg_masked[_idx(POLB_IDX, IMAG_IDX)],
-                imag_pol_b_variance_freq_avg_masked=variance_frequency_avg_masked[_idx(POLB_IDX, IMAG_IDX)],
-                imag_pol_b_num_clipped_samples_masked=num_clipped_samples_masked[_idx(POLB_IDX, IMAG_IDX)],
+                real_pol_b_mean_freq_avg_rfi_excised=mean_frequency_avg_rfi_excised[_idx(POLB_IDX, REAL_IDX)],
+                real_pol_b_variance_freq_avg_rfi_excised=variance_frequency_avg_rfi_excised[
+                    _idx(POLB_IDX, REAL_IDX)
+                ],
+                real_pol_b_num_clipped_samples_rfi_excised=num_clipped_samples_rfi_excised[
+                    _idx(POLB_IDX, REAL_IDX)
+                ],
+                imag_pol_b_mean_freq_avg_rfi_excised=mean_frequency_avg_rfi_excised[_idx(POLB_IDX, IMAG_IDX)],
+                imag_pol_b_variance_freq_avg_rfi_excised=variance_frequency_avg_rfi_excised[
+                    _idx(POLB_IDX, IMAG_IDX)
+                ],
+                imag_pol_b_num_clipped_samples_rfi_excised=num_clipped_samples_rfi_excised[
+                    _idx(POLB_IDX, IMAG_IDX)
+                ],
             ),
         )
     ]

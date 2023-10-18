@@ -81,7 +81,7 @@ class PstStatSimulator:
         data: Dict[str, Any] = {}
         for dim in ["real", "imag"]:
             for pol in ["pol_a", "pol_b"]:
-                for suffix in ["", "_masked"]:
+                for suffix in ["", "_rfi_excised"]:
                     mean_key = f"{dim}_{pol}_mean_freq_avg{suffix}"
                     variance_key = f"{dim}_{pol}_variance_freq_avg{suffix}"
                     num_clipped_samples_key = f"{dim}_{pol}_num_clipped_samples{suffix}"
