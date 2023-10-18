@@ -47,7 +47,7 @@ class PstStatComponentManager(PstApiComponentManager[StatMonitorData, PstStatPro
         """
         Initialise instance of the component manager.
 
-        :param device_interface: an abstract view of the Tango device. This allows for updating properties on
+        :param device_interface: an abstract view of the TANGO device. This allows for updating properties on
             the device without having to have the device class itself.
         :param logger: a logger for this object is to use.
         :param api: the API to use for interacting with STAT.  This is optional

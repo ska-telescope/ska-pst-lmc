@@ -99,6 +99,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
     _smrb_device: PstDeviceProxy
     _recv_device: PstDeviceProxy
     _dsp_device: PstDeviceProxy
+    _stat_device: PstDeviceProxy
 
     def __init__(
         self: PstBeamComponentManager,
@@ -899,13 +900,13 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
                         action=lambda d: d.ConfigureBeam(request_str),
                         command_name="ConfigureBeam",
                     ),
-                    # now do configure_beam on DSP and RECV, this can be done in parallel
+                    # now do configure_beam on DSP, RECV, and STAT, as this can be done in parallel
                     DeviceCommandTask(
                         devices=[self._dsp_device, self._recv_device, self._stat_device],
                         action=lambda d: d.ConfigureBeam(request_str),
                         command_name="ConfigureBeam",
                     ),
-                    # now configure scan on SMRB and RECV (smrb is no-op) in parallel
+                    # now configure scan on SMRB, RECV, and STAT (smrb is no-op) in parallel
                     DeviceCommandTask(
                         devices=[self._smrb_device, self._recv_device, self._stat_device],
                         action=lambda d: d.ConfigureScan(request_str),
@@ -1148,7 +1149,7 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         """
         Set LoggingLevel of all the sub-devices.
 
-        :param log_level: The required Tango LoggingLevel
+        :param log_level: The required TANGO LoggingLevel
         :returns: None.
         """
         for remote_device in self._remote_devices:

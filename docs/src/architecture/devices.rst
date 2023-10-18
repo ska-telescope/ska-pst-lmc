@@ -3,7 +3,7 @@
 TANGO Devices
 =============
 
-Five PST TANGO devices (BEAM, SMRB, RECV, DSP, and STAT.*) are deployed in a single TANGO Device server.
+Five PST TANGO devices (BEAM, SMRB, RECV, DSP.*, and STAT) are deployed in a single TANGO Device server.
 For AA0.5, each deployment of PST supports a single beam; multiple device servers could be deployed to support multiple beams.
 
 Full PST control and monitoring is accessed via the BEAM device.
@@ -24,7 +24,7 @@ BEAM
 
 This logical device implements the single point of contact for monitor and control between PST and
 external systems, such as CSP.LMC or an engineering interface.
-It manages all of the other PST component devices (in AA0.5, these are SMRB, RECV, and DSP.DISK).
+It manages all of the other PST component devices (in AA0.5, these are SMRB, RECV, DSP.DISK, and STAT).
 
 SMRB
 ----

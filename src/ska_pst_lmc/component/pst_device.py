@@ -4,7 +4,7 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-"""Module for the base Tango device used in PST.LMC."""
+"""Module for the base TANGO device used in PST.LMC."""
 
 from __future__ import annotations
 
@@ -145,7 +145,7 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
         """
         Initialize the logging mechanism, using default properties.
 
-        This extends the _init_logging found in SKABaseDevice to monkeypatch of Tango log streams. This is
+        This extends the _init_logging found in SKABaseDevice to monkeypatch of TANGO log streams. This is
         needed in 9.4.2 as PyTango added a key 'source' that is not part of the Python standard logging
         framework. This is fix here is sort of a backport from ska-tango-base v0.19.1 but is less verbose.
 
@@ -307,7 +307,7 @@ class PstBaseDevice(CspSubElementObsDevice, Generic[T]):
         """
         Set the logging level for the device.
 
-        Both the Python logger and the Tango logger are updated.
+        Both the Python logger and the TANGO logger are updated.
 
         This calls :py:meth:`SKABaseDevice.set_logging_level` then delegates
         to the component manager to perform necessary updates. This
@@ -550,7 +550,7 @@ class PstBaseProcessDevice(PstBaseDevice[T], PstApiDeviceInterface[U], Generic[T
             state
         :rtype: bool
         """
-        # If we return False here, Tango will raise an exception that incorrectly blames
+        # If we return False here, TANGO will raise an exception that incorrectly blames
         # refusal on device state.
         # e.g. "ConfigureBeam not allowed when the device is in ON state".
         # So let's raise an exception ourselves.
@@ -595,7 +595,7 @@ class PstBaseProcessDevice(PstBaseDevice[T], PstApiDeviceInterface[U], Generic[T
             state
         :rtype: bool
         """
-        # If we return False here, Tango will raise an exception that incorrectly blames
+        # If we return False here, TANGO will raise an exception that incorrectly blames
         # refusal on device state.
         # e.g. "ConfigureBeam not allowed when the device is in ON state".
         # So let's raise an exception ourselves.
@@ -638,7 +638,7 @@ class PstBaseProcessDevice(PstBaseDevice[T], PstApiDeviceInterface[U], Generic[T
             state
         :rtype: bool
         """
-        # If we return False here, Tango will raise an exception that incorrectly blames
+        # If we return False here, TANGO will raise an exception that incorrectly blames
         # refusal on device state.
         # e.g. "ConfigureBeam not allowed when the device is in ON state".
         # So let's raise an exception ourselves.
@@ -675,7 +675,7 @@ class PstBaseProcessDevice(PstBaseDevice[T], PstApiDeviceInterface[U], Generic[T
             state
         :rtype: bool
         """
-        # If we return False here, Tango will raise an exception that incorrectly blames
+        # If we return False here, TANGO will raise an exception that incorrectly blames
         # refusal on device state.
         # e.g. "ConfigureBeam not allowed when the device is in ON state".
         # So let's raise an exception ourselves.

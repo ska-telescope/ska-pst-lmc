@@ -4,7 +4,7 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-"""Test to the STAT Tango device for PST.LMC."""
+"""Test to the STAT TANGO device for PST.LMC."""
 
 from __future__ import annotations
 
@@ -220,7 +220,7 @@ class TestPstStat:
         scan_id: int,
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
-        """Test state model of PstStat."""
+        """Test state model of PstStat to configure a scan, start scan, and then stop."""
         # need to have this in OFFLINE mode to start with to assert unknown health state
         device_under_test.adminMode = AdminMode.OFFLINE
         assert device_under_test.healthState == HealthState.UNKNOWN
@@ -419,7 +419,7 @@ class TestPstStat:
         self: TestPstStat,
         device_under_test: DeviceProxy,
     ) -> None:
-        """Test state model of PstStat."""
+        """Test setting simulation model to different values."""
         device_under_test.loggingLevel = 5
 
         device_under_test.simulationMode = SimulationMode.TRUE
@@ -437,7 +437,7 @@ class TestPstStat:
         configure_beam_request: Dict[str, Any],
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
-        """Test state model of PstStat."""
+        """Test PstStat when in simulation mode when not in EMPTY state."""
         device_under_test.simulationMode = SimulationMode.TRUE
         assert device_under_test.simulationMode == SimulationMode.TRUE
 
@@ -470,7 +470,7 @@ class TestPstStat:
         device_under_test: DeviceProxy,
         tango_device_command_checker: TangoDeviceCommandChecker,
     ) -> None:
-        """Test state model of PstStat."""
+        """Test PstStat when in simulation mode when in EMPTY state."""
         assert device_under_test.obsState == ObsState.EMPTY
 
         device_under_test.simulationMode = SimulationMode.TRUE

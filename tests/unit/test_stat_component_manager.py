@@ -4,7 +4,7 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-"""This module contains tests for the STAT component managers class."""
+"""This module contains tests for the STAT component manager class."""
 
 import logging
 from typing import Any, Callable, Dict, cast
@@ -389,7 +389,7 @@ def test_stat_cm_deconfigure_beam(
     component_manager: PstStatComponentManager,
     task_callback: Callable,
 ) -> None:
-    """Test that configure beam calls the API correctly."""
+    """Test that deconfigure beam calls the API correctly."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
@@ -406,7 +406,7 @@ def test_stat_cm_configure_scan(
     configure_scan_request: Dict[str, Any],
     task_callback: Callable,
 ) -> None:
-    """Test that the component manager calls the API for configure."""
+    """Test that the component manager calls the API for configure scan."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
@@ -425,7 +425,7 @@ def test_stat_cm_deconfigure_scan(
     component_manager: PstStatComponentManager,
     task_callback: Callable,
 ) -> None:
-    """Test that the component manager calls the API for configure."""
+    """Test that the component manager calls the API for deconfigure scan."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore
@@ -445,7 +445,7 @@ def test_stat_cm_scan(
     task_callback: Callable,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Test that the component manager calls the API start a scan."""
+    """Test that the component manager calls the API to start scan."""
     api = MagicMock()
     component_manager._api = api
 
@@ -536,7 +536,7 @@ def test_stat_cm_go_to_fault(
     device_interface: MagicMock,
     task_callback: Callable,
 ) -> None:
-    """Test that the component manager calls the API start a scan."""
+    """Test that the component manager calls the API on go to fault."""
     api = MagicMock()
     component_manager._api = api
     component_manager._submit_background_task = lambda task, task_callback: task(  # type: ignore

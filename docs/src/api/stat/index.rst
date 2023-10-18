@@ -7,9 +7,9 @@ Component is used to manage the STAT.CORE process that is
 used in the signal processing chain to calculate real time
 statistics of a scan.
 
-This is component is made up of a TANGO device, a component
+This component is made up of a TANGO device, a component
 manager, as well as including a simulator and a gRPC
-Process API, which used by the component to talk with the
+Process API, which are used by the component to talk with the
 STAT process via gRPC + Protobuf.
 
 For more information about STAT.CORE check:

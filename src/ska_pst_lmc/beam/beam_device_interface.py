@@ -16,7 +16,7 @@ class PstBeamDeviceInterface(PstDeviceInterface):
     A purely abstract class that that represents a BEAM.MGMT Device.
 
     This is implemented by `PstBeam` and used by the `PstBeamComponentManager`
-    which needs a limited view of the Tango device but without having full
+    which needs a limited view of the TANGO device but without having full
     access to it.
     """
 

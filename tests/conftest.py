@@ -359,7 +359,7 @@ def device_properties() -> dict:
 def tango_context(
     device_test_config: dict,
 ) -> Generator[DeviceTestContext, None, None]:
-    """Return a Tango test context object, in which the device under test is running."""
+    """Return a TANGO test context object, in which the device under test is running."""
     component_manager_patch = device_test_config.pop("component_manager_patch", None)
     if component_manager_patch is not None:
         device_test_config["device"].create_component_manager = component_manager_patch
@@ -504,7 +504,7 @@ def device_under_test(tango_context: DeviceTestContext) -> DeviceProxy:
     """
     Return a device proxy to the device under test.
 
-    :param tango_context: a Tango test context with the specified device
+    :param tango_context: a TANGO test context with the specified device
         running
     :type tango_context: :py:class:`tango.DeviceTestContext`
 
@@ -593,7 +593,7 @@ def change_event_callbacks(
     change_event_callbacks_factory: Callable[..., MockTangoEventCallbackGroup]
 ) -> MockTangoEventCallbackGroup:
     """
-    Return a dictionary of Tango device change event callbacks with asynchrony support.
+    Return a dictionary of TANGO device change event callbacks with asynchrony support.
 
     :return: a collections.defaultdict that returns change event callbacks by name.
     """
@@ -611,7 +611,7 @@ def tango_change_event_helper(
 
     :param device_under_test: a proxy to the device under test
     :param change_event_callbacks: dictionary of callbacks with asynchrony support, specifically for receiving
-        Tango device change events.
+        TANGO device change events.
     """
     return TangoChangeEventHelper(
         device_under_test=device_under_test,
@@ -777,7 +777,7 @@ def device_interface(
     telescope_facility: TelescopeFacilityEnum,
     monitoring_polling_rate: int,
 ) -> MagicMock:
-    """Create device interface fixture to mock a Tango device."""
+    """Create device interface fixture to mock a TANGO device."""
     device_interface = MagicMock()
     device_interface.device_name = device_name
     device_interface.process_api_endpoint = grpc_endpoint

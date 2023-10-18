@@ -42,7 +42,7 @@ server:
             properties:
             - name: "__value"
               values:
-              - "{{.Values.dsp.simulationMode}}"
+              - "{{.Values.stat.simulationMode}}"
       - name: "PstDsp"
         devices:
         - name: "low-pst/dsp/01"

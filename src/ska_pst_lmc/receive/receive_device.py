@@ -382,7 +382,7 @@ class PstReceive(PstBaseProcessDevice[PstReceiveComponentManager, ReceiveData]):
         """
         Get the data receive IP address.
 
-        It is only valid to call this method when the Tango device is turned on and communicating.
+        It is only valid to call this method when the TANGO device is turned on and communicating.
         """
         return self.component_manager.data_host
 

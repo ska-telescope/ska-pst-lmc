@@ -4,7 +4,7 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-"""This module contains tests for the BEAM component managers class."""
+"""This module contains tests for the BEAM component manager class."""
 
 import json
 import logging

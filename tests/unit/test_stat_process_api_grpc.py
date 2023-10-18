@@ -338,7 +338,7 @@ def test_stat_grpc_validate_configure_scan_with_defaults(
     configure_scan_request: Dict[str, Any],
     eb_id: str,
 ) -> None:
-    """Test that  validate_configure_scan is called."""
+    """Test that  validate_configure_scan is called with default parameters."""
     response = ConfigureScanResponse()
     mock_servicer_context.configure_scan = MagicMock(return_value=response)
 
@@ -365,7 +365,7 @@ def test_stat_grpc_validate_configure_scan_with_overriden_values(
     configure_scan_request: Dict[str, Any],
     eb_id: str,
 ) -> None:
-    """Test that  validate_configure_scan is called."""
+    """Test that  validate_configure_scan is called with overriden parameters."""
     response = ConfigureScanResponse()
     mock_servicer_context.configure_scan = MagicMock(return_value=response)
 
@@ -397,7 +397,7 @@ def test_stat_grpc_validate_configure_scan_throws_invalid_request(
     configure_scan_request: Dict[str, Any],
     eb_id: str,
 ) -> None:
-    """Test that validate_configure_beam throws exception when there are validation errors."""
+    """Test that validate_configure_scan throws exception when there are validation errors."""
     mock_servicer_context.configure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.INVALID_REQUEST,
@@ -574,7 +574,7 @@ def test_stat_grpc_deconfigure_scan(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that  calls configure_scan on remote service."""
+    """Test that  calls deconfigure_scan on remote service."""
     response = DeconfigureScanResponse()
     mock_servicer_context.deconfigure_scan = MagicMock(return_value=response)
 

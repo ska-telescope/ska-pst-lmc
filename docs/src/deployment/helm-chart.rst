@@ -41,7 +41,7 @@ The current default Helm chart parameters can be viewed in the ``ska-pst-lmc`` `
     - Port used by STAT component manager
     - 8080
   * - ``subsystem_id``
-    - The subsystem used in output path of files sent to DSP. This should be pst-low or pst-mid.
+    - The subsystem used in output path of files written by DSP and STAT. This should be pst-low or pst-mid.
     - pst-low
   * - ``beam.simulationMode``
     - Run Beam logical device in simulation mode
@@ -59,7 +59,7 @@ The current default Helm chart parameters can be viewed in the ``ska-pst-lmc`` `
     - Run DSP component device in simulation mode
     - 1
   * - ``stat.simulationMode``
-    - Run DSP component device in simulation mode
+    - Run STAT component device in simulation mode
     - 1
 
 Example of changing the ports used for communication between the PST Beam logical device and component device managers.

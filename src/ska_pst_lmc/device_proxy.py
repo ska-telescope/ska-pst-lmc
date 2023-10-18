@@ -67,7 +67,7 @@ class ChangeEventSubscription:
         Unsubscribe to the change event.
 
         Use this to method to unsubscribe to listening to a change event of as device. As this is potentially
-        called from a Python thread this will try to run this within a Tango OmniThread using a background
+        called from a Python thread this will try to run this within a TANGO OmniThread using a background
         thread.
         """
         if self._subscribed:
@@ -207,7 +207,7 @@ class PstDeviceProxy:
         else:
             # write lock
             with self._lock.gen_wlock():
-                self._logger.info(f"Subscribing to events on {self.fqdn}.{attribute_name} on Tango Device")
+                self._logger.info(f"Subscribing to events on {self.fqdn}.{attribute_name} on TANGO Device")
                 subscription_id = self._device.subscribe_event(
                     attribute_name,
                     tango.EventType.CHANGE_EVENT,
@@ -294,7 +294,7 @@ class PstDeviceProxy:
 
     @property
     def device(self: PstDeviceProxy) -> DeviceProxy:
-        """Get Tango Device Proxy object."""
+        """Get TANGO Device Proxy object."""
         return self._device
 
     def __repr__(self: PstDeviceProxy) -> str:

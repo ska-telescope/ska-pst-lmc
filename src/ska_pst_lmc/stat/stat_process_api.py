@@ -86,10 +86,12 @@ class PstStatProcessApiSimulator(PstProcessApiSimulator, PstStatProcessApi):
         """
         Configure beam resources.
 
+        This method is effectively a no-op operation.
+
         :param configuration: dictionary of parameters to be configured and their requested values.
         :param task_callback: callable to connect back to the component manager.
         """
-        self._logger.info(f"Assigning resources for STAT. {configuration}")
+        self._logger.info(f"Configuring beam for STAT. {configuration}")
         task_callback(status=TaskStatus.IN_PROGRESS)
         time.sleep(0.01)
         task_callback(progress=49)
@@ -100,6 +102,8 @@ class PstStatProcessApiSimulator(PstProcessApiSimulator, PstStatProcessApi):
     def deconfigure_beam(self: PstStatProcessApiSimulator, task_callback: Callable) -> None:
         """
         Deconfigure the beam.
+
+        This method is effectively a no-op operation.
 
         :param task_callback: callable to connect back to the component manager.
         """
@@ -224,7 +228,7 @@ class PstStatProcessApiGrpc(PstProcessApiGrpc, PstStatProcessApi):
     """This is an gRPC implementation of the `PstStatProcessApi` API.
 
     This uses an instance of a `PstGrpcLmcClient` to send requests through
-    to the STAT.RB application. Instances of this class should be per
+    to the STAT.CORE application. Instances of this class should be per
     subband, rather than one for all of STAT as a whole.
     """
 
