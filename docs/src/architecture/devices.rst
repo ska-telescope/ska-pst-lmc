@@ -52,4 +52,6 @@ STAT
 ----
 
 This device controls and monitors the STAT process that reads incoming data from the ring buffer
-in shared memory and processes it according to configured publishers.
+in shared memory, computes various statistical quantities that can be used to evaluate data
+quality, and publishes these quantities to configured subscribers (currently an HDF5 file writer
+and TANGO-based monitor).
