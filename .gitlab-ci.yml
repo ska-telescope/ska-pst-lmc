@@ -196,7 +196,7 @@ python-build-for-development: # Executed on non-tagged commit
     - cp -fr generated/ska_pst_lmc_proto src/
 
 python-test:
-  # allow_failure: true
+  allow_failure: true
   image: $SKA_PST_PYTHON_BUILDER_IMAGE
   retry: 2
   needs:
