@@ -21,7 +21,7 @@ from ska_tango_base.control_model import AdminMode, ObsState, SimulationMode
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DevState
 
-from ska_pst_lmc import DeviceProxyFactory
+from ska_pst_lmc import DeviceProxyFactory, PstDeviceProxy
 
 
 @pytest.fixture
@@ -72,8 +72,9 @@ class TestPstBeam:
         logger: logging.Logger,
         beam_attribute_names: List[str],
     ) -> None:
-        """Put test class with Tango devices and event checker."""
+        """Put test class with TANGO devices and event checker."""
         self.dsp_proxy = DeviceProxyFactory.get_device("low-pst/dsp/01")
+        self.stat_proxy = DeviceProxyFactory.get_device("low-pst/stat/01")
         self.recv_proxy = DeviceProxyFactory.get_device("low-pst/recv/01")
         self.smrb_proxy = DeviceProxyFactory.get_device("low-pst/smrb/01")
         self.beam_proxy = DeviceProxyFactory.get_device("low-pst/beam/01")
@@ -91,6 +92,11 @@ class TestPstBeam:
             change_event_callbacks=change_event_callbacks,
             logger=logger,
         )
+
+    @property
+    def device_proxies(self: TestPstBeam) -> List[PstDeviceProxy]:
+        """Get all the device proxies."""
+        return [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy, self.stat_proxy]
 
     def current_attribute_values(self: TestPstBeam) -> Dict[str, Any]:
         """Get current attributate values for BEAM device."""
@@ -160,7 +166,7 @@ class TestPstBeam:
         self.assert_obstate(ObsState.READY)
 
     def goto_idle(self: TestPstBeam) -> None:
-        """Put Tango device into IDLE state."""
+        """Put TANGO device into IDLE state."""
         self.tango_device_command_checker.assert_command(
             lambda: self.beam_proxy.GoToIdle(),
             expected_obs_state_events=[
@@ -181,7 +187,7 @@ class TestPstBeam:
         )
 
     def obs_reset(self: TestPstBeam) -> None:
-        """Reset Tango device."""
+        """Reset TANGO device."""
         self.tango_device_command_checker.assert_command(
             lambda: self.beam_proxy.ObsReset(),
             expected_obs_state_events=[
@@ -192,7 +198,7 @@ class TestPstBeam:
         self.assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
 
     def on(self: TestPstBeam) -> None:
-        """Turn on Tango device."""
+        """Turn on TANGO device."""
         self.tango_device_command_checker.assert_command(
             lambda: self.beam_proxy.On(), expected_obs_state_events=[ObsState.IDLE]
         )
@@ -202,26 +208,26 @@ class TestPstBeam:
         self.assert_obstate(ObsState.IDLE, subObsState=ObsState.EMPTY)
 
     def off(self: TestPstBeam) -> None:
-        """Turn off Tango device."""
+        """Turn off TANGO device."""
         self.tango_device_command_checker.assert_command(
             lambda: self.beam_proxy.Off(),
         )
         self.assert_state(DevState.OFF)
 
     def online(self: TestPstBeam) -> None:
-        """Put Tango device into ONLINE mode."""
+        """Put TANGO device into ONLINE mode."""
         self.beam_proxy.adminMode = AdminMode.ONLINE
         self.assert_admin_mode(admin_mode=AdminMode.ONLINE)
         self.assert_state(DevState.OFF)
 
     def offline(self: TestPstBeam) -> None:
-        """Put Tango device into OFFLINE mode."""
+        """Put TANGO device into OFFLINE mode."""
         self.beam_proxy.adminMode = AdminMode.OFFLINE
         self.assert_admin_mode(admin_mode=AdminMode.OFFLINE)
         self.assert_state(DevState.DISABLE)
 
     def setup_test_state(self: TestPstBeam) -> None:
-        """Ensure Tango device is in Offline mode before test executes."""
+        """Ensure TANGO device is in Offline mode before test executes."""
         if self.beam_proxy.obsState in [ObsState.ABORTED, ObsState.FAULT]:
             self.logger.info(f"{self.beam_proxy} is in obsState {self.beam_proxy.obsState}. Calling ObsReset")
             self.obs_reset()
@@ -249,11 +255,12 @@ class TestPstBeam:
         max_time=5.0,
     )
     def assert_state(self: TestPstBeam, state: DevState) -> None:
-        """Assert Tango devices are in a given DevState."""
+        """Assert TANGO devices are in a given DevState."""
         assert self.beam_proxy.state() == state
         assert self.recv_proxy.state() == state
         assert self.smrb_proxy.state() == state
         assert self.dsp_proxy.state() == state
+        assert self.stat_proxy.state() == state
 
     @backoff.on_exception(
         backoff.expo,
@@ -262,11 +269,12 @@ class TestPstBeam:
         max_time=5.0,
     )
     def assert_obstate(self: TestPstBeam, obsState: ObsState, subObsState: Optional[ObsState] = None) -> None:
-        """Assert that the Tango devices are in a giveen ObsState."""
+        """Assert that the TANGO devices are in a giveen ObsState."""
         assert self.beam_proxy.obsState == obsState
         assert self.recv_proxy.obsState == subObsState or obsState
         assert self.smrb_proxy.obsState == subObsState or obsState
         assert self.dsp_proxy.obsState == subObsState or obsState
+        assert self.stat_proxy.obsState == subObsState or obsState
 
     @backoff.on_exception(
         backoff.expo,
@@ -275,11 +283,12 @@ class TestPstBeam:
         max_time=5.0,
     )
     def assert_admin_mode(self: TestPstBeam, admin_mode: AdminMode) -> None:
-        """Assert that the Tango devices are in a given AdminMode."""
+        """Assert that the TANGO devices are in a given AdminMode."""
         assert self.beam_proxy.adminMode == admin_mode
         assert self.recv_proxy.adminMode == admin_mode
         assert self.smrb_proxy.adminMode == admin_mode
         assert self.dsp_proxy.adminMode == admin_mode
+        assert self.stat_proxy.adminMode == admin_mode
 
     def test_configure_then_scan_then_stop(
         self: TestPstBeam,
@@ -312,7 +321,7 @@ class TestPstBeam:
                 "adminMode",
                 "state()",
             ]:
-                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy]:
+                for d in self.device_proxies:
                     if p == "state()":
                         self.logger.info(f"{d}.{p} = {d.state()}")
                     else:
@@ -360,7 +369,7 @@ class TestPstBeam:
                 "adminMode",
                 "state()",
             ]:
-                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy]:
+                for d in self.device_proxies:
                     if p == "state()":
                         self.logger.info(f"{d}.{p} = {d.state()}")
                     else:
@@ -406,7 +415,7 @@ class TestPstBeam:
                 "adminMode",
                 "state()",
             ]:
-                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy]:
+                for d in self.device_proxies:
                     if p == "state()":
                         self.logger.info(f"{d}.{p} = {d.state()}")
                     else:
@@ -476,7 +485,7 @@ class TestPstBeam:
                 "adminMode",
                 "state()",
             ]:
-                for d in [self.beam_proxy, self.dsp_proxy, self.recv_proxy, self.smrb_proxy]:
+                for d in self.device_proxies:
                     if p == "state()":
                         self.logger.info(f"{d}.{p} = {d.state()}")
                     else:

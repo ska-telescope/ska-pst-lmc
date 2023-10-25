@@ -52,7 +52,7 @@ class PstSmrbComponentManager(PstApiComponentManager[SmrbMonitorData, PstSmrbPro
         :param process_api_endpoint: the endpoint of the gRPC process.
         :param logger: a logger for this object is to use.
         :param monitor_data_callback: the callback that monitoring data should call when data has been
-            received. This should be used by the Tango device to be notified when data has been updated.
+            received. This should be used by the TANGO device to be notified when data has been updated.
         :param communication_state_callback: callback to be called when the status of the communications
             channel between the component manager and its component changes.
         :param component_state_callback: callback to be called when the component state changes.

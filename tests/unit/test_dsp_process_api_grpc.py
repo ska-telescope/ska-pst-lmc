@@ -518,7 +518,7 @@ def test_dsp_grpc_deconfigure_scan(
     component_state_callback: MagicMock,
     task_callback: MagicMock,
 ) -> None:
-    """Test that  calls configure_scan on remote service."""
+    """Test that  calls deconfigure_scan on remote service."""
     response = DeconfigureScanResponse()
     mock_servicer_context.deconfigure_scan = MagicMock(return_value=response)
 

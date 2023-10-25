@@ -80,7 +80,7 @@ class PstSmrbProcessApiSimulator(PstProcessApiSimulator, PstSmrbProcessApi):
         :param configuration: dictionary of parameters to be configured and their requested values.
         :param task_callback: callable to connect back to the component manager.
         """
-        self._logger.info(f"Assigning resources for SMRB. {configuration}")
+        self._logger.info(f"Configuring beam for SMRB. {configuration}")
         task_callback(status=TaskStatus.IN_PROGRESS)
         time.sleep(0.01)
         task_callback(progress=50)

@@ -41,7 +41,7 @@ class TaskExecutor:
     via the global method `submit_job`.
 
     Instances of this class are linked with `DeviceCommandTaskExecutor` that will
-    handle the Tango logic of subscriptions and dealing with long running commands.
+    handle the TANGO logic of subscriptions and dealing with long running commands.
     Both need to share an instance of a :py:class:`queue.Queue` for which this class
     will send messages to while the `DeviceCommandTaskExecutor` will read from.
     """

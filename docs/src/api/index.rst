@@ -11,5 +11,6 @@ API
   Digital Signal Processing (DSP) subpackage<dsp/index>
   Receive (RECV) subpackage<receive/index>
   Shared Memory Ring Buffer (SMRB) subpackage<smrb/index>
+  Statistics (STAT) subpackage<stat/index>
   Util subpackage<util/index>
 

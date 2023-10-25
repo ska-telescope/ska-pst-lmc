@@ -46,7 +46,7 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
     Base Component Manager for the PST.LMC. subsystem.
 
     This base class is used to provide the common functionality of the
-    PST Tango components, such as providing the the communication with
+    PST TANGO components, such as providing the the communication with
     processes that are running (i.e. RECV, DSP, or SMRB).
 
     This class also helps abstract away calling out to whether we're
@@ -445,7 +445,7 @@ class PstComponentManager(TaskExecutorComponentManager, CspObsComponentManager, 
         """
         Set LoggingLevel.
 
-        :param log_level: The required Tango LoggingLevel
+        :param log_level: The required TANGO LoggingLevel
         :returns: None.
         """
         raise NotImplementedError("PstComponentManager is abstract class")

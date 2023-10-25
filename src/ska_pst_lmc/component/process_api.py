@@ -208,7 +208,7 @@ class PstProcessApi:
         """
         Set the LogLevel of the service.
 
-        :param log_level: The required Tango LoggingLevel
+        :param log_level: The required TANGO LoggingLevel
         :returns: None.
         """
         raise NotImplementedError("PstProcessApi is abstract class")
@@ -338,7 +338,7 @@ class PstProcessApiSimulator(PstProcessApi):
         """
         Set simulator LoggingLevel of the PST.LMC processes like RECV, SMRB, etc.
 
-        :param log_level: The required Tango LoggingLevel
+        :param log_level: The required TANGO LoggingLevel
         :returns: None.
         """
         self.logging_level = log_level
@@ -690,7 +690,7 @@ class PstProcessApiGrpc(PstProcessApi):
         """
         Set the LogLevel of the remote gRPC service.
 
-        :param log_level: The required Tango LoggingLevel.
+        :param log_level: The required TANGO LoggingLevel.
         :returns: None.
         """
         try:

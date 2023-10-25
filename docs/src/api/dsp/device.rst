@@ -1,5 +1,5 @@
 ================
-DSP Tango Device
+DSP TANGO Device
 ================
 
 .. toctree::

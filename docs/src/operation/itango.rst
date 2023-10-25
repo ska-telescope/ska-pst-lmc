@@ -18,7 +18,7 @@ Start an iTango session:
 
     $ kubectl exec -it ska-tango-base-itango-console -- itango3
 
-List the Tango devices:
+List the TANGO devices:
 
 .. code-block:: python
 
@@ -32,13 +32,14 @@ List the Tango devices:
     low-pst/dsp/01               low-pst-beam/01           PstDsp
     low-pst/recv/01              low-pst-beam/01           PstReceive
     low-pst/smrb/01              low-pst-beam/01           PstSmrb
+    low-pst/stat/01              low-pst-beam/01           PstStat
     sys/access_control/1         TangoAccessControl/1      TangoAccessControl
     sys/database/2               DataBaseds/2              DataBase
     sys/rest/0                   TangoRestServer/rest      TangoRestServer
     sys/tg_test/1                TangoTest/test            TangoTest
 
 This interface allows direct interaction with the devices, such as querying and
-changing attributes and issuing Tango commands to control pst processing. 
+changing attributes and issuing TANGO commands to control pst processing.
 
 To set things up and turn the beam on, cut and paste the following commands into the itango terminal:
 
@@ -57,7 +58,7 @@ To set things up and turn the beam on, cut and paste the following commands into
         print(f"disk available bytes: {beam.availableDiskSpace}")
         print(f"disk available time: {beam.availableRecordingTime}")
         print(f"ring buffer utilisation: {beam.ringBufferUtilisation}")
-    
+
     # set logging level to DEBUG
     beam.loggingLevel = 5
 
@@ -66,7 +67,7 @@ To set things up and turn the beam on, cut and paste the following commands into
 
     # set BEAM into SimulationMode.TRUE
     beam.simulationMode = 1
-    
+
     # Turn on BEAM
     beam.On()
 

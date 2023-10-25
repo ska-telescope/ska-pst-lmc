@@ -4,7 +4,7 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-"""This module contains tests for the BEAM component managers class."""
+"""This module contains tests for the BEAM component manager class."""
 
 import json
 import logging
@@ -80,11 +80,27 @@ def dsp_device_proxy(dsp_fqdn: str) -> PstDeviceProxy:
 
 
 @pytest.fixture
+def stat_fqdn() -> str:
+    """Create STAT FQDN fixture."""
+    return "test/stat/1"
+
+
+@pytest.fixture
+def stat_device_proxy(stat_fqdn: str) -> PstDeviceProxy:
+    """Create STAT device proxy fixture."""
+    proxy = MagicMock()
+    proxy.fqdn = stat_fqdn
+    proxy.__repr__ = MagicMock(return_value=f"PstDeviceProxy('{stat_fqdn}')")  # type: ignore
+    return proxy
+
+
+@pytest.fixture
 def device_proxy(
     device_fqdn: str,
     recv_device_proxy: PstDeviceProxy,
     smrb_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
+    stat_device_proxy: PstDeviceProxy,
 ) -> PstDeviceProxy:
     """Create a generic device proxy fixture."""
     if recv_device_proxy.fqdn == device_fqdn:
@@ -93,6 +109,8 @@ def device_proxy(
         return smrb_device_proxy
     elif dsp_device_proxy.fqdn == device_fqdn:
         return dsp_device_proxy
+    elif stat_device_proxy.fqdn == device_fqdn:
+        return stat_device_proxy
     else:
         proxy = MagicMock()
         proxy.fqdn = device_fqdn
@@ -148,6 +166,7 @@ def device_interface(
     smrb_fqdn: str,
     recv_fqdn: str,
     dsp_fqdn: str,
+    stat_fqdn: str,
     communication_state_callback: Callable[[CommunicationStatus], None],
     component_state_callback: Callable,
     property_callback: Callable,
@@ -160,6 +179,7 @@ def device_interface(
     device_interface.smrb_fqdn = smrb_fqdn
     device_interface.recv_fqdn = recv_fqdn
     device_interface.dsp_fqdn = dsp_fqdn
+    device_interface.stat_fqdn = stat_fqdn
     device_interface.device_name = device_name
     device_interface.handle_communication_state_change = communication_state_callback
     device_interface.handle_component_state_change = component_state_callback
@@ -178,9 +198,11 @@ def component_manager(
     smrb_fqdn: str,
     recv_fqdn: str,
     dsp_fqdn: str,
+    stat_fqdn: str,
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
+    stat_device_proxy: PstDeviceProxy,
     logger: logging.Logger,
     background_task_processor: BackgroundTaskProcessor,
     monkeypatch: pytest.MonkeyPatch,
@@ -195,6 +217,8 @@ def component_manager(
             return recv_device_proxy
         elif fqdn == dsp_fqdn:
             return dsp_device_proxy
+        elif fqdn == stat_fqdn:
+            return stat_device_proxy
         else:
             raise ValueError(f"Unexpected fqdn {fqdn}")
 
@@ -277,6 +301,7 @@ def test_beam_cm_delegates_admin_mode(
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
+    stat_device_proxy: PstDeviceProxy,
 ) -> None:
     """Test component manager delegates setting admin mode to sub-component devices."""
     for a in list(AdminMode):
@@ -285,6 +310,7 @@ def test_beam_cm_delegates_admin_mode(
         assert smrb_device_proxy.adminMode == a
         assert recv_device_proxy.adminMode == a
         assert dsp_device_proxy.adminMode == a
+        assert stat_device_proxy.adminMode == a
 
 
 def test_beam_cm_calls_abort_on_subdevices(
@@ -292,6 +318,7 @@ def test_beam_cm_calls_abort_on_subdevices(
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
+    stat_device_proxy: PstDeviceProxy,
 ) -> None:
     """Test component manager calls Abort to sub-component devices."""
     task_callback = _ThreadingCallback()
@@ -313,6 +340,7 @@ def test_beam_cm_calls_abort_on_subdevices(
     smrb_device_proxy.Abort.assert_called_once()
     recv_device_proxy.Abort.assert_called_once()
     dsp_device_proxy.Abort.assert_called_once()
+    stat_device_proxy.Abort.assert_called_once()
 
 
 @pytest.fixture
@@ -365,6 +393,7 @@ def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
+    stat_device_proxy: PstDeviceProxy,
     component_state_callback: Callable,
     method_name: str,
     request_params: Optional[Any],
@@ -377,6 +406,7 @@ def test_beam_cm_remote_actions(  # noqa: C901 - override checking of complexity
         smrb_device_proxy.obsState = ObsState.ABORTED
         recv_device_proxy.obsState = ObsState.ABORTED
         dsp_device_proxy.obsState = ObsState.ABORTED
+        stat_device_proxy.obsState = ObsState.ABORTED
     elif method_name == "scan":
         # ensure we have previous scan config
         component_manager._curr_scan_config = csp_configure_scan_request
@@ -664,6 +694,7 @@ def test_beam_cm_configure_scan_sets_expected_data_record_rate(
         ("test/dsp/1", "Something went wrong", TaskStatus.FAILED),
         ("test/recv/1", "That's not a valid request", TaskStatus.FAILED),
         ("test/smrb/1", "Oops something went wrong with the validation", TaskStatus.FAILED),
+        ("test/stat/1", "Stat had a problem validating the request", TaskStatus.FAILED),
     ],
 )
 def test_beam_cm_validate_configure_scan(
@@ -672,6 +703,7 @@ def test_beam_cm_validate_configure_scan(
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
+    stat_device_proxy: PstDeviceProxy,
     err_device_fqdn: Optional[str],
     err_msg: str,
     expected_status: TaskStatus,
@@ -679,7 +711,7 @@ def test_beam_cm_validate_configure_scan(
     """Assert that actions that need to be delegated to remote devices."""
     component_manager._update_communication_state(CommunicationStatus.ESTABLISHED)
 
-    for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]:
+    for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy, stat_device_proxy]:
         if d.fqdn == err_device_fqdn:
             cast(MagicMock, d.ValidateConfigureScan).return_value = (
                 [ResultCode.FAILED],
@@ -731,6 +763,7 @@ def test_beam_cm_set_simulation_mode_on_child_devices(
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
+    stat_device_proxy: PstDeviceProxy,
 ) -> None:
     """Test component manager delegates setting simulation mode to sub-component devices."""
     component_manager.simulation_mode = SimulationMode.FALSE
@@ -738,15 +771,17 @@ def test_beam_cm_set_simulation_mode_on_child_devices(
     assert smrb_device_proxy.simulationMode == SimulationMode.FALSE
     assert recv_device_proxy.simulationMode == SimulationMode.FALSE
     assert dsp_device_proxy.simulationMode == SimulationMode.FALSE
+    assert stat_device_proxy.simulationMode == SimulationMode.FALSE
 
     component_manager.simulation_mode = SimulationMode.TRUE
 
     assert smrb_device_proxy.simulationMode == SimulationMode.TRUE
     assert recv_device_proxy.simulationMode == SimulationMode.TRUE
     assert dsp_device_proxy.simulationMode == SimulationMode.TRUE
+    assert stat_device_proxy.simulationMode == SimulationMode.TRUE
 
 
-@pytest.mark.parametrize("device_fqdn", ["test/smrb/1", "test/recv/1", "test/dsp/1"])
+@pytest.mark.parametrize("device_fqdn", ["test/smrb/1", "test/recv/1", "test/dsp/1", "test/stat/1"])
 def test_beam_cm_faults_when_a_subordinated_device_faults(
     component_manager: PstBeamComponentManager,
     device_fqdn: str,
@@ -786,7 +821,7 @@ def test_beam_cm_faults_when_a_subordinated_device_faults(
     )
 
 
-@pytest.mark.parametrize("device_fqdn", ["test/smrb/1", "test/recv/1", "test/dsp/1"])
+@pytest.mark.parametrize("device_fqdn", ["test/smrb/1", "test/recv/1", "test/dsp/1", "test/stat/1"])
 def test_beam_cm_propagates_subordinate_device_error_messages_on_faults(
     component_manager: PstBeamComponentManager,
     device_proxy: PstDeviceProxy,
@@ -895,15 +930,19 @@ def test_beam_cm_stop_communicating(
         ("test/smrb/1", ObsState.ABORTED, ObsState.SCANNING),
         ("test/recv/1", ObsState.ABORTED, ObsState.READY),
         ("test/dsp/1", ObsState.ABORTED, ObsState.IDLE),
+        ("test/stat/1", ObsState.ABORTED, ObsState.IDLE),
         ("test/smrb/1", ObsState.FAULT, ObsState.IDLE),
         ("test/recv/1", ObsState.FAULT, ObsState.SCANNING),
         ("test/dsp/1", ObsState.FAULT, ObsState.READY),
+        ("test/stat/1", ObsState.FAULT, ObsState.READY),
         ("test/smrb/1", ObsState.ABORTED, ObsState.EMPTY),
         ("test/recv/1", ObsState.ABORTED, ObsState.EMPTY),
         ("test/dsp/1", ObsState.ABORTED, ObsState.EMPTY),
+        ("test/stat/1", ObsState.ABORTED, ObsState.EMPTY),
         ("test/smrb/1", ObsState.FAULT, ObsState.EMPTY),
         ("test/recv/1", ObsState.FAULT, ObsState.EMPTY),
         ("test/dsp/1", ObsState.FAULT, ObsState.EMPTY),
+        ("test/stat/1", ObsState.FAULT, ObsState.EMPTY),
     ],
 )
 def test_beam_cm_puts_subordinate_devices_in_state_to_do_obsreset(
@@ -964,6 +1003,7 @@ def test_beam_cm_set_logging_level(
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
+    stat_device_proxy: PstDeviceProxy,
     log_level: LoggingLevel,
 ) -> None:
     """Test that updates the LogLevel of the PstBeamComponentManager."""
@@ -971,6 +1011,7 @@ def test_beam_cm_set_logging_level(
     assert smrb_device_proxy.loggingLevel == log_level
     assert recv_device_proxy.loggingLevel == log_level
     assert dsp_device_proxy.loggingLevel == log_level
+    assert stat_device_proxy.loggingLevel == log_level
 
 
 def test_set_monitoring_polling_rate(
@@ -978,13 +1019,14 @@ def test_set_monitoring_polling_rate(
     smrb_device_proxy: PstDeviceProxy,
     recv_device_proxy: PstDeviceProxy,
     dsp_device_proxy: PstDeviceProxy,
+    stat_device_proxy: PstDeviceProxy,
 ) -> None:
     """Test updating monitoring polling rate updates subordinated devices."""
     import random
 
     monitoring_polling_rate = random.randint(100, 1000)
     component_manager.set_monitoring_polling_rate(monitoring_polling_rate)
-    for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy]:
+    for d in [smrb_device_proxy, recv_device_proxy, dsp_device_proxy, stat_device_proxy]:
         assert (
             cast(MagicMock, d).monitoringPollingRate == monitoring_polling_rate
         ), f"Expected the monitoring polling rate for {d} to have been set to {monitoring_polling_rate}"

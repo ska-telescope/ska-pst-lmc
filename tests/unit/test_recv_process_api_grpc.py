@@ -425,7 +425,7 @@ def test_recv_grpc_validate_configure_scan_throws_invalid_request(
     configure_scan_request: Dict[str, Any],
     expected_receive_configure_protobuf: ReceiveScanConfiguration,
 ) -> None:
-    """Test that validate_configure_beam throws exception when there are validation errors."""
+    """Test that validate_configure_scan throws exception when there are validation errors."""
     mock_servicer_context.configure_scan.side_effect = TestMockException(
         grpc_status_code=grpc.StatusCode.FAILED_PRECONDITION,
         error_code=ErrorCode.INVALID_REQUEST,

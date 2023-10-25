@@ -16,7 +16,7 @@ class PstBeamDeviceInterface(PstDeviceInterface):
     A purely abstract class that that represents a BEAM.MGMT Device.
 
     This is implemented by `PstBeam` and used by the `PstBeamComponentManager`
-    which needs a limited view of the Tango device but without having full
+    which needs a limited view of the TANGO device but without having full
     access to it.
     """
 
@@ -33,6 +33,11 @@ class PstBeamDeviceInterface(PstDeviceInterface):
     @property
     def dsp_fqdn(self: PstBeamDeviceInterface) -> str:
         """Get the fully qualified device name (FQDN) for the DSP.MGMT device of this beam."""
+        raise NotImplementedError("PstBeamDeviceInterface is abstract")
+
+    @property
+    def stat_fqdn(self: PstBeamDeviceInterface) -> str:
+        """Get the fully qualified device name (FQDN) for the STAT.MGMT device of this beam."""
         raise NotImplementedError("PstBeamDeviceInterface is abstract")
 
     @property

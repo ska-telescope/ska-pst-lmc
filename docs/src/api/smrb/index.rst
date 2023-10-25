@@ -1,13 +1,13 @@
 ==============================================
-Shared Memory Ring Buffer MGMT Tango Component
+Shared Memory Ring Buffer MGMT TANGO Component
 ==============================================
 
-The Shared Memory Ring Buffer (SMRB.MGMT) Tango Component
+The Shared Memory Ring Buffer (SMRB.MGMT) TANGO Component
 is used to manage the SMRB.CORE process.
 
-This is component is made up of a Tango device, a component
+This component is made up of a TANGO device, a component
 manager, as well as including a simulator and a gRPC
-Process API, which used by the component to talk with the
+Process API, which are used by the component to talk with the
 SMRB process via gRPC + Protobuf.
 
 For more information about SMRB.CORE check:

@@ -4,7 +4,7 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-"""Test to the BEAM Tango device for PST.LMC."""
+"""Test to the BEAM TANGO device for PST.LMC."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 from tango import DeviceProxy, DevState
 from tango.test_context import MultiDeviceTestContext
 
-from ska_pst_lmc import PstBeam, PstDsp, PstReceive, PstSmrb
+from ska_pst_lmc import PstBeam, PstDsp, PstReceive, PstSmrb, PstStat
 from tests.conftest import _AttributeEventValidator
 
 
@@ -59,6 +59,18 @@ def devices_info(
 ) -> List[dict]:
     """Get device configuration for tests."""
     return [
+        {
+            "class": PstStat,
+            "devices": [
+                {
+                    "name": "test/stat/1",
+                    "properties": {
+                        "initial_monitoring_polling_rate": monitoring_polling_rate,
+                        "SubsystemId": subsystem_id,
+                    },
+                }
+            ],
+        },
         {
             "class": PstDsp,
             "devices": [
@@ -105,6 +117,7 @@ def devices_info(
                         "RecvFQDN": "test/recv/1",
                         "SmrbFQDN": "test/smrb/1",
                         "DspFQDN": "test/dsp/1",
+                        "StatFQDN": "test/stat/1",
                         "SendFQDN": "test/send/1",
                         "ScanOutputDirPattern": scan_output_dir_pattern,
                         "SubsystemId": subsystem_id,
@@ -128,11 +141,12 @@ class TestPstBeam:
         beam_attribute_names: List[str],
         logger: logging.Logger,
     ) -> None:
-        """Put test class with Tango devices and event checker."""
+        """Put test class with TANGO devices and event checker."""
         self.beam_proxy = device_under_test
         self.dsp_proxy = multidevice_test_context.get_device("test/dsp/1")
         self.recv_proxy = multidevice_test_context.get_device("test/recv/1")
         self.smrb_proxy = multidevice_test_context.get_device("test/smrb/1")
+        self.stat_proxy = multidevice_test_context.get_device("test/stat/1")
         self._beam_attribute_names = [*beam_attribute_names]
 
         self.tango_change_event_helper = TangoChangeEventHelper(
@@ -169,6 +183,7 @@ class TestPstBeam:
         assert self.recv_proxy.adminMode == admin_mode
         assert self.smrb_proxy.adminMode == admin_mode
         assert self.dsp_proxy.adminMode == admin_mode
+        assert self.stat_proxy.adminMode == admin_mode
 
     @backoff.on_exception(
         backoff.expo,
@@ -182,6 +197,7 @@ class TestPstBeam:
         assert self.recv_proxy.state() == state
         assert self.smrb_proxy.state() == state
         assert self.dsp_proxy.state() == state
+        assert self.stat_proxy.state() == state
 
     @backoff.on_exception(
         backoff.expo,
@@ -195,6 +211,7 @@ class TestPstBeam:
         assert self.recv_proxy.healthState == health_state
         assert self.smrb_proxy.healthState == health_state
         assert self.dsp_proxy.healthState == health_state
+        assert self.stat_proxy.healthState == health_state
 
     def assert_logging_level(self: TestPstBeam, logging_level: LoggingLevel) -> None:
         """Assert the logging level of devices."""
@@ -215,6 +232,7 @@ class TestPstBeam:
         _assert(self.dsp_proxy)
         _assert(self.recv_proxy)
         _assert(self.smrb_proxy)
+        _assert(self.stat_proxy)
 
     @backoff.on_exception(
         backoff.expo,
@@ -232,10 +250,11 @@ class TestPstBeam:
             assert self.recv_proxy.obsState == subObsState
             assert self.smrb_proxy.obsState == subObsState
             assert self.dsp_proxy.obsState == subObsState
+            assert self.stat_proxy.obsState == subObsState
         else:
             assert self.recv_proxy.obsState == obsState
             assert self.smrb_proxy.obsState == obsState
-            assert self.dsp_proxy.obsState == obsState
+            assert self.stat_proxy.obsState == obsState
 
     def configure_scan(self: TestPstBeam, configuration: str) -> None:
         """Perform a configure scan."""
@@ -269,7 +288,7 @@ class TestPstBeam:
         self.assert_obs_state(ObsState.READY)
 
     def goto_idle(self: TestPstBeam) -> None:
-        """Put Tango device into IDLE state."""
+        """Put TANGO device into IDLE state."""
         self.tango_device_command_checker.assert_command(
             lambda: self.beam_proxy.GoToIdle(),
             expected_obs_state_events=[
@@ -302,7 +321,7 @@ class TestPstBeam:
         assert self.beam_proxy.healthState == HealthState.FAILED
 
     def obs_reset(self: TestPstBeam) -> None:
-        """Reset Tango device."""
+        """Reset TANGO device."""
         self.tango_device_command_checker.assert_command(
             lambda: self.beam_proxy.ObsReset(),
             expected_obs_state_events=[
@@ -313,7 +332,7 @@ class TestPstBeam:
         self.assert_obs_state(ObsState.IDLE, subObsState=ObsState.EMPTY)
 
     def on(self: TestPstBeam) -> None:
-        """Turn on Tango device."""
+        """Turn on TANGO device."""
         self.tango_device_command_checker.assert_command(
             lambda: self.beam_proxy.On(),
             expected_obs_state_events=[ObsState.IDLE],
@@ -326,7 +345,7 @@ class TestPstBeam:
         self.assert_obs_state(ObsState.IDLE, subObsState=ObsState.EMPTY)
 
     def off(self: TestPstBeam) -> None:
-        """Turn off Tango device."""
+        """Turn off TANGO device."""
         self.tango_device_command_checker.assert_command(
             lambda: self.beam_proxy.Off(),
         )
@@ -334,14 +353,14 @@ class TestPstBeam:
         self.assert_health_state(HealthState.OK)
 
     def online(self: TestPstBeam) -> None:
-        """Put Tango device into ONLINE mode."""
+        """Put TANGO device into ONLINE mode."""
         self.beam_proxy.adminMode = AdminMode.ONLINE
         self.assert_admin_mode(admin_mode=AdminMode.ONLINE)
         self.assert_state(DevState.OFF)
         self.assert_health_state(HealthState.OK)
 
     def offline(self: TestPstBeam) -> None:
-        """Put Tango device into OFFLINE mode."""
+        """Put TANGO device into OFFLINE mode."""
         self.beam_proxy.adminMode = AdminMode.OFFLINE
         self.assert_admin_mode(admin_mode=AdminMode.OFFLINE)
         self.assert_state(DevState.DISABLE)

@@ -242,7 +242,7 @@ class ParallelTaskContext(TaskContext):
 @dataclass(kw_only=True)
 class DeviceCommandTaskContext(TaskContext):
     """
-    A task context class that is used for Tango Device Proxy command tasks.
+    A task context class that is used for TANGO Device Proxy command tasks.
 
     This extends from :py:class:`TaskContext` to allow storing of
     task contexts of remote device proxy command tasks.

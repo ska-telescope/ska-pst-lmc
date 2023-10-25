@@ -17,10 +17,10 @@ from ska_pst_lmc.util import TelescopeFacilityEnum
 
 class PstDeviceInterface:
     """
-    A purely abstract class to be implemented by Tango device classes.
+    A purely abstract class to be implemented by TANGO device classes.
 
-    This class is used to abstract away any Tango functionality that component managers need to callback to
-    the Tango device and in turn allow passing of the Tango device itself to the component manager but is
+    This class is used to abstract away any TANGO functionality that component managers need to callback to
+    the TANGO device and in turn allow passing of the TANGO device itself to the component manager but is
     abstracted. This class itself can be extended for a particular device/component_manager combination where
     there is a need for more specific functionality but without the need of exposing a callback.
 
@@ -76,7 +76,7 @@ class PstDeviceInterface:
         """
         Update the health state of device.
 
-        :param health_state: the new health state of the Tango device.
+        :param health_state: the new health state of the TANGO device.
         :type health_state: HealthState
         """
         raise NotImplementedError("PstDeviceInterface is abstract")
@@ -93,7 +93,7 @@ class PstApiDeviceInterface(PstDeviceInterface, Generic[T]):
     monitoring data from the remote system.
 
     This is a generic class over the class of the data model for the API monitoring.
-    This avoids unnecessary casts within the Tango device implementation.
+    This avoids unnecessary casts within the TANGO device implementation.
     """
 
     @property
