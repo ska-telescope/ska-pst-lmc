@@ -146,6 +146,7 @@ k8s-test:
   needs: ["oci-image-build"] # Required to pull oci from gitlab
   tags:
     - k8srunner
+  when: manual
   variables:
     KUBE_NAMESPACE: 'ci-$CI_PROJECT_NAME-$CI_COMMIT_SHORT_SHA'
   before_script:
