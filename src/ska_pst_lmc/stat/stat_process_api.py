@@ -240,24 +240,30 @@ class PstStatProcessApiGrpc(PstProcessApiGrpc, PstStatProcessApi):
     ) -> None:
         stat_data_proto: StatMonitorDataProto = data.stat
 
-        mean_frequency_avg = (
-            np.array(stat_data_proto.mean_frequency_avg).reshape((2, 2)).astype(dtype=np.float32)
-        )
-        mean_frequency_avg_rfi_excised = (
-            np.array(stat_data_proto.mean_frequency_avg_masked).reshape((2, 2)).astype(dtype=np.float32)
-        )
-        variance_frequency_avg = (
-            np.array(stat_data_proto.variance_frequency_avg).reshape((2, 2)).astype(dtype=np.float32)
-        )
-        variance_frequency_avg_rfi_excised = (
-            np.array(stat_data_proto.variance_frequency_avg_masked).reshape((2, 2)).astype(dtype=np.float32)
-        )
-        num_clipped_samples = (
-            np.array(stat_data_proto.num_clipped_samples).reshape((2, 2)).astype(dtype=np.int32)
-        )
-        num_clipped_samples_rfi_excised = (
-            np.array(stat_data_proto.num_clipped_samples_masked).reshape((2, 2)).astype(dtype=np.int32)
-        )
+        try:
+            mean_frequency_avg = (
+                np.array(stat_data_proto.mean_frequency_avg).reshape((2, 2)).astype(dtype=np.float32)
+            )
+            mean_frequency_avg_rfi_excised = (
+                np.array(stat_data_proto.mean_frequency_avg_masked).reshape((2, 2)).astype(dtype=np.float32)
+            )
+            variance_frequency_avg = (
+                np.array(stat_data_proto.variance_frequency_avg).reshape((2, 2)).astype(dtype=np.float32)
+            )
+            variance_frequency_avg_rfi_excised = (
+                np.array(stat_data_proto.variance_frequency_avg_masked)
+                .reshape((2, 2))
+                .astype(dtype=np.float32)
+            )
+            num_clipped_samples = (
+                np.array(stat_data_proto.num_clipped_samples).reshape((2, 2)).astype(dtype=np.int32)
+            )
+            num_clipped_samples_rfi_excised = (
+                np.array(stat_data_proto.num_clipped_samples_masked).reshape((2, 2)).astype(dtype=np.int32)
+            )
+        except ValueError:
+            # Ignoring monitoring update due to un-populated statistics
+            return
 
         subband_data = StatMonitorData(
             # Pol A + I

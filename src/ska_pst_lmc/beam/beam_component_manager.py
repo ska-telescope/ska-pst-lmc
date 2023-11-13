@@ -1031,23 +1031,36 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             self.scan_id = 0
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
+        # need to stop_scan on RECV before DSP and STAT, then SMRB
         return self._submit_remote_job(
-            job=DeviceCommandTask(
-                devices=self._remote_devices,
-                action=lambda d: d.EndScan(),
-                command_name="EndScan",
+            job=SequentialTask(
+                subtasks=[
+                    DeviceCommandTask(
+                        devices=[self._recv_device],
+                        action=lambda d: d.EndScan(),
+                        command_name="EndScan",
+                    ),
+                    DeviceCommandTask(
+                        devices=[self._dsp_device, self._stat_device],
+                        action=lambda d: d.EndScan(),
+                        command_name="EndScan",
+                    ),
+                    DeviceCommandTask(
+                        devices=[self._smrb_device],
+                        action=lambda d: d.EndScan(),
+                        command_name="EndScan",
+                    ),
+                ]
             ),
             task_callback=task_callback,
             completion_callback=_completion_callback,
         )
 
-    def _abort_task(self: PstBeamComponentManager) -> Task:
+    def _abort_task(self: PstBeamComponentManager, remote_devices: List[PstDeviceProxy]) -> Task:
         # find devices that need to be put into an aborted state. These are any that
         # are not in ABORTED, FAULT or EMPTY
         devices_to_abort = [
-            d
-            for d in self._remote_devices
-            if d.obsState not in [ObsState.ABORTED, ObsState.FAULT, ObsState.EMPTY]
+            d for d in remote_devices if d.obsState not in [ObsState.ABORTED, ObsState.FAULT, ObsState.EMPTY]
         ]
 
         abort_subtask: Task = NoopTask()
@@ -1076,7 +1089,9 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
                         action=lambda: callback_safely(task_callback, status=TaskStatus.IN_PROGRESS),
                         name="abort_in_progress",
                     ),
-                    self._abort_task(),
+                    self._abort_task([self._recv_device]),
+                    self._abort_task([self._dsp_device, self._stat_device]),
+                    self._abort_task([self._smrb_device]),
                 ]
             ),
             task_callback=task_callback,
@@ -1094,7 +1109,9 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             self._device_interface.update_health_state(health_state=HealthState.OK)
             task_callback(status=TaskStatus.COMPLETED, result="Completed")
 
-        abort_subtask: Task = self._abort_task()
+        abort_recv_subtask: Task = self._abort_task([self._recv_device])
+        abort_readers_subtask: Task = self._abort_task([self._dsp_device, self._stat_device])
+        abort_smrb_subtask: Task = self._abort_task([self._smrb_device])
 
         # call ObsReset on devices that aren't in EMPTY state.  This will move them
         # into IDLE state.
@@ -1116,7 +1133,9 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
         return self._submit_remote_job(
             job=SequentialTask(
                 subtasks=[
-                    abort_subtask,
+                    abort_recv_subtask,
+                    abort_readers_subtask,
+                    abort_smrb_subtask,
                     *obsreset_subtasks,
                 ],
             ),
@@ -1136,10 +1155,24 @@ class PstBeamComponentManager(PstComponentManager[PstBeamDeviceInterface]):
             self._device_interface.handle_fault(fault_msg=fault_msg)
 
         return self._submit_remote_job(
-            job=DeviceCommandTask(
-                devices=self._remote_devices,
-                action=lambda d: d.GoToFault(fault_msg),
-                command_name="GoToFault",
+            job=SequentialTask(
+                subtasks=[
+                    DeviceCommandTask(
+                        devices=[self._recv_device],
+                        action=lambda d: d.GoToFault(fault_msg),
+                        command_name="GoToFault",
+                    ),
+                    DeviceCommandTask(
+                        devices=[self._dsp_device, self._stat_device],
+                        action=lambda d: d.GoToFault(fault_msg),
+                        command_name="GoToFault",
+                    ),
+                    DeviceCommandTask(
+                        devices=[self._smrb_device],
+                        action=lambda d: d.GoToFault(fault_msg),
+                        command_name="GoToFault",
+                    ),
+                ]
             ),
             task_callback=task_callback,
             completion_callback=_completion_callback,

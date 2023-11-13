@@ -7,7 +7,7 @@ import sys
 from typing import Union
 
 NAME = """ska_pst_lmc"""
-VERSION = "0.7.1"
+VERSION = "0.7.2"
 VERSION_INFO = VERSION.split(".")
 DESCRIPTION = """A set of PST LMC tango devices for the SKA Low and Mid Telescopes."""
 AUTHOR = "William Gauvin"
