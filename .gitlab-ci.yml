@@ -202,6 +202,9 @@ python-test:
   needs:
     - python-generate-code
 
+helm-chart-publish:
+  when: manual
+
 # Include CI templates
 include:
   # Python packages build,lint, test and publish
