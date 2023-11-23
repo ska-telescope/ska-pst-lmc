@@ -25,5 +25,5 @@ dependencies:
   repository: https://artefact.skao.int/repository/helm-internal
   condition: ska-dashboard-repo.enabled
 - name: ska-pst-lmc
-  version: 0.7.2
+  version: 0.7.3
   repository: file://../ska-pst-lmc
